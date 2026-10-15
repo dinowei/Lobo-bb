@@ -41,7 +41,7 @@ export const QuestaoGeradaZ = z.object({
   explicacaoGeral: z.string().min(60),
   dicaDeProva: z.string().nullish(),
   trechoFonte: z.string().nullish(), // obrigatório quando há fontes (checado no pipeline)
-  dificuldade: z.coerce.number().int().min(1).max(5),
+  dificuldade: z.coerce.number().int().min(1).max(5).catch(3), // campo secundário: inválido vira 3
   verificacao: VerificacaoZ.nullish(), // obrigatório em cálculo (conferido por código no pipeline)
 });
 export type QuestaoGerada = z.infer<typeof QuestaoGeradaZ>;
@@ -118,6 +118,42 @@ ${p.exemplosOficiais.join("\n---\n") || "(nenhum)"}
 ${p.enunciadosRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhum)"}${
     ehDisciplinaDeCalculo(p.disciplina) ? VERIFICACAO_CALCULO : ""
   }`;
+}
+
+// Matemática por construção: os números já vêm prontos do código (src/construcao.ts).
+// A IA escreve só o texto: enunciado, explicações e pegadinhas.
+export function geradorConstruidoUser(p: {
+  disciplina: string;
+  assunto: string;
+  dificuldade: number;
+  contexto: string;
+  duasEtapas: boolean;
+  pergunta: string;
+  dados: string[];
+  resolucao: string;
+  alternativas: { letra: string; texto: string; correta: boolean; erro: string | null }[];
+  gabarito: string;
+  enunciadosRecentes: string[];
+}) {
+  return `DISCIPLINA: ${p.disciplina}
+ASSUNTO: ${p.assunto}
+DIFICULDADE ALVO (1–5): ${p.dificuldade}
+CONTEXTO OBRIGATÓRIO: ${p.contexto}${p.duasEtapas ? "\nA resolução tem DUAS etapas encadeadas: deixe isso natural no enunciado." : ""}
+
+=== OS NÚMEROS JÁ ESTÃO PRONTOS (calculados por código; NÃO altere nenhum) ===
+A questão pede: ${p.pergunta}
+Dados que o enunciado deve conter, copiados EXATAMENTE como estão (mesma grafia, vírgulas e "R$"):
+${p.dados.map((d) => `- ${d}`).join("\n")}
+Os fatores da lista (formato "base^n = valor") aparecem no enunciado como dados fornecidos ("Considere ..."). Não acrescente nenhum outro fator ou número além dos da lista.
+Resolução correta: ${p.resolucao}
+
+Alternativas FIXAS (copie o texto de cada uma exatamente; gabarito = ${p.gabarito}):
+${p.alternativas.map((a) => `(${a.letra}) ${a.texto}${a.correta ? "  ← CORRETA" : `  ← erro que gera este valor: ${a.erro}`}`).join("\n")}
+
+SUA TAREFA: escrever o enunciado contextualizado (sem revelar a resposta), a "explicacao" de cada alternativa (na correta, a conta passo a passo; nas erradas, onde a conta escorrega, usando o erro informado), a "pegadinha" de cada errada, "explicacaoGeral" e "dicaDeProva". Use "verificacao": null e "trechoFonte": null.
+
+=== NÃO REPITA ESTES ENFOQUES ===
+${p.enunciadosRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhum)"}`;
 }
 
 // ============================================================

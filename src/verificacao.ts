@@ -43,6 +43,7 @@ const escapar = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // "R$ 1.234,56" → 1234.56 · "12,5%" → 12.5 · "3/8" → 0.375
 const RE_FRACAO = /(-?\d+)\s*\/\s*(\d+)/g;
 // "6050.00" (ponto + 1–2 dígitos no fim) é decimal à inglesa; "6.050" é milhar
+const TEM_FRACAO = /\d\s*\/\s*\d/;
 const RE_NUMERO = /[-−]?\d+\.\d{1,2}(?![\d.,])|[-−]?\d{1,3}(?:\.\d{3})+(?:,\d+)?|[-−]?\d+(?:,\d+)?/g;
 const paraNumero = (s: string) =>
   /^[-−]?\d+\.\d{1,2}$/.test(s)
@@ -60,6 +61,19 @@ function bate(valorAlternativa: number, esperado: number, texto: string): boolea
   const rel = (a: number, b: number) => (b === 0 ? Math.abs(a) <= 1e-9 : Math.abs(a - b) / Math.abs(b) <= 0.005);
   // "12,5%" pode ter vindo de uma expressão que dá 12.5 ou 0.125
   return rel(valorAlternativa, esperado) || (/%/.test(texto) && rel(valorAlternativa / 100, esperado));
+}
+
+// Distrator "igual" à resposta: na precisão em que a CORRETA está escrita
+// (com a correta "2,01%", o distrator "2,00%" é diferente; frações comparam exato)
+function coincide(valorAlternativa: number, esperado: number, texto: string, textoCorreta: string): boolean {
+  if (/R\$/.test(texto)) return Math.abs(valorAlternativa - esperado) <= 0.01 + 1e-9;
+  const alvos = /%/.test(texto) ? [esperado, esperado * 100] : [esperado];
+  if (TEM_FRACAO.test(texto) || TEM_FRACAO.test(textoCorreta)) {
+    return alvos.some((e) => Math.abs(valorAlternativa - e) <= 1e-9 * Math.max(1, Math.abs(e)));
+  }
+  const casas = textoCorreta.match(/,(\d+)/)?.[1].length ?? 0;
+  const arred = (x: number) => Math.round(x * 10 ** casas) / 10 ** casas;
+  return alvos.some((e) => arred(valorAlternativa) === arred(e));
 }
 
 export type ResultadoVerificacao =
@@ -124,7 +138,7 @@ export function verificarConta(q: QuestaoParaVerificar): ResultadoVerificacao {
 
   for (const a of q.alternativas) {
     if (a.letra === correta.letra) continue;
-    if (numerosDoTexto(a.texto).some((n) => bate(n, esperado, a.texto)))
+    if (numerosDoTexto(a.texto).some((n) => coincide(n, esperado, a.texto, correta.texto)))
       return {
         ok: false,
         motivo: "conta_nao_confere",

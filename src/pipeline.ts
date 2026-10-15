@@ -19,13 +19,15 @@ import {
   RevisaoZ,
   GERADOR_SYSTEM,
   geradorUser,
+  geradorConstruidoUser,
   AUDITOR_CEGO_SYSTEM,
   auditorCegoUser,
   AUDITOR_REVISAO_SYSTEM,
   auditorRevisaoUser,
   type QuestaoGerada,
 } from "./prompts.js";
-import { chatJSON, embed, gerador, auditor, modelo } from "./llm.js";
+import { chatJSON, chatJSONAuditor, validarOuReparar, embed, gerador, modelo } from "./llm.js";
+import { construir, temConstrucao, type Montada } from "./construcao.js";
 import { normalizar, hashTexto } from "./extrair.js";
 import { ehDisciplinaDeCalculo, verificarConta } from "./verificacao.js";
 import { sortearVariacao, type Variacao } from "./variacao.js";
@@ -96,13 +98,26 @@ export type Resultado = (
   | { ok: false; motivo: string; detalhes?: string[] }
 ) & { variacao?: Variacao };
 
+// erro em uma linha só (zod e afins vêm em várias)
+const umaLinha = (e: unknown) => String(e instanceof Error ? e.message : e).replace(/\s*\n\s*/g, " ⏎ ");
+
+// confere se o enunciado trouxe cada dado fixado pelo código, sem alterar número
+function dadosFaltando(enunciado: string, dados: string[]): string[] {
+  const norm = (t: string) => t.replace(/[\s ]+/g, " ").toLowerCase();
+  const e = norm(enunciado);
+  return dados.filter((d) => {
+    const [esq, dir] = d.split(" = "); // fator "1,04^8 = 1,3686": exige a base e o valor
+    return dir ? !(e.includes(norm(dir)) && e.includes(norm(esq.split("^")[0]))) : !e.includes(norm(d));
+  });
+}
+
 // Nenhuma falha (rede, banco, IA) derruba o lote: vira um Resultado com o motivo
 export async function gerarQuestao(topicId: string, dificuldade = 3): Promise<Resultado> {
   const estado: { variacao?: Variacao } = {};
   try {
     return { ...(await gerarQuestaoInterna(topicId, dificuldade, estado)), variacao: estado.variacao };
   } catch (e) {
-    return { ok: false, motivo: "erro_inesperado", detalhes: [String(e)], variacao: estado.variacao };
+    return { ok: false, motivo: "erro_inesperado", detalhes: [umaLinha(e)], variacao: estado.variacao };
   }
 }
 
@@ -132,13 +147,31 @@ async function gerarQuestaoInterna(
 
   // 2. Geração
   const gabaritoObrigatorio = letraAleatoria();
-  let q: QuestaoGerada;
-  try {
-    const bruto = await chatJSON(
-      gerador(),
-      modelo("GERADOR_MODEL"),
-      GERADOR_SYSTEM,
-      geradorUser({
+
+  // Matemática por construção: o código fixa números, alternativas e gabarito; a IA só escreve
+  let montada: Montada | null = null;
+  if (ehDisciplinaDeCalculo(topic.disciplina) && temConstrucao(topic.assunto)) {
+    montada = construir(topic.assunto, variacao.tipo, variacao.duasEtapas, gabaritoObrigatorio);
+    if (!montada) return { ok: false, motivo: "construcao_falhou", detalhes: [`sem template para "${variacao.tipo}"`] };
+    variacao.tipo = montada.tipo;
+    variacao.duasEtapas = montada.duasEtapas;
+  }
+
+  const userGerador = montada
+    ? geradorConstruidoUser({
+        disciplina: topic.disciplina,
+        assunto: topic.assunto,
+        dificuldade,
+        contexto: variacao.contexto,
+        duasEtapas: montada.duasEtapas,
+        pergunta: montada.pergunta,
+        dados: montada.dados,
+        resolucao: montada.resolucao,
+        alternativas: montada.alternativas,
+        gabarito: montada.gabarito,
+        enunciadosRecentes: recentes.map((r) => r.enunciado),
+      })
+    : geradorUser({
         disciplina: topic.disciplina,
         assunto: topic.assunto,
         subtopicos: topic.subtopicos,
@@ -148,14 +181,44 @@ async function gerarQuestaoInterna(
         exemplosOficiais: await exemplosOficiais(topic._id),
         enunciadosRecentes: recentes.map((r) => r.enunciado),
         variacao,
-      }),
-      0.8,
-      4000
-    );
+      });
+  let q: QuestaoGerada;
+  try {
+    const bruto = await chatJSON(gerador(), modelo("GERADOR_MODEL"), GERADOR_SYSTEM, userGerador, 0.8, 4000);
     if (bruto && typeof bruto === "object" && "erro" in bruto) return { ok: false, motivo: "fonte_insuficiente" };
-    q = QuestaoGeradaZ.parse(bruto);
+    // zod falhou → o mesmo modelo recebe a resposta + o erro e devolve só o JSON corrigido
+    q = await validarOuReparar(QuestaoGeradaZ, bruto, {
+      client: gerador(),
+      model: modelo("GERADOR_MODEL"),
+      system: GERADOR_SYSTEM,
+      user: userGerador,
+    });
   } catch (e) {
-    return { ok: false, motivo: "geracao_invalida", detalhes: [String(e)] };
+    return { ok: false, motivo: "geracao_invalida", detalhes: [umaLinha(e)] };
+  }
+
+  if (montada) {
+    // números são do código: a IA não pode ter mexido em nenhum
+    const textoIA = new Map(q.alternativas.map((a) => [a.letra, a]));
+    const alterada = montada.alternativas.find((a) => textoIA.get(a.letra)?.texto.replace(/\s+/g, " ").trim() !== a.texto);
+    if (alterada)
+      return { ok: false, motivo: "numero_alterado", detalhes: [`alternativa ${alterada.letra}: esperado "${alterada.texto}", veio "${textoIA.get(alterada.letra)?.texto}"`] };
+    const faltam = dadosFaltando(q.enunciado, montada.dados);
+    if (faltam.length) return { ok: false, motivo: "numero_alterado", detalhes: [`enunciado sem os dados: ${faltam.join(" ; ")}`] };
+    const certa = montada.alternativas.find((a) => a.correta)!;
+    if (q.enunciado.includes(certa.texto)) return { ok: false, motivo: "resposta_no_enunciado", detalhes: [certa.texto] };
+    q = {
+      ...q,
+      gabarito: montada.gabarito,
+      alternativas: montada.alternativas.map((a) => ({
+        letra: a.letra,
+        texto: a.texto,
+        correta: a.correta,
+        explicacao: textoIA.get(a.letra)!.explicacao,
+        pegadinha: a.correta ? null : textoIA.get(a.letra)?.pegadinha ?? a.erro,
+      })),
+      verificacao: { expressao: montada.expressao, fatoresDados: montada.fatoresDados },
+    };
   }
 
   // 3. Checagens determinísticas (de graça, antes de gastar com o auditor)
@@ -185,16 +248,16 @@ async function gerarQuestaoInterna(
   }
 
   const fontesTxt = fontes.map((f) => `${f.titulo}\n${f.texto}`);
-  const modeloAuditor = modelo("AUDITOR_MODEL");
+  let modeloAuditor = modelo("AUDITOR_MODEL");
 
   // 4. Auditoria cega: o auditor resolve sem ver o gabarito
   let cego: z.infer<typeof RespostaCegaZ>;
   try {
-    cego = RespostaCegaZ.parse(
-      await chatJSON(auditor(), modeloAuditor, AUDITOR_CEGO_SYSTEM, auditorCegoUser(q, fontesTxt), 0, 2000)
-    );
+    const r = await chatJSONAuditor(AUDITOR_CEGO_SYSTEM, auditorCegoUser(q, fontesTxt), 0, 2000);
+    modeloAuditor = r.modelo;
+    cego = RespostaCegaZ.parse(r.json);
   } catch (e) {
-    return { ok: false, motivo: "auditor_falhou", detalhes: [String(e)] };
+    return { ok: false, motivo: "auditor_falhou", detalhes: [umaLinha(e)] };
   }
   if (cego.resposta !== q.gabarito) {
     return {
@@ -207,11 +270,11 @@ async function gerarQuestaoInterna(
   // 5. Revisão completa
   let rev: z.infer<typeof RevisaoZ>;
   try {
-    rev = RevisaoZ.parse(
-      await chatJSON(auditor(), modeloAuditor, AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(q, fontesTxt), 0, 2000)
-    );
+    const r = await chatJSONAuditor(AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(q, fontesTxt), 0, 2000);
+    if (r.modelo !== modeloAuditor) modeloAuditor = `${modeloAuditor} + ${r.modelo}`;
+    rev = RevisaoZ.parse(r.json);
   } catch (e) {
-    return { ok: false, motivo: "auditor_falhou", detalhes: [String(e)] };
+    return { ok: false, motivo: "auditor_falhou", detalhes: [umaLinha(e)] };
   }
   const aprovada = rev.veredito === "aprovada";
 
