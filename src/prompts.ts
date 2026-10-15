@@ -91,12 +91,22 @@ export function geradorUser(p: {
   fontes: { titulo: string; texto: string }[];
   exemplosOficiais: string[]; // 1–2 questões reais da banca, para calibrar o estilo
   enunciadosRecentes: string[]; // para não repetir
+  variacao: { tipo: string; contexto: string; duasEtapas: boolean }; // sorteada pelo código
 }) {
   return `DISCIPLINA: ${p.disciplina}
 ASSUNTO: ${p.assunto}
 SUBTÓPICOS POSSÍVEIS: ${p.subtopicos.join(", ") || "livre dentro do assunto"}
 DIFICULDADE ALVO (1–5): ${p.dificuldade}
 GABARITO_OBRIGATORIO: ${p.gabaritoObrigatorio}
+
+=== FORMATO OBRIGATÓRIO DESTA QUESTÃO (sorteado, não troque) ===
+TIPO: ${p.variacao.tipo}
+CONTEXTO: ${p.variacao.contexto}${
+    p.variacao.duasEtapas
+      ? `
+DUAS ETAPAS: a resolução precisa de DOIS cálculos encadeados, em que o resultado do primeiro é usado no segundo (ex.: achar a taxa e depois o montante; aplicar por um prazo e reaplicar o resultado em outra condição). Uma conta só não resolve.`
+      : ""
+  }
 
 === FONTES (única base de verdade) ===
 ${p.fontes.length ? p.fontes.map((f, i) => `[${i + 1}] ${f.titulo}\n${f.texto}`).join("\n\n") : "(vazio)"}
@@ -144,7 +154,10 @@ REJEITE se houver QUALQUER um destes problemas:
 - explicação que contradiz a fonte ou ensina conceito errado;
 - enunciado ambíguo, com dupla interpretação;
 - alternativa correta identificável só pela forma (muito mais longa ou com mais ressalvas);
-- conteúdo potencialmente desatualizado.
+- conteúdo potencialmente desatualizado;
+- incoerência textual no enunciado ou nas alternativas: gênero, número ou pessoa trocados no meio do texto (ex.: "uma cliente" e depois "o cliente");
+- palavra em outro idioma (ex.: "en", "the", "por ejemplo") fora de citação proposital;
+- erro de português no próprio enunciado ou nas alternativas (ortografia, concordância, regência, crase, pontuação), exceto quando o erro é o objeto da questão e está marcado como tal.
 
 Seja específico em "problemas". Responda APENAS com JSON: {"veredito":"aprovada|rejeitada","problemas":["..."]}`;
 

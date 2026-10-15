@@ -125,7 +125,8 @@ async function main() {
         console.log(`Gerando ${n} questão(ões) de "${topico.assunto}"…`);
         for (let i = 0; i < n; i++) {
           const r = await gerarQuestao(String(topico._id));
-          console.log(r.ok ? `✔ aprovada: ${r.questionId}` : `✖ ${r.motivo} ${r.detalhes?.join(" | ") ?? ""}`);
+          const v = r.variacao ? ` [${r.variacao.tipo} · ${r.variacao.contexto}${r.variacao.duasEtapas ? " · 2 etapas" : ""}]` : "";
+          console.log(r.ok ? `✔ aprovada: ${r.questionId}${v}` : `✖ ${r.motivo}${v} ${r.detalhes?.join(" | ") ?? ""}`);
         }
         return;
       }

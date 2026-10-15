@@ -28,6 +28,7 @@ import {
 import { chatJSON, embed, gerador, auditor, modelo } from "./llm.js";
 import { normalizar, hashTexto } from "./extrair.js";
 import { ehDisciplinaDeCalculo, verificarConta } from "./verificacao.js";
+import { sortearVariacao, type Variacao } from "./variacao.js";
 
 // ------------------------------------------------------------
 // RAG (Atlas Vector Search na coleção de trechos)
@@ -90,13 +91,33 @@ const letraAleatoria = (): Letra => (["A", "B", "C", "D", "E"] as const)[Math.fl
 // ------------------------------------------------------------
 // O pipeline completo
 // ------------------------------------------------------------
-export type Resultado =
+export type Resultado = (
   | { ok: true; questionId: Types.ObjectId }
-  | { ok: false; motivo: string; detalhes?: string[] };
+  | { ok: false; motivo: string; detalhes?: string[] }
+) & { variacao?: Variacao };
 
+// Nenhuma falha (rede, banco, IA) derruba o lote: vira um Resultado com o motivo
 export async function gerarQuestao(topicId: string, dificuldade = 3): Promise<Resultado> {
+  const estado: { variacao?: Variacao } = {};
+  try {
+    return { ...(await gerarQuestaoInterna(topicId, dificuldade, estado)), variacao: estado.variacao };
+  } catch (e) {
+    return { ok: false, motivo: "erro_inesperado", detalhes: [String(e)], variacao: estado.variacao };
+  }
+}
+
+async function gerarQuestaoInterna(
+  topicId: string,
+  dificuldadePedida: number,
+  estado: { variacao?: Variacao }
+): Promise<Resultado> {
   const topic = await Topic.findById(topicId);
   if (!topic) return { ok: false, motivo: "topico_inexistente" };
+
+  // Variedade sorteada pelo código: tipo + contexto (+ duas etapas em cálculo)
+  const variacao = await sortearVariacao(topic);
+  estado.variacao = variacao;
+  const dificuldade = variacao.duasEtapas ? Math.max(3, dificuldadePedida) : dificuldadePedida;
 
   // 1. Fontes
   const fontes = await buscarFontesVariadas(topic._id);
@@ -126,6 +147,7 @@ export async function gerarQuestao(topicId: string, dificuldade = 3): Promise<Re
         fontes,
         exemplosOficiais: await exemplosOficiais(topic._id),
         enunciadosRecentes: recentes.map((r) => r.enunciado),
+        variacao,
       }),
       0.8,
       4000
@@ -197,7 +219,7 @@ export async function gerarQuestao(topicId: string, dificuldade = 3): Promise<Re
   const doc = await Question.create({
     topicId: topic._id,
     origem: "gerada",
-    dificuldade: q.dificuldade,
+    dificuldade: variacao.duasEtapas ? Math.max(3, q.dificuldade) : q.dificuldade,
     enunciado: q.enunciado,
     alternativas: q.alternativas.map((a) => ({ ...a, pegadinha: a.correta ? undefined : a.pegadinha ?? undefined })),
     gabarito: q.gabarito,
@@ -212,6 +234,7 @@ export async function gerarQuestao(topicId: string, dificuldade = 3): Promise<Re
       veredito: rev.veredito,
       problemas: rev.problemas,
     },
+    variacao,
     verificacao: q.verificacao ? { ...q.verificacao, valorEsperado } : undefined,
     hashEnunciado: h,
   });

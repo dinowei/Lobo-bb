@@ -1,0 +1,54 @@
+{
+  "_aviso": "Variedade sorteada pelo CÓDIGO antes de gerar (src/variacao.ts). 'tipos' por assunto (nome exato do tópico em data/topicos.json); tópico sem lista sorteia um subtópico. 'contextos' vale para todos os tópicos. Pode editar à vontade.",
+  "contextos": [
+    "financiamento imobiliário ou de veículo",
+    "aplicação em CDB",
+    "caderneta de poupança",
+    "empréstimo pessoal",
+    "investimento de uma empresa (PJ)",
+    "cliente pessoa física atendido na agência",
+    "cliente pessoa jurídica negociando com o gerente"
+  ],
+  "tipos": {
+    "Juros compostos": [
+      "calcular o montante",
+      "calcular o capital (valor presente)",
+      "calcular a taxa",
+      "calcular o prazo",
+      "taxa equivalente",
+      "comparar duas opções de aplicação ou pagamento"
+    ],
+    "Juros simples": [
+      "calcular o montante",
+      "calcular o capital",
+      "calcular a taxa",
+      "calcular o prazo",
+      "comparar duas opções"
+    ],
+    "Taxas de juros": [
+      "taxa efetiva a partir da nominal",
+      "taxas equivalentes entre períodos",
+      "taxas proporcionais",
+      "taxa real a partir da aparente e da inflação"
+    ],
+    "Descontos": [
+      "desconto racional simples",
+      "desconto comercial simples",
+      "valor atual de um título",
+      "taxa efetiva de um desconto comercial"
+    ],
+    "Sistemas de amortização": [
+      "parcela no SAC",
+      "juros de uma parcela no SAC",
+      "saldo devedor após k parcelas no SAC",
+      "prestação na Tabela Price (com fator dado)",
+      "comparar SAC e Price"
+    ],
+    "Rendas, VPL, TIR e custo efetivo": [
+      "valor presente de uma série uniforme (com fator dado)",
+      "prestação de uma série uniforme (com fator dado)",
+      "VPL de um projeto",
+      "decidir entre dois projetos pelo VPL"
+    ]
+  }
+}

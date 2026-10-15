@@ -146,6 +146,13 @@ const QuestionSchema = new Schema(
       problemas: [String],
       _id: false,
     },
+    // tipo e contexto sorteados pelo código antes de gerar (src/variacao.ts)
+    variacao: {
+      tipo: String,
+      contexto: String,
+      duasEtapas: Boolean,
+      _id: false,
+    },
     // cálculo: conta conferida por código (mathjs) antes do auditor — regra 10
     verificacao: {
       expressao: String,
