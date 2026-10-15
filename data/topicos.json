@@ -1,0 +1,81 @@
+{
+  "_aviso": "RASCUNHO montado com base em editais anteriores. Confira assunto por assunto com o edital oficial (2022 até sair o novo) e preencha questoesNaProva. Pode renomear, apagar e criar à vontade: rode 'npm run bb -- topicos data/topicos.json' de novo que ele atualiza.",
+  "disciplinas": {
+    "lingua_portuguesa": [
+      { "assunto": "Compreensão e interpretação de textos", "subtopicos": ["ideia central", "inferência", "intenção do autor", "tipologia e gêneros textuais"] },
+      { "assunto": "Ortografia e acentuação gráfica", "subtopicos": ["emprego de letras", "acentuação", "hífen"] },
+      { "assunto": "Pontuação", "subtopicos": ["vírgula", "ponto e vírgula", "dois-pontos", "travessão"] },
+      { "assunto": "Concordância verbal e nominal", "subtopicos": ["sujeito composto", "verbos impessoais", "haver e fazer", "concordância ideológica"] },
+      { "assunto": "Regência verbal e nominal e crase", "subtopicos": ["regência de verbos frequentes", "crase obrigatória, proibida e facultativa"] },
+      { "assunto": "Colocação pronominal", "subtopicos": ["próclise", "mesóclise", "ênclise", "atração pronominal"] },
+      { "assunto": "Classes de palavras e emprego de tempos e modos verbais", "subtopicos": ["pronomes relativos", "conjunções", "correlação verbal"] },
+      { "assunto": "Coesão, coerência e conectivos", "subtopicos": ["referenciação", "valor semântico dos conectivos", "reescrita de frases"] },
+      { "assunto": "Semântica e significação das palavras", "subtopicos": ["sinonímia", "antonímia", "polissemia", "sentido figurado"] }
+    ],
+    "lingua_inglesa": [
+      { "assunto": "Compreensão de textos em inglês", "subtopicos": ["ideia principal", "informação específica", "inferência"] },
+      { "assunto": "Vocabulário de finanças e tecnologia em inglês", "subtopicos": ["false friends", "phrasal verbs", "termos bancários"] },
+      { "assunto": "Gramática em contexto (inglês)", "subtopicos": ["referência pronominal", "conectivos", "tempos verbais", "modal verbs"] }
+    ],
+    "matematica": [
+      { "assunto": "Números e operações", "subtopicos": ["inteiros", "racionais", "frações", "potências", "MMC e MDC"] },
+      { "assunto": "Razão, proporção, regra de três e porcentagem", "subtopicos": ["grandezas proporcionais", "regra de três composta", "aumentos e descontos sucessivos"] },
+      { "assunto": "Funções e equações de 1º e 2º grau", "subtopicos": ["função afim", "função quadrática", "inequações", "sistemas lineares"] },
+      { "assunto": "Progressões aritméticas e geométricas", "subtopicos": ["termo geral", "soma dos termos", "PG infinita"] }
+    ],
+    "matematica_financeira": [
+      { "assunto": "Juros simples", "subtopicos": ["capital", "taxa", "prazo", "montante"] },
+      { "assunto": "Juros compostos", "subtopicos": ["capitalização", "montante", "valor presente e futuro"] },
+      { "assunto": "Taxas de juros", "subtopicos": ["nominal", "efetiva", "equivalentes", "proporcionais", "real e aparente"] },
+      { "assunto": "Descontos", "subtopicos": ["desconto racional", "desconto comercial", "taxa efetiva do desconto"] },
+      { "assunto": "Sistemas de amortização", "subtopicos": ["SAC", "Price (francês)", "comparação entre os sistemas"] },
+      { "assunto": "Rendas, VPL, TIR e custo efetivo", "subtopicos": ["séries uniformes", "valor presente líquido", "taxa interna de retorno", "custo efetivo de financiamentos"] }
+    ],
+    "probabilidade_estatistica": [
+      { "assunto": "Estatística descritiva e representação de dados", "subtopicos": ["tabelas", "gráficos", "distribuição de frequências"] },
+      { "assunto": "Medidas de posição", "subtopicos": ["média", "moda", "mediana", "quartis", "percentis"] },
+      { "assunto": "Medidas de dispersão", "subtopicos": ["variância", "desvio padrão", "coeficiente de variação", "amplitude"] },
+      { "assunto": "Análise combinatória", "subtopicos": ["princípio fundamental da contagem", "arranjos", "permutações", "combinações"] },
+      { "assunto": "Probabilidade", "subtopicos": ["espaço amostral", "probabilidade condicional", "eventos independentes", "teorema de Bayes"] },
+      { "assunto": "Variáveis aleatórias e distribuições", "subtopicos": ["binomial", "Poisson", "normal", "esperança e variância"] }
+    ],
+    "conhecimentos_bancarios": [
+      { "assunto": "Estrutura do Sistema Financeiro Nacional", "subtopicos": ["CMN", "Banco Central do Brasil", "CVM", "CNSP e SUSEP", "PREVIC", "instituições financeiras"] },
+      { "assunto": "Política monetária e Copom", "subtopicos": ["taxa Selic", "depósito compulsório", "redesconto", "operações de mercado aberto", "metas de inflação"] },
+      { "assunto": "Mercados financeiros: monetário, de crédito, de capitais e de câmbio", "subtopicos": ["características de cada mercado", "operações de câmbio", "taxas de câmbio"] },
+      { "assunto": "Produtos bancários", "subtopicos": ["contas de depósito", "crédito pessoal e consignado", "cheque especial", "cartão de crédito", "poupança", "CDB", "LCI e LCA"] },
+      { "assunto": "Mercado de capitais e fundos de investimento", "subtopicos": ["ações", "debêntures", "B3", "fundos de investimento", "ofertas públicas"] },
+      { "assunto": "Títulos públicos e Tesouro Direto", "subtopicos": ["Tesouro Selic", "prefixado", "IPCA+", "dívida pública"] },
+      { "assunto": "Garantias e Fundo Garantidor de Créditos", "subtopicos": ["aval", "fiança", "penhor", "hipoteca", "alienação fiduciária", "FGC"] },
+      { "assunto": "Pix e arranjos de pagamento", "subtopicos": ["regulamento do Pix", "chaves", "Pix Saque e Pix Troco", "MED", "limites e segurança"], "volatil": true },
+      { "assunto": "Prevenção à lavagem de dinheiro e ao financiamento do terrorismo", "subtopicos": ["etapas da lavagem", "COAF", "dever de comunicação", "PEP"] },
+      { "assunto": "Sigilo bancário e proteção de dados", "subtopicos": ["sigilo das operações", "exceções ao sigilo", "LGPD nas instituições financeiras"] },
+      { "assunto": "Autorregulação bancária e ética", "subtopicos": ["normativos de autorregulação", "conduta", "conflito de interesses"] }
+    ],
+    "atualidades_mercado_financeiro": [
+      { "assunto": "Bancos na era digital", "subtopicos": ["internet banking", "mobile banking", "transformação digital", "canais de atendimento"], "volatil": true },
+      { "assunto": "Fintechs, bancos digitais, big techs e shadow banking", "subtopicos": ["SCD e SEP", "concorrência", "riscos"], "volatil": true },
+      { "assunto": "Open Finance", "subtopicos": ["compartilhamento de dados", "consentimento", "iniciação de pagamento"], "volatil": true },
+      { "assunto": "Criptoativos, blockchain e moeda digital", "subtopicos": ["criptoativos", "blockchain", "Drex", "regulação de ativos virtuais"], "volatil": true },
+      { "assunto": "Novos modelos de negócio e marketplaces financeiros", "subtopicos": ["banking as a service", "marketplaces", "correspondentes"], "volatil": true },
+      { "assunto": "Sustentabilidade e ESG no sistema financeiro", "subtopicos": ["risco socioambiental e climático", "finanças sustentáveis"], "volatil": true }
+    ],
+    "informatica": [
+      { "assunto": "Segurança da informação", "subtopicos": ["malware", "phishing", "autenticação multifator", "backup", "criptografia"] },
+      { "assunto": "Redes, internet e computação em nuvem", "subtopicos": ["protocolos", "navegadores", "correio eletrônico", "nuvem"] },
+      { "assunto": "Planilhas eletrônicas", "subtopicos": ["fórmulas", "funções", "referências relativas e absolutas", "filtros e tabelas dinâmicas"] },
+      { "assunto": "Editores de texto e apresentações", "subtopicos": ["formatação", "atalhos", "recursos de revisão"] },
+      { "assunto": "Sistemas operacionais e arquivos", "subtopicos": ["Windows", "Linux", "pastas e arquivos", "atalhos"] },
+      { "assunto": "Banco de dados e SQL", "descricao": "Conferir no edital se continua sendo cobrado", "subtopicos": ["modelo relacional", "consultas SQL"] },
+      { "assunto": "Análise de dados, Python e R", "descricao": "Conferir no edital se continua sendo cobrado", "subtopicos": ["noções de Python", "noções de R", "big data", "aprendizado de máquina"] }
+    ],
+    "vendas_negociacao": [
+      { "assunto": "Técnicas de vendas", "subtopicos": ["etapas da venda", "prospecção", "argumentação", "objeções", "fechamento"] },
+      { "assunto": "Marketing de relacionamento e fidelização", "subtopicos": ["CRM", "ciclo de vida do cliente", "retenção"] },
+      { "assunto": "Atendimento, satisfação e experiência do cliente", "subtopicos": ["qualidade no atendimento", "pós-venda", "ouvidoria"] },
+      { "assunto": "Segmentação de mercado e gestão de carteira", "subtopicos": ["segmentação", "perfil do cliente", "suitability"] },
+      { "assunto": "Ética, conduta e direitos do consumidor", "subtopicos": ["Código de Defesa do Consumidor", "práticas abusivas", "venda casada"] },
+      { "assunto": "Técnicas de negociação", "subtopicos": ["ganha-ganha", "concessões", "alternativas à negociação"] }
+    ]
+  }
+}
