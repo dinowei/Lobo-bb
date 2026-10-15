@@ -1,54 +1,65 @@
 {
-  "_aviso": "Variedade sorteada pelo CÓDIGO antes de gerar (src/variacao.ts). 'tipos' por assunto (nome exato do tópico em data/topicos.json); tópico sem lista sorteia um subtópico. 'contextos' vale para todos os tópicos. Pode editar à vontade.",
+  "_aviso": "Variedade sorteada pelo CÓDIGO antes de gerar (src/variacao.ts). Em 'tipos', cada assunto (nome exato do tópico em data/topicos.json) lista seus tipos e, para cada tipo, os contextos PERMITIDOS (\"todos\" = qualquer um da lista 'contextos'). O sorteio só escolhe pares válidos. Tópico sem lista sorteia um subtópico com qualquer contexto. 'duasEtapas' lista, por assunto, os tipos que exigem duas etapas de cálculo. Todo contexto citado precisa existir em 'contextos' (o código confere ao carregar).",
   "contextos": [
-    "financiamento imobiliário ou de veículo",
     "aplicação em CDB",
     "caderneta de poupança",
-    "empréstimo pessoal",
     "investimento de uma empresa (PJ)",
     "cliente pessoa física atendido na agência",
-    "cliente pessoa jurídica negociando com o gerente"
+    "cliente pessoa jurídica negociando com o gerente",
+    "empréstimo pessoal",
+    "financiamento imobiliário ou de veículo",
+    "desconto de duplicata por uma empresa (PJ)",
+    "antecipação de recebíveis de um lojista"
   ],
   "tipos": {
-    "Juros compostos": [
-      "calcular o montante",
-      "calcular o capital (valor presente)",
-      "calcular a taxa",
-      "calcular o prazo",
-      "taxa equivalente",
-      "comparar duas opções de aplicação ou pagamento"
-    ],
-    "Juros simples": [
-      "calcular o montante",
-      "calcular o capital",
-      "calcular a taxa",
-      "calcular o prazo",
-      "comparar duas opções"
-    ],
-    "Taxas de juros": [
-      "taxa efetiva a partir da nominal",
-      "taxas equivalentes entre períodos",
-      "taxas proporcionais",
-      "taxa real a partir da aparente e da inflação"
-    ],
-    "Descontos": [
-      "desconto racional simples",
-      "desconto comercial simples",
-      "valor atual de um título",
-      "taxa efetiva de um desconto comercial"
-    ],
-    "Sistemas de amortização": [
-      "parcela no SAC",
-      "juros de uma parcela no SAC",
-      "saldo devedor após k parcelas no SAC",
-      "prestação na Tabela Price (com fator dado)",
-      "comparar SAC e Price"
-    ],
-    "Rendas, VPL, TIR e custo efetivo": [
-      "valor presente de uma série uniforme (com fator dado)",
-      "prestação de uma série uniforme (com fator dado)",
-      "VPL de um projeto",
-      "decidir entre dois projetos pelo VPL"
-    ]
+    "Juros compostos": {
+      "calcular o montante": ["aplicação em CDB", "caderneta de poupança", "investimento de uma empresa (PJ)", "cliente pessoa física atendido na agência"],
+      "calcular o capital (valor presente)": ["aplicação em CDB", "caderneta de poupança", "investimento de uma empresa (PJ)", "cliente pessoa física atendido na agência"],
+      "calcular a taxa": ["aplicação em CDB", "investimento de uma empresa (PJ)", "cliente pessoa física atendido na agência"],
+      "calcular o prazo": ["aplicação em CDB", "caderneta de poupança", "investimento de uma empresa (PJ)", "cliente pessoa física atendido na agência"],
+      "taxa equivalente": ["aplicação em CDB", "empréstimo pessoal", "financiamento imobiliário ou de veículo", "cliente pessoa física atendido na agência", "cliente pessoa jurídica negociando com o gerente"],
+      "comparar duas opções de aplicação ou pagamento": ["aplicação em CDB", "investimento de uma empresa (PJ)", "cliente pessoa física atendido na agência", "cliente pessoa jurídica negociando com o gerente"],
+      "aplicação e reaplicação do montante": ["aplicação em CDB", "caderneta de poupança", "investimento de uma empresa (PJ)"]
+    },
+    "Juros simples": {
+      "calcular o montante": ["aplicação em CDB", "empréstimo pessoal", "cliente pessoa física atendido na agência", "cliente pessoa jurídica negociando com o gerente"],
+      "calcular o capital": ["aplicação em CDB", "empréstimo pessoal", "cliente pessoa física atendido na agência"],
+      "calcular a taxa": ["aplicação em CDB", "empréstimo pessoal", "cliente pessoa jurídica negociando com o gerente"],
+      "calcular o prazo": ["aplicação em CDB", "empréstimo pessoal", "cliente pessoa física atendido na agência"],
+      "comparar duas opções": ["aplicação em CDB", "empréstimo pessoal", "cliente pessoa física atendido na agência", "cliente pessoa jurídica negociando com o gerente"]
+    },
+    "Taxas de juros": {
+      "taxa efetiva a partir da nominal": ["aplicação em CDB", "empréstimo pessoal", "financiamento imobiliário ou de veículo", "cliente pessoa jurídica negociando com o gerente"],
+      "taxas equivalentes entre períodos": ["aplicação em CDB", "empréstimo pessoal", "financiamento imobiliário ou de veículo", "cliente pessoa física atendido na agência"],
+      "taxas proporcionais": ["aplicação em CDB", "empréstimo pessoal", "cliente pessoa física atendido na agência"],
+      "taxa real a partir da aparente e da inflação": ["aplicação em CDB", "caderneta de poupança", "investimento de uma empresa (PJ)"]
+    },
+    "Descontos": {
+      "desconto racional simples": ["desconto de duplicata por uma empresa (PJ)", "antecipação de recebíveis de um lojista", "cliente pessoa jurídica negociando com o gerente"],
+      "desconto comercial simples": ["desconto de duplicata por uma empresa (PJ)", "antecipação de recebíveis de um lojista", "cliente pessoa jurídica negociando com o gerente"],
+      "valor atual de um título": ["desconto de duplicata por uma empresa (PJ)", "antecipação de recebíveis de um lojista", "cliente pessoa jurídica negociando com o gerente"],
+      "taxa efetiva de um desconto comercial": ["desconto de duplicata por uma empresa (PJ)", "antecipação de recebíveis de um lojista", "cliente pessoa jurídica negociando com o gerente"]
+    },
+    "Sistemas de amortização": {
+      "parcela no SAC": ["financiamento imobiliário ou de veículo", "empréstimo pessoal", "cliente pessoa jurídica negociando com o gerente"],
+      "juros de uma parcela no SAC": ["financiamento imobiliário ou de veículo", "empréstimo pessoal", "cliente pessoa jurídica negociando com o gerente"],
+      "saldo devedor após k parcelas no SAC": ["financiamento imobiliário ou de veículo", "empréstimo pessoal"],
+      "prestação na Tabela Price (com fator dado)": ["financiamento imobiliário ou de veículo", "empréstimo pessoal"],
+      "comparar SAC e Price": ["financiamento imobiliário ou de veículo", "cliente pessoa jurídica negociando com o gerente"]
+    },
+    "Rendas, VPL, TIR e custo efetivo": {
+      "valor presente de uma série uniforme (com fator dado)": ["financiamento imobiliário ou de veículo", "empréstimo pessoal", "cliente pessoa física atendido na agência"],
+      "prestação de uma série uniforme (com fator dado)": ["financiamento imobiliário ou de veículo", "empréstimo pessoal"],
+      "VPL de um projeto": ["investimento de uma empresa (PJ)", "cliente pessoa jurídica negociando com o gerente"],
+      "decidir entre dois projetos pelo VPL": ["investimento de uma empresa (PJ)", "cliente pessoa jurídica negociando com o gerente"]
+    },
+    "Regência verbal e nominal e crase": {
+      "crase (por construção)": "todos",
+      "regência de verbos frequentes": "todos"
+    }
+  },
+  "duasEtapas": {
+    "Juros compostos": ["calcular a taxa", "calcular o prazo", "comparar duas opções de aplicação ou pagamento", "aplicação e reaplicação do montante"],
+    "Descontos": ["valor atual de um título", "desconto racional simples", "taxa efetiva de um desconto comercial"]
   }
 }

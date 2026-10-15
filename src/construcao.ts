@@ -12,7 +12,7 @@ export type Distrator = { valor: number; erro: string };
 
 export type Construida = {
   tipo: string; // nome do template (vai para a variação salva)
-  duasEtapas: boolean;
+  etapas: number; // nº de etapas de cálculo: define a dificuldade (etapas + 1)
   pergunta: string; // o que a questão pede, em uma frase
   dados: string[]; // trechos que o enunciado precisa conter LITERALMENTE
   fatoresDados: Record<string, number>; // ex.: {"1.04^8": 1.3686}
@@ -24,6 +24,7 @@ export type Construida = {
 };
 
 export type Montada = Construida & {
+  dificuldade: number; // do template: etapas + 1, nunca da IA
   gabarito: Letra;
   alternativas: { letra: Letra; texto: string; correta: boolean; erro: string | null }[];
 };
@@ -67,7 +68,7 @@ function jcMontante(): Construida {
   const M = r2(C * F);
   return {
     tipo: "calcular o montante",
-    duasEtapas: false,
+    etapas: 1,
     pergunta: "o montante ao final do prazo",
     dados: [brl(C), `${taxaTxt(i)} ao mês`, `${n} meses`, fatorTxt(i, n, F)],
     fatoresDados: { [fatorChave(i, n)]: F },
@@ -94,7 +95,7 @@ function jcCapital(): Construida {
   const M = r2(C * F); // C redondo e F com 4 casas → M exato, e M / F volta a C
   return {
     tipo: "calcular o capital (valor presente)",
-    duasEtapas: false,
+    etapas: 1,
     pergunta: "o capital aplicado hoje (valor presente)",
     dados: [brl(M), `${taxaTxt(i)} ao mês`, `${n} meses`, fatorTxt(i, n, F)],
     fatoresDados: { [fatorChave(i, n)]: F },
@@ -125,7 +126,7 @@ function jcTaxa(): Construida {
   const iPct = i * 100;
   return {
     tipo: "calcular a taxa",
-    duasEtapas: false,
+    etapas: 2, // M/C e depois a busca na tabela
     pergunta: "a taxa mensal de juros compostos da aplicação",
     dados: [brl(C), brl(M), `${n} meses`, ...tabela.map(({ t, f }) => fatorTxt(t, n, f))],
     fatoresDados,
@@ -152,7 +153,7 @@ function jcPrazo(): Construida {
   const nSimples = Math.round((M / C - 1) / i);
   return {
     tipo: "calcular o prazo",
-    duasEtapas: false,
+    etapas: 2, // M/C e depois a busca na tabela
     pergunta: "o prazo da aplicação, em meses",
     dados: [brl(C), brl(M), `${taxaTxt(i)} ao mês`, ...tabela.map(({ k, f }) => fatorTxt(i, k, f))],
     fatoresDados: Object.fromEntries(tabela.map(({ k, f }) => [fatorChave(i, k), f])),
@@ -175,7 +176,7 @@ function jcTaxaEquivalente(): Construida {
   const eq = r2((F - 1) * 100);
   return {
     tipo: "taxa equivalente",
-    duasEtapas: false,
+    etapas: 1,
     pergunta: `a taxa ${periodo} equivalente a ${taxaTxt(i)} ao mês no regime composto`,
     dados: [`${taxaTxt(i)} ao mês`, fatorTxt(i, n, F)],
     fatoresDados: { [fatorChave(i, n)]: F },
@@ -202,7 +203,7 @@ function jcComparar(): Construida {
   const Ms = r2(C * (1 + i * n));
   return {
     tipo: "comparar duas opções de aplicação ou pagamento",
-    duasEtapas: true,
+    etapas: 2,
     pergunta: `quanto a opção em juros compostos rende a mais que a opção em juros simples, ambas a ${taxaTxt(i)} ao mês por ${n} meses`,
     dados: [brl(C), `${taxaTxt(i)} ao mês`, `${n} meses`, fatorTxt(i, n, F)],
     fatoresDados: { [fatorChave(i, n)]: F },
@@ -236,8 +237,8 @@ function jcReaplicacao(): Construida {
   const M1 = r2(C * F1);
   const M2 = r2(M1 * F2);
   return {
-    tipo: "duas etapas: aplicação e reaplicação do montante",
-    duasEtapas: true,
+    tipo: "aplicação e reaplicação do montante",
+    etapas: 2,
     pergunta: "o montante final após as duas aplicações",
     dados: [brl(C), `${taxaTxt(i1)} ao mês`, `${n1} meses`, `${taxaTxt(i2)} ao mês`, `${n2} meses`, fatorTxt(i1, n1, F1), fatorTxt(i2, n2, F2)],
     fatoresDados: { [fatorChave(i1, n1)]: F1, [fatorChave(i2, n2)]: F2 },
@@ -273,7 +274,7 @@ function descComercial(pedeValorAtual: boolean): Construida {
   const Dr = r2(N - N / (1 + d * n));
   return {
     tipo: pedeValorAtual ? "valor atual de um título" : "desconto comercial simples",
-    duasEtapas: false,
+    etapas: pedeValorAtual ? 2 : 1, // valor atual: D e depois N − D
     pergunta: pedeValorAtual
       ? `o valor líquido recebido (valor atual) no desconto comercial simples, ${n} meses antes do vencimento`
       : `o valor do desconto comercial (por fora) simples, ${n} meses antes do vencimento`,
@@ -312,7 +313,7 @@ function descRacional(): Construida {
   const D = r2(N - A);
   return {
     tipo: "desconto racional simples",
-    duasEtapas: false,
+    etapas: 2, // A = N/(1 + dn) e depois D = N − A
     pergunta: `o valor do desconto racional (por dentro) simples, ${n} meses antes do vencimento`,
     dados: [brl(N), `${taxaTxt(d)} ao mês`, `${n} meses`],
     fatoresDados: {},
@@ -341,7 +342,7 @@ function descTaxaEfetiva(): Construida {
   const ief = r2((D / A / n) * 100);
   return {
     tipo: "taxa efetiva de um desconto comercial",
-    duasEtapas: true,
+    etapas: 3, // D, A e a taxa
     pergunta: "a taxa efetiva mensal de juros simples paga na operação (sobre o valor líquido recebido)",
     dados: [brl(N), `${taxaTxt(d)} ao mês`, `${n} meses`],
     fatoresDados: {},
@@ -362,7 +363,7 @@ function descTaxaEfetiva(): Construida {
 
 // ---------- catálogo ----------
 type Template = () => Construida;
-const CATALOGO: Record<string, { porTipo: Record<string, Template>; duasEtapas: Template[] }> = {
+const CATALOGO: Record<string, { porTipo: Record<string, Template> }> = {
   "Juros compostos": {
     porTipo: {
       "calcular o montante": jcMontante,
@@ -371,8 +372,8 @@ const CATALOGO: Record<string, { porTipo: Record<string, Template>; duasEtapas: 
       "calcular o prazo": jcPrazo,
       "taxa equivalente": jcTaxaEquivalente,
       "comparar duas opções de aplicação ou pagamento": jcComparar,
+      "aplicação e reaplicação do montante": jcReaplicacao,
     },
-    duasEtapas: [jcReaplicacao, jcComparar],
   },
   Descontos: {
     porTipo: {
@@ -381,18 +382,20 @@ const CATALOGO: Record<string, { porTipo: Record<string, Template>; duasEtapas: 
       "valor atual de um título": () => descComercial(true),
       "taxa efetiva de um desconto comercial": descTaxaEfetiva,
     },
-    duasEtapas: [descTaxaEfetiva],
   },
 };
 
 export const temConstrucao = (assunto: string) => assunto in CATALOGO;
 
-// Monta a questão: escolhe o template pelo tipo sorteado (ou um de duas etapas),
+// Monta a questão com o template do tipo sorteado (o contexto compatível já veio do sorteio),
 // fixa a correta na letra do gabarito e escolhe 4 distratores com valores distintos.
-export function construir(assunto: string, tipo: string, duasEtapas: boolean, gabarito: Letra): Montada | null {
+export const tiposConstruidos = (assunto: string) => Object.keys(CATALOGO[assunto]?.porTipo ?? {});
+
+export function construir(assunto: string, tipo: string, gabarito: Letra): Montada | null {
   const cat = CATALOGO[assunto];
   if (!cat) return null;
-  const template = duasEtapas ? sortear(cat.duasEtapas) : cat.porTipo[tipo] ?? sortear(Object.values(cat.porTipo));
+  const template = cat.porTipo[tipo]; // o tipo (e o contexto compatível) já veio do sorteio
+  if (!template) return null;
 
   // Alternativas em ordem crescente (como a banca faz) E a correta na letra sorteada:
   // escolhe distratores de modo que exatamente "pos" fiquem abaixo da correta.
@@ -420,7 +423,7 @@ export function construir(assunto: string, tipo: string, duasEtapas: boolean, ga
         ? { letra, texto: formatar(d.valor, c.unidade), correta: false, erro: d.erro }
         : { letra, texto: formatar(c.correta, c.unidade), correta: true, erro: null };
     });
-    return { ...c, gabarito, alternativas };
+    return { ...c, dificuldade: Math.min(5, c.etapas + 1), gabarito, alternativas };
   }
   return null;
 }

@@ -144,6 +144,19 @@ const QuestionSchema = new Schema(
       respostaCega: { type: String, enum: LETRAS }, // o que o auditor marcou sem ver o gabarito
       veredito: { type: String, enum: ["aprovada", "rejeitada"] },
       problemas: [String],
+      // Português por construção: veredito do auditor frase a frase (sem saber a regra)
+      porFrase: {
+        type: [
+          {
+            letra: { type: String, enum: LETRAS },
+            regraEsperada: String, // regra que o código atribuiu à letra
+            correta: Boolean, // o que o auditor julgou
+            regra: String, // a regra que o auditor citou
+            _id: false,
+          },
+        ],
+        default: undefined, // só existe em questões de Português por construção
+      },
       _id: false,
     },
     // tipo e contexto sorteados pelo código antes de gerar (src/variacao.ts)

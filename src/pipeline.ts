@@ -20,6 +20,11 @@ import {
   GERADOR_SYSTEM,
   geradorUser,
   geradorConstruidoUser,
+  FrasesCraseZ,
+  CRASE_ESCRITOR_SYSTEM,
+  craseEscritorUser,
+  VereditoFraseZ,
+  AUDITOR_FRASE_SYSTEM,
   AUDITOR_CEGO_SYSTEM,
   auditorCegoUser,
   AUDITOR_REVISAO_SYSTEM,
@@ -28,6 +33,7 @@ import {
 } from "./prompts.js";
 import { chatJSON, chatJSONAuditor, validarOuReparar, embed, gerador, modelo } from "./llm.js";
 import { construir, temConstrucao, type Montada } from "./construcao.js";
+import { construirCrase, conferirFrase } from "./portugues.js";
 import { normalizar, hashTexto } from "./extrair.js";
 import { ehDisciplinaDeCalculo, verificarConta } from "./verificacao.js";
 import { sortearVariacao, type Variacao } from "./variacao.js";
@@ -112,8 +118,8 @@ function dadosFaltando(enunciado: string, dados: string[]): string[] {
 }
 
 // Nenhuma falha (rede, banco, IA) derruba o lote: vira um Resultado com o motivo
-export async function gerarQuestao(topicId: string, dificuldade = 3): Promise<Resultado> {
-  const estado: { variacao?: Variacao } = {};
+export async function gerarQuestao(topicId: string, dificuldade = 3, opcoes: { tipo?: string } = {}): Promise<Resultado> {
+  const estado: { variacao?: Variacao; tipo?: string } = { tipo: opcoes.tipo };
   try {
     return { ...(await gerarQuestaoInterna(topicId, dificuldade, estado)), variacao: estado.variacao };
   } catch (e) {
@@ -124,13 +130,13 @@ export async function gerarQuestao(topicId: string, dificuldade = 3): Promise<Re
 async function gerarQuestaoInterna(
   topicId: string,
   dificuldadePedida: number,
-  estado: { variacao?: Variacao }
+  estado: { variacao?: Variacao; tipo?: string }
 ): Promise<Resultado> {
   const topic = await Topic.findById(topicId);
   if (!topic) return { ok: false, motivo: "topico_inexistente" };
 
   // Variedade sorteada pelo código: tipo + contexto (+ duas etapas em cálculo)
-  const variacao = await sortearVariacao(topic);
+  const variacao = await sortearVariacao(topic, estado.tipo);
   estado.variacao = variacao;
   const dificuldade = variacao.duasEtapas ? Math.max(3, dificuldadePedida) : dificuldadePedida;
 
@@ -139,6 +145,9 @@ async function gerarQuestaoInterna(
   const exigeFonte =
     topic.volatil || DISCIPLINAS_COM_FONTE_OBRIGATORIA.includes(topic.disciplina as Disciplina);
   if (exigeFonte && fontes.length === 0) return { ok: false, motivo: "sem_fontes_para_o_topico" };
+
+  // Português por construção (Crase): caminho próprio, com auditoria frase a frase
+  if (variacao.tipo === TIPO_CRASE) return gerarCraseConstruida(topic, variacao);
 
   const recentes = await Question.find({ topicId: topic._id, status: "aprovada" })
     .sort({ createdAt: -1 })
@@ -151,19 +160,18 @@ async function gerarQuestaoInterna(
   // Matemática por construção: o código fixa números, alternativas e gabarito; a IA só escreve
   let montada: Montada | null = null;
   if (ehDisciplinaDeCalculo(topic.disciplina) && temConstrucao(topic.assunto)) {
-    montada = construir(topic.assunto, variacao.tipo, variacao.duasEtapas, gabaritoObrigatorio);
+    montada = construir(topic.assunto, variacao.tipo, gabaritoObrigatorio);
     if (!montada) return { ok: false, motivo: "construcao_falhou", detalhes: [`sem template para "${variacao.tipo}"`] };
-    variacao.tipo = montada.tipo;
-    variacao.duasEtapas = montada.duasEtapas;
+    variacao.duasEtapas = montada.etapas >= 2; // a verdade vem do template
   }
 
   const userGerador = montada
     ? geradorConstruidoUser({
         disciplina: topic.disciplina,
         assunto: topic.assunto,
-        dificuldade,
+        dificuldade: montada.dificuldade,
         contexto: variacao.contexto,
-        duasEtapas: montada.duasEtapas,
+        duasEtapas: montada.etapas >= 2,
         pergunta: montada.pergunta,
         dados: montada.dados,
         resolucao: montada.resolucao,
@@ -282,7 +290,8 @@ async function gerarQuestaoInterna(
   const doc = await Question.create({
     topicId: topic._id,
     origem: "gerada",
-    dificuldade: variacao.duasEtapas ? Math.max(3, q.dificuldade) : q.dificuldade,
+    // por construção, a dificuldade vem do template (nº de etapas), nunca da IA
+    dificuldade: montada ? montada.dificuldade : variacao.duasEtapas ? Math.max(3, q.dificuldade) : q.dificuldade,
     enunciado: q.enunciado,
     alternativas: q.alternativas.map((a) => ({ ...a, pegadinha: a.correta ? undefined : a.pegadinha ?? undefined })),
     gabarito: q.gabarito,
@@ -305,6 +314,137 @@ async function gerarQuestaoInterna(
   return aprovada
     ? { ok: true, questionId: doc._id }
     : { ok: false, motivo: "reprovada_na_revisao", detalhes: rev.problemas };
+}
+
+// ------------------------------------------------------------
+// Crase por construção: o código sorteia 1 regra correta + 4 de erro e a letra;
+// a IA escreve as frases; o auditor julga cada frase isolada (sem saber a regra).
+// Aprova só se exatamente 1 frase for "correta" e for a do gabarito; depois, revisão completa.
+// ------------------------------------------------------------
+export const TIPO_CRASE = "crase (por construção)";
+
+async function gerarCraseConstruida(
+  topic: { _id: Types.ObjectId; disciplina: string; assunto: string },
+  variacao: Variacao
+): Promise<Resultado> {
+  const gabarito = letraAleatoria();
+  const m = construirCrase(gabarito, variacao.contexto);
+  const anteriores = await Question.find({ topicId: topic._id, "variacao.tipo": TIPO_CRASE })
+    .sort({ createdAt: -1 })
+    .limit(6)
+    .select("alternativas");
+  const user = craseEscritorUser({
+    contexto: variacao.contexto,
+    frases: m.frases,
+    frasesRecentes: anteriores.flatMap((a) => a.alternativas.map((x) => x.texto)),
+  });
+
+  let escrito: z.infer<typeof FrasesCraseZ>;
+  try {
+    const bruto = await chatJSON(gerador(), modelo("GERADOR_MODEL"), CRASE_ESCRITOR_SYSTEM, user, 0.8, 4000);
+    escrito = await validarOuReparar(FrasesCraseZ, bruto, {
+      client: gerador(),
+      model: modelo("GERADOR_MODEL"),
+      system: CRASE_ESCRITOR_SYSTEM,
+      user,
+    });
+  } catch (e) {
+    return { ok: false, motivo: "geracao_invalida", detalhes: [umaLinha(e)] };
+  }
+  const porLetra = new Map(escrito.frases.map((f) => [f.letra, f]));
+  if (porLetra.size !== 5) return { ok: false, motivo: "letras_repetidas" };
+  const linhas = m.frases.map((f) => `${f.letra}) ${porLetra.get(f.letra)!.frase} [regra: ${f.regra.nome}]`);
+
+  // conferência determinística: a frase tem (ou não) o acento que a regra exige
+  const fora = m.frases.flatMap((f) => {
+    const p = conferirFrase(porLetra.get(f.letra)!.frase, f.regra);
+    return p ? [`${f.letra}: ${p}`] : [];
+  });
+  if (fora.length) return { ok: false, motivo: "frase_fora_da_regra", detalhes: [...fora, ...linhas] };
+
+  const q: QuestaoGerada = {
+    enunciado: m.enunciado,
+    alternativas: m.frases.map((f) => {
+      const e = porLetra.get(f.letra)!;
+      return {
+        letra: f.letra,
+        texto: e.frase,
+        correta: f.letra === gabarito,
+        explicacao: e.explicacao,
+        pegadinha: f.letra === gabarito ? null : e.pegadinha ?? f.regra.explicacao,
+      };
+    }),
+    gabarito,
+    explicacaoGeral: escrito.explicacaoGeral,
+    dicaDeProva: escrito.dicaDeProva ?? null,
+    trechoFonte: null,
+    dificuldade: m.dificuldade,
+    verificacao: null,
+  };
+  // o enunciado é fixo: o que identifica a questão são as frases
+  const h = hashTexto(q.enunciado + q.alternativas.map((a) => a.texto).join("|"));
+  if (await Question.exists({ hashEnunciado: h })) return { ok: false, motivo: "duplicada" };
+
+  // auditoria por frase, cada uma isolada
+  const modelos = new Set<string>();
+  const porFrase: { letra: Letra; regraEsperada: string; correta: boolean; regra: string }[] = [];
+  try {
+    for (const f of m.frases) {
+      const r = await chatJSONAuditor(AUDITOR_FRASE_SYSTEM, `FRASE: ${porLetra.get(f.letra)!.frase}`, 0, 600);
+      modelos.add(r.modelo);
+      const v = VereditoFraseZ.parse(r.json);
+      porFrase.push({ letra: f.letra, regraEsperada: f.regra.nome, correta: v.correta, regra: v.regra });
+    }
+  } catch (e) {
+    return { ok: false, motivo: "auditor_falhou", detalhes: [umaLinha(e), ...linhas] };
+  }
+  const vereditos = porFrase.map(
+    (p, k) => `${p.letra}) "${porLetra.get(p.letra)!.frase}" → auditor: ${p.correta ? "SIM" : "não"} (${p.regra}) | esperado: ${m.frases[k].regra.correta ? "SIM" : "não"}`
+  );
+  const sims = porFrase.filter((p) => p.correta);
+  if (sims.length !== 1 || sims[0].letra !== gabarito)
+    return {
+      ok: false,
+      motivo: "auditor_por_frase_discordou",
+      detalhes: [`auditor disse SIM para: ${sims.map((p) => p.letra).join(", ") || "nenhuma"}; gabarito ${gabarito}`, ...vereditos],
+    };
+
+  // revisão completa de sempre
+  let rev: z.infer<typeof RevisaoZ>;
+  try {
+    const r = await chatJSONAuditor(AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(q, []), 0, 2000);
+    modelos.add(r.modelo);
+    rev = RevisaoZ.parse(r.json);
+  } catch (e) {
+    return { ok: false, motivo: "auditor_falhou", detalhes: [umaLinha(e), ...vereditos] };
+  }
+  const aprovada = rev.veredito === "aprovada";
+
+  const doc = await Question.create({
+    topicId: topic._id,
+    origem: "gerada",
+    dificuldade: m.dificuldade,
+    enunciado: q.enunciado,
+    alternativas: q.alternativas.map((a) => ({ ...a, pegadinha: a.correta ? undefined : a.pegadinha ?? undefined })),
+    gabarito,
+    explicacaoGeral: q.explicacaoGeral,
+    dicaDeProva: q.dicaDeProva ?? undefined,
+    fontes: [],
+    status: aprovada ? "aprovada" : "rejeitada",
+    geradaPor: modelo("GERADOR_MODEL"),
+    auditoria: {
+      modelo: [...modelos].join(" + "),
+      respostaCega: sims[0].letra,
+      veredito: rev.veredito,
+      problemas: rev.problemas,
+      porFrase,
+    },
+    variacao,
+    hashEnunciado: h,
+  });
+  return aprovada
+    ? { ok: true, questionId: doc._id }
+    : { ok: false, motivo: "reprovada_na_revisao", detalhes: [...rev.problemas, ...vereditos] };
 }
 
 // ------------------------------------------------------------

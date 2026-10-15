@@ -157,6 +157,65 @@ ${p.enunciadosRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhum
 }
 
 // ============================================================
+// 1b. PORTUGUÊS POR CONSTRUÇÃO (Crase): a IA só escreve as frases
+// ============================================================
+export const FrasesCraseZ = z.object({
+  frases: z
+    .array(
+      z.object({
+        letra: LetraZ,
+        frase: z.string().min(15).max(220),
+        explicacao: z.string().min(30),
+        pegadinha: z.string().nullish(),
+      })
+    )
+    .length(5),
+  explicacaoGeral: z.string().min(60),
+  dicaDeProva: z.string().nullish(),
+});
+
+export const CRASE_ESCRITOR_SYSTEM = `Você é professor de Língua Portuguesa e elaborador de questões da Cesgranrio para o concurso do Banco do Brasil.
+Você vai escrever 5 frases curtas (uma por letra) para uma questão de crase. Cada letra recebe UMA regra obrigatória: a frase daquela letra deve aplicar EXATAMENTE essa regra, inclusive quando a regra é um ERRO proposital.
+
+REGRAS
+1. Cada frase tem 8 a 25 palavras, contexto bancário (agência, cliente, conta, crédito, atendimento), e UM ÚNICO ponto onde a crase importa. Nenhum outro "a", "as", "à" ou "às" que possa gerar dúvida.
+1b. PROIBIDO usar casos de crase FACULTATIVA em qualquer frase (com e sem acento as duas formas estariam certas): antes de pronome possessivo feminino (sua, nossa, minha), antes de nome próprio de mulher e depois de "até". Use sempre substantivo comum. Esses casos podem aparecer só na "explicacaoGeral", como observação.
+2. Fora o ponto da regra, a frase é impecável: ortografia, concordância, regência e pontuação corretas, sem palavra em outro idioma.
+3. As frases com regra de ERRO devem conter exatamente aquele erro e nenhum outro. As frases com regra CORRETA não podem ter erro algum.
+4. "explicacao": por que o uso (ou a ausência) da crase naquela frase está certo ou errado, citando a regra. "pegadinha": nas erradas, o raciocínio que leva o candidato a achar que está certa (null na correta).
+5. "explicacaoGeral": o conceito de crase cobrado, em 3 a 6 frases. "dicaDeProva": um macete curto (ex.: troque por palavra masculina: se virar "ao", há crase).
+
+Responda APENAS com JSON:
+{"frases":[{"letra":"A","frase":"...","explicacao":"...","pegadinha":"..."}, ...],"explicacaoGeral":"...","dicaDeProva":"..."}`;
+
+export function craseEscritorUser(p: {
+  contexto: string;
+  frases: { letra: string; regra: { nome: string; explicacao: string; correta: boolean; instrucao: string } }[];
+  frasesRecentes: string[];
+}) {
+  return `CONTEXTO: ${p.contexto}
+
+REGRA OBRIGATÓRIA DE CADA LETRA (não troque a ordem):
+${p.frases
+  .map((f) => `(${f.letra}) [${f.regra.correta ? "USO CORRETO" : "ERRO PROPOSITAL"}] ${f.regra.nome}\n    Como escrever: ${f.regra.instrucao}\n    Regra: ${f.regra.explicacao}`)
+  .join("\n")}
+
+=== NÃO REPITA ESTAS FRASES ===
+${p.frasesRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhuma)"}`;
+}
+
+// Auditor por frase: julga UMA frase isolada, sem saber a regra nem o gabarito
+export const VereditoFraseZ = z.object({
+  correta: z.boolean(),
+  regra: z.string(),
+});
+
+export const AUDITOR_FRASE_SYSTEM = `Você é revisor gramatical especialista na norma-padrão do português brasileiro.
+Julgue SOMENTE o uso ou a ausência do acento indicativo de crase na frase recebida. Ignore qualquer outro aspecto.
+Pergunta: o uso (ou a ausência) da crase nesta frase está correto segundo a norma-padrão?
+Responda APENAS com JSON: {"correta": true|false, "regra": "a regra aplicada, em uma frase"}`;
+
+// ============================================================
 // 2. AUDITOR — etapa 1: resolve SEM ver o gabarito
 // ============================================================
 export const RespostaCegaZ = z.object({

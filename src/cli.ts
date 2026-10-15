@@ -32,7 +32,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
         tipos: lei | norma_bacen_cmn | edital | material_proprio
   prova <prova.pdf> --gabarito <gabarito.pdf|txt> --nome "<nome>" [--banca cesgranrio] [--ano 2023]
   explicar [--limite 50]        IA escreve as explicações das oficiais pendentes
-  gerar --assunto "<parte do nome>" [--n 3]   gera questões novas de um tópico
+  gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   revogar <id | parte do título>  norma mudou: tira fonte e questões de circulação
   status                        raio-x: trechos e questões por tópico
@@ -124,7 +124,7 @@ async function main() {
         const n = o.n ? Number(o.n) : 1;
         console.log(`Gerando ${n} questão(ões) de "${topico.assunto}"…`);
         for (let i = 0; i < n; i++) {
-          const r = await gerarQuestao(String(topico._id));
+          const r = await gerarQuestao(String(topico._id), 3, { tipo: o.tipo });
           const v = r.variacao ? ` [${r.variacao.tipo} · ${r.variacao.contexto}${r.variacao.duasEtapas ? " · 2 etapas" : ""}]` : "";
           console.log(r.ok ? `✔ aprovada: ${r.questionId}${v}` : `✖ ${r.motivo}${v} ${r.detalhes?.join(" | ") ?? ""}`);
         }

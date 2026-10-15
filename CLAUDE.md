@@ -12,6 +12,10 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 - `src/llm.ts`: clientes de IA, `chatJSON`, embeddings
 - `src/prompts.ts`: gerador, auditor (cego + revisão), extrator de provas, explicador
 - `src/pipeline.ts`: gera questão → checagens determinísticas → auditor às cegas → revisão → salva
+- `src/variacao.ts` + `data/variacoes.json`: sorteio de tipo e contexto compatível (tabela de pares permitidos) e cota de 40% de duas etapas em cálculo
+- `src/construcao.ts`: Matemática por construção (Juros compostos, Descontos): o código sorteia números e distratores
+- `src/portugues.ts`: Português por construção (Crase): banco de regras; o código sorteia 1 regra correta + 4 de erro
+- `src/verificacao.ts`: confere a conta com mathjs (regra 10)
 - `src/ingestao.ts` + `src/cli.ts`: comandos `npm run bb -- <comando>`
 - `src/estudo.ts`: implementação da interface `Api` (shared/tipos.ts) no servidor
 - `src/server.ts`: rotas `/api/*` e serve `web/dist`
@@ -38,8 +42,13 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 8. Visual: segue o layout de referência (escuro, laranja #ff5b1f, Inter, sidebar com cartão do mascote). O mascote é o lobo de óculos escuros (`web/src/assets/lobo.png`). Não mude o estilo sem o dono pedir.
 9. Textos da interface em português, diretos e informais.
 10. Em questões de cálculo, o valor correto é verificado por código (mathjs), nunca só pela IA.
+11. Variedade é decidida pelo código: tipo e contexto são sorteados de `data/variacoes.json` e só saem pares permitidos na tabela de compatibilidade. Contexto novo ou tipo novo entra na tabela antes de ser usado.
+12. Questões por construção (Matemática e Crase): números, alternativas, gabarito e dificuldade vêm do código (dificuldade = nº de etapas + 1). A IA só escreve o texto e não pode alterar número nem a regra atribuída a cada alternativa.
+13. Crase por construção só é aprovada se o auditor, julgando cada frase isoladamente e sem saber a regra, disser "correta" para exatamente uma frase, a do gabarito. Depois passa pela revisão completa.
 
 ## Estado atual
 - Tudo compila (`npm run typecheck`). Leitura de PDF, fatiamento, gabarito, validações e motor de progressão foram testados.
-- **Ainda não testado contra Atlas e IAs reais**: o primeiro uso real deve passar por `npm run bb -- testar` e pela ingestão de uma prova, conferindo o resultado no banco.
+- Atlas e NVIDIA conectados e testados: gerador `nemotron-3.5-lightning` (pensamento limitado por `GERADOR_RACIOCINIO`), auditor `nemotron-3-super` com reserva `nemotron-3-ultra`, embeddings `nemotron-3-embed-1b` (2048 dim). Ainda falta ingerir uma prova oficial e as fontes (etapa C do `docs/INTEGRACAO.md`).
+- Por construção: Juros compostos, Descontos e Crase. Os demais tópicos de cálculo ainda usam geração livre + verificação mathjs.
+- `npm run bb -- gerar --assunto "<tópico>" --n 3 [--tipo "<tipo>"]` força um tipo de `data/variacoes.json` (ex.: `--tipo "crase (por construção)"`).
 - Próximos passos: `docs/ROADMAP.md`.
