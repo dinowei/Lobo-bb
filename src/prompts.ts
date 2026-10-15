@@ -3,6 +3,7 @@
 // ============================================================
 import { z } from "zod";
 import { DISCIPLINAS } from "./models.js";
+import { VerificacaoZ, ehDisciplinaDeCalculo } from "./verificacao.js";
 
 export const LetraZ = z.enum(["A", "B", "C", "D", "E"]);
 
@@ -41,6 +42,7 @@ export const QuestaoGeradaZ = z.object({
   dicaDeProva: z.string().nullish(),
   trechoFonte: z.string().nullish(), // obrigatório quando há fontes (checado no pipeline)
   dificuldade: z.coerce.number().int().min(1).max(5),
+  verificacao: VerificacaoZ.nullish(), // obrigatório em cálculo (conferido por código no pipeline)
 });
 export type QuestaoGerada = z.infer<typeof QuestaoGeradaZ>;
 
@@ -68,6 +70,18 @@ REGRAS DIDÁTICAS
 Responda APENAS com JSON válido no formato:
 {"enunciado": "...", "alternativas": [{"letra":"A","texto":"...","correta":false,"explicacao":"...","pegadinha":"..."}, ...], "gabarito":"X", "explicacaoGeral":"...", "dicaDeProva":"...", "trechoFonte":"..." ou null, "dificuldade": 1-5}`;
 
+// Só para Matemática, Matemática Financeira e Probabilidade e Estatística: o número é conferido por código (mathjs)
+const VERIFICACAO_CALCULO = `
+
+=== VERIFICAÇÃO DA CONTA (OBRIGATÓRIA NESTA DISCIPLINA) ===
+Inclua no JSON o campo "verificacao": {"expressao": "...", "fatoresDados": {...}}.
+- "expressao": a expressão matemática que gera EXATAMENTE o número da alternativa correta, em sintaxe de calculadora: ponto como separador decimal, * para multiplicar, ^ para potência, sem "R$", "%" nem texto. Ex.: "12000 * 1.04^8", "combinations(10, 3) / 2^10".
+- No estilo Cesgranrio, prefira DAR no enunciado os fatores difíceis já arredondados (ex.: "Dado: 1,04^8 = 1,3686"). Nesse caso liste-os em "fatoresDados" escritos igual na expressão (ex.: {"1.04^8": 1.3686}) e calcule a alternativa correta COM O FATOR DADO, não com o valor exato. Sem fatores dados, use {}.
+- A alternativa correta deve conter UM único número (o resultado), arredondado em 2 casas se for valor em R$, no formato brasileiro (ex.: "R$ 6.050,00"). Nenhuma alternativa errada pode ter esse mesmo valor.
+- O texto das alternativas traz SÓ a resposta: nada de conta, comentário ou "(valor correto…)". A conta vai na "explicacao".
+- Se a resposta correta não for um número (ex.: uma afirmação conceitual), use "verificacao": null.
+O valor será recalculado por código: se não bater, a questão é descartada.`;
+
 export function geradorUser(p: {
   disciplina: string;
   assunto: string;
@@ -91,7 +105,9 @@ ${p.fontes.length ? p.fontes.map((f, i) => `[${i + 1}] ${f.titulo}\n${f.texto}`)
 ${p.exemplosOficiais.join("\n---\n") || "(nenhum)"}
 
 === NÃO REPITA ESTES ENFOQUES ===
-${p.enunciadosRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhum)"}`;
+${p.enunciadosRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhum)"}${
+    ehDisciplinaDeCalculo(p.disciplina) ? VERIFICACAO_CALCULO : ""
+  }`;
 }
 
 // ============================================================

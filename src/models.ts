@@ -146,6 +146,13 @@ const QuestionSchema = new Schema(
       problemas: [String],
       _id: false,
     },
+    // cálculo: conta conferida por código (mathjs) antes do auditor — regra 10
+    verificacao: {
+      expressao: String,
+      fatoresDados: Schema.Types.Mixed,
+      valorEsperado: Number,
+      _id: false,
+    },
     hashEnunciado: { type: String, index: true, unique: true, sparse: true }, // evita duplicata
 
     // estatística agregada (taxa de acerto geral = termômetro de dificuldade real)

@@ -39,11 +39,13 @@ export async function chatJSON(
   maxTokens = 4000
 ): Promise<unknown> {
   let ultimoErro: unknown;
+  // modelos de raciocínio gastam tokens pensando antes da resposta: maxTokens é só para o JSON
+  const reserva = Number(process.env.LLM_RESERVA_RACIOCINIO ?? 16000) || 0;
   for (let tentativa = 0; tentativa < 2; tentativa++) {
     const r = await client.chat.completions.create({
       model,
       temperature,
-      max_tokens: maxTokens,
+      max_tokens: maxTokens + reserva,
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
@@ -55,7 +57,14 @@ export async function chatJSON(
     const ini = raw.indexOf("{");
     const fim = raw.lastIndexOf("}");
     try {
-      if (ini < 0 || fim <= ini) throw new Error("resposta sem JSON");
+      if (ini < 0 || fim <= ini) {
+        const motivo = r.choices[0]?.finish_reason;
+        throw new Error(
+          motivo === "length"
+            ? `resposta sem JSON (cortada no limite de ${maxTokens + reserva} tokens; aumente LLM_RESERVA_RACIOCINIO)`
+            : `resposta sem JSON (finish_reason=${motivo}, ${raw.length} caracteres)`
+        );
+      }
       return JSON.parse(raw.slice(ini, fim + 1));
     } catch (e) {
       ultimoErro = e;

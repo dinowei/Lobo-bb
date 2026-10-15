@@ -37,6 +37,7 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 7. Contestação tira a questão de circulação na hora (`status: contestada`).
 8. Visual: segue o layout de referência (escuro, laranja #ff5b1f, Inter, sidebar com cartão do mascote). O mascote é o lobo de óculos escuros (`web/src/assets/lobo.png`). Não mude o estilo sem o dono pedir.
 9. Textos da interface em português, diretos e informais.
+10. Em questões de cálculo, o valor correto é verificado por código (mathjs), nunca só pela IA.
 
 ## Estado atual
 - Tudo compila (`npm run typecheck`). Leitura de PDF, fatiamento, gabarito, validações e motor de progressão foram testados.

@@ -2,6 +2,7 @@
 // BB Estudos — Pipeline: tópico → fontes → gerador → auditor → banco
 // ============================================================
 import { Types } from "mongoose";
+import type { z } from "zod";
 import {
   Topic,
   Source,
@@ -26,6 +27,7 @@ import {
 } from "./prompts.js";
 import { chatJSON, embed, gerador, auditor, modelo } from "./llm.js";
 import { normalizar, hashTexto } from "./extrair.js";
+import { ehDisciplinaDeCalculo, verificarConta } from "./verificacao.js";
 
 // ------------------------------------------------------------
 // RAG (Atlas Vector Search na coleção de trechos)
@@ -152,13 +154,26 @@ export async function gerarQuestao(topicId: string, dificuldade = 3): Promise<Re
   const h = hashTexto(q.enunciado);
   if (await Question.exists({ hashEnunciado: h })) return { ok: false, motivo: "duplicada" };
 
+  // Regra 10: em cálculo, o número da correta é conferido por código, nunca só pela IA
+  let valorEsperado: number | null = null;
+  if (ehDisciplinaDeCalculo(topic.disciplina)) {
+    const conta = verificarConta(q);
+    if (!conta.ok) return { ok: false, motivo: conta.motivo, detalhes: conta.detalhes };
+    valorEsperado = conta.valorEsperado;
+  }
+
   const fontesTxt = fontes.map((f) => `${f.titulo}\n${f.texto}`);
   const modeloAuditor = modelo("AUDITOR_MODEL");
 
   // 4. Auditoria cega: o auditor resolve sem ver o gabarito
-  const cego = RespostaCegaZ.parse(
-    await chatJSON(auditor(), modeloAuditor, AUDITOR_CEGO_SYSTEM, auditorCegoUser(q, fontesTxt), 0, 2000)
-  );
+  let cego: z.infer<typeof RespostaCegaZ>;
+  try {
+    cego = RespostaCegaZ.parse(
+      await chatJSON(auditor(), modeloAuditor, AUDITOR_CEGO_SYSTEM, auditorCegoUser(q, fontesTxt), 0, 2000)
+    );
+  } catch (e) {
+    return { ok: false, motivo: "auditor_falhou", detalhes: [String(e)] };
+  }
   if (cego.resposta !== q.gabarito) {
     return {
       ok: false,
@@ -168,9 +183,14 @@ export async function gerarQuestao(topicId: string, dificuldade = 3): Promise<Re
   }
 
   // 5. Revisão completa
-  const rev = RevisaoZ.parse(
-    await chatJSON(auditor(), modeloAuditor, AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(q, fontesTxt), 0, 2000)
-  );
+  let rev: z.infer<typeof RevisaoZ>;
+  try {
+    rev = RevisaoZ.parse(
+      await chatJSON(auditor(), modeloAuditor, AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(q, fontesTxt), 0, 2000)
+    );
+  } catch (e) {
+    return { ok: false, motivo: "auditor_falhou", detalhes: [String(e)] };
+  }
   const aprovada = rev.veredito === "aprovada";
 
   // 6. Salva (rejeitadas também, para você analisar onde o gerador erra)
@@ -192,6 +212,7 @@ export async function gerarQuestao(topicId: string, dificuldade = 3): Promise<Re
       veredito: rev.veredito,
       problemas: rev.problemas,
     },
+    verificacao: q.verificacao ? { ...q.verificacao, valorEsperado } : undefined,
     hashEnunciado: h,
   });
 
