@@ -35,7 +35,15 @@ import {
 } from "./prompts.js";
 import { chatJSON, chatJSONAuditor, validarOuReparar, embed, gerador, escritorPT, modelo } from "./llm.js";
 import { construir, temConstrucao, type Montada } from "./construcao.js";
-import { construirCrase, conferirFrase, explicarAlternativa, explicacaoGeralCrase, DICA_CRASE } from "./portugues.js";
+import {
+  construirCrase,
+  conferirFrase,
+  explicarAlternativa,
+  explicacaoGeralCrase,
+  DICA_CRASE,
+  REGRAS_CRASE,
+  type HistoricoCrase,
+} from "./portugues.js";
 import { normalizar, hashTexto } from "./extrair.js";
 import { ehDisciplinaDeCalculo, verificarConta } from "./verificacao.js";
 import { sortearVariacao, type Variacao } from "./variacao.js";
@@ -325,12 +333,39 @@ async function gerarQuestaoInterna(
 // ------------------------------------------------------------
 export const TIPO_CRASE = "crase (por construção)";
 
+// Regras da última questão montada neste processo (mesmo se foi descartada antes de salvar)
+let regrasDaUltimaCrase: Set<string> | null = null;
+
+// Contagem de uso por regra nas aprovadas + regras da questão anterior (para não repetir)
+async function historicoCrase(topicId: Types.ObjectId): Promise<HistoricoCrase> {
+  const idPorNome = new Map(REGRAS_CRASE.map((r) => [r.nome, r.id]));
+  const aprovadas = await Question.find({ topicId, "variacao.tipo": TIPO_CRASE, status: "aprovada" })
+    .select("auditoria.porFrase.regraEsperada")
+    .lean();
+  const uso = new Map<string, number>();
+  for (const q of aprovadas)
+    for (const p of q.auditoria?.porFrase ?? []) {
+      const id = idPorNome.get(p.regraEsperada ?? "");
+      if (id) uso.set(id, (uso.get(id) ?? 0) + 1);
+    }
+  let anterior = regrasDaUltimaCrase;
+  if (!anterior) {
+    const ultima = await Question.findOne({ topicId, "variacao.tipo": TIPO_CRASE })
+      .sort({ _id: -1 })
+      .select("auditoria.porFrase.regraEsperada")
+      .lean();
+    anterior = new Set((ultima?.auditoria?.porFrase ?? []).flatMap((p) => idPorNome.get(p.regraEsperada ?? "") ?? []));
+  }
+  return { uso, anterior };
+}
+
 async function gerarCraseConstruida(
   topic: { _id: Types.ObjectId; disciplina: string; assunto: string },
   variacao: Variacao
 ): Promise<Resultado> {
   const gabarito = letraAleatoria();
-  const m = construirCrase(gabarito, variacao.contexto);
+  const m = construirCrase(gabarito, variacao.contexto, await historicoCrase(topic._id));
+  regrasDaUltimaCrase = new Set(m.frases.map((f) => f.regra.id));
   const anteriores = await Question.find({ topicId: topic._id, "variacao.tipo": TIPO_CRASE })
     .sort({ createdAt: -1 })
     .limit(6)

@@ -131,14 +131,15 @@ export async function chatJSON(
   system: string,
   user: string,
   temperature: number,
-  maxTokens = 4000
+  maxTokens = 4000,
+  opcoes: { pensar?: boolean } = {} // pensar: false = sem raciocínio (tarefas de cópia, como extrair prova)
 ): Promise<unknown> {
   let ultimoErro: unknown;
   for (let tentativa = 0; tentativa < 2; tentativa++) {
     const { texto, motivo, limite } = await chamar(client, model, [
       { role: "system", content: system },
       { role: "user", content: user },
-    ], temperature, maxTokens);
+    ], temperature, maxTokens, opcoes.pensar);
     try {
       if (!texto.includes("{") && motivo === "length")
         throw new Error(`resposta sem JSON (cortada no limite de ${limite} tokens: o modelo pensou demais)`);
@@ -187,16 +188,17 @@ export async function chatJSONAuditor(
   system: string,
   user: string,
   temperature: number,
-  maxTokens: number
+  maxTokens: number,
+  opcoes: { pensar?: boolean } = {}
 ): Promise<{ json: unknown; modelo: string }> {
   const principal = modelo("AUDITOR_MODEL");
   try {
-    return { json: await chatJSON(auditor(), principal, system, user, temperature, maxTokens), modelo: principal };
+    return { json: await chatJSON(auditor(), principal, system, user, temperature, maxTokens, opcoes), modelo: principal };
   } catch (e) {
     const reserva = process.env.AUDITOR_MODEL_RESERVA;
     if (!reserva || reserva === principal) throw e;
     console.warn(`  ↪ auditor ${principal} falhou (${String(e).slice(0, 120)}); usando a reserva ${reserva}`);
-    return { json: await chatJSON(auditor(), reserva, system, user, temperature, maxTokens), modelo: reserva };
+    return { json: await chatJSON(auditor(), reserva, system, user, temperature, maxTokens, opcoes), modelo: reserva };
   }
 }
 

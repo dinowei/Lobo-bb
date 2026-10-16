@@ -212,10 +212,35 @@ const sortear = <T>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.len
 const embaralhar = <T>(xs: readonly T[]): T[] =>
   xs.map((x) => [Math.random(), x] as const).sort((a, b) => a[0] - b[0]).map(([, x]) => x);
 
+// Enunciado conforme as alternativas: "corretamente empregado" só quando TODAS têm "à";
+// se alguma não tem acento grave, a pergunta é sobre o uso OU a ausência.
+export function enunciadoCrase(contexto: string, regras: RegraCrase[]): string {
+  const intro = `Ao revisar comunicados de uma agência bancária sobre ${contexto}, um escriturário analisou as frases a seguir.`;
+  return regras.every((r) => r.temCrase)
+    ? `${intro} O acento grave está corretamente empregado em:`
+    : `${intro} O uso ou a ausência do acento grave está de acordo com a norma-padrão em:`;
+}
+
+// Variedade: prioriza as regras MENOS usadas nas aprovadas e nunca repete
+// uma regra da questão anterior (nem a correta, nem as de erro).
+export type HistoricoCrase = { uso: Map<string, number>; anterior: Set<string> };
+
+function menosUsadas(regras: RegraCrase[], n: number, h: HistoricoCrase): RegraCrase[] {
+  const livres = regras.filter((r) => !h.anterior.has(r.id));
+  const pool = livres.length >= n ? livres : regras; // banco pequeno demais: aceita repetir
+  return embaralhar(pool)
+    .sort((a, b) => (h.uso.get(a.id) ?? 0) - (h.uso.get(b.id) ?? 0)) // sort estável: empate fica embaralhado
+    .slice(0, n);
+}
+
 // 1 regra CORRETA na letra do gabarito + 4 regras de ERRO diferentes nas outras
-export function construirCrase(gabarito: Letra, contexto: string): CraseMontada {
-  const certa = sortear(REGRAS_CRASE.filter((r) => r.correta));
-  const erros = embaralhar(REGRAS_CRASE.filter((r) => !r.correta)).slice(0, 4);
+export function construirCrase(
+  gabarito: Letra,
+  contexto: string,
+  historico: HistoricoCrase = { uso: new Map(), anterior: new Set() }
+): CraseMontada {
+  const [certa] = menosUsadas(REGRAS_CRASE.filter((r) => r.correta), 1, historico);
+  const erros = embaralhar(menosUsadas(REGRAS_CRASE.filter((r) => !r.correta), 4, historico));
   const frases = (["A", "B", "C", "D", "E"] as Letra[]).map((letra) => ({
     letra,
     regra: letra === gabarito ? certa : erros.shift()!,
@@ -224,7 +249,7 @@ export function construirCrase(gabarito: Letra, contexto: string): CraseMontada 
     gabarito,
     frases,
     dificuldade: 3,
-    enunciado: `Ao revisar comunicados de uma agência bancária sobre ${contexto}, um escriturário analisou as frases a seguir. O uso ou a ausência do acento indicativo de crase está de acordo com a norma-padrão da língua portuguesa em:`,
+    enunciado: enunciadoCrase(contexto, frases.map((f) => f.regra)),
   };
 }
 

@@ -303,6 +303,23 @@ REGRAS
 Responda APENAS com JSON:
 {"questoes":[{"numero":1,"disciplina":"lingua_portuguesa","textoBase":null,"referenciaTexto":false,"enunciado":"...","alternativas":{"A":"...","B":"...","C":"...","D":"...","E":"..."},"dependeDeImagem":false,"completa":true}]}`;
 
+// Texto de apoio longo (Português, Inglês): pedido à parte e conferido por código contra o PDF
+export const TextoApoioZ = z.object({ textoBase: z.string().min(200) });
+
+export const TEXTO_APOIO_SYSTEM = `Você é um COPISTA. Recebe páginas de uma prova de concurso (texto extraído de PDF em duas colunas, por isso as colunas podem vir intercaladas).
+Sua tarefa: devolver, LITERALMENTE, o texto de apoio (título, corpo e fonte/referência) usado pelas questões indicadas.
+- Copie palavra por palavra, na ordem de leitura correta. Não corrija, não resuma, não traduza.
+- Junte palavras hifenizadas no fim da linha. Remova números de linha da margem (5, 10, 15...), cabeçalhos, rodapés, "RASCUNHO" e os enunciados/alternativas das questões.
+Responda APENAS com JSON: {"textoBase": "..."}`;
+
+export function textoApoioUser(paginas: string, numeros: number[], disciplina: string) {
+  return `DISCIPLINA: ${disciplina}
+QUESTÕES QUE USAM O TEXTO: ${numeros.join(", ")}
+O texto de apoio vem ANTES da questão ${numeros[0]}.
+
+${paginas}`;
+}
+
 export function extratorUser(textoJanela: string, secaoAtual: string) {
   return `SEÇÃO ATUAL (no início desta janela): ${secaoAtual}\n\n${textoJanela}`;
 }

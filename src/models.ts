@@ -108,6 +108,8 @@ const QuestionSchema = new Schema(
     estiloBanca: { type: String, default: "cesgranrio" },
     prova: String, // ex.: "BB 2023 — Escriturário Agente Comercial" (só oficiais)
     numeroOriginal: Number, // número da questão na prova original
+    precisaImagem: Boolean, // depende de figura/tabela/tela que não veio no texto (status precisa_imagem)
+    faltaImagem: String, // o que falta (ex.: "tabela de preços da embalagem")
     dificuldade: { type: Number, min: 1, max: 5, default: 3 },
 
     textoBase: String, // texto de apoio (interpretação de texto)
@@ -134,7 +136,8 @@ const QuestionSchema = new Schema(
     // pipeline de qualidade
     status: {
       type: String,
-      enum: ["pendente", "aprovada", "rejeitada", "contestada", "desatualizada"],
+      // anulada: oficial anulada pela banca · precisa_imagem: depende de figura/tabela que o texto não trouxe (fora do treino)
+      enum: ["pendente", "aprovada", "rejeitada", "contestada", "desatualizada", "anulada", "precisa_imagem"],
       default: "pendente",
       index: true,
     },

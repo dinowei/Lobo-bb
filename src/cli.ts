@@ -12,6 +12,7 @@ import {
   ingerirFonte,
   ingerirProva,
   explicarOficiais,
+  anularOficial,
   revogarFonte,
   mostrarStatus,
   type MetaFonte,
@@ -32,6 +33,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
         tipos: lei | norma_bacen_cmn | edital | material_proprio
   prova <prova.pdf> --gabarito <gabarito.pdf|txt> --nome "<nome>" [--banca cesgranrio] [--ano 2023]
   explicar [--limite 50]        IA escreve as explicações das oficiais pendentes
+  anular --prova "<parte do nome>" --numero <n>   oficial anulada no gabarito definitivo sai de circulação
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   revogar <id | parte do título>  norma mudou: tira fonte e questões de circulação
@@ -69,6 +71,8 @@ async function main() {
       n: { type: "string" },
       min: { type: "string" },
       filtro: { type: "string" },
+      prova: { type: "string" },
+      numero: { type: "string" },
     },
   });
 
@@ -115,6 +119,12 @@ async function main() {
       case "explicar":
         return await explicarOficiais(o.limite ? Number(o.limite) : 50);
 
+      case "anular": {
+        const numero = Number(exigir(o.numero, "--numero"));
+        if (!Number.isInteger(numero) || numero < 1) throw new Error("--numero deve ser o nº da questão na prova (ex.: 7)");
+        return await anularOficial(exigir(o.prova, "--prova"), numero);
+      }
+
       case "gerar": {
         const busca = exigir(o.assunto, "--assunto");
         const topico = await Topic.findOne({
@@ -123,11 +133,17 @@ async function main() {
         if (!topico) throw new Error(`Nenhum tópico com "${busca}" no nome. Veja "npm run bb -- status".`);
         const n = o.n ? Number(o.n) : 1;
         console.log(`Gerando ${n} questão(ões) de "${topico.assunto}"…`);
+        let aprovadas = 0;
+        const t0 = Date.now();
         for (let i = 0; i < n; i++) {
+          const ti = Date.now();
           const r = await gerarQuestao(String(topico._id), 3, { tipo: o.tipo });
+          const seg = Math.round((Date.now() - ti) / 1000);
           const v = r.variacao ? ` [${r.variacao.tipo} · ${r.variacao.contexto}${r.variacao.duasEtapas ? " · 2 etapas" : ""}]` : "";
-          console.log(r.ok ? `✔ aprovada: ${r.questionId}${v}` : `✖ ${r.motivo}${v} ${r.detalhes?.join(" | ") ?? ""}`);
+          if (r.ok) aprovadas++;
+          console.log(r.ok ? `✔ aprovada: ${r.questionId}${v} (${seg}s)` : `✖ ${r.motivo}${v} (${seg}s) ${r.detalhes?.join(" | ") ?? ""}`);
         }
+        console.log(`\n${aprovadas}/${n} aprovadas · ${Math.round((Date.now() - t0) / 1000 / n)}s em média por questão`);
         return;
       }
 

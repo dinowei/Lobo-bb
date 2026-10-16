@@ -22,13 +22,19 @@ import {
   avisarSeEscaneado,
   hashTexto,
   lerGabarito,
+  lerDistribuicao,
+  TextoPdf,
+  paginaDaSecao,
   type RespostaGabarito,
 } from "./extrair.js";
-import { embedLote, chatJSON, auditor, gerador, modelo, cosseno } from "./llm.js";
+import { embedLote, chatJSON, chatJSONAuditor, validarOuReparar, auditor, gerador, modelo, cosseno } from "./llm.js";
 import {
   EXTRATOR_SYSTEM,
   extratorUser,
-  ExtracaoZ,
+  TEXTO_APOIO_SYSTEM,
+  textoApoioUser,
+  TextoApoioZ,
+  QuestaoExtraidaZ,
   EXPLICADOR_SYSTEM,
   explicadorUser,
   ExplicacaoZ,
@@ -260,45 +266,185 @@ function pontuar(q: QuestaoExtraida): number {
   );
 }
 
-async function extrairQuestoes(paginas: string[]): Promise<QuestaoExtraida[]> {
-  const JANELA = 4; // páginas por chamada
-  const PASSO = 3; // 1 página de sobreposição (questão quebrada entre páginas)
-  const porNumero = new Map<number, QuestaoExtraida>();
-  let secaoAtual = "desconhecida";
-
-  for (let ini = 0; ini < paginas.length; ini += PASSO) {
-    const fatia = paginas.slice(ini, ini + JANELA);
-    const texto = fatia.map((p, i) => `=== PÁGINA ${ini + i + 1} ===\n${p}`).join("\n\n");
-    console.log(`… extraindo páginas ${ini + 1}–${ini + fatia.length} de ${paginas.length}`);
-    try {
-      const bruto = await chatJSON(
-        auditor(),
-        modelo("AUDITOR_MODEL"),
-        EXTRATOR_SYSTEM,
-        extratorUser(texto, secaoAtual),
-        0,
-        16_000
-      );
-      const r = ExtracaoZ.parse(bruto);
-      for (const q of r.questoes) {
-        const atual = porNumero.get(q.numero);
-        if (!atual || pontuar(q) > pontuar(atual)) porNumero.set(q.numero, q);
-      }
-      const ultima = r.questoes.at(-1);
-      if (ultima && ehDisciplina(ultima.disciplina)) secaoAtual = ultima.disciplina;
-    } catch (e) {
-      console.warn(`⚠ janela ${ini + 1}–${ini + fatia.length} falhou: ${(e as Error).message.slice(0, 200)}`);
-    }
-    if (ini + JANELA >= paginas.length) break;
-  }
-
-  // questão que cita "o texto" mas cujo texto ficou em outra janela herda o último texto da mesma disciplina
-  const ordenadas = [...porNumero.values()].sort((a, b) => a.numero - b.numero);
+// questão que cita "o texto" mas cujo texto ficou em outra janela herda o último texto da mesma disciplina
+function herdarTextoBase(ordenadas: QuestaoExtraida[]) {
   let ultimoTexto: { disciplina: string; texto: string } | null = null;
   for (const q of ordenadas) {
     if (q.textoBase) ultimoTexto = { disciplina: q.disciplina, texto: q.textoBase };
     else if (q.referenciaTexto && ultimoTexto?.disciplina === q.disciplina) q.textoBase = ultimoTexto.texto;
   }
+}
+
+// Fração dos trechos (frases) da cópia que existem literalmente no texto cru do PDF.
+// Normaliza hifenização, números de linha da margem, aspas e espaços (o PDF vem em duas colunas).
+function coberturaLiteral(copia: string, cru: string): number {
+  const norm = (s: string) =>
+    s
+      .replace(/-\n/g, "")
+      .replace(/^\s*\d{1,3}\s*$/gm, " ")
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .replace(/\s+/g, " ")
+      .toLowerCase();
+  const alvo = norm(cru);
+  const trechos = norm(copia)
+    .split(/(?<=[.!?;:])\s+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 25);
+  if (!trechos.length) return 0;
+  return trechos.filter((t) => alvo.includes(t)).length / trechos.length;
+}
+
+async function extrairQuestoes(
+  paginas: string[],
+  esperadas: number[] = [],
+  distribuicao: Map<number, string> | null = null
+): Promise<QuestaoExtraida[]> {
+  const JANELA = 3; // páginas por chamada (4 passava do tempo limite do auditor)
+  const PASSO = 2; // 1 página de sobreposição (questão quebrada entre páginas)
+  const porNumero = new Map<number, QuestaoExtraida>();
+  const secaoNoInicio = new Map<number, string>(); // seção vigente no início de cada janela
+  let secaoAtual = "desconhecida";
+
+  const janelas: number[] = [];
+  for (let ini = 0; ini < paginas.length; ini += PASSO) {
+    janelas.push(ini);
+    if (ini + JANELA >= paginas.length) break;
+  }
+
+  // Extrai uma janela. Valida questão por questão: um item ruim não derruba as outras da janela.
+  async function extrairJanela(ini: number): Promise<boolean> {
+    const fatia = paginas.slice(ini, ini + JANELA);
+    const texto = fatia.map((p, i) => `=== PÁGINA ${ini + i + 1} ===\n${p}`).join("\n\n");
+    console.log(`… extraindo páginas ${ini + 1}–${ini + fatia.length} de ${paginas.length}`);
+    try {
+      // copiar não exige raciocínio: sem "pensar" fica rápido; se o auditor cair, usa a reserva
+      const secao = secaoNoInicio.get(ini) ?? secaoAtual;
+      const { json } = await chatJSONAuditor(EXTRATOR_SYSTEM, extratorUser(texto, secao), 0, 16_000, { pensar: false });
+      const itens = (json as { questoes?: unknown })?.questoes;
+      if (!Array.isArray(itens)) throw new Error("resposta sem a lista 'questoes'");
+      const boas: QuestaoExtraida[] = [];
+      for (const item of itens) {
+        const v = QuestaoExtraidaZ.safeParse(item);
+        if (v.success) boas.push(v.data);
+        else console.warn(`  ⚠ item descartado (nº ${(item as { numero?: unknown })?.numero ?? "?"}): ${v.error.issues[0]?.message}`);
+      }
+      for (const q of boas) {
+        const atual = porNumero.get(q.numero);
+        if (!atual || pontuar(q) > pontuar(atual)) porNumero.set(q.numero, q);
+      }
+      const ultima = boas.at(-1);
+      if (ultima && ehDisciplina(ultima.disciplina)) secaoAtual = ultima.disciplina;
+      return true;
+    } catch (e) {
+      console.warn(`⚠ janela ${ini + 1}–${ini + fatia.length} falhou: ${(e as Error).message.replace(/\s+/g, " ").slice(0, 200)}`);
+      return false;
+    }
+  }
+
+  const falharam: number[] = [];
+  for (const ini of janelas) {
+    secaoNoInicio.set(ini, secaoAtual);
+    if (!(await extrairJanela(ini))) falharam.push(ini);
+  }
+  // segunda chance para as janelas que falharam (provedor instável)
+  if (falharam.length) {
+    console.log(`… repetindo ${falharam.length} janela(s) que falharam`);
+    for (const ini of falharam) await extrairJanela(ini);
+  }
+
+  // Busca dirigida: o modelo às vezes pula questões de uma janela grande. Para cada número que
+  // faltou, acha no texto cru a página onde ele aparece sozinho na linha e pede SÓ aquela questão.
+  const faltam = esperadas.filter((n) => !porNumero.has(n));
+  if (faltam.length) console.log(`… buscando uma a uma ${faltam.length} questão(ões) que faltaram: ${faltam.join(", ")}`);
+  for (const n of faltam) {
+    const marcador = new RegExp(`(^|\\n)\\s*${n}\\s*(\\n|$)`);
+    const pag = paginas.findIndex((p) => marcador.test(p));
+    if (pag < 0) {
+      console.warn(`  ⚠ nº ${n}: não achei o número no texto do PDF`);
+      continue;
+    }
+    const fatia = paginas.slice(pag, pag + 2); // a questão pode continuar na página seguinte
+    const texto = fatia.map((p, i) => `=== PÁGINA ${pag + i + 1} ===\n${p}`).join("\n\n");
+    try {
+      const anterior = [...porNumero.values()].filter((q) => q.numero < n).sort((a, b) => b.numero - a.numero)[0];
+      const { json } = await chatJSONAuditor(
+        EXTRATOR_SYSTEM,
+        `${extratorUser(texto, anterior?.disciplina ?? secaoAtual)}\n\nEXTRAIA SOMENTE A QUESTÃO DE NÚMERO ${n}. Ignore as outras questões destas páginas.`,
+        0,
+        6_000,
+        { pensar: false }
+      );
+      const itens = (json as { questoes?: unknown })?.questoes;
+      const achada = (Array.isArray(itens) ? itens : [])
+        .map((item) => QuestaoExtraidaZ.safeParse(item))
+        .find((v) => v.success && v.data.numero === n);
+      if (achada?.success) {
+        porNumero.set(n, achada.data);
+        console.log(`  ✔ nº ${n} recuperada (página ${pag + 1})`);
+      } else console.warn(`  ⚠ nº ${n}: o modelo não devolveu a questão válida`);
+    } catch (e) {
+      console.warn(`  ⚠ nº ${n}: ${(e as Error).message.replace(/\s+/g, " ").slice(0, 150)}`);
+    }
+  }
+
+  const ordenadas = [...porNumero.values()].sort((a, b) => a.numero - b.numero);
+
+  // Disciplina oficial vem da capa (determinística); a da IA só vale se a capa não for legível
+  if (distribuicao)
+    for (const q of ordenadas) {
+      const d = distribuicao.get(q.numero);
+      if (d && d !== q.disciplina) {
+        console.log(`  ↻ nº ${q.numero}: disciplina corrigida pela capa (${q.disciplina} → ${d})`);
+        q.disciplina = d;
+      }
+    }
+  // Em Português e Inglês, questão que cita o texto PRECISA do texto de apoio (marcado por código)
+  const CITA_TEXTO = /\b(texto|text|trecho|fragmento|fragment|par[aá]grafo|paragraph|passagem|passage|linhas?|lines?)\b/i;
+  for (const q of ordenadas)
+    if (["lingua_portuguesa", "lingua_inglesa"].includes(q.disciplina) && CITA_TEXTO.test(`${q.enunciado} ${Object.values(q.alternativas).join(" ")}`))
+      q.referenciaTexto = true;
+  herdarTextoBase(ordenadas);
+
+  // Texto de apoio longo que o modelo não copiou: pedido à parte, por grupo de questões
+  // seguidas da mesma disciplina, e só aceito se for cópia literal do PDF (conferido por código)
+  const semTexto = ordenadas.filter((q) => q.referenciaTexto && !q.textoBase);
+  const grupos: QuestaoExtraida[][] = [];
+  for (const q of semTexto) {
+    const g = grupos.at(-1);
+    if (g && g.at(-1)!.disciplina === q.disciplina) g.push(q);
+    else grupos.push([q]);
+  }
+  for (const g of grupos) {
+    const numeros = g.map((q) => q.numero);
+    // o texto fica entre o título da seção e a 1ª questão do grupo (nunca nas páginas da Redação)
+    const secao = paginaDaSecao(paginas, g[0].disciplina);
+    if (secao < 0) {
+      console.warn(`  ⚠ não achei o título da seção ${g[0].disciplina}; questões ${numeros.join(", ")} ficam sem texto de apoio`);
+      continue;
+    }
+    const marcador = new RegExp(`(^|\\n)\\s*${numeros[0]}\\s*(\\n|$)`);
+    const rel = paginas.slice(secao).findIndex((p) => marcador.test(p));
+    const pag = rel < 0 ? secao : secao + rel;
+    const ini = Math.max(secao, pag - 1);
+    const fatia = paginas.slice(ini, pag + 1);
+    const texto = fatia.map((p, i) => `=== PÁGINA ${ini + i + 1} ===\n${p}`).join("\n\n");
+    console.log(`… copiando o texto de apoio das questões ${numeros.join(", ")}`);
+    try {
+      const { json } = await chatJSONAuditor(TEXTO_APOIO_SYSTEM, textoApoioUser(texto, numeros, g[0].disciplina), 0, 8_000, { pensar: false });
+      const { textoBase } = TextoApoioZ.parse(json);
+      const cobertura = coberturaLiteral(textoBase, paginas.join("\n"));
+      if (cobertura < 0.9) {
+        console.warn(`  ⚠ texto de apoio recusado: só ${Math.round(cobertura * 100)}% dele existe literalmente no PDF`);
+        continue;
+      }
+      for (const q of g) q.textoBase = textoBase;
+      console.log(`  ✔ texto de apoio (${textoBase.length} caracteres, ${Math.round(cobertura * 100)}% conferido no PDF)`);
+    } catch (e) {
+      console.warn(`  ⚠ texto de apoio das questões ${numeros.join(", ")}: ${(e as Error).message.replace(/\s+/g, " ").slice(0, 150)}`);
+    }
+  }
+  herdarTextoBase(ordenadas);
   return ordenadas;
 }
 
@@ -321,11 +467,25 @@ export async function ingerirProva(
   if (gabarito.size === 0) throw new Error(MSG_GABARITO);
   console.log(`… gabarito: ${gabarito.size} respostas lidas`);
 
-  const questoes = await extrairQuestoes(paginas);
+  const distribuicao = lerDistribuicao(paginas);
+  console.log(
+    distribuicao
+      ? `… disciplinas lidas da capa: ${distribuicao.size} questões`
+      : "⚠ não consegui ler a distribuição de disciplinas da capa; a disciplina vem da IA (confira depois)"
+  );
+  const questoes = await extrairQuestoes(paginas, [...gabarito.keys()], distribuicao);
   if (!questoes.length) throw new Error("Nenhuma questão extraída. O PDF tem texto selecionável?");
   const cobertas = questoes.filter((q) => gabarito.has(q.numero)).length;
   if (cobertas < questoes.length * 0.9)
     throw new Error(`O gabarito cobre só ${cobertas} de ${questoes.length} questões extraídas. ${MSG_GABARITO}`);
+  // prova pela metade não entra: se faltou extrair qualquer número do gabarito, nada é salvo
+  const extraidas = new Set(questoes.map((q) => q.numero));
+  const faltando = [...gabarito.keys()].filter((n) => !extraidas.has(n)).sort((a, b) => a - b);
+  if (faltando.length)
+    throw new Error(
+      `Extração incompleta: faltam ${faltando.length} de ${gabarito.size} questões (${faltando.join(", ")}). ` +
+        "Nada foi salvo. Rode de novo (o provedor pode ter caído no meio)."
+    );
 
   const fonte = await Source.create({
     tipo: "prova_oficial",
@@ -338,7 +498,49 @@ export async function ingerirProva(
     totalChunks: 0,
   });
 
-  const rel = { extraidas: questoes.length, salvas: 0, anuladas: 0, dependemDeImagem: 0, incompletas: 0, semGabarito: 0, duplicadas: 0 };
+  // Conferência literal contra o PDF: a IA copia, o código confere (e corrige palavra trocada).
+  // Enunciado/alternativa que não bate fica de fora e vai para "conferir à mão".
+  const pdf = new TextoPdf(paginas);
+  const naoConfere = new Map<number, string[]>();
+  let correcoes = 0;
+  const textosCorrigidos = new Map<string, string>();
+  for (const q of questoes) {
+    const problemas: string[] = [];
+    const conferir = (t: string, nome: string) => {
+      const c = pdf.conferir(t);
+      if (c.status === "corrigido") {
+        correcoes++;
+        console.log(`  ✎ nº ${q.numero} ${nome}: ${c.detalhe}`);
+      } else if (c.status === "suspeito") problemas.push(`${nome}: ${c.detalhe}`);
+      return c.texto;
+    };
+    q.enunciado = conferir(q.enunciado, "enunciado");
+    for (const l of LETRAS) {
+      const alt = q.alternativas[l];
+      if (alt) q.alternativas[l] = conferir(alt, `alternativa ${l}`);
+    }
+    if (problemas.length) naoConfere.set(q.numero, problemas);
+    // texto de apoio: frase a frase, só aplica correções (em duas colunas a ordem pode embaralhar)
+    if (q.textoBase) {
+      if (!textosCorrigidos.has(q.textoBase)) {
+        const partes = q.textoBase.split(/(?<=[.!?])(\s+)/);
+        const novo = partes
+          .map((p) => {
+            if (!p.trim()) return p;
+            const c = pdf.conferir(p);
+            if (c.status !== "corrigido") return p;
+            correcoes++;
+            console.log(`  ✎ texto de apoio (nº ${q.numero}): ${c.detalhe}`);
+            return c.texto;
+          })
+          .join("");
+        textosCorrigidos.set(q.textoBase, novo);
+      }
+      q.textoBase = textosCorrigidos.get(q.textoBase)!;
+    }
+  }
+
+  const rel = { extraidas: questoes.length, salvas: 0, anuladas: 0, dependemDeImagem: 0, incompletas: 0, naoConfereComPdf: naoConfere.size, corrigidasPeloPdf: correcoes, semGabarito: 0, duplicadas: 0 };
 
   type Valida = QuestaoExtraida & { resposta: Letra };
   const validas: Valida[] = [];
@@ -347,6 +549,7 @@ export async function ingerirProva(
     const alts = LETRAS.map((l) => q.alternativas[l]);
     if (!resp) rel.semGabarito++;
     else if (resp === "anulada") rel.anuladas++;
+    else if (naoConfere.has(q.numero)) continue; // já contada em naoConfereComPdf
     else if (q.dependeDeImagem) rel.dependemDeImagem++;
     else if (!q.completa || alts.some((a) => !a?.trim())) rel.incompletas++;
     else validas.push({ ...q, resposta: resp });
@@ -399,6 +602,14 @@ export async function ingerirProva(
   console.table(rel);
   if (rel.dependemDeImagem)
     console.log("ℹ Questões com gráfico ou tabela ilegível ficaram de fora; dá pra cadastrar na mão depois.");
+  if (naoConfere.size) {
+    console.log("⚠ Conferir à mão (não bateram com o PDF; costuma ser fórmula que o PDF perdeu) — ficaram de fora:");
+    for (const [n, ps] of naoConfere) console.log(`  nº ${n}: ${ps.join(" | ")}`);
+  }
+  const salvasOuExplicadas = new Set([...validas.map((v) => v.numero), ...naoConfere.keys()]);
+  const outras = questoes.filter((q) => !salvasOuExplicadas.has(q.numero) && gabarito.get(q.numero) !== "anulada");
+  if (outras.length)
+    console.log(`ℹ Ficaram de fora (incompletas ou dependem de imagem): nº ${outras.map((q) => q.numero).join(", ")}`);
   console.log('Próximo passo: "npm run bb -- explicar" para a IA escrever as explicações.');
 }
 
@@ -414,7 +625,6 @@ export async function explicarOficiais(limite = 50) {
     return;
   }
 
-  const mod = modelo("AUDITOR_MODEL");
   let ok = 0;
   let falhas = 0;
   let discordou = 0;
@@ -431,13 +641,25 @@ export async function explicarOficiais(limite = 50) {
       const fontesTxt = fontes.map((f) => `${f.titulo}\n${f.texto}`);
 
       // 1) a IA resolve às cegas: se errar, a questão é traiçoeira e você precisa saber
-      const cego = RespostaCegaZ.parse(
-        await chatJSON(auditor(), mod, AUDITOR_CEGO_SYSTEM, auditorCegoUser(base, fontesTxt), 0, 2000)
-      );
-      // 2) escreve a explicação com o gabarito oficial travado
-      const exp = ExplicacaoZ.parse(
-        await chatJSON(auditor(), mod, EXPLICADOR_SYSTEM, explicadorUser({ ...base, gabarito: q.gabarito }, fontesTxt), 0.2, 5000)
-      );
+      const userCego = auditorCegoUser(base, fontesTxt);
+      const rCego = await chatJSONAuditor(AUDITOR_CEGO_SYSTEM, userCego, 0, 2000);
+      const cego = await validarOuReparar(RespostaCegaZ, rCego.json, {
+        client: auditor(),
+        model: rCego.modelo,
+        system: AUDITOR_CEGO_SYSTEM,
+        user: userCego,
+      });
+      // 2) escreve a explicação com o gabarito oficial travado (JSON inválido → reparo pelo mesmo modelo)
+      const userExp = explicadorUser({ ...base, gabarito: q.gabarito }, fontesTxt);
+      const rExp = await chatJSONAuditor(EXPLICADOR_SYSTEM, userExp, 0.2, 5000);
+      const exp = await validarOuReparar(ExplicacaoZ, rExp.json, {
+        client: auditor(),
+        model: rExp.modelo,
+        system: EXPLICADOR_SYSTEM,
+        user: userExp,
+        maxTokens: 5000,
+      });
+      const modelos = [...new Set([rCego.modelo, rExp.modelo])].join(" + ");
 
       const porLetra = new Map(exp.alternativas.map((a) => [a.letra, a]));
       if (LETRAS.some((l) => !porLetra.get(l)?.explicacao)) throw new Error("faltou explicação para alguma alternativa");
@@ -454,12 +676,15 @@ export async function explicarOficiais(limite = 50) {
       const acertou = cego.resposta === q.gabarito;
       if (!acertou) discordou++;
       q.auditoria = {
-        modelo: mod,
+        modelo: modelos,
         respostaCega: cego.resposta,
         veredito: "aprovada",
         problemas: acertou
           ? []
-          : [`A IA marcou ${cego.resposta} às cegas; o gabarito oficial é ${q.gabarito}. Questão traiçoeira: leia a explicação com atenção.`],
+          : [
+              `A IA marcou ${cego.resposta} às cegas; o gabarito oficial é ${q.gabarito}. Questão traiçoeira: leia a explicação com atenção.`,
+              `Raciocínio da IA: ${cego.raciocinio.replace(/\s+/g, " ").slice(0, 400)}`,
+            ],
       };
       for (const f of fontes.slice(0, 2)) q.fontes.push({ sourceId: f.sourceId, trecho: f.texto.slice(0, 600) });
       q.status = "aprovada";
@@ -474,6 +699,29 @@ export async function explicarOficiais(limite = 50) {
   console.log(
     `\n✔ ${ok} explicadas · ⚠ ${discordou} em que a IA errou às cegas (revise essas) · ✖ ${falhas} falhas (rode de novo)`
   );
+}
+
+// ============================================================
+// 5b. ANULAR — questão oficial anulada no gabarito definitivo: sai de circulação
+// (só mexe no status; o gabarito oficial continua intocado — regra 1)
+// ============================================================
+export async function anularOficial(provaParte: string, numero: number) {
+  const prova = new RegExp(provaParte.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+  const qs = await Question.find({ origem: "oficial", prova, numeroOriginal: numero });
+  const provas = [...new Set(qs.map((q) => q.prova))];
+  if (!qs.length) {
+    console.log(`✖ nenhuma questão oficial nº ${numero} em prova que contenha "${provaParte}". Se ela já foi anulada no gabarito, nem entrou no banco.`);
+    return;
+  }
+  if (provas.length > 1) throw new Error(`"${provaParte}" bate com mais de uma prova (${provas.join(" | ")}). Seja mais específico.`);
+  for (const q of qs) {
+    const antes = q.status;
+    q.status = "anulada";
+    q.auditoria ??= { problemas: [] };
+    q.auditoria.problemas.push(`Anulada pela banca no gabarito definitivo (marcada em ${new Date().toISOString().slice(0, 10)}).`);
+    await q.save();
+    console.log(`✔ ${q.prova} nº ${numero}: ${antes} → anulada (sai de circulação)`);
+  }
 }
 
 // ============================================================

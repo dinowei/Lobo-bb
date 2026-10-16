@@ -149,6 +149,135 @@ function quebrarLongo(texto: string, alvo: number): string[] {
 // Gabarito: a verdade absoluta → NUNCA passa por IA, só leitura determinística.
 // Aceita "1 A", "1-A", "01) C", "7 X" / "7 ANULADA" (anulada).
 // ------------------------------------------------------------
+// ------------------------------------------------------------
+// Conferência LITERAL de um campo copiado pela IA contra o texto cru do PDF.
+// A IA copia, mas às vezes "corrige" palavras (seus/suas, transformou/transformado).
+// - igual: bate com o PDF ignorando espaços, pontuação, hifenização e caixa
+// - corrigido: só havia palavras trocadas (sem dígitos): devolve o trecho DO PDF
+// - suspeito: não dá para garantir (número diferente, palavras a mais/a menos)
+// ------------------------------------------------------------
+export type Conferencia = { texto: string; status: "igual" | "corrigido" | "suspeito"; detalhe?: string };
+
+const chave = (s: string) => s.toLowerCase().normalize("NFC").replace(/[^\p{L}\p{N}]/gu, "");
+
+// troca aceitável = mesma palavra com pequena diferença (seus/suas, transformado/transformou, eos/os)
+function parecidas(a: string, b: string): boolean {
+  const d: number[] = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let anterior = d[0];
+    d[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const atual = d[j];
+      d[j] = Math.min(d[j] + 1, d[j - 1] + 1, anterior + (a[i - 1] === b[j - 1] ? 0 : 1));
+      anterior = atual;
+    }
+  }
+  return d[b.length] <= Math.max(2, Math.floor(Math.max(a.length, b.length) / 3));
+}
+
+export class TextoPdf {
+  private tokens: string[];
+  private chaves: string[];
+  private tudo: string;
+  constructor(paginas: string[]) {
+    const limpo = paginas
+      .join("\n")
+      .replace(/^.*(pcimarkpci|pciconcursos\.com\.br).*$/gm, " ") // cabeçalhos do site
+      .replace(/^\s*(BANCO DO BRASIL|RASCUNHO|.*PROVA.*GABARITO.*)\s*$/gm, " ") // cabeçalho da página ("... - PROVA A4GABARITO 1")
+      .replace(/^\s*\d{1,3}\s*$/gm, " ") // números soltos (margem, nº da questão)
+      .replace(/(\p{L})-\n(\p{L})/gu, "$1$2"); // hifenização de fim de linha
+    this.tokens = limpo.split(/\s+/).filter((t) => chave(t));
+    this.chaves = this.tokens.map(chave);
+    this.tudo = this.chaves.join("");
+  }
+
+  conferir(copia: string): Conferencia {
+    if (!chave(copia)) return { texto: copia, status: "igual" };
+    if (this.tudo.includes(chave(copia))) return { texto: copia, status: "igual" };
+    // mesma quantidade de palavras, só algumas trocadas → acha a janela do PDF mais parecida
+    const c = copia.split(/\s+/).filter((t) => chave(t));
+    const ck = c.map(chave);
+    let melhor = { pos: -1, difs: Infinity };
+    for (let i = 0; i + ck.length <= this.chaves.length; i++) {
+      if (this.chaves[i] !== ck[0] && this.chaves[i + ck.length - 1] !== ck[ck.length - 1]) continue;
+      let difs = 0;
+      for (let j = 0; j < ck.length && difs <= melhor.difs; j++) if (this.chaves[i + j] !== ck[j]) difs++;
+      if (difs < melhor.difs) melhor = { pos: i, difs };
+    }
+    const limite = Math.max(1, Math.floor(ck.length * 0.1));
+    if (melhor.pos < 0 || melhor.difs > limite)
+      return { texto: copia, status: "suspeito", detalhe: "não encontrado no PDF" };
+    const pdf = this.tokens.slice(melhor.pos, melhor.pos + ck.length);
+    const trocas = ck.flatMap((k, j) => (k !== this.chaves[melhor.pos + j] ? [`"${c[j]}" → "${pdf[j]}"`] : []));
+    // diferença em número (ou fórmula) não se corrige sozinha: o PDF pode ter perdido símbolos
+    if (ck.some((k, j) => k !== this.chaves[melhor.pos + j] && /\d/.test(k + this.chaves[melhor.pos + j])))
+      return { texto: copia, status: "suspeito", detalhe: `número diferente do PDF: ${trocas.join(", ")}` };
+    if (ck.some((k, j) => k !== this.chaves[melhor.pos + j] && !parecidas(k, this.chaves[melhor.pos + j])))
+      return { texto: copia, status: "suspeito", detalhe: `palavras muito diferentes do PDF: ${trocas.join(", ")}` };
+    return { texto: pdf.join(" "), status: "corrigido", detalhe: trocas.join(", ") };
+  }
+}
+
+// ------------------------------------------------------------
+// Distribuição das questões por disciplina, lida da CAPA da prova (Cesgranrio):
+// uma linha com os nomes das disciplinas e, abaixo, "1 a 10 ... 11 a 15 ...".
+// Determinística: a IA não decide a disciplina de questão oficial.
+// ------------------------------------------------------------
+const TITULOS_DISCIPLINA: [string, string][] = [
+  // do mais longo para o mais curto ("Matemática Financeira" antes de "Matemática")
+  ["atualidades do mercado financeiro", "atualidades_mercado_financeiro"],
+  ["probabilidade e estatistica", "probabilidade_estatistica"],
+  ["conhecimentos de informatica", "informatica"],
+  ["conhecimentos bancarios", "conhecimentos_bancarios"],
+  ["matematica financeira", "matematica_financeira"],
+  ["vendas e negociacao", "vendas_negociacao"],
+  ["lingua portuguesa", "lingua_portuguesa"],
+  ["lingua inglesa", "lingua_inglesa"],
+  ["informatica", "informatica"],
+  ["matematica", "matematica"],
+];
+
+// A página onde começa a seção da disciplina (título sozinho na linha, ex.: "LÍNGUA PORTUGUESA").
+// Ignora a capa, onde os nomes aparecem na tabela de distribuição.
+export function paginaDaSecao(paginas: string[], disciplina: string): number {
+  const semAcento = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const titulos = TITULOS_DISCIPLINA.filter(([, id]) => id === disciplina).map(([t]) => t);
+  return paginas.findIndex((p, i) => i > 0 && p.split("\n").some((l) => titulos.includes(semAcento(l).trim())));
+}
+
+export function lerDistribuicao(paginas: string[]): Map<number, string> | null {
+  const semAcento = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const porNumero = new Map<number, string>();
+  let nomes: string[] = [];
+  for (const linha of paginas.slice(0, 2).join("\n").split("\n")) {
+    const l = semAcento(linha);
+    const intervalos = [...l.matchAll(/(\d{1,3})\s+a\s+(\d{1,3})/g)].map((m) => [Number(m[1]), Number(m[2])]);
+    if (intervalos.length && nomes.length === intervalos.length) {
+      intervalos.forEach(([ini, fim], k) => {
+        for (let n = ini; n <= fim; n++) porNumero.set(n, nomes[k]);
+      });
+      nomes = [];
+      continue;
+    }
+    // linha de títulos: pega os nomes na ordem em que aparecem, sem sobrepor
+    const achados: { pos: number; id: string }[] = [];
+    let resto = l;
+    for (const [titulo, id] of TITULOS_DISCIPLINA) {
+      let pos = resto.indexOf(titulo);
+      while (pos >= 0) {
+        achados.push({ pos, id });
+        resto = resto.slice(0, pos) + " ".repeat(titulo.length) + resto.slice(pos + titulo.length);
+        pos = resto.indexOf(titulo);
+      }
+    }
+    if (achados.length >= 2) nomes = achados.sort((a, b) => a.pos - b.pos).map((a) => a.id);
+  }
+  // só vale se cobrir 1..N sem buraco
+  const max = Math.max(0, ...porNumero.keys());
+  if (!max || [...Array(max)].some((_, k) => !porNumero.has(k + 1))) return null;
+  return porNumero;
+}
+
 export type RespostaGabarito = "A" | "B" | "C" | "D" | "E" | "anulada";
 
 export function lerGabarito(texto: string): Map<number, RespostaGabarito> {
