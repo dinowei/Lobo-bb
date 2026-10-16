@@ -4,8 +4,8 @@ import type { Api, Disciplina, PainelDTO } from "../../shared/tipos";
 import { apiDemo } from "./api/demo";
 import { apiHttp, servidorDisponivel } from "./api/http";
 
-export type Tela = "painel" | "praticar" | "revisoes" | "simulados" | "erros" | "conquistas" | "ajustes";
-export const TELAS: Tela[] = ["painel", "praticar", "revisoes", "simulados", "erros", "conquistas", "ajustes"];
+export type Tela = "painel" | "praticar" | "revisoes" | "simulados" | "erros" | "conquistas" | "ajustes" | "figuras";
+export const TELAS: Tela[] = ["painel", "praticar", "revisoes", "simulados", "erros", "conquistas", "ajustes", "figuras"];
 export interface FiltroPratica {
   topicoId?: string;
   disciplina?: Disciplina;

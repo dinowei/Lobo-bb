@@ -11,6 +11,7 @@ import { Simulados } from "./telas/Simulados";
 import { Erros } from "./telas/Erros";
 import { Conquistas } from "./telas/Conquistas";
 import { AjustesTela } from "./telas/Ajustes";
+import { Figuras } from "./telas/Figuras";
 
 const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa }[] = [
   { tela: "painel", rotulo: "Painel", Icone: ICasa },
@@ -78,6 +79,7 @@ export function App() {
           {tela === "erros" && <Erros />}
           {tela === "conquistas" && <Conquistas />}
           {tela === "ajustes" && <AjustesTela />}
+          {tela === "figuras" && <Figuras />}
         </main>
       </div>
 

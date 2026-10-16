@@ -8,6 +8,7 @@
     "start": "tsx src/server.ts",
     "bb": "tsx src/cli.ts",
     "typecheck": "tsc --noEmit && npm --prefix web exec tsc -- --noEmit",
+    "test": "tsx --test \"shared/**/*.test.ts\" \"src/**/*.test.ts\"",
     "setup": "npm install && npm --prefix web install"
   },
   "keywords": [],
@@ -22,6 +23,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^1.0.11",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
     "concurrently": "^10.0.6",

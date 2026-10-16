@@ -16,6 +16,7 @@ export { DISCIPLINAS, LETRAS, type Disciplina, type Letra };
 export const DISCIPLINAS_COM_FONTE_OBRIGATORIA: readonly Disciplina[] = [
   "conhecimentos_bancarios",
   "atualidades_mercado_financeiro",
+  "vendas_negociacao", // a banca cobra doutrina, não senso comum (6 de 13 traiçoeiras eram de Vendas)
 ];
 
 const TopicSchema = new Schema(
@@ -110,6 +111,25 @@ const QuestionSchema = new Schema(
     numeroOriginal: Number, // número da questão na prova original
     precisaImagem: Boolean, // depende de figura/tabela/tela que não veio no texto (status precisa_imagem)
     faltaImagem: String, // o que falta (ex.: "tabela de preços da embalagem")
+    notaNorma: String, // oficial que cita norma revogada (status desatualizada): o que mudou e a norma vigente
+    // Figuras: DADO desenhado por código (tabela, planilha, gráfico, tela) ou, nas oficiais, a
+    // imagem original extraída do PDF. Só aparecem no treino com status "ok" (conferidas pelo dono).
+    figuras: {
+      type: [
+        {
+          tipo: { type: String, enum: ["tabela", "planilha", "grafico", "imagem", "tela_programa"], required: true },
+          posicao: { type: String, enum: ["enunciado", "textoBase", "alternativas"], default: "enunciado" },
+          legenda: String,
+          dados: Schema.Types.Mixed, // TabelaDados | PlanilhaDados | GraficoDados | TelaProgramaDados
+          imagem: String, // data URL PNG (oficial: imagem original do PDF)
+          recorte: { pagina: Number, x: Number, y: Number, w: Number, h: Number, _id: false }, // em pontos do PDF
+          recortePng: String, // data URL do recorte da página, para conferência
+          origem: { type: String, enum: ["pdf", "construcao"], default: "pdf" },
+          status: { type: String, enum: ["aguardando_conferencia", "ok", "fora"], default: "aguardando_conferencia" },
+        },
+      ],
+      default: undefined,
+    },
     dificuldade: { type: Number, min: 1, max: 5, default: 3 },
 
     textoBase: String, // texto de apoio (interpretação de texto)
@@ -159,6 +179,19 @@ const QuestionSchema = new Schema(
           },
         ],
         default: undefined, // só existe em questões de Português por construção
+      },
+      // Crase: frases em que o auditor discordou do banco de regras e o Ultra desempatou às cegas
+      desempates: {
+        type: [
+          {
+            letra: { type: String, enum: LETRAS },
+            auditor: Boolean, // o que o auditor principal disse ("correta?")
+            ultra: Boolean, // o que o Ultra disse (null = falhou)
+            regraUltra: String,
+            _id: false,
+          },
+        ],
+        default: undefined,
       },
       _id: false,
     },

@@ -20,14 +20,22 @@ import type {
   CorrecaoDTO,
   Disciplina,
   ErroDTO,
+  FiguraDTO,
+  GraficoDados,
   Letra,
   Modo,
+  PlanilhaDados,
+  PosicaoFigura,
   QuestaoDTO,
+  TabelaDados,
+  TelaProgramaDados,
+  TipoFigura,
   ResultadoSimuladoDTO,
   TentativaBruta,
   TopicoDTO,
 } from "../shared/tipos.js";
 import { gerarQuestao } from "./pipeline.js";
+import { seFilaLivre } from "./fila.js";
 
 // App pessoal: um aluno só. Para multiusuário, troque por autenticação.
 export const ALUNO = () => new Types.ObjectId(process.env.ALUNO_ID || "000000000000000000000001");
@@ -69,7 +77,28 @@ type QuestaoDoc = {
   dicaDeProva?: string | null;
   fontes?: { sourceId?: Types.ObjectId | null; trecho?: string | null }[];
   auditoria?: { respostaCega?: string | null } | null;
+  notaNorma?: string | null;
+  figuras?: { tipo: string; posicao?: string | null; legenda?: string | null; dados?: unknown; imagem?: string | null; status?: string | null }[] | null;
 };
+
+// Só figuras conferidas (status ok) vão para a questão
+function figurasDTO(q: QuestaoDoc): FiguraDTO[] | undefined {
+  const ok = (q.figuras ?? []).filter((f) => f.status === "ok");
+  if (!ok.length) return undefined;
+  return ok.map((f) => {
+    const base: FiguraDTO = {
+      tipo: f.tipo as TipoFigura,
+      posicao: (f.posicao ?? "enunciado") as PosicaoFigura,
+      legenda: f.legenda ?? undefined,
+      imagem: f.imagem ?? undefined,
+    };
+    if (f.tipo === "tabela" && f.dados) base.tabela = f.dados as TabelaDados;
+    if (f.tipo === "planilha" && f.dados) base.planilha = f.dados as PlanilhaDados;
+    if (f.tipo === "grafico" && f.dados) base.grafico = f.dados as GraficoDados;
+    if (f.tipo === "tela_programa" && f.dados) base.tela = f.dados as TelaProgramaDados;
+    return base;
+  });
+}
 
 function paraDTO(q: QuestaoDoc, topicos: Map<string, { disciplina: string; assunto: string }>): QuestaoDTO {
   const t = topicos.get(String(q.topicId));
@@ -85,6 +114,8 @@ function paraDTO(q: QuestaoDoc, topicos: Map<string, { disciplina: string; assun
     enunciado: q.enunciado,
     alternativas: q.alternativas.map((a) => ({ letra: a.letra as Letra, texto: a.texto })),
     dificuldade: q.dificuldade ?? 3,
+    notaNorma: q.notaNorma ?? undefined,
+    figuras: figurasDTO(q),
   };
 }
 
@@ -149,7 +180,11 @@ function reabastecerEmSegundoPlano(topicId: string, quantas = 3) {
   gerando.add(topicId);
   (async () => {
     try {
-      for (let i = 0; i < quantas; i++) await gerarQuestao(topicId);
+      // um job de IA por vez: se a CLI estiver gerando/explicando/ingerindo, tenta de novo depois
+      const rodou = await seFilaLivre(`estoque do tópico ${topicId} (servidor)`, async () => {
+        for (let i = 0; i < quantas; i++) await gerarQuestao(topicId);
+      });
+      if (!rodou) console.log(`[estoque] ${topicId}: fila ocupada, fica para a próxima`);
     } catch (e) {
       console.warn(`[estoque] ${topicId}: ${(e as Error).message}`);
     } finally {

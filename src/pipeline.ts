@@ -33,7 +33,17 @@ import {
   auditorRevisaoUser,
   type QuestaoGerada,
 } from "./prompts.js";
-import { chatJSON, chatJSONAuditor, validarOuReparar, embed, gerador, escritorPT, modelo } from "./llm.js";
+import {
+  chatJSON,
+  chatJSONAuditor,
+  chatJSONEscritorPT,
+  validarOuReparar,
+  embed,
+  gerador,
+  auditor,
+  escritorPT,
+  modelo,
+} from "./llm.js";
 import { construir, temConstrucao, type Montada } from "./construcao.js";
 import {
   construirCrase,
@@ -333,30 +343,20 @@ async function gerarQuestaoInterna(
 // ------------------------------------------------------------
 export const TIPO_CRASE = "crase (por construção)";
 
-// Regras da última questão montada neste processo (mesmo se foi descartada antes de salvar)
-let regrasDaUltimaCrase: Set<string> | null = null;
-
-// Contagem de uso por regra nas aprovadas + regras da questão anterior (para não repetir)
+// Histórico SÓ das aprovadas no banco: contagem de uso por regra e as regras da última
+// aprovada (para não repetir). Tentativa descartada não conta.
 async function historicoCrase(topicId: Types.ObjectId): Promise<HistoricoCrase> {
   const idPorNome = new Map(REGRAS_CRASE.map((r) => [r.nome, r.id]));
   const aprovadas = await Question.find({ topicId, "variacao.tipo": TIPO_CRASE, status: "aprovada" })
+    .sort({ _id: 1 })
     .select("auditoria.porFrase.regraEsperada")
     .lean();
+  const ids = (q: (typeof aprovadas)[number]) =>
+    (q.auditoria?.porFrase ?? []).flatMap((p) => idPorNome.get(p.regraEsperada ?? "") ?? []);
   const uso = new Map<string, number>();
-  for (const q of aprovadas)
-    for (const p of q.auditoria?.porFrase ?? []) {
-      const id = idPorNome.get(p.regraEsperada ?? "");
-      if (id) uso.set(id, (uso.get(id) ?? 0) + 1);
-    }
-  let anterior = regrasDaUltimaCrase;
-  if (!anterior) {
-    const ultima = await Question.findOne({ topicId, "variacao.tipo": TIPO_CRASE })
-      .sort({ _id: -1 })
-      .select("auditoria.porFrase.regraEsperada")
-      .lean();
-    anterior = new Set((ultima?.auditoria?.porFrase ?? []).flatMap((p) => idPorNome.get(p.regraEsperada ?? "") ?? []));
-  }
-  return { uso, anterior };
+  for (const q of aprovadas) for (const id of ids(q)) uso.set(id, (uso.get(id) ?? 0) + 1);
+  const ultima = aprovadas.at(-1);
+  return { uso, anterior: new Set(ultima ? ids(ultima) : []) };
 }
 
 async function gerarCraseConstruida(
@@ -365,7 +365,6 @@ async function gerarCraseConstruida(
 ): Promise<Resultado> {
   const gabarito = letraAleatoria();
   const m = construirCrase(gabarito, variacao.contexto, await historicoCrase(topic._id));
-  regrasDaUltimaCrase = new Set(m.frases.map((f) => f.regra.id));
   const anteriores = await Question.find({ topicId: topic._id, "variacao.tipo": TIPO_CRASE })
     .sort({ createdAt: -1 })
     .limit(6)
@@ -376,12 +375,13 @@ async function gerarCraseConstruida(
     frasesRecentes: anteriores.flatMap((a) => a.alternativas.map((x) => x.texto)),
   });
 
-  // o escritor de Português é um modelo diferente do auditor (ESCRITOR_PT_MODEL)
-  const escritor = { client: escritorPT(), model: modelo("ESCRITOR_PT_MODEL") };
+  // o escritor de Português é um modelo diferente do auditor (ESCRITOR_PT_MODEL), com reserva
+  const escritores = new Set<string>();
   let escrito: z.infer<typeof FrasesCraseZ>;
   try {
-    const bruto = await chatJSON(escritor.client, escritor.model, CRASE_ESCRITOR_SYSTEM, user, 0.7, 2000);
-    escrito = await validarOuReparar(FrasesCraseZ, bruto, { ...escritor, system: CRASE_ESCRITOR_SYSTEM, user });
+    const r = await chatJSONEscritorPT(CRASE_ESCRITOR_SYSTEM, user, 0.7, 2000);
+    escritores.add(r.modelo);
+    escrito = await validarOuReparar(FrasesCraseZ, r.json, { client: escritorPT(), model: r.modelo, system: CRASE_ESCRITOR_SYSTEM, user });
   } catch (e) {
     return { ok: false, motivo: "geracao_invalida", detalhes: [umaLinha(e)] };
   }
@@ -397,8 +397,14 @@ async function gerarCraseConstruida(
     if (!problema) continue;
     try {
       const userUma = craseReescritaUser({ contexto: variacao.contexto, regra: f.regra, fraseAnterior: atual.frase, problema });
-      const bruto = await chatJSON(escritor.client, escritor.model, CRASE_ESCRITOR_SYSTEM, userUma, 0.7, 600);
-      const nova = await validarOuReparar(FraseUnicaCraseZ, bruto, { ...escritor, system: CRASE_ESCRITOR_SYSTEM, user: userUma });
+      const r = await chatJSONEscritorPT(CRASE_ESCRITOR_SYSTEM, userUma, 0.7, 600);
+      escritores.add(r.modelo);
+      const nova = await validarOuReparar(FraseUnicaCraseZ, r.json, {
+        client: escritorPT(),
+        model: r.modelo,
+        system: CRASE_ESCRITOR_SYSTEM,
+        user: userUma,
+      });
       const problema2 = conferirFrase(nova.frase, nova.trecho, f.regra);
       if (problema2)
         return {
@@ -447,15 +453,40 @@ async function gerarCraseConstruida(
   } catch (e) {
     return { ok: false, motivo: "auditor_falhou", detalhes: [umaLinha(e), ...linhas] };
   }
+  // Desempate: frase em que o auditor discorda do banco de regras vai, às cegas (só a frase),
+  // para o Ultra. Se o Ultra concordar com a regra, vale a regra; senão, a questão é descartada.
+  const ultra = process.env.AUDITOR_MODEL_RESERVA;
+  const desempates: { letra: Letra; auditor: boolean; ultra: boolean | null; regraUltra: string }[] = [];
+  for (const [k, p] of porFrase.entries()) {
+    const esperado = m.frases[k].regra.correta;
+    if (p.correta === esperado) continue;
+    if (!ultra) return { ok: false, motivo: "auditor_por_frase_discordou", detalhes: ["sem AUDITOR_MODEL_RESERVA para desempatar", ...linhas] };
+    let veredito: z.infer<typeof VereditoFraseZ> | null = null;
+    try {
+      veredito = VereditoFraseZ.parse(await chatJSON(auditor(), ultra, AUDITOR_FRASE_SYSTEM, `FRASE: ${porLetra.get(p.letra)!.frase}`, 0, 600));
+      modelos.add(ultra);
+    } catch (e) {
+      console.warn(`  ⚠ desempate da ${p.letra} falhou: ${umaLinha(e).slice(0, 120)}`);
+    }
+    desempates.push({ letra: p.letra, auditor: p.correta, ultra: veredito?.correta ?? null, regraUltra: veredito?.regra ?? "" });
+    if (veredito?.correta === esperado) {
+      console.log(`  ⚖ ${p.letra}: auditor disse ${p.correta ? "SIM" : "não"}, Ultra disse ${veredito.correta ? "SIM" : "não"} = regra → vale a regra`);
+      p.correta = esperado;
+      p.regra = `[desempate Ultra] ${veredito.regra}`;
+    }
+  }
   const vereditos = porFrase.map(
     (p, k) => `${p.letra}) "${porLetra.get(p.letra)!.frase}" → auditor: ${p.correta ? "SIM" : "não"} (${p.regra}) | esperado: ${m.frases[k].regra.correta ? "SIM" : "não"}`
+  );
+  const resumoDesempates = desempates.map(
+    (d) => `desempate ${d.letra}: auditor ${d.auditor ? "SIM" : "não"}, Ultra ${d.ultra === null ? "falhou" : d.ultra ? "SIM" : "não"}`
   );
   const sims = porFrase.filter((p) => p.correta);
   if (sims.length !== 1 || sims[0].letra !== gabarito)
     return {
       ok: false,
       motivo: "auditor_por_frase_discordou",
-      detalhes: [`auditor disse SIM para: ${sims.map((p) => p.letra).join(", ") || "nenhuma"}; gabarito ${gabarito}`, ...vereditos],
+      detalhes: [`auditor disse SIM para: ${sims.map((p) => p.letra).join(", ") || "nenhuma"}; gabarito ${gabarito}`, ...resumoDesempates, ...vereditos],
     };
 
   // revisão completa de sempre
@@ -480,13 +511,14 @@ async function gerarCraseConstruida(
     dicaDeProva: q.dicaDeProva ?? undefined,
     fontes: [],
     status: aprovada ? "aprovada" : "rejeitada",
-    geradaPor: modelo("GERADOR_MODEL"),
+    geradaPor: [...escritores].join(" + "),
     auditoria: {
       modelo: [...modelos].join(" + "),
       respostaCega: sims[0].letra,
       veredito: rev.veredito,
       problemas: rev.problemas,
       porFrase,
+      desempates,
     },
     variacao,
     hashEnunciado: h,

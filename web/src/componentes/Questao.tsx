@@ -1,6 +1,7 @@
 // Questão: enunciado + alternativas; depois de corrigida, mostra a explicação de cada alternativa
 import type { AlternativaCorrigida, CorrecaoDTO, Letra, QuestaoDTO } from "../../../shared/tipos";
 import { NOME_DISCIPLINA } from "../../../shared/tipos";
+import { Figura } from "./Figura";
 
 export function Cabecalho({ q, traicoeira }: { q: QuestaoDTO; traicoeira?: boolean }) {
   return (
@@ -21,14 +22,23 @@ export function Cabecalho({ q, traicoeira }: { q: QuestaoDTO; traicoeira?: boole
           </span>
         </span>
         {traicoeira && <span className="selo alerta">Traiçoeira: a IA errou essa às cegas</span>}
+        {q.notaNorma && <span className="selo atualizada">Norma atualizada</span>}
       </div>
+      {q.notaNorma && (
+        <div className="nota-norma" role="note">
+          <span className="rotulo">Norma atualizada · essa questão saiu do treino</span>
+          {q.notaNorma}
+        </div>
+      )}
       {q.textoBase && (
         <div className="texto-base">
           <span className="rotulo">Texto de apoio</span>
           {q.textoBase}
         </div>
       )}
+      {q.figuras?.filter((f) => f.posicao === "textoBase").map((f, i) => (<Figura key={`tb${i}`} f={f} />))}
       <p className="enunciado">{q.enunciado}</p>
+      {q.figuras?.filter((f) => f.posicao === "enunciado").map((f, i) => (<Figura key={`en${i}`} f={f} />))}
     </>
   );
 }
@@ -46,6 +56,8 @@ export function Alternativas({
 }) {
   const corr = new Map<Letra, AlternativaCorrigida>((correcao?.alternativas ?? []).map((a) => [a.letra, a]));
   return (
+    <>
+    {q.figuras?.filter((f) => f.posicao === "alternativas").map((f, i) => (<Figura key={`al${i}`} f={f} />))}
     <div className="alternativas" role={correcao ? undefined : "radiogroup"} aria-label="Alternativas">
       {q.alternativas.map((a) => {
         const c = corr.get(a.letra);
@@ -78,6 +90,7 @@ export function Alternativas({
         );
       })}
     </div>
+    </>
   );
 }
 

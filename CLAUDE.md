@@ -36,7 +36,7 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 ## Regras do projeto (não quebre)
 1. **Gabarito oficial nunca passa por IA.** É lido de forma determinística (`lerGabarito`).
 2. Questão gerada só vira `aprovada` se o auditor acertar **sem ver o gabarito** e aprovar a revisão.
-3. Conhecimentos Bancários e Atualidades **só geram com fonte ingerida**; o `trechoFonte` precisa existir literalmente na fonte.
+3. Conhecimentos Bancários, Atualidades e Vendas e Negociação **só geram com fonte ingerida**; o `trechoFonte` precisa existir literalmente na fonte. Fonte doutrinária escrita por IA (ex.: glossário de Vendas) só vale depois do OK do dono.
 4. A letra do gabarito é sorteada antes de gerar (evita viés de posição).
 5. Questão `aprovada` precisa ter explicação em todas as alternativas (validação no schema).
 6. Fonte revogada → trechos saem da busca e questões geradas dela viram `desatualizada`.

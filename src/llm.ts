@@ -43,12 +43,13 @@ function ehPassageiro(e: unknown): boolean {
   return e instanceof OpenAI.APIError && typeof e.status === "number" && STATUS_PASSAGEIRO.has(e.status);
 }
 
-export async function comRetry<T>(rotulo: string, fn: () => Promise<T>): Promise<T> {
+// maxNovas: quantas vezes repete (padrão 3). Com modelo de reserva, vale cair cedo para a reserva.
+export async function comRetry<T>(rotulo: string, fn: () => Promise<T>, maxNovas = ESPERAS_MS.length): Promise<T> {
   for (let tentativa = 0; ; tentativa++) {
     try {
       return await fn();
     } catch (e) {
-      if (!ehPassageiro(e) || tentativa >= ESPERAS_MS.length) throw e;
+      if (!ehPassageiro(e) || tentativa >= Math.min(maxNovas, ESPERAS_MS.length)) throw e;
       const espera = ESPERAS_MS[tentativa];
       const motivo = e instanceof OpenAI.APIError && e.status ? `HTTP ${e.status}` : "timeout/conexão";
       console.warn(`  ↻ ${rotulo}: ${motivo}, tentando de novo em ${espera / 1000}s`);
@@ -90,7 +91,15 @@ const semOrcamento = new Set<string>(); // modelos que recusaram reasoning_budge
 
 // Uma chamada de chat. <PREFIXO>_PENSAR=0 desliga o "pensamento" dos Nemotron;
 // <PREFIXO>_RACIOCINIO limita quantos tokens ele pode pensar (reasoning_budget).
-async function chamar(client: OpenAI, model: string, mensagens: Mensagem[], temperature: number, maxTokens: number, pensar?: boolean) {
+async function chamar(
+  client: OpenAI,
+  model: string,
+  mensagens: Mensagem[],
+  temperature: number,
+  maxTokens: number,
+  pensar?: boolean,
+  novasTentativas?: number
+) {
   const prefixo = prefixoDo.get(client);
   const pensa = pensar ?? (!prefixo || process.env[`${prefixo}_PENSAR`] !== "0");
   const orcamento = prefixo ? Number(process.env[`${prefixo}_RACIOCINIO`]) || 0 : 0;
@@ -98,14 +107,17 @@ async function chamar(client: OpenAI, model: string, mensagens: Mensagem[], temp
   const reserva = pensa ? orcamento || Number(process.env.LLM_RESERVA_RACIOCINIO ?? 16000) || 0 : 0;
   const limite = Math.min(maxTokens + reserva, Number(process.env.LLM_TETO_TOKENS) || 24000);
   const pedir = (comOrcamento: boolean) =>
-    comRetry(model, () =>
-      client.chat.completions.create({
-        model,
-        temperature,
-        max_tokens: limite,
-        messages: mensagens,
-        ...(pensa ? (comOrcamento ? { reasoning_budget: orcamento } : {}) : { chat_template_kwargs: { enable_thinking: false } }),
-      } as OpenAI.ChatCompletionCreateParamsNonStreaming)
+    comRetry(
+      model,
+      () =>
+        client.chat.completions.create({
+          model,
+          temperature,
+          max_tokens: limite,
+          messages: mensagens,
+          ...(pensa ? (comOrcamento ? { reasoning_budget: orcamento } : {}) : { chat_template_kwargs: { enable_thinking: false } }),
+        } as OpenAI.ChatCompletionCreateParamsNonStreaming),
+      novasTentativas
     );
   let r: OpenAI.ChatCompletion;
   try {
@@ -132,14 +144,15 @@ export async function chatJSON(
   user: string,
   temperature: number,
   maxTokens = 4000,
-  opcoes: { pensar?: boolean } = {} // pensar: false = sem raciocínio (tarefas de cópia, como extrair prova)
+  // pensar: false = sem raciocínio (tarefas de cópia) · novasTentativas: repetições em erro passageiro
+  opcoes: { pensar?: boolean; novasTentativas?: number } = {}
 ): Promise<unknown> {
   let ultimoErro: unknown;
   for (let tentativa = 0; tentativa < 2; tentativa++) {
     const { texto, motivo, limite } = await chamar(client, model, [
       { role: "system", content: system },
       { role: "user", content: user },
-    ], temperature, maxTokens, opcoes.pensar);
+    ], temperature, maxTokens, opcoes.pensar, opcoes.novasTentativas);
     try {
       if (!texto.includes("{") && motivo === "length")
         throw new Error(`resposta sem JSON (cortada no limite de ${limite} tokens: o modelo pensou demais)`);
@@ -191,16 +204,38 @@ export async function chatJSONAuditor(
   maxTokens: number,
   opcoes: { pensar?: boolean } = {}
 ): Promise<{ json: unknown; modelo: string }> {
-  const principal = modelo("AUDITOR_MODEL");
+  return chatJSONComReserva(auditor(), modelo("AUDITOR_MODEL"), process.env.AUDITOR_MODEL_RESERVA, system, user, temperature, maxTokens, opcoes);
+}
+
+// Principal com reserva (mesmo provedor): se o principal falhar (fora do ar, timeout, sem JSON),
+// usa a reserva. Com reserva configurada, o principal repete só 1 vez antes de passar a vez.
+export async function chatJSONComReserva(
+  client: OpenAI,
+  principal: string,
+  reserva: string | undefined,
+  system: string,
+  user: string,
+  temperature: number,
+  maxTokens: number,
+  opcoes: { pensar?: boolean } = {}
+): Promise<{ json: unknown; modelo: string }> {
+  const temReserva = !!reserva && reserva !== principal;
   try {
-    return { json: await chatJSON(auditor(), principal, system, user, temperature, maxTokens, opcoes), modelo: principal };
+    const json = await chatJSON(client, principal, system, user, temperature, maxTokens, {
+      ...opcoes,
+      ...(temReserva ? { novasTentativas: 1 } : {}),
+    });
+    return { json, modelo: principal };
   } catch (e) {
-    const reserva = process.env.AUDITOR_MODEL_RESERVA;
-    if (!reserva || reserva === principal) throw e;
-    console.warn(`  ↪ auditor ${principal} falhou (${String(e).slice(0, 120)}); usando a reserva ${reserva}`);
-    return { json: await chatJSON(auditor(), reserva, system, user, temperature, maxTokens, opcoes), modelo: reserva };
+    if (!temReserva) throw e;
+    console.warn(`  ↪ ${principal} falhou (${String(e).replace(/\s+/g, " ").slice(0, 100)}); usando a reserva ${reserva}`);
+    return { json: await chatJSON(client, reserva!, system, user, temperature, maxTokens, opcoes), modelo: reserva! };
   }
 }
+
+// Escritor de Português (frases da Crase) com reserva ESCRITOR_PT_MODEL_RESERVA
+export const chatJSONEscritorPT = (system: string, user: string, temperature: number, maxTokens: number) =>
+  chatJSONComReserva(escritorPT(), modelo("ESCRITOR_PT_MODEL"), process.env.ESCRITOR_PT_MODEL_RESERVA, system, user, temperature, maxTokens);
 
 // ------------------------------------------------------------
 // Embeddings em lote

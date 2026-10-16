@@ -3,7 +3,7 @@ import { useApp } from "../estado";
 import { zerarDemo } from "../api/demo";
 
 export function AjustesTela() {
-  const { ajustes, salvarAjustes, api, recarregar, avisar } = useApp();
+  const { ajustes, salvarAjustes, api, recarregar, avisar, ir } = useApp();
   const [form, setForm] = useState(ajustes);
   const [confirmarZerar, setConfirmarZerar] = useState(false);
 
@@ -74,6 +74,16 @@ export function AjustesTela() {
           </p>
         )}
       </div>
+
+      {api.modo === "servidor" && (
+        <div className="secao" style={{ marginTop: 16, maxWidth: 620 }}>
+          <h2>Conferência</h2>
+          <p style={{ marginTop: 0, color: "var(--suave)" }}>
+            Figuras extraídas das provas e desenhadas pelo código esperam o seu OK antes de entrar no treino.
+          </p>
+          <button className="botao-linha" onClick={() => ir("figuras")}>Conferir figuras</button>
+        </div>
+      )}
     </div>
   );
 }

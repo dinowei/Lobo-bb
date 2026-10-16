@@ -13,6 +13,7 @@ import {
   ingerirProva,
   explicarOficiais,
   anularOficial,
+  recuperarQuestao,
   revogarFonte,
   mostrarStatus,
   type MetaFonte,
@@ -20,6 +21,8 @@ import {
 import { gerarQuestao, reabastecerEstoque } from "./pipeline.js";
 import { Topic } from "./models.js";
 import { listarModelos } from "./llm.js";
+import { naFila } from "./fila.js";
+import { extrairFigurasOficiais } from "./figuras.js";
 
 const AJUDA = `
 BB Estudos — comandos (npm run bb -- <comando>)
@@ -34,6 +37,8 @@ BB Estudos — comandos (npm run bb -- <comando>)
   prova <prova.pdf> --gabarito <gabarito.pdf|txt> --nome "<nome>" [--banca cesgranrio] [--ano 2023]
   explicar [--limite 50]        IA escreve as explicações das oficiais pendentes
   anular --prova "<parte do nome>" --numero <n>   oficial anulada no gabarito definitivo sai de circulação
+  recuperar <prova.pdf> --gabarito <txt> --nome "<nome exato>" --numero <n>   traz uma oficial que ficou de fora
+  figuras-oficiais [config.json]  extrai as figuras das provas (data/figuras-oficiais.json) para conferência
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   revogar <id | parte do título>  norma mudou: tira fonte e questões de circulação
@@ -86,6 +91,8 @@ async function main() {
   }
 
   await mongoose.connect(exigir(process.env.MONGODB_URI, "MONGODB_URI no .env"));
+  // jobs de IA entram na fila (um por vez); o rótulo aparece para quem estiver esperando
+  const rotulo = `bb ${[comando, ...resto].join(" ")}`.slice(0, 160);
   try {
     switch (comando) {
       case "indice":
@@ -98,26 +105,40 @@ async function main() {
         const tipos = ["lei", "norma_bacen_cmn", "edital", "material_proprio"];
         const tipo = exigir(o.tipo, "--tipo");
         if (!tipos.includes(tipo)) throw new Error(`--tipo deve ser: ${tipos.join(" | ")}`);
-        return await ingerirFonte(exigir(args[0], "o arquivo da fonte"), {
-          tipo: tipo as MetaFonte["tipo"],
-          titulo: exigir(o.titulo, "--titulo"),
-          disciplina: o.disciplina,
-          orgao: o.orgao,
-          ano: o.ano ? Number(o.ano) : undefined,
-          url: o.url,
-          vigenteDesde: o.vigente ? new Date(o.vigente) : undefined,
-        });
+        return await naFila(rotulo, () =>
+          ingerirFonte(exigir(args[0], "o arquivo da fonte"), {
+            tipo: tipo as MetaFonte["tipo"],
+            titulo: exigir(o.titulo, "--titulo"),
+            disciplina: o.disciplina,
+            orgao: o.orgao,
+            ano: o.ano ? Number(o.ano) : undefined,
+            url: o.url,
+            vigenteDesde: o.vigente ? new Date(o.vigente) : undefined,
+          })
+        );
       }
 
       case "prova":
-        return await ingerirProva(exigir(args[0], "o PDF da prova"), exigir(o.gabarito, "--gabarito"), {
-          nome: exigir(o.nome, "--nome"),
-          banca: o.banca!,
-          ano: o.ano ? Number(o.ano) : undefined,
-        });
+        return await naFila(rotulo, () =>
+          ingerirProva(exigir(args[0], "o PDF da prova"), exigir(o.gabarito, "--gabarito"), {
+            nome: exigir(o.nome, "--nome"),
+            banca: o.banca!,
+            ano: o.ano ? Number(o.ano) : undefined,
+          })
+        );
 
       case "explicar":
-        return await explicarOficiais(o.limite ? Number(o.limite) : 50);
+        return await naFila(rotulo, () => explicarOficiais(o.limite ? Number(o.limite) : 50));
+
+      case "figuras-oficiais":
+        return await extrairFigurasOficiais(args[0] ?? "data/figuras-oficiais.json");
+
+      case "recuperar": {
+        const numero = Number(exigir(o.numero, "--numero"));
+        return await naFila(rotulo, () =>
+          recuperarQuestao(exigir(args[0], "o PDF da prova"), exigir(o.gabarito, "--gabarito"), exigir(o.nome, "--nome"), numero)
+        );
+      }
 
       case "anular": {
         const numero = Number(exigir(o.numero, "--numero"));
@@ -132,23 +153,24 @@ async function main() {
         });
         if (!topico) throw new Error(`Nenhum tópico com "${busca}" no nome. Veja "npm run bb -- status".`);
         const n = o.n ? Number(o.n) : 1;
-        console.log(`Gerando ${n} questão(ões) de "${topico.assunto}"…`);
-        let aprovadas = 0;
-        const t0 = Date.now();
-        for (let i = 0; i < n; i++) {
-          const ti = Date.now();
-          const r = await gerarQuestao(String(topico._id), 3, { tipo: o.tipo });
-          const seg = Math.round((Date.now() - ti) / 1000);
-          const v = r.variacao ? ` [${r.variacao.tipo} · ${r.variacao.contexto}${r.variacao.duasEtapas ? " · 2 etapas" : ""}]` : "";
-          if (r.ok) aprovadas++;
-          console.log(r.ok ? `✔ aprovada: ${r.questionId}${v} (${seg}s)` : `✖ ${r.motivo}${v} (${seg}s) ${r.detalhes?.join(" | ") ?? ""}`);
-        }
-        console.log(`\n${aprovadas}/${n} aprovadas · ${Math.round((Date.now() - t0) / 1000 / n)}s em média por questão`);
-        return;
+        return await naFila(rotulo, async () => {
+          console.log(`Gerando ${n} questão(ões) de "${topico.assunto}"…`);
+          let aprovadas = 0;
+          const t0 = Date.now();
+          for (let i = 0; i < n; i++) {
+            const ti = Date.now();
+            const r = await gerarQuestao(String(topico._id), 3, { tipo: o.tipo });
+            const seg = Math.round((Date.now() - ti) / 1000);
+            const v = r.variacao ? ` [${r.variacao.tipo} · ${r.variacao.contexto}${r.variacao.duasEtapas ? " · 2 etapas" : ""}]` : "";
+            if (r.ok) aprovadas++;
+            console.log(r.ok ? `✔ aprovada: ${r.questionId}${v} (${seg}s)` : `✖ ${r.motivo}${v} (${seg}s) ${r.detalhes?.join(" | ") ?? ""}`);
+          }
+          console.log(`\n${aprovadas}/${n} aprovadas · ${Math.round((Date.now() - t0) / 1000 / n)}s em média por questão`);
+        });
       }
 
       case "estoque":
-        return await reabastecerEstoque(o.min ? Number(o.min) : 30);
+        return await naFila(rotulo, () => reabastecerEstoque(o.min ? Number(o.min) : 30));
 
       case "revogar":
         return await revogarFonte(exigir(args[0], "o id ou parte do título da fonte"));

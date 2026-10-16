@@ -5,7 +5,8 @@
 // ============================================================
 import "./env.js"; // precisa ser o primeiro import
 import express, { type NextFunction, type Request, type Response } from "express";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
+import { listarFiguras, decidirFigura, contextoDaFigura, type AcaoFigura } from "./admin.js";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -92,6 +93,36 @@ app.post(
     if (!texto(questaoId) || !motivos.includes(motivo)) return res.status(400).json({ erro: "Motivo inválido." });
     await apiServidor.contestar(questaoId, motivo, texto(comentario));
     res.status(204).end();
+  })
+);
+
+// ---------- Conferência do dono (tela Figuras) ----------
+app.get("/api/admin/figuras", rota(async (_req, res) => res.json(await listarFiguras())));
+
+app.get(
+  "/api/admin/figuras/:questaoId/:figuraId/contexto",
+  rota(async (req, res) => {
+    const qid = String(req.params.questaoId);
+    const fid = String(req.params.figuraId);
+    if (!Types.ObjectId.isValid(qid) || !Types.ObjectId.isValid(fid)) return res.status(400).json({ erro: "Id inválido." });
+    res.json(await contextoDaFigura(qid, fid));
+  })
+);
+
+app.post(
+  "/api/admin/figuras/:questaoId/:figuraId",
+  rota(async (req, res) => {
+    const corpo = req.body ?? {};
+    const num = (v: unknown) => typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 2000;
+    let acao: AcaoFigura;
+    if (corpo.acao === "ok" || corpo.acao === "fora") acao = { acao: corpo.acao };
+    else if (corpo.acao === "recorte" && ["x", "y", "w", "h"].every((k) => num(corpo.recorte?.[k])) && corpo.recorte.w > 5 && corpo.recorte.h > 5)
+      acao = { acao: "recorte", recorte: { x: corpo.recorte.x, y: corpo.recorte.y, w: corpo.recorte.w, h: corpo.recorte.h } };
+    else return res.status(400).json({ erro: 'Envie { acao: "ok" | "fora" } ou { acao: "recorte", recorte: { x, y, w, h } }.' });
+    const qid = String(req.params.questaoId);
+    const fid = String(req.params.figuraId);
+    if (!Types.ObjectId.isValid(qid) || !Types.ObjectId.isValid(fid)) return res.status(400).json({ erro: "Id inválido." });
+    res.json({ status: await decidirFigura(qid, fid, acao) });
   })
 );
 

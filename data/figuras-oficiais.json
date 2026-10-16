@@ -1,0 +1,23 @@
+{
+  "_aviso": "Figuras das provas oficiais (docs/FIGURAS-INVENTARIO.md). 'antes'/'depois' = trechos de texto da página que ficam logo acima e logo abaixo da figura (o recorte é feito entre eles, na coluna da questão). 'imagem: true' = figura é imagem embutida no PDF (extrai o arquivo original). Toda figura entra como 'aguardando_conferencia' e só aparece no treino depois do OK do dono na tela Figuras.",
+  "provas": [
+    {
+      "prova": "BB 2023 — Escriturário Agente Comercial",
+      "arquivo": "provas/bb-2023-comercial-prova.pdf",
+      "figuras": [
+        { "numero": 18, "pagina": 8, "tipo": "tabela", "posicao": "enunciado", "larguraTotal": true, "antes": "da seguinte forma:", "depois": "Nessa distribuição", "legenda": "Tabela com os números de 1 a 30 dispostos em 7 colunas" },
+        { "numero": 19, "pagina": 8, "tipo": "tabela", "posicao": "enunciado", "antes": "as cadeiras.", "depois": "O custo total da compra", "legenda": "Materiais e custo total por agência" },
+        { "numero": 41, "pagina": 13, "tipo": "planilha", "posicao": "enunciado", "imagem": true, "antes": "no Excel 365:", "depois": "Na célula C10", "legenda": "Planilha do Excel 365 com códigos de peça e valores" },
+        { "numero": 60, "pagina": 16, "tipo": "tabela", "posicao": "enunciado", "antes": "apresentada a seguir.", "depois": "Com base nessa Tabela", "legenda": "Compras iniciadas e finalizadas na semana, por empresa" }
+      ]
+    },
+    {
+      "prova": "BB 2021 — Escriturário Agente Comercial",
+      "arquivo": "provas/bb-2021-comercial-prova.pdf",
+      "figuras": [
+        { "numero": 27, "pagina": 9, "tipo": "tabela", "posicao": "enunciado", "antes": "seguir.", "depois": "A partir da orientação", "legenda": "Depósitos de janeiro de 2018 a janeiro de 2021" },
+        { "numero": 27, "pagina": 9, "tipo": "imagem", "posicao": "alternativas", "antes": "", "depois": "", "regiao": { "x": 509, "y": 181, "w": 62, "h": 58 }, "legenda": "Dados com as potências (o texto do PDF perdeu os expoentes: 1,1^5 = 1,611; 1,1^4 = 1,464; 1,1^3 = 1,331)" }
+      ]
+    }
+  ]
+}

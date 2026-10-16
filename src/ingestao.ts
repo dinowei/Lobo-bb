@@ -295,6 +295,41 @@ function coberturaLiteral(copia: string, cru: string): number {
   return trechos.filter((t) => alvo.includes(t)).length / trechos.length;
 }
 
+// Extrai UMA questão pelo número: acha no texto cru a página onde o número aparece sozinho
+// na linha (fora da capa) e pede SÓ aquela questão, com a página seguinte junto.
+async function extrairUma(paginas: string[], n: number, secao: string): Promise<QuestaoExtraida | null> {
+  const marcador = new RegExp(`(^|\\n)\\s*${n}\\s*(\\n|$)`);
+  const pag = paginas.findIndex((p, i) => i > 0 && marcador.test(p));
+  if (pag < 0) {
+    console.warn(`  ⚠ nº ${n}: não achei o número no texto do PDF`);
+    return null;
+  }
+  const fatia = paginas.slice(pag, pag + 2); // a questão pode continuar na página seguinte
+  const texto = fatia.map((p, i) => `=== PÁGINA ${pag + i + 1} ===\n${p}`).join("\n\n");
+  try {
+    const { json } = await chatJSONAuditor(
+      EXTRATOR_SYSTEM,
+      `${extratorUser(texto, secao)}\n\nEXTRAIA SOMENTE A QUESTÃO DE NÚMERO ${n}, com as cinco alternativas dela. ` +
+        "Ignore as outras questões destas páginas (o PDF tem duas colunas: outra questão pode aparecer no meio do texto).",
+      0,
+      6_000,
+      { pensar: false }
+    );
+    const itens = (json as { questoes?: unknown })?.questoes;
+    const achada = (Array.isArray(itens) ? itens : [])
+      .map((item) => QuestaoExtraidaZ.safeParse(item))
+      .find((v) => v.success && v.data.numero === n);
+    if (achada?.success) {
+      console.log(`  ✔ nº ${n} recuperada (página ${pag + 1})`);
+      return achada.data;
+    }
+    console.warn(`  ⚠ nº ${n}: o modelo não devolveu a questão válida`);
+  } catch (e) {
+    console.warn(`  ⚠ nº ${n}: ${(e as Error).message.replace(/\s+/g, " ").slice(0, 150)}`);
+  }
+  return null;
+}
+
 async function extrairQuestoes(
   paginas: string[],
   esperadas: number[] = [],
@@ -358,34 +393,9 @@ async function extrairQuestoes(
   const faltam = esperadas.filter((n) => !porNumero.has(n));
   if (faltam.length) console.log(`… buscando uma a uma ${faltam.length} questão(ões) que faltaram: ${faltam.join(", ")}`);
   for (const n of faltam) {
-    const marcador = new RegExp(`(^|\\n)\\s*${n}\\s*(\\n|$)`);
-    const pag = paginas.findIndex((p) => marcador.test(p));
-    if (pag < 0) {
-      console.warn(`  ⚠ nº ${n}: não achei o número no texto do PDF`);
-      continue;
-    }
-    const fatia = paginas.slice(pag, pag + 2); // a questão pode continuar na página seguinte
-    const texto = fatia.map((p, i) => `=== PÁGINA ${pag + i + 1} ===\n${p}`).join("\n\n");
-    try {
-      const anterior = [...porNumero.values()].filter((q) => q.numero < n).sort((a, b) => b.numero - a.numero)[0];
-      const { json } = await chatJSONAuditor(
-        EXTRATOR_SYSTEM,
-        `${extratorUser(texto, anterior?.disciplina ?? secaoAtual)}\n\nEXTRAIA SOMENTE A QUESTÃO DE NÚMERO ${n}. Ignore as outras questões destas páginas.`,
-        0,
-        6_000,
-        { pensar: false }
-      );
-      const itens = (json as { questoes?: unknown })?.questoes;
-      const achada = (Array.isArray(itens) ? itens : [])
-        .map((item) => QuestaoExtraidaZ.safeParse(item))
-        .find((v) => v.success && v.data.numero === n);
-      if (achada?.success) {
-        porNumero.set(n, achada.data);
-        console.log(`  ✔ nº ${n} recuperada (página ${pag + 1})`);
-      } else console.warn(`  ⚠ nº ${n}: o modelo não devolveu a questão válida`);
-    } catch (e) {
-      console.warn(`  ⚠ nº ${n}: ${(e as Error).message.replace(/\s+/g, " ").slice(0, 150)}`);
-    }
+    const anterior = [...porNumero.values()].filter((q) => q.numero < n).sort((a, b) => b.numero - a.numero)[0];
+    const q = await extrairUma(paginas, n, anterior?.disciplina ?? secaoAtual);
+    if (q) porNumero.set(n, q);
   }
 
   const ordenadas = [...porNumero.values()].sort((a, b) => a.numero - b.numero);
@@ -611,6 +621,69 @@ export async function ingerirProva(
   if (outras.length)
     console.log(`ℹ Ficaram de fora (incompletas ou dependem de imagem): nº ${outras.map((q) => q.numero).join(", ")}`);
   console.log('Próximo passo: "npm run bb -- explicar" para a IA escrever as explicações.');
+}
+
+// ============================================================
+// 4b. RECUPERAR uma questão oficial que ficou de fora (ex.: intercalada com outra no PDF)
+// Mesmas travas da ingestão: gabarito por código, disciplina da capa, conferência literal.
+// ============================================================
+export async function recuperarQuestao(caminhoProva: string, caminhoGabarito: string, nomeProva: string, numero: number) {
+  const fonte = await Source.findOne({ tipo: "prova_oficial", titulo: nomeProva });
+  if (!fonte) throw new Error(`Prova "${nomeProva}" não foi ingerida (use o nome exato do --nome da ingestão).`);
+  if (await Question.exists({ origem: "oficial", prova: nomeProva, numeroOriginal: numero })) {
+    console.log(`↷ a nº ${numero} de "${nomeProva}" já está no banco`);
+    return;
+  }
+  const { paginas, hash } = await lerArquivo(caminhoProva);
+  if (fonte.hashArquivo && fonte.hashArquivo !== hash) throw new Error("Esse PDF não é o mesmo da prova ingerida com esse nome.");
+  const gabarito = lerGabarito((await lerArquivo(caminhoGabarito)).paginas.join("\n"));
+  const resposta = gabarito.get(numero);
+  if (!resposta) throw new Error(`O gabarito não tem a nº ${numero}.`);
+  if (resposta === "anulada") throw new Error(`A nº ${numero} está anulada no gabarito.`);
+
+  const disciplina = lerDistribuicao(paginas)?.get(numero);
+  const q = await extrairUma(paginas, numero, disciplina ?? "desconhecida");
+  if (!q) throw new Error(`Não consegui extrair a nº ${numero}.`);
+  if (disciplina) q.disciplina = disciplina;
+
+  // conferência literal: tudo precisa bater com o PDF (palavra trocada é corrigida pelo PDF)
+  const pdf = new TextoPdf(paginas);
+  const problemas: string[] = [];
+  const conferir = (t: string, nome: string) => {
+    const c = pdf.conferir(t);
+    if (c.status === "corrigido") console.log(`  ✎ ${nome}: ${c.detalhe}`);
+    if (c.status === "suspeito") problemas.push(`${nome}: ${c.detalhe}`);
+    return c.texto;
+  };
+  q.enunciado = conferir(q.enunciado, "enunciado");
+  for (const l of LETRAS) {
+    const alt = q.alternativas[l];
+    if (alt) q.alternativas[l] = conferir(alt, `alternativa ${l}`);
+  }
+  if (problemas.length) throw new Error(`A cópia não bateu com o PDF, nada foi salvo: ${problemas.join(" | ")}`);
+  if (q.dependeDeImagem) throw new Error("A IA marcou a questão como dependente de imagem; confira no PDF.");
+  if (LETRAS.some((l) => !q.alternativas[l]?.trim())) throw new Error("Faltou alguma alternativa; nada foi salvo.");
+
+  const [vetor] = await embedLote([`${q.enunciado}\n${LETRAS.map((l) => q.alternativas[l]).join("\n")}`], "passage");
+  const topicos = await topicosComVetor(ehDisciplina(q.disciplina) ? q.disciplina : undefined).catch(() => topicosComVetor());
+  const [topicId] = classificar(vetor, topicos, { forcar: true });
+  await Question.create({
+    topicId,
+    origem: "oficial",
+    estiloBanca: fonte.banca ?? undefined,
+    prova: nomeProva,
+    numeroOriginal: numero,
+    textoBase: q.textoBase ?? undefined,
+    enunciado: q.enunciado,
+    alternativas: LETRAS.map((l) => ({ letra: l, texto: q.alternativas[l]!.trim(), correta: l === resposta })),
+    gabarito: resposta,
+    fontes: [{ sourceId: fonte._id }],
+    status: "pendente",
+    hashEnunciado: hashTexto(`${q.textoBase ?? ""}|${q.enunciado}|${LETRAS.map((l) => q.alternativas[l]).join("|")}`),
+  });
+  console.log(`✔ nº ${numero} de "${nomeProva}" recuperada (${q.disciplina}, gabarito ${resposta}). Rode "npm run bb -- explicar".`);
+  console.log(`  ${q.enunciado.replace(/\s+/g, " ").slice(0, 200)}`);
+  for (const l of LETRAS) console.log(`  (${l}) ${q.alternativas[l]}${l === resposta ? "   ← gabarito" : ""}`);
 }
 
 // ============================================================

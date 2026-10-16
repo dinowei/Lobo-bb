@@ -40,6 +40,68 @@ export interface TopicoDTO {
   peso: number | null; // questões na prova (edital)
 }
 
+// ---------- Figuras: DADO desenhado por código no site (nunca imagem gerada por IA) ----------
+export type TipoFigura = "tabela" | "planilha" | "grafico" | "imagem" | "tela_programa";
+export type PosicaoFigura = "enunciado" | "textoBase" | "alternativas";
+
+export interface TabelaDados {
+  cabecalho?: string[];
+  linhas: string[][];
+}
+export interface PlanilhaDados {
+  colunas: number; // nº de colunas (A, B, C…)
+  linhas: number; // nº de linhas (1, 2, 3…)
+  celulas: Record<string, string>; // "B2" → "5" ou "=SOMA(B2:B5)" (fórmula avaliada por código)
+  selecionada?: string; // célula em destaque (ex.: "C10")
+  formatos?: Record<string, "moeda" | "porcentagem" | "numero" | "texto">;
+}
+export interface GraficoDados {
+  forma: "barras" | "linhas" | "pizza";
+  titulo?: string;
+  rotulos: string[];
+  series: { nome: string; valores: number[] }[];
+  unidade?: string; // "R$", "%", …
+}
+export interface TelaProgramaDados {
+  janela: string; // título da janela
+  menu?: string[];
+  caixa?: { titulo: string; campos: { rotulo: string; valor?: string; marcado?: boolean }[]; botoes: string[] };
+}
+
+export interface FiguraDTO {
+  tipo: TipoFigura;
+  posicao: PosicaoFigura;
+  legenda?: string;
+  tabela?: TabelaDados;
+  planilha?: PlanilhaDados;
+  grafico?: GraficoDados;
+  tela?: TelaProgramaDados;
+  imagem?: string; // data URL (só figura oficial extraída do PDF)
+}
+
+// Conferência do dono (tela Figuras)
+export interface RegiaoPdf { pagina: number; x: number; y: number; w: number; h: number }
+export interface FiguraConferenciaDTO {
+  id: string;
+  tipo: TipoFigura;
+  posicao: PosicaoFigura;
+  legenda?: string;
+  dados?: unknown;
+  imagem?: string;
+  recortePng?: string;
+  recorte?: RegiaoPdf;
+  origem: string;
+  status: "aguardando_conferencia" | "ok" | "fora";
+}
+export interface QuestaoComFigurasDTO {
+  questaoId: string;
+  prova?: string;
+  numero?: number;
+  status: string;
+  enunciado: string;
+  figuras: FiguraConferenciaDTO[];
+}
+
 export interface QuestaoDTO {
   id: string;
   topicoId: string;
@@ -52,6 +114,10 @@ export interface QuestaoDTO {
   enunciado: string;
   alternativas: { letra: Letra; texto: string }[];
   dificuldade: number;
+  /** oficial que cita norma revogada: o que mudou e a norma vigente (questão fora do treino) */
+  notaNorma?: string;
+  /** figuras conferidas (status ok) */
+  figuras?: FiguraDTO[];
 }
 
 export interface AlternativaCorrigida {
