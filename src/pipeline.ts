@@ -21,8 +21,10 @@ import {
   geradorUser,
   geradorConstruidoUser,
   FrasesCraseZ,
+  FraseUnicaCraseZ,
   CRASE_ESCRITOR_SYSTEM,
   craseEscritorUser,
+  craseReescritaUser,
   VereditoFraseZ,
   AUDITOR_FRASE_SYSTEM,
   AUDITOR_CEGO_SYSTEM,
@@ -31,9 +33,9 @@ import {
   auditorRevisaoUser,
   type QuestaoGerada,
 } from "./prompts.js";
-import { chatJSON, chatJSONAuditor, validarOuReparar, embed, gerador, modelo } from "./llm.js";
+import { chatJSON, chatJSONAuditor, validarOuReparar, embed, gerador, escritorPT, modelo } from "./llm.js";
 import { construir, temConstrucao, type Montada } from "./construcao.js";
-import { construirCrase, conferirFrase } from "./portugues.js";
+import { construirCrase, conferirFrase, explicarAlternativa, explicacaoGeralCrase, DICA_CRASE } from "./portugues.js";
 import { normalizar, hashTexto } from "./extrair.js";
 import { ehDisciplinaDeCalculo, verificarConta } from "./verificacao.js";
 import { sortearVariacao, type Variacao } from "./variacao.js";
@@ -339,44 +341,56 @@ async function gerarCraseConstruida(
     frasesRecentes: anteriores.flatMap((a) => a.alternativas.map((x) => x.texto)),
   });
 
+  // o escritor de Português é um modelo diferente do auditor (ESCRITOR_PT_MODEL)
+  const escritor = { client: escritorPT(), model: modelo("ESCRITOR_PT_MODEL") };
   let escrito: z.infer<typeof FrasesCraseZ>;
   try {
-    const bruto = await chatJSON(gerador(), modelo("GERADOR_MODEL"), CRASE_ESCRITOR_SYSTEM, user, 0.8, 4000);
-    escrito = await validarOuReparar(FrasesCraseZ, bruto, {
-      client: gerador(),
-      model: modelo("GERADOR_MODEL"),
-      system: CRASE_ESCRITOR_SYSTEM,
-      user,
-    });
+    const bruto = await chatJSON(escritor.client, escritor.model, CRASE_ESCRITOR_SYSTEM, user, 0.7, 2000);
+    escrito = await validarOuReparar(FrasesCraseZ, bruto, { ...escritor, system: CRASE_ESCRITOR_SYSTEM, user });
   } catch (e) {
     return { ok: false, motivo: "geracao_invalida", detalhes: [umaLinha(e)] };
   }
-  const porLetra = new Map(escrito.frases.map((f) => [f.letra, f]));
+  const porLetra = new Map(escrito.frases.map((f) => [f.letra, { frase: f.frase, trecho: f.trecho }]));
   if (porLetra.size !== 5) return { ok: false, motivo: "letras_repetidas" };
+
+  // Trava "frase fora da regra": o "à" tem que estar (ou não) exatamente onde a regra manda.
+  // Frase que não bate é descartada e só ela é pedida de novo (1 tentativa).
+  const reescritas: string[] = [];
+  for (const f of m.frases) {
+    const atual = porLetra.get(f.letra)!;
+    const problema = conferirFrase(atual.frase, atual.trecho, f.regra);
+    if (!problema) continue;
+    try {
+      const userUma = craseReescritaUser({ contexto: variacao.contexto, regra: f.regra, fraseAnterior: atual.frase, problema });
+      const bruto = await chatJSON(escritor.client, escritor.model, CRASE_ESCRITOR_SYSTEM, userUma, 0.7, 600);
+      const nova = await validarOuReparar(FraseUnicaCraseZ, bruto, { ...escritor, system: CRASE_ESCRITOR_SYSTEM, user: userUma });
+      const problema2 = conferirFrase(nova.frase, nova.trecho, f.regra);
+      if (problema2)
+        return {
+          ok: false,
+          motivo: "frase_fora_da_regra",
+          detalhes: [`${f.letra} [${f.regra.nome}]: "${atual.frase}" → ${problema}; reescrita "${nova.frase}" → ${problema2}`],
+        };
+      porLetra.set(f.letra, nova);
+      reescritas.push(`${f.letra} reescrita (${problema})`);
+    } catch (e) {
+      return { ok: false, motivo: "geracao_invalida", detalhes: [`reescrita da ${f.letra}: ${umaLinha(e)}`] };
+    }
+  }
+  if (reescritas.length) console.log(`  ✎ ${reescritas.join("; ")}`);
   const linhas = m.frases.map((f) => `${f.letra}) ${porLetra.get(f.letra)!.frase} [regra: ${f.regra.nome}]`);
 
-  // conferência determinística: a frase tem (ou não) o acento que a regra exige
-  const fora = m.frases.flatMap((f) => {
-    const p = conferirFrase(porLetra.get(f.letra)!.frase, f.regra);
-    return p ? [`${f.letra}: ${p}`] : [];
-  });
-  if (fora.length) return { ok: false, motivo: "frase_fora_da_regra", detalhes: [...fora, ...linhas] };
-
+  // explicação, pegadinha e explicação geral vêm da REGRA (banco), não da IA
+  const certa = m.frases.find((f) => f.letra === gabarito)!.regra;
   const q: QuestaoGerada = {
     enunciado: m.enunciado,
     alternativas: m.frases.map((f) => {
       const e = porLetra.get(f.letra)!;
-      return {
-        letra: f.letra,
-        texto: e.frase,
-        correta: f.letra === gabarito,
-        explicacao: e.explicacao,
-        pegadinha: f.letra === gabarito ? null : e.pegadinha ?? f.regra.explicacao,
-      };
+      return { letra: f.letra, texto: e.frase, correta: f.letra === gabarito, ...explicarAlternativa(f.regra, e.trecho) };
     }),
     gabarito,
-    explicacaoGeral: escrito.explicacaoGeral,
-    dicaDeProva: escrito.dicaDeProva ?? null,
+    explicacaoGeral: explicacaoGeralCrase(certa),
+    dicaDeProva: DICA_CRASE,
     trechoFonte: null,
     dificuldade: m.dificuldade,
     verificacao: null,

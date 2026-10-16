@@ -30,6 +30,8 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 - `npm run bb -- ajuda`: comandos de ingestão e geração (`modelos` lista os ids da NVIDIA)
 - Integração com Atlas e NVIDIA: siga `docs/INTEGRACAO.md` etapa por etapa
 - Nunca imprima nem faça commit de chaves ou da `MONGODB_URI`
+- **Edite código SEMPRE pelo editor (ferramentas Edit/Write), nunca por script** (sed, node -e, heredoc que reescreve arquivo): os escapes de regex (`\s`, `\d`, `\p{L}`) já se perderam três vezes assim. Script só para LER arquivos ou gerar dados.
+- `provas/` e `fontes/` ficam fora do Git (PDFs e gabaritos oficiais só no PC).
 
 ## Regras do projeto (não quebre)
 1. **Gabarito oficial nunca passa por IA.** É lido de forma determinística (`lerGabarito`).
@@ -45,6 +47,7 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 11. Variedade é decidida pelo código: tipo e contexto são sorteados de `data/variacoes.json` e só saem pares permitidos na tabela de compatibilidade. Contexto novo ou tipo novo entra na tabela antes de ser usado.
 12. Questões por construção (Matemática e Crase): números, alternativas, gabarito e dificuldade vêm do código (dificuldade = nº de etapas + 1). A IA só escreve o texto e não pode alterar número nem a regra atribuída a cada alternativa.
 13. Crase por construção só é aprovada se o auditor, julgando cada frase isoladamente e sem saber a regra, disser "correta" para exatamente uma frase, a do gabarito. Depois passa pela revisão completa.
+14. Nas questões por construção de Português, explicação, pegadinha, correção e explicação geral vêm do banco de regras (`src/portugues.ts`), nunca da IA. As frases são escritas pelo `ESCRITOR_PT_MODEL`, que precisa ser diferente do auditor. Cada frase passa pela trava de posição (o "à" exatamente onde a regra manda) antes do auditor; a que não bate é reescrita uma vez.
 
 ## Estado atual
 - Tudo compila (`npm run typecheck`). Leitura de PDF, fatiamento, gabarito, validações e motor de progressão foram testados.

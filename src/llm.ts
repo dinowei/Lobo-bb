@@ -11,15 +11,18 @@ function obrigatoria(nome: string): string {
   return v;
 }
 
-type Prefixo = "GERADOR" | "AUDITOR" | "EMBED";
+// ESCRITOR_PT: escreve as frases de Português por construção (modelo diferente do auditor).
+// Sem ESCRITOR_PT_BASE_URL/API_KEY, usa os do GERADOR.
+type Prefixo = "GERADOR" | "AUDITOR" | "EMBED" | "ESCRITOR_PT";
 const clientes = new Map<string, OpenAI>();
 const prefixoDo = new WeakMap<OpenAI, Prefixo>();
 function cliente(prefixo: Prefixo): OpenAI {
   let c = clientes.get(prefixo);
   if (!c) {
+    const herda = prefixo === "ESCRITOR_PT" && !process.env.ESCRITOR_PT_API_KEY ? "GERADOR" : prefixo;
     c = new OpenAI({
-      baseURL: process.env[`${prefixo}_BASE_URL`] || undefined,
-      apiKey: obrigatoria(`${prefixo}_API_KEY`),
+      baseURL: process.env[`${herda}_BASE_URL`] || undefined,
+      apiKey: obrigatoria(`${herda}_API_KEY`),
       timeout: (Number(process.env.LLM_TIMEOUT_SEG) || 180) * 1000,
       maxRetries: 0, // as novas tentativas ficam com comRetry (espera 2s, 6s, 18s)
     });
@@ -56,7 +59,9 @@ export async function comRetry<T>(rotulo: string, fn: () => Promise<T>): Promise
 
 export const gerador = () => cliente("GERADOR");
 export const auditor = () => cliente("AUDITOR");
-export const modelo = (nome: "GERADOR_MODEL" | "AUDITOR_MODEL" | "EMBED_MODEL") => obrigatoria(nome);
+export const escritorPT = () => cliente("ESCRITOR_PT");
+export const modelo = (nome: "GERADOR_MODEL" | "AUDITOR_MODEL" | "EMBED_MODEL" | "ESCRITOR_PT_MODEL") =>
+  nome === "ESCRITOR_PT_MODEL" ? process.env.ESCRITOR_PT_MODEL || obrigatoria("GERADOR_MODEL") : obrigatoria(nome);
 
 // ------------------------------------------------------------
 // Extrai o primeiro objeto JSON balanceado da resposta

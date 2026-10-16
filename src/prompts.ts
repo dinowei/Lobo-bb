@@ -157,36 +157,29 @@ ${p.enunciadosRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhum
 }
 
 // ============================================================
-// 1b. PORTUGUÊS POR CONSTRUÇÃO (Crase): a IA só escreve as frases
+// 1b. PORTUGUÊS POR CONSTRUÇÃO (Crase): a IA só escreve as frases e aponta o trecho.
+// Explicação, pegadinha e explicação geral vêm do banco de regras (src/portugues.ts).
 // ============================================================
+const FraseCraseZ = z.object({
+  frase: z.string().min(15).max(220),
+  trecho: z.string().min(3).max(80), // pedaço literal da frase onde a regra se aplica
+});
+export const FraseUnicaCraseZ = FraseCraseZ;
 export const FrasesCraseZ = z.object({
-  frases: z
-    .array(
-      z.object({
-        letra: LetraZ,
-        frase: z.string().min(15).max(220),
-        explicacao: z.string().min(30),
-        pegadinha: z.string().nullish(),
-      })
-    )
-    .length(5),
-  explicacaoGeral: z.string().min(60),
-  dicaDeProva: z.string().nullish(),
+  frases: z.array(FraseCraseZ.extend({ letra: LetraZ })).length(5),
 });
 
 export const CRASE_ESCRITOR_SYSTEM = `Você é professor de Língua Portuguesa e elaborador de questões da Cesgranrio para o concurso do Banco do Brasil.
-Você vai escrever 5 frases curtas (uma por letra) para uma questão de crase. Cada letra recebe UMA regra obrigatória: a frase daquela letra deve aplicar EXATAMENTE essa regra, inclusive quando a regra é um ERRO proposital.
+Você escreve frases curtas para uma questão de crase. Cada letra recebe UMA regra obrigatória: a frase daquela letra deve aplicar EXATAMENTE essa regra, inclusive quando a regra é um ERRO proposital.
 
 REGRAS
-1. Cada frase tem 8 a 25 palavras, contexto bancário (agência, cliente, conta, crédito, atendimento), e UM ÚNICO ponto onde a crase importa. Nenhum outro "a", "as", "à" ou "às" que possa gerar dúvida.
-1b. PROIBIDO usar casos de crase FACULTATIVA em qualquer frase (com e sem acento as duas formas estariam certas): antes de pronome possessivo feminino (sua, nossa, minha), antes de nome próprio de mulher e depois de "até". Use sempre substantivo comum. Esses casos podem aparecer só na "explicacaoGeral", como observação.
-2. Fora o ponto da regra, a frase é impecável: ortografia, concordância, regência e pontuação corretas, sem palavra em outro idioma.
-3. As frases com regra de ERRO devem conter exatamente aquele erro e nenhum outro. As frases com regra CORRETA não podem ter erro algum.
-4. "explicacao": por que o uso (ou a ausência) da crase naquela frase está certo ou errado, citando a regra. "pegadinha": nas erradas, o raciocínio que leva o candidato a achar que está certa (null na correta).
-5. "explicacaoGeral": o conceito de crase cobrado, em 3 a 6 frases. "dicaDeProva": um macete curto (ex.: troque por palavra masculina: se virar "ao", há crase).
+1. Cada frase tem 8 a 25 palavras, contexto bancário (agência, cliente, conta, crédito, atendimento), e UM ÚNICO ponto onde a crase importa. Nenhum outro "a", "as", "à" ou "às" na frase além do ponto da regra.
+2. PROIBIDO usar casos de crase FACULTATIVA (com e sem acento as duas formas estariam certas): antes de pronome possessivo feminino (sua, nossa, minha), antes de nome próprio de mulher e depois de "até". Use sempre substantivo comum.
+3. Fora o ponto da regra, a frase é impecável: ortografia, concordância, regência e pontuação corretas, sem palavra em outro idioma.
+4. As frases com regra de ERRO contêm exatamente aquele erro e nenhum outro. As frases com regra CORRETA não têm erro algum.
+5. "trecho": copie LITERALMENTE da frase o pedaço onde a regra se aplica, no formato pedido em "Trecho = ..." de cada regra (sem pontuação final).
 
-Responda APENAS com JSON:
-{"frases":[{"letra":"A","frase":"...","explicacao":"...","pegadinha":"..."}, ...],"explicacaoGeral":"...","dicaDeProva":"..."}`;
+Responda APENAS com JSON.`;
 
 export function craseEscritorUser(p: {
   contexto: string;
@@ -201,7 +194,27 @@ ${p.frases
   .join("\n")}
 
 === NÃO REPITA ESTAS FRASES ===
-${p.frasesRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhuma)"}`;
+${p.frasesRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhuma)"}
+
+Formato: {"frases":[{"letra":"A","frase":"...","trecho":"..."}, ...]} (as 5 letras, na ordem)`;
+}
+
+// Reescrita de UMA frase que não bateu com a regra (1 tentativa)
+export function craseReescritaUser(p: {
+  contexto: string;
+  regra: { nome: string; explicacao: string; correta: boolean; instrucao: string };
+  fraseAnterior: string;
+  problema: string;
+}) {
+  return `CONTEXTO: ${p.contexto}
+REGRA OBRIGATÓRIA: [${p.regra.correta ? "USO CORRETO" : "ERRO PROPOSITAL"}] ${p.regra.nome}
+Como escrever: ${p.regra.instrucao}
+Regra: ${p.regra.explicacao}
+
+Sua frase anterior foi descartada: "${p.fraseAnterior}"
+Motivo: ${p.problema}
+
+Escreva UMA nova frase que aplique exatamente essa regra. Formato: {"frase":"...","trecho":"..."}`;
 }
 
 // Auditor por frase: julga UMA frase isolada, sem saber a regra nem o gabarito

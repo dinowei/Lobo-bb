@@ -1,24 +1,31 @@
 // ============================================================
 // BB Estudos — Português por construção (começando por Crase)
 // O CÓDIGO sorteia 1 regra de uso CORRETO e 4 regras de ERRO diferentes e a letra
-// do gabarito. A IA só escreve as 5 frases (cada uma aplicando a regra atribuída)
-// e as explicações. Depois, o auditor julga cada frase isoladamente.
+// do gabarito. A IA (ESCRITOR_PT) só escreve as 5 frases e aponta o trecho onde
+// a regra se aplica. Explicação, pegadinha, correção e explicação geral vêm DO
+// BANCO DE REGRAS, não da IA. Depois, o auditor julga cada frase isoladamente.
 // ============================================================
 import type { Letra } from "../shared/tipos.js";
 
 export type RegraCrase = {
   id: string;
   nome: string;
-  explicacao: string; // explicação curta, vai para o aluno e para a IA
+  explicacao: string; // texto da regra: é ele que o aluno lê na explicação da alternativa
   correta: boolean; // a frase que aplica esta regra está de acordo com a norma-padrão?
   temCrase: boolean; // a frase PRECISA ter "à/às/àquele"? Cada regra tem UM único uso correto
   instrucao: string; // como a IA deve escrever a frase
+  trecho: RegExp; // forma exata do trecho onde a regra se aplica (conferida por código)
+  pegadinha?: string; // nas regras de erro: por que o candidato cai
+  corrigir?: (trecho: string) => string; // nas regras de erro: o trecho como deveria ser
 };
 
 // Casos FACULTATIVOS (com e sem crase, as duas formas estão certas) não entram no sorteio:
 // não servem como erro nem como resposta certa neste formato. Ficam só como explicação extra.
 export const CRASE_FACULTATIVA =
   "Crase facultativa (com ou sem acento, as duas formas estão corretas): antes de pronome possessivo feminino singular (à/a sua conta), antes de nome próprio feminino (à/a Maria) e depois de 'até' (até à/até a agência).";
+
+// troca o primeiro "à" isolado do trecho por "a"
+const tirarAcento = (t: string) => t.replace(/(^|\s)à(?=\s)/iu, "$1a");
 
 export const REGRAS_CRASE: RegraCrase[] = [
   // ---------- usos CORRETOS ----------
@@ -28,7 +35,8 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Quando o verbo ou nome exige a preposição 'a' e a palavra seguinte é feminina e aceita o artigo 'a', ocorre crase (a + a = à). Ex.: referir-se à proposta.",
     correta: true,
     temCrase: true,
-    instrucao: "Use um verbo ou nome que exija a preposição 'a' (referir-se a, dirigir-se a, solicitar algo a, obedecer a, atender a) seguido de substantivo feminino com artigo, COM o acento de crase.",
+    instrucao: "Use um verbo ou nome que exija a preposição 'a' (referir-se a, dirigir-se a, solicitar algo a, obedecer a, atender a) seguido de substantivo COMUM feminino singular, COM o acento de crase. Trecho = o verbo/nome + 'à' + o substantivo (ex.: 'dirigiu-se à gerência').",
+    trecho: /^\S.*\sà\s+(?!(ela|elas|uma|esta|essa|vossa)$)\p{L}+$/iu,
   },
   {
     id: "locucao_feminina",
@@ -36,7 +44,8 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Locuções formadas por palavra feminina levam crase: à vista, às pressas, à medida que, à disposição de.",
     correta: true,
     temCrase: true,
-    instrucao: "Use uma locução feminina com crase (à vista, à disposição de, às pressas, à medida que), corretamente acentuada.",
+    instrucao: "Use uma locução feminina com crase (à vista, à disposição de, às pressas, à medida que). Trecho = a locução (ex.: 'à vista').",
+    trecho: /^(à|às)\s+(vista|disposição|medida|pressas|tarde|noite|direita|esquerda|vontade|frente|procura|espera|beira|custa|toa|parte|risca|revelia|exceção|mercê)(\s.*)?$/iu,
   },
   {
     id: "horas_exatas",
@@ -44,7 +53,8 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Indicando hora determinada, usa-se crase: às 10 horas, à 1 hora, das 9h às 16h.",
     correta: true,
     temCrase: true,
-    instrucao: "Indique um horário determinado com crase (ex.: 'abre às 10 horas', 'das 9h às 15h').",
+    instrucao: "Indique um horário determinado com crase, sem usar 'até' (ex.: 'abre às 10 horas'). Trecho = 'às' + o horário (ex.: 'às 10 horas').",
+    trecho: /^(à|às)\s+\d{1,2}(\s*h(oras?)?|h\d{0,2}|:\d{2})$/iu,
   },
   {
     id: "aquele",
@@ -52,7 +62,8 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "A preposição 'a' se funde ao 'a' inicial de aquele/aquela/aquilo: referiu-se àquele contrato.",
     correta: true,
     temCrase: true,
-    instrucao: "Use um termo que exija a preposição 'a' seguido de aquele/aquela/aquilo, escrito àquele/àquela/àquilo.",
+    instrucao: "Use um termo que exija a preposição 'a' seguido de aquele/aquela/aquilo, escrito àquele/àquela/àquilo. Trecho = o termo + 'àquele/àquela' + o substantivo (ex.: 'referiu-se àquele contrato').",
+    trecho: /^\S.*\s(àquel[ea]s?|àquilo)(\s+\p{L}+)?$/iu,
   },
   {
     id: "sem_crase_verbo",
@@ -60,7 +71,8 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Verbo não admite artigo, então não há crase antes de verbo: começou a analisar.",
     correta: true,
     temCrase: false,
-    instrucao: "Use 'a' (sem acento) antes de um verbo no infinitivo (ex.: 'começou a analisar').",
+    instrucao: "Use 'a' (sem acento) antes de um verbo no infinitivo. Trecho = o verbo anterior + 'a' + o infinitivo (ex.: 'começou a analisar').",
+    trecho: /^\S.*\sa\s+\p{L}+(ar|er|ir|or)$/iu,
   },
   {
     id: "sem_crase_masculino",
@@ -68,7 +80,8 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Palavra masculina não aceita o artigo 'a', então não há crase: pagamento a prazo.",
     correta: true,
     temCrase: false,
-    instrucao: "Use 'a' (sem acento) antes de uma palavra masculina singular (ex.: 'compra a prazo').",
+    instrucao: "Use 'a' (sem acento) antes de uma palavra masculina singular terminada em -o (prazo, crédito). Trecho = a palavra anterior + 'a' + a palavra masculina (ex.: 'compra a prazo').",
+    trecho: /^\S.*\sa\s+\p{L}+o$/iu,
   },
   {
     id: "sem_crase_repetidas",
@@ -76,7 +89,8 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Entre palavras repetidas não há crase: gota a gota, cara a cara.",
     correta: true,
     temCrase: false,
-    instrucao: "Use uma expressão com palavras repetidas ligadas por 'a' sem acento (ex.: 'cara a cara', 'passo a passo').",
+    instrucao: "Use uma expressão com palavras repetidas ligadas por 'a' sem acento. Trecho = a expressão (ex.: 'cara a cara', 'passo a passo').",
+    trecho: /^(\p{L}+)\s+a\s+\1$/iu,
   },
   // ---------- ERROS ----------
   {
@@ -85,7 +99,10 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Verbo não admite artigo; 'à' antes de verbo é erro: começou à analisar.",
     correta: false,
     temCrase: true,
-    instrucao: "Coloque, por ERRO, 'à' antes de um verbo no infinitivo (ex.: 'começou à analisar').",
+    instrucao: "Coloque, por ERRO, 'à' antes de um verbo no infinitivo. Trecho = o verbo anterior + 'à' + o infinitivo (ex.: 'começou à analisar').",
+    trecho: /^\S.*\sà\s+\p{L}+(ar|er|ir|or)$/iu,
+    pegadinha: "O 'a' antes do verbo parece pedir acento, mas é só preposição: verbo nunca vem com artigo.",
+    // sem "corrigir": o certo depende da regência do verbo anterior (decidiu transferir × começou a contar)
   },
   {
     id: "erro_masculino",
@@ -93,7 +110,10 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Palavra masculina não aceita o artigo 'a'; 'à prazo' é erro.",
     correta: false,
     temCrase: true,
-    instrucao: "Coloque, por ERRO, 'à' antes de uma palavra masculina singular (ex.: 'pagamento à prazo').",
+    instrucao: "Coloque, por ERRO, 'à' antes de uma palavra masculina singular terminada em -o. Trecho = a palavra anterior + 'à' + a palavra masculina (ex.: 'pagamento à prazo').",
+    trecho: /^\S.*\sà\s+\p{L}+o$/iu,
+    pegadinha: "A expressão soa como as locuções com crase (à vista), mas 'prazo' é masculino e não aceita o artigo 'a'.",
+    corrigir: tirarAcento,
   },
   {
     id: "erro_pronome_pessoal",
@@ -101,7 +121,10 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Pronome pessoal não aceita artigo; 'à ela' é erro.",
     correta: false,
     temCrase: true,
-    instrucao: "Coloque, por ERRO, 'à' antes de pronome pessoal (ex.: 'entregou o documento à ela').",
+    instrucao: "Coloque, por ERRO, 'à' antes do pronome pessoal 'ela'. Trecho = o verbo + 'à ela' (ex.: 'entregou o documento à ela').",
+    trecho: /^\S.*\sà\s+(ela|elas|você|vocês|mim|ti)$/iu,
+    pegadinha: "'Ela' é feminino e o verbo pede 'a', o que leva a pensar em crase; mas pronome pessoal não aceita artigo.",
+    // sem "corrigir": depende do verbo (entregou a ela × orientou-a)
   },
   {
     id: "erro_repetidas",
@@ -109,7 +132,10 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Entre palavras repetidas não há crase; 'cara à cara' é erro.",
     correta: false,
     temCrase: true,
-    instrucao: "Coloque, por ERRO, 'à' entre palavras repetidas (ex.: 'conversaram cara à cara').",
+    instrucao: "Coloque, por ERRO, 'à' entre palavras repetidas femininas. Trecho = a expressão (ex.: 'cara à cara').",
+    trecho: /^(\p{L}+)\s+à\s+\1$/iu,
+    pegadinha: "As palavras são femininas, mas entre palavras repetidas há só a preposição, sem artigo.",
+    corrigir: tirarAcento,
   },
   {
     id: "erro_tratamento",
@@ -117,7 +143,10 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Pronomes de tratamento (exceto senhora, senhorita e dona) não aceitam artigo; 'à Vossa Senhoria' é erro.",
     correta: false,
     temCrase: true,
-    instrucao: "Coloque, por ERRO, 'à' antes de 'Vossa Senhoria' ou 'Vossa Excelência'.",
+    instrucao: "Coloque, por ERRO, 'à' antes de 'Vossa Senhoria' ou 'Vossa Excelência', depois de um verbo que pede 'a' (encaminhar, enviar, solicitar). Trecho = o verbo + 'à Vossa Senhoria' (ex.: 'encaminhamos à Vossa Senhoria').",
+    trecho: /^\S.*\sà\s+vossa\s+(senhoria|excelência|majestade|alteza|santidade|magnificência)$/iu,
+    pegadinha: "'Senhoria' e 'Excelência' são femininas, mas os pronomes de tratamento não aceitam artigo.",
+    // sem "corrigir": depende do verbo
   },
   {
     id: "erro_indefinido",
@@ -125,7 +154,10 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Antes do artigo indefinido 'uma' não cabe o artigo definido; 'à uma cliente' é erro (não confundir com 'à uma hora').",
     correta: false,
     temCrase: true,
-    instrucao: "Coloque, por ERRO, 'à' antes do artigo indefinido 'uma' seguido de substantivo (ex.: 'encaminhou à uma cliente'), sem ser indicação de hora.",
+    instrucao: "Coloque, por ERRO, 'à' antes do artigo indefinido 'uma' seguido de substantivo, sem ser indicação de hora. Trecho = o verbo + 'à uma' + o substantivo (ex.: 'encaminhou à uma cliente').",
+    trecho: /^\S.*\sà\s+uma\s+(?!hora)\p{L}+$/iu,
+    pegadinha: "'À uma hora' tem crase, o que confunde; mas antes de 'uma' como artigo indefinido não há artigo definido para fundir.",
+    // sem "corrigir": depende do verbo
   },
   {
     id: "erro_plural",
@@ -133,7 +165,10 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Se a palavra está no plural sem artigo, há só a preposição 'a'; 'à clientes' é erro (o certo é 'a clientes' ou 'às clientes').",
     correta: false,
     temCrase: true,
-    instrucao: "Coloque, por ERRO, 'à' (singular) antes de palavra feminina no PLURAL sem artigo (ex.: 'enviou o aviso à clientes').",
+    instrucao: "Coloque, por ERRO, 'à' (singular) antes de palavra feminina no PLURAL sem artigo. Trecho = o verbo + 'à' + o substantivo plural (ex.: 'enviou o aviso à clientes').",
+    trecho: /^\S.*\sà\s+\p{L}+s$/iu,
+    pegadinha: "A palavra é feminina, mas o 'à' singular não concorda com o plural: ou é só preposição (a clientes) ou é 'às clientes'.",
+    // sem "corrigir": depende do verbo (respondeu a clientes × atendeu clientes)
   },
   {
     id: "erro_demonstrativo",
@@ -141,7 +176,10 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Os demonstrativos esta/essa não aceitam artigo; 'à esta agência' é erro.",
     correta: false,
     temCrase: true,
-    instrucao: "Coloque, por ERRO, 'à' antes de 'esta' ou 'essa' (ex.: 'dirigiu-se à esta agência').",
+    instrucao: "Coloque, por ERRO, 'à' antes de 'esta' ou 'essa' + substantivo. Trecho = o verbo + 'à esta' + o substantivo (ex.: 'dirigiu-se à esta agência').",
+    trecho: /^\S.*\sà\s+(esta|essa|estas|essas)\s+\p{L}+$/iu,
+    pegadinha: "Com 'aquela' há crase (àquela), o que leva a acentuar 'esta/essa'; mas esses demonstrativos não aceitam artigo.",
+    // sem "corrigir": depende do verbo (dirigiu-se a esta × assistiu esta)
   },
   {
     id: "erro_falta_obrigatoria",
@@ -149,7 +187,10 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Termo que exige 'a' + palavra feminina com artigo pede crase; 'referiu-se a proposta' está errado.",
     correta: false,
     temCrase: false,
-    instrucao: "Use um termo que exija a preposição 'a' seguido de substantivo feminino com artigo, mas, por ERRO, SEM o acento (ex.: 'referiu-se a proposta').",
+    instrucao: "Use um termo que exija a preposição 'a' seguido de substantivo COMUM feminino singular terminado em -a, mas, por ERRO, SEM o acento. Trecho = o termo + 'a' + o substantivo (ex.: 'referiu-se a proposta').",
+    trecho: /^\S.*\sa\s+\p{L}+a$/iu,
+    pegadinha: "Parece só um artigo antes do substantivo, mas o termo anterior exige a preposição 'a': a + a = à.",
+    corrigir: (t) => t.replace(/\sa(\s+\p{L}+)$/iu, " à$1"),
   },
   {
     id: "erro_falta_horas",
@@ -157,7 +198,10 @@ export const REGRAS_CRASE: RegraCrase[] = [
     explicacao: "Hora determinada pede crase; 'abre as 10 horas' está errado.",
     correta: false,
     temCrase: false,
-    instrucao: "Indique um horário determinado, mas, por ERRO, sem o acento (ex.: 'a agência abre as 10 horas').",
+    instrucao: "Indique um horário determinado, sem usar 'até', mas, por ERRO, sem o acento. Trecho = 'as' + o horário (ex.: 'as 10 horas').",
+    trecho: /^as\s+\d{1,2}(\s*h(oras?)?|h\d{0,2}|:\d{2})$/iu,
+    pegadinha: "Parece só o artigo antes do número, mas indicação de hora exata leva crase.",
+    corrigir: (t) => t.replace(/^as(?=\s)/iu, "às"),
   },
 ];
 
@@ -180,23 +224,50 @@ export function construirCrase(gabarito: Letra, contexto: string): CraseMontada 
     gabarito,
     frases,
     dificuldade: 3,
-    enunciado: `Ao revisar mensagens de uma agência bancária (${contexto}), um escriturário analisou as frases a seguir. O uso ou a ausência do acento indicativo de crase está de acordo com a norma-padrão da língua portuguesa em:`,
+    enunciado: `Ao revisar comunicados de uma agência bancária sobre ${contexto}, um escriturário analisou as frases a seguir. O uso ou a ausência do acento indicativo de crase está de acordo com a norma-padrão da língua portuguesa em:`,
   };
 }
 
-// conferência determinística: a frase tem (ou não) o acento que a regra exige?
-const TEM_ACENTO_CRASE = /(^|[^\p{L}])(à|às|àquel[ea]s?|àquilo)(?![\p{L}])/iu;
+// ------------------------------------------------------------
+// Conferência determinística (antes do auditor)
+// ------------------------------------------------------------
+const ACENTOS_CRASE = /(^|[^\p{L}])(à|às|àquel[ea]s?|àquilo)(?![\p{L}])/giu;
 // contextos facultativos: proibidos em QUALQUER frase (deixariam duas respostas certas)
 const CASO_FACULTATIVO: [RegExp, string][] = [
   [/(^|[^\p{L}])(à|a)s?\s+(minha|tua|sua|nossa)s?(?![\p{L}])/iu, "pronome possessivo feminino depois de a/à"], // sem "vossa": "à Vossa Senhoria" é pronome de tratamento
   [/(^|[^\p{L}])até\s+(à|a)s?(?![\p{L}])/iu, "'até a/à'"],
 ];
+const norm = (t: string) => t.replace(/[\s ]+/g, " ").trim();
 
-export function conferirFrase(frase: string, regra: RegraCrase): string | null {
+// A frase aplica a regra EXATAMENTE onde ela manda? Devolve o problema ou null.
+export function conferirFrase(frase: string, trecho: string, regra: RegraCrase): string | null {
+  const f = norm(frase);
+  const t = norm(trecho).replace(/[.,;:!?]+$/, "");
   for (const [re, nome] of CASO_FACULTATIVO)
-    if (re.test(frase)) return `usa caso de crase facultativa (${nome}), proibido neste formato`;
-  const tem = TEM_ACENTO_CRASE.test(frase);
-  if (regra.temCrase && !tem) return `deveria ter "à/às" (regra: ${regra.nome}), mas não tem`;
-  if (!regra.temCrase && tem) return `não deveria ter "à/às" (regra: ${regra.nome}), mas tem`;
+    if (re.test(f)) return `usa caso de crase facultativa (${nome}), proibido neste formato`;
+  if (!t || !f.toLowerCase().includes(t.toLowerCase())) return `o trecho "${trecho}" não aparece literalmente na frase`;
+  if (!regra.trecho.test(t)) return `o trecho "${t}" não tem a forma que a regra "${regra.nome}" exige`;
+  const acentos = [...f.matchAll(ACENTOS_CRASE)].length;
+  if (regra.temCrase && acentos !== 1) return `deveria ter exatamente um "à/às", e tem ${acentos}`;
+  if (!regra.temCrase && acentos) return `não deveria ter nenhum "à/às", e tem ${acentos}`;
   return null;
 }
+
+// ------------------------------------------------------------
+// Explicações a partir da REGRA (o aluno lê o banco, não a IA)
+// ------------------------------------------------------------
+export function explicarAlternativa(regra: RegraCrase, trecho: string): { explicacao: string; pegadinha: string | null } {
+  const t = norm(trecho).replace(/[.,;:!?]+$/, "");
+  const certo = regra.corrigir?.(t);
+  return {
+    explicacao: `${regra.correta ? "Correta" : "Errada"}. Em "${t}": ${regra.explicacao}${certo && certo !== t ? ` O certo seria "${certo}".` : ""}`,
+    pegadinha: regra.correta ? null : regra.pegadinha ?? null,
+  };
+}
+
+export function explicacaoGeralCrase(certa: RegraCrase): string {
+  return `Crase é a fusão da preposição 'a' (exigida por um verbo ou nome) com o artigo feminino 'a' ou com o 'a' inicial de aquele/aquela/aquilo. Só existe quando os dois 'as' estão presentes; por isso não há crase antes de verbo, de palavra masculina, de pronome pessoal, de pronome de tratamento, de 'uma' indefinido e de 'esta/essa'. Nesta questão, a frase correta aplica a regra: ${certa.nome}. ${certa.explicacao} ${CRASE_FACULTATIVA}`;
+}
+
+export const DICA_CRASE =
+  "Troque a palavra feminina por uma masculina: se aparecer 'ao', há crase (vou à agência → vou ao banco); se aparecer só 'a' ou 'o', não há.";
