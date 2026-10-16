@@ -1,0 +1,7 @@
+{
+  "_aviso": "Proporção de questões geradas COM figura, por disciplina, vinda do inventário das provas oficiais (docs/FIGURAS-INVENTARIO.md). Tipos possíveis: tabela | grafico | planilha | tela_programa. Refaça o inventário quando entrarem mais provas.",
+  "matematica": { "proporcao": 0.2, "tipos": ["tabela"] },
+  "matematica_financeira": { "proporcao": 0.1, "tipos": ["tabela"] },
+  "informatica": { "proporcao": 0.05, "tipos": ["planilha"] },
+  "vendas_negociacao": { "proporcao": 0.05, "tipos": ["tabela"] }
+}
