@@ -19,7 +19,30 @@
       "calcular o prazo": ["aplicação em CDB", "caderneta de poupança", "investimento de uma empresa (PJ)", "cliente pessoa física atendido na agência"],
       "taxa equivalente": ["aplicação em CDB", "empréstimo pessoal", "financiamento imobiliário ou de veículo", "cliente pessoa física atendido na agência", "cliente pessoa jurídica negociando com o gerente"],
       "comparar duas opções de aplicação ou pagamento": ["aplicação em CDB", "investimento de uma empresa (PJ)", "cliente pessoa física atendido na agência", "cliente pessoa jurídica negociando com o gerente"],
-      "aplicação e reaplicação do montante": ["aplicação em CDB", "caderneta de poupança", "investimento de uma empresa (PJ)"]
+      "aplicação e reaplicação do montante": ["aplicação em CDB", "caderneta de poupança", "investimento de uma empresa (PJ)"],
+      "série de depósitos em tabela (com figura)": ["aplicação em CDB", "caderneta de poupança", "investimento de uma empresa (PJ)", "cliente pessoa física atendido na agência"]
+    },
+    "Planilhas eletrônicas": {
+      "fórmulas": "todos",
+      "funções": "todos",
+      "referências relativas e absolutas": "todos",
+      "filtros e tabelas dinâmicas": "todos",
+      "fórmula em planilha (com figura)": ["cliente pessoa física atendido na agência", "cliente pessoa jurídica negociando com o gerente", "investimento de uma empresa (PJ)", "aplicação em CDB"]
+    },
+    "Funções e equações de 1º e 2º grau": {
+      "função afim": "todos",
+      "função quadrática": "todos",
+      "inequações": "todos",
+      "sistemas lineares": "todos",
+      "sistema linear em tabela (com figura)": ["investimento de uma empresa (PJ)", "cliente pessoa jurídica negociando com o gerente"]
+    },
+    "Técnicas de vendas": {
+      "etapas da venda": "todos",
+      "prospecção": "todos",
+      "argumentação": "todos",
+      "objeções": "todos",
+      "fechamento": "todos",
+      "taxa de abandono em tabela (com figura)": ["cliente pessoa jurídica negociando com o gerente", "investimento de uma empresa (PJ)"]
     },
     "Juros simples": {
       "calcular o montante": ["aplicação em CDB", "empréstimo pessoal", "cliente pessoa física atendido na agência", "cliente pessoa jurídica negociando com o gerente"],
@@ -59,7 +82,7 @@
     }
   },
   "duasEtapas": {
-    "Juros compostos": ["calcular a taxa", "calcular o prazo", "comparar duas opções de aplicação ou pagamento", "aplicação e reaplicação do montante"],
+    "Juros compostos": ["calcular a taxa", "calcular o prazo", "comparar duas opções de aplicação ou pagamento", "aplicação e reaplicação do montante", "série de depósitos em tabela (com figura)"],
     "Descontos": ["valor atual de um título", "desconto racional simples", "taxa efetiva de um desconto comercial"]
   }
 }

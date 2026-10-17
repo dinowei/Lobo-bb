@@ -48,6 +48,7 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 12. Questões por construção (Matemática e Crase): números, alternativas, gabarito e dificuldade vêm do código (dificuldade = nº de etapas + 1). A IA só escreve o texto e não pode alterar número nem a regra atribuída a cada alternativa.
 13. Crase por construção só é aprovada se o auditor, julgando cada frase isoladamente e sem saber a regra, disser "correta" para exatamente uma frase, a do gabarito. Depois passa pela revisão completa.
 14. Nas questões por construção de Português, explicação, pegadinha, correção e explicação geral vêm do banco de regras (`src/portugues.ts`), nunca da IA. As frases são escritas pelo `ESCRITOR_PT_MODEL`, que precisa ser diferente do auditor. Cada frase passa pela trava de posição (o "à" exatamente onde a regra manda) antes do auditor; a que não bate é reescrita uma vez.
+15. Figura é dado desenhado por código (tabela, planilha, gráfico, tela de programa), nunca imagem gerada por IA. A IA não copia a figura no enunciado. Figura oficial extraída do PDF só entra no treino depois do OK do dono (tela Figuras).
 
 ## Estado atual
 - Tudo compila (`npm run typecheck`). Leitura de PDF, fatiamento, gabarito, validações e motor de progressão foram testados.
@@ -55,6 +56,7 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 - Provas oficiais ingeridas: BB 2023 e BB 2021 (Agente Comercial). A ingestão lê gabarito e disciplinas (capa) por código, extrai com a IA sem "pensar", busca uma a uma as questões que faltarem, copia o texto de apoio e confere cada campo literalmente contra o PDF (`TextoPdf` em `src/extrair.ts`): palavra trocada é corrigida pelo PDF; o que não bate fica de fora. Prova incompleta não é salva.
 - Questões que dependem de figura: `status: "precisa_imagem"` (fora do treino), listadas em `docs/PENDENTES-FIGURA.md`. Anulação pela banca: `npm run bb -- anular --prova "<parte do nome>" --numero <n>`.
 - Ainda falta ingerir as leis e normas (etapa C, item 4 do `docs/INTEGRACAO.md`).
+- Figuras por construção (`src/construcaoFiguras.ts`): fórmula em planilha, sistema linear em tabela, série de depósitos e taxa de abandono, na proporção de `data/figuras-meta.json`. Amostras sem IA em Figuras → "Geradas (amostra)"; prints com `npx tsx scripts/prints.ts`.
 - Por construção: Juros compostos, Descontos e Crase. Os demais tópicos de cálculo ainda usam geração livre + verificação mathjs.
 - `npm run bb -- gerar --assunto "<tópico>" --n 3 [--tipo "<tipo>"]` força um tipo de `data/variacoes.json` (ex.: `--tipo "crase (por construção)"`).
 - Próximos passos: `docs/ROADMAP.md`.

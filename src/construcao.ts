@@ -6,9 +6,16 @@
 // A verificação por mathjs (verificacao.ts) continua como trava final.
 // Por enquanto: Juros compostos e Descontos.
 // ============================================================
-import type { Letra } from "../shared/tipos.js";
+import type { Letra, PosicaoFigura, TabelaDados, PlanilhaDados } from "../shared/tipos.js";
+import { CATALOGO_FIGURAS } from "./construcaoFiguras.js";
 
 export type Distrator = { valor: number; erro: string };
+
+// Figura de questão gerada: DADO desenhado por código no site (nunca imagem de IA).
+// O número que aparece na figura e o da resposta saem do MESMO dado.
+export type FiguraConstruida =
+  | { tipo: "tabela"; posicao: PosicaoFigura; legenda: string; dados: TabelaDados }
+  | { tipo: "planilha"; posicao: PosicaoFigura; legenda: string; dados: PlanilhaDados };
 
 export type Construida = {
   tipo: string; // nome do template (vai para a variação salva)
@@ -18,9 +25,11 @@ export type Construida = {
   fatoresDados: Record<string, number>; // ex.: {"1.04^8": 1.3686}
   expressao: string; // gera a resposta certa (usa as chaves de fatoresDados)
   resolucao: string; // passo a passo com os números, para a IA explicar
-  unidade: "reais" | "percentual" | "meses";
+  unidade: "reais" | "percentual" | "meses" | "numero" | "rotulo";
+  rotulos?: string[]; // unidade "rotulo": o texto da alternativa é rotulos[valor] (ex.: nome da empresa)
   correta: number;
   distratores: Distrator[]; // candidatos; o código escolhe 4 distintos
+  figura?: FiguraConstruida;
 };
 
 export type Montada = Construida & {
@@ -50,9 +59,11 @@ const arredondouFator = (F: number, valor: (f: number) => number): Distrator[] =
   { valor: valor(Math.ceil(F * 100) / 100), erro: `arredondou o fator para cima antes da hora: ${num4(F)} → ${(Math.ceil(F * 100) / 100).toLocaleString("pt-BR")}` },
 ];
 
-export function formatar(valor: number, unidade: Construida["unidade"]): string {
+export function formatar(valor: number, unidade: Construida["unidade"], rotulos?: string[]): string {
   if (unidade === "reais") return brl(valor);
   if (unidade === "percentual") return pct(valor);
+  if (unidade === "numero") return valor.toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  if (unidade === "rotulo") return rotulos?.[valor] ?? String(valor);
   return `${valor} ${valor === 1 ? "mês" : "meses"}`;
 }
 
@@ -362,8 +373,9 @@ function descTaxaEfetiva(): Construida {
 }
 
 // ---------- catálogo ----------
-type Template = () => Construida;
+type Template = (gabarito: Letra) => Construida; // recebe a letra sorteada (rótulos: a certa cai nela)
 const CATALOGO: Record<string, { porTipo: Record<string, Template> }> = {
+  ...CATALOGO_FIGURAS,
   "Juros compostos": {
     porTipo: {
       "calcular o montante": jcMontante,
@@ -373,6 +385,7 @@ const CATALOGO: Record<string, { porTipo: Record<string, Template> }> = {
       "taxa equivalente": jcTaxaEquivalente,
       "comparar duas opções de aplicação ou pagamento": jcComparar,
       "aplicação e reaplicação do montante": jcReaplicacao,
+      ...CATALOGO_FIGURAS["Juros compostos"]?.porTipo,
     },
   },
   Descontos: {
@@ -402,12 +415,15 @@ export function construir(assunto: string, tipo: string, gabarito: Letra): Monta
   const pos = "ABCDE".indexOf(gabarito);
   const embaralhar = <T>(xs: T[]) => xs.map((x) => [Math.random(), x] as const).sort((a, b) => a[0] - b[0]).map(([, x]) => x);
   for (let tentativa = 0; tentativa < 300; tentativa++) {
-    const c = template();
-    const vistos = new Set([formatar(c.correta, c.unidade)]);
+    const c = template(gabarito);
+    const fmt = (v: number) => formatar(v, c.unidade, c.rotulos);
+    const vistos = new Set([fmt(c.correta)]);
     const unicos: Distrator[] = [];
+    // contagem e rótulo podem ser 0; valor em reais, taxa e prazo não
+    const valido = (v: number) => (c.unidade === "numero" || c.unidade === "rotulo" ? v >= 0 : v > 0);
     for (const d of embaralhar(c.distratores)) {
-      const txt = formatar(d.valor, c.unidade);
-      if (!(d.valor > 0) || vistos.has(txt)) continue;
+      const txt = fmt(d.valor);
+      if (!valido(d.valor) || vistos.has(txt)) continue;
       vistos.add(txt);
       unicos.push(d);
     }
@@ -420,8 +436,8 @@ export function construir(assunto: string, tipo: string, gabarito: Letra): Monta
     const alternativas = ordem.map((d, k) => {
       const letra = "ABCDE"[k] as Letra;
       return d
-        ? { letra, texto: formatar(d.valor, c.unidade), correta: false, erro: d.erro }
-        : { letra, texto: formatar(c.correta, c.unidade), correta: true, erro: null };
+        ? { letra, texto: fmt(d.valor), correta: false, erro: d.erro }
+        : { letra, texto: fmt(c.correta), correta: true, erro: null };
     });
     return { ...c, dificuldade: Math.min(5, c.etapas + 1), gabarito, alternativas };
   }

@@ -49,11 +49,14 @@ export function contextosPermitidos(c: ConfigVariacao, assunto: string, tipo: st
 }
 
 // Parte pura do sorteio (testável sem banco): escolhe o tipo e depois um contexto compatível
+export const ehTipoComFigura = (tipo: string) => tipo.endsWith("(com figura)");
+
 export function sortearPar(
   c: ConfigVariacao,
   topic: { assunto: string; subtopicos: string[] },
   querDuasEtapas: boolean,
-  forcarTipo?: string
+  forcarTipo?: string,
+  proporcaoFigura = 0 // chance de sortear um tipo "com figura" (data/figuras-meta.json)
 ): Variacao {
   const tabela = c.tipos[topic.assunto];
   const deDuas = c.duasEtapas[topic.assunto] ?? [];
@@ -62,8 +65,13 @@ export function sortearPar(
     tipo = forcarTipo;
   } else if (tabela) {
     const todos = Object.keys(tabela);
-    const candidatos = deDuas.length ? todos.filter((t) => deDuas.includes(t) === querDuasEtapas) : todos;
-    tipo = sortear(candidatos.length ? candidatos : todos);
+    // com figura só na proporção que as provas oficiais têm (inventário de figuras)
+    const comFigura = todos.filter(ehTipoComFigura);
+    const querFigura = comFigura.length > 0 && Math.random() < proporcaoFigura;
+    const base = comFigura.length ? todos.filter((t) => ehTipoComFigura(t) === querFigura) : todos;
+    const pool = base.length ? base : todos;
+    const candidatos = deDuas.length ? pool.filter((t) => deDuas.includes(t) === querDuasEtapas) : pool;
+    tipo = sortear(candidatos.length ? candidatos : pool);
   } else {
     tipo = topic.subtopicos.length ? sortear(topic.subtopicos) : topic.assunto;
   }
@@ -85,5 +93,14 @@ export async function sortearVariacao(
     ]);
     querDuas = comDuas < META_DUAS_ETAPAS * (total + 1) || Math.random() < META_DUAS_ETAPAS;
   }
-  return sortearPar(carregarVariacoes(), topic, querDuas, forcarTipo);
+  return sortearPar(carregarVariacoes(), topic, querDuas, forcarTipo, carregarMetaFiguras()[topic.disciplina]?.proporcao ?? 0);
+}
+
+// Proporção de figuras por disciplina, vinda do inventário das provas oficiais
+type MetaFiguras = Record<string, { proporcao: number; tipos: string[] }>;
+let metaFiguras: MetaFiguras | undefined;
+export function carregarMetaFiguras(): MetaFiguras {
+  if (metaFiguras) return metaFiguras;
+  const bruto = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "data", "figuras-meta.json"), "utf8")) as Record<string, unknown>;
+  return (metaFiguras = Object.fromEntries(Object.entries(bruto).filter(([k]) => !k.startsWith("_"))) as MetaFiguras);
 }

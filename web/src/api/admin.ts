@@ -1,5 +1,5 @@
 // API de conferência do dono (só no modo servidor): tela Figuras
-import type { QuestaoComFigurasDTO, RegiaoPdf } from "../../../shared/tipos";
+import type { AmostraFiguraDTO, QuestaoComFigurasDTO, RegiaoPdf } from "../../../shared/tipos";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -17,6 +17,7 @@ async function req<T>(caminho: string, init?: RequestInit): Promise<T> {
 
 export const adminFiguras = {
   listar: () => req<QuestaoComFigurasDTO[]>("/figuras"),
+  amostras: () => req<AmostraFiguraDTO[]>("/figuras/amostras"),
   contexto: (q: string, f: string) => req<{ png: string; regiao: RegiaoPdf; atual: RegiaoPdf }>(`/figuras/${q}/${f}/contexto`),
   ok: (q: string, f: string) => req<{ status: string }>(`/figuras/${q}/${f}`, { method: "POST", body: JSON.stringify({ acao: "ok" }) }),
   fora: (q: string, f: string) => req<{ status: string }>(`/figuras/${q}/${f}`, { method: "POST", body: JSON.stringify({ acao: "fora" }) }),

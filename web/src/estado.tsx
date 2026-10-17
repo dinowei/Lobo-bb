@@ -51,16 +51,21 @@ export const useApp = () => {
   return c;
 };
 
+// "#praticar?q=<id>" abre direto uma questão (link compartilhável e prints automáticos)
 const telaDoHash = (): Tela => {
-  const h = location.hash.replace("#", "") as Tela;
+  const h = location.hash.replace("#", "").split("?")[0] as Tela;
   return TELAS.includes(h) ? h : "painel";
+};
+const filtroDoHash = (): FiltroPratica => {
+  const q = new URLSearchParams(location.hash.split("?")[1] ?? "").get("q");
+  return q && /^[0-9a-f]{24}$/i.test(q) ? { questaoId: q } : {};
 };
 
 export function Provedor({ children }: { children: ReactNode }) {
   const [api, setApi] = useState<Api | null>(null);
   const [painel, setPainel] = useState<PainelDTO | null>(null);
   const [tela, setTela] = useState<Tela>(telaDoHash);
-  const [filtro, setFiltro] = useState<FiltroPratica>({});
+  const [filtro, setFiltro] = useState<FiltroPratica>(filtroDoHash);
   const [ajustes, setAjustes] = useState<Ajustes>(lerAjustes);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [subiuNivel, setSubiuNivel] = useState<Ctx["subiuNivel"]>(null);
@@ -98,7 +103,11 @@ export function Provedor({ children }: { children: ReactNode }) {
   }, [recarregar]);
 
   useEffect(() => {
-    const f = () => setTela(telaDoHash());
+    const f = () => {
+      setTela(telaDoHash());
+      const fh = filtroDoHash();
+      if (fh.questaoId) setFiltro(fh);
+    };
     window.addEventListener("hashchange", f);
     return () => window.removeEventListener("hashchange", f);
   }, []);

@@ -570,6 +570,13 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .lado-a-lado { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
 .lado-a-lado .rotulo { display: block; margin-bottom: 8px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--suave); }
 @media (max-width: 760px) { .lado-a-lado { grid-template-columns: 1fr; } }
+.aviso-amostra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.aviso-amostra p { margin: 0; max-width: 72ch; color: var(--suave); font-size: 13px; }
+.amostra-alternativas { display: grid; gap: 6px; margin: 14px 0 10px; padding: 0; list-style: none; font-size: 13.5px; }
+.amostra-alternativas li { padding: 7px 10px; border: 1px solid var(--linha); border-radius: 8px; background: var(--cartao-2); }
+.amostra-alternativas li.certa { border-color: var(--certo); background: var(--certo-fundo); }
+.amostra-alternativas .selo { margin-left: 8px; }
+.cartao-figura details summary { cursor: pointer; color: var(--suave); font-size: 13px; }
 .ajuste-recorte { margin-top: 14px; }
 .area-arraste { position: relative; display: inline-block; max-width: 100%; cursor: crosshair; touch-action: none; user-select: none; }
 .area-arraste img { display: block; max-width: 100%; height: auto; background: #fff; border-radius: 6px; }

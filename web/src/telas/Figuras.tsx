@@ -1,7 +1,7 @@
 // Tela "Figuras" (só o dono, modo servidor): figura extraída × recorte da página original.
 // Código extrai, você confirma: figura só vai ao treino com o seu OK.
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { FiguraConferenciaDTO, FiguraDTO, GraficoDados, PlanilhaDados, QuestaoComFigurasDTO, RegiaoPdf, TabelaDados, TelaProgramaDados } from "../../../shared/tipos";
+import type { AmostraFiguraDTO, FiguraConferenciaDTO, FiguraDTO, GraficoDados, PlanilhaDados, QuestaoComFigurasDTO, RegiaoPdf, TabelaDados, TelaProgramaDados } from "../../../shared/tipos";
 import { adminFiguras } from "../api/admin";
 import { Figura } from "../componentes/Figura";
 import { useApp } from "../estado";
@@ -22,11 +22,17 @@ function paraDTO(f: FiguraConferenciaDTO): FiguraDTO {
   return d;
 }
 
+type Aba = "pendentes" | "todas" | "geradas";
+// "#figuras?aba=geradas&assunto=juros" abre direto nas amostras de um assunto (prints automáticos)
+const paramDoHash = (nome: string) => new URLSearchParams(location.hash.split("?")[1] ?? "").get(nome);
+const abaDoHash = (): Aba => (paramDoHash("aba") === "geradas" ? "geradas" : "pendentes");
+const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
 export function Figuras() {
   const { api, avisar } = useApp();
   const [lista, setLista] = useState<QuestaoComFigurasDTO[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [filtro, setFiltro] = useState<"pendentes" | "todas">("pendentes");
+  const [filtro, setFiltro] = useState<Aba>(abaDoHash);
 
   const carregar = useCallback(async () => {
     setErro(null);
@@ -60,9 +66,11 @@ export function Figuras() {
         <div className="filtros" role="group" aria-label="Filtro">
           <button className="chip" aria-pressed={filtro === "pendentes"} onClick={() => setFiltro("pendentes")}>Pendentes ({pendentes.length})</button>
           <button className="chip" aria-pressed={filtro === "todas"} onClick={() => setFiltro("todas")}>Todas ({lista?.length ?? 0})</button>
+          <button className="chip" aria-pressed={filtro === "geradas"} onClick={() => setFiltro("geradas")}>Geradas (amostra)</button>
         </div>
       </div>
 
+      {filtro === "geradas" ? <Amostras /> : <>
       {erro && (
         <div className="vazio" role="alert"><img src={MASCOTE} alt="" /><div><b>Não deu para carregar as figuras.</b><p>{erro}</p><button className="botao-linha" onClick={carregar}>Tentar de novo</button></div></div>
       )}
@@ -78,7 +86,69 @@ export function Figuras() {
           ))
         )}
       </div>
+      </>}
     </div>
+  );
+}
+
+// Figuras como sairiam numa questão gerada, montadas na hora pelo código (sem IA, nada salvo)
+function Amostras() {
+  const [itens, setItens] = useState<AmostraFiguraDTO[] | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const carregar = useCallback(async () => {
+    setErro(null);
+    setItens(null);
+    try {
+      setItens(await adminFiguras.amostras());
+    } catch (e) {
+      setErro((e as Error).message);
+    }
+  }, []);
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
+
+  if (erro)
+    return <div className="vazio" role="alert"><img src={MASCOTE} alt="" /><div><b>Não deu para montar as amostras.</b><p>{erro}</p><button className="botao-linha" onClick={carregar}>Tentar de novo</button></div></div>;
+  if (!itens) return <div className="esqueleto" style={{ height: 220 }} aria-busy="true" aria-label="Montando amostras" />;
+  const so = paramDoHash("assunto");
+  const mostradas = so ? itens.filter((a) => semAcento(a.assunto).startsWith(semAcento(so))) : itens;
+  return (
+    <>
+      <div className="aviso-amostra">
+        <p>Figuras desenhadas pelo código como sairiam numa questão gerada: 5 por tipo, com o gabarito em letras diferentes. A IA não participa e nada é salvo.</p>
+        <button className="botao-linha" onClick={carregar}>Sortear outras</button>
+      </div>
+      <div className="lista-figuras">
+        {mostradas.map((a, k) => <CartaoAmostra key={k} a={a} n={k} />)}
+      </div>
+    </>
+  );
+}
+
+function CartaoAmostra({ a, n }: { a: AmostraFiguraDTO; n: number }) {
+  return (
+    <article className="cartao-figura secao" aria-labelledby={`amostra-${n}`}>
+      <header>
+        <h2 id={`amostra-${n}`}>{a.assunto}</h2>
+        <span className="selo">{a.tipo.replace(" (com figura)", "")}</span>
+        <span className="selo">{a.figura.tipo}</span>
+      </header>
+      <p className="enunciado-curto">{a.pergunta.charAt(0).toUpperCase() + a.pergunta.slice(1)}</p>
+      <Figura f={a.figura} />
+      <ol className="amostra-alternativas" aria-label="Alternativas">
+        {a.alternativas.map((alt) => (
+          <li key={alt.letra} className={alt.correta ? "certa" : undefined}>
+            <b>{alt.letra})</b> {alt.texto}
+            {alt.correta ? <span className="selo">gabarito</span> : alt.erro ? <span className="suave"> · {alt.erro}</span> : null}
+          </li>
+        ))}
+      </ol>
+      <details>
+        <summary>Resolução (feita pelo código)</summary>
+        <p className="suave">{a.resolucao}</p>
+      </details>
+    </article>
   );
 }
 

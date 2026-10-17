@@ -134,11 +134,20 @@ export function geradorConstruidoUser(p: {
   alternativas: { letra: string; texto: string; correta: boolean; erro: string | null }[];
   gabarito: string;
   enunciadosRecentes: string[];
+  figura?: { tipo: string; descricao: string }; // figura desenhada pelo código no app
 }) {
+  const figura = p.figura
+    ? `
+
+=== A QUESTÃO TEM UMA FIGURA (${p.figura.tipo}), DESENHADA PELO APP ===
+${p.figura.descricao}
+- Refira-se a ela no enunciado ("a Tabela a seguir", "a planilha a seguir"); o aluno vai vê-la logo abaixo do texto.
+- NÃO copie a figura nem os valores dela no enunciado (nada de tabela em texto, nada de "|"), e não escreva nenhum número que não esteja nos dados ou na figura.`
+    : "";
   return `DISCIPLINA: ${p.disciplina}
 ASSUNTO: ${p.assunto}
 DIFICULDADE ALVO (1–5): ${p.dificuldade}
-CONTEXTO OBRIGATÓRIO: ${p.contexto}${p.duasEtapas ? "\nA resolução tem DUAS etapas encadeadas: deixe isso natural no enunciado." : ""}
+CONTEXTO OBRIGATÓRIO: ${p.contexto}${p.duasEtapas ? "\nA resolução tem DUAS etapas encadeadas: deixe isso natural no enunciado." : ""}${figura}
 
 === OS NÚMEROS JÁ ESTÃO PRONTOS (calculados por código; NÃO altere nenhum) ===
 A questão pede: ${p.pergunta}

@@ -93,6 +93,17 @@ export interface FiguraConferenciaDTO {
   origem: string;
   status: "aguardando_conferencia" | "ok" | "fora";
 }
+// Amostra de figura gerada por código (tela Figuras → Geradas): sem IA, nada é salvo
+export interface AmostraFiguraDTO {
+  assunto: string;
+  tipo: string;
+  pergunta: string;
+  dados: string[];
+  resolucao: string;
+  figura: FiguraDTO;
+  alternativas: { letra: Letra; texto: string; correta: boolean; erro: string | null }[];
+}
+
 export interface QuestaoComFigurasDTO {
   questaoId: string;
   prova?: string;

@@ -6,7 +6,7 @@
 import "./env.js"; // precisa ser o primeiro import
 import express, { type NextFunction, type Request, type Response } from "express";
 import mongoose, { Types } from "mongoose";
-import { listarFiguras, decidirFigura, contextoDaFigura, type AcaoFigura } from "./admin.js";
+import { listarFiguras, decidirFigura, contextoDaFigura, amostrasDeFiguras, type AcaoFigura } from "./admin.js";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -98,6 +98,7 @@ app.post(
 
 // ---------- Conferência do dono (tela Figuras) ----------
 app.get("/api/admin/figuras", rota(async (_req, res) => res.json(await listarFiguras())));
+app.get("/api/admin/figuras/amostras", (_req, res) => res.json(amostrasDeFiguras(5)));
 
 app.get(
   "/api/admin/figuras/:questaoId/:figuraId/contexto",

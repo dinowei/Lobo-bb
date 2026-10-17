@@ -5,8 +5,27 @@
 import { Types } from "mongoose";
 import { Question } from "./models.js";
 import { arquivoDaProva, recortarDeNovo } from "./figuras.js";
+import { construir } from "./construcao.js";
+import { CATALOGO_FIGURAS } from "./construcaoFiguras.js";
 
-import type { FiguraConferenciaDTO as FiguraConferencia, PosicaoFigura, QuestaoComFigurasDTO as QuestaoComFiguras, TipoFigura } from "../shared/tipos.js";
+import type { AmostraFiguraDTO, FiguraConferenciaDTO as FiguraConferencia, Letra, PosicaoFigura, QuestaoComFigurasDTO as QuestaoComFiguras, TipoFigura } from "../shared/tipos.js";
+
+// Amostras das figuras que o código gera (sem IA, nada é salvo): n por tipo, uma por letra
+export function amostrasDeFiguras(n = 5): AmostraFiguraDTO[] {
+  const saida: AmostraFiguraDTO[] = [];
+  for (const [assunto, { porTipo }] of Object.entries(CATALOGO_FIGURAS))
+    for (const tipo of Object.keys(porTipo))
+      for (let k = 0; k < n; k++) {
+        const m = construir(assunto, tipo, "ABCDE"[k % 5] as Letra);
+        if (!m?.figura) continue;
+        const f = m.figura;
+        const figura = f.tipo === "tabela"
+          ? { tipo: f.tipo, posicao: f.posicao, legenda: f.legenda, tabela: f.dados }
+          : { tipo: f.tipo, posicao: f.posicao, legenda: f.legenda, planilha: f.dados };
+        saida.push({ assunto, tipo, pergunta: m.pergunta, dados: m.dados, resolucao: m.resolucao, alternativas: m.alternativas, figura });
+      }
+  return saida;
+}
 
 export async function listarFiguras(): Promise<QuestaoComFiguras[]> {
   const qs = await Question.find({ "figuras.0": { $exists: true } })

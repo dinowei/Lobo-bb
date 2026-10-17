@@ -44,7 +44,8 @@ import {
   escritorPT,
   modelo,
 } from "./llm.js";
-import { construir, temConstrucao, type Montada } from "./construcao.js";
+import { construir, tiposConstruidos, type Montada } from "./construcao.js";
+import { descreverFigura, tirarTabelaCopiada } from "./construcaoFiguras.js";
 import {
   construirCrase,
   conferirFrase,
@@ -55,7 +56,7 @@ import {
   type HistoricoCrase,
 } from "./portugues.js";
 import { normalizar, hashTexto } from "./extrair.js";
-import { ehDisciplinaDeCalculo, verificarConta } from "./verificacao.js";
+import { ehDisciplinaDeCalculo, verificarConta, numerosDoTexto } from "./verificacao.js";
 import { sortearVariacao, type Variacao } from "./variacao.js";
 
 // ------------------------------------------------------------
@@ -129,7 +130,8 @@ const umaLinha = (e: unknown) => String(e instanceof Error ? e.message : e).repl
 
 // confere se o enunciado trouxe cada dado fixado pelo código, sem alterar número
 function dadosFaltando(enunciado: string, dados: string[]): string[] {
-  const norm = (t: string) => t.replace(/[\s ]+/g, " ").toLowerCase();
+  // aspas curvas da IA (“>=20”) contam como retas na fórmula
+  const norm = (t: string) => t.replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/\s+/g, " ").toLowerCase();
   const e = norm(enunciado);
   return dados.filter((d) => {
     const [esq, dir] = d.split(" = "); // fator "1,04^8 = 1,3686": exige a base e o valor
@@ -177,9 +179,10 @@ async function gerarQuestaoInterna(
   // 2. Geração
   const gabaritoObrigatorio = letraAleatoria();
 
-  // Matemática por construção: o código fixa números, alternativas e gabarito; a IA só escreve
+  // Por construção (Matemática, figuras): o código fixa números, figura, alternativas e gabarito;
+  // a IA só escreve. Vale para todo tipo que tem template (inclusive Informática e Vendas com figura).
   let montada: Montada | null = null;
-  if (ehDisciplinaDeCalculo(topic.disciplina) && temConstrucao(topic.assunto)) {
+  if (tiposConstruidos(topic.assunto).includes(variacao.tipo)) {
     montada = construir(topic.assunto, variacao.tipo, gabaritoObrigatorio);
     if (!montada) return { ok: false, motivo: "construcao_falhou", detalhes: [`sem template para "${variacao.tipo}"`] };
     variacao.duasEtapas = montada.etapas >= 2; // a verdade vem do template
@@ -198,6 +201,7 @@ async function gerarQuestaoInterna(
         alternativas: montada.alternativas,
         gabarito: montada.gabarito,
         enunciadosRecentes: recentes.map((r) => r.enunciado),
+        figura: montada.figura ? { tipo: montada.figura.tipo, descricao: descreverFigura(montada.figura) } : undefined,
       })
     : geradorUser({
         disciplina: topic.disciplina,
@@ -226,6 +230,8 @@ async function gerarQuestaoInterna(
   }
 
   if (montada) {
+    // a figura é desenhada pelo app: cópia dela em texto ("| A | B |…") sai do enunciado
+    if (montada.figura) q = { ...q, enunciado: tirarTabelaCopiada(q.enunciado) };
     // números são do código: a IA não pode ter mexido em nenhum
     const textoIA = new Map(q.alternativas.map((a) => [a.letra, a]));
     const alterada = montada.alternativas.find((a) => textoIA.get(a.letra)?.texto.replace(/\s+/g, " ").trim() !== a.texto);
@@ -234,7 +240,19 @@ async function gerarQuestaoInterna(
     const faltam = dadosFaltando(q.enunciado, montada.dados);
     if (faltam.length) return { ok: false, motivo: "numero_alterado", detalhes: [`enunciado sem os dados: ${faltam.join(" ; ")}`] };
     const certa = montada.alternativas.find((a) => a.correta)!;
-    if (q.enunciado.includes(certa.texto)) return { ok: false, motivo: "resposta_no_enunciado", detalhes: [certa.texto] };
+    if (montada.unidade !== "rotulo" && q.enunciado.includes(certa.texto))
+      return { ok: false, motivo: "resposta_no_enunciado", detalhes: [certa.texto] };
+    if (montada.figura) {
+      // a figura sozinha não pode entregar a resposta (célula-alvo vazia, linha com "?")
+      const desc = descreverFigura(montada.figura);
+      // (na planilha a trava é estrutural: a célula-alvo fica vazia; achar o valor numa célula É a habilidade cobrada)
+      if (montada.figura.tipo === "tabela" && montada.unidade !== "rotulo" && certa.texto.length >= 4 && desc.includes(certa.texto.replace(/^R\$ /, "")))
+        return { ok: false, motivo: "figura_entrega_resposta", detalhes: [certa.texto] };
+      // todo número do enunciado tem que vir dos dados ou da figura (a IA não inventa valor)
+      const permitidos = numerosDoTexto(`${montada.dados.join(" ")} ${montada.pergunta} ${desc}`);
+      const soltos = numerosDoTexto(q.enunciado).filter((n) => !permitidos.some((p) => Math.abs(p - n) < 1e-9));
+      if (soltos.length) return { ok: false, motivo: "numero_fora_da_figura", detalhes: [`números no enunciado que não estão nos dados nem na figura: ${soltos.join(", ")}`] };
+    }
     q = {
       ...q,
       gabarito: montada.gabarito,
@@ -257,7 +275,8 @@ async function gerarQuestaoInterna(
   if (new Set(q.alternativas.map((a) => a.letra)).size !== 5) return { ok: false, motivo: "letras_repetidas" };
 
   let fonteDoTrecho: FonteTrecho | undefined;
-  if (fontes.length) {
+  // por construção a resposta é calculada pelo código, não tirada de trecho de fonte
+  if (fontes.length && !montada) {
     if (!q.trechoFonte || q.trechoFonte.length < 10) return { ok: false, motivo: "sem_trecho_fonte" };
     const alvo = normalizar(q.trechoFonte).slice(0, 80);
     fonteDoTrecho = fontes.find((f) => normalizar(f.texto).includes(alvo));
@@ -277,11 +296,13 @@ async function gerarQuestaoInterna(
 
   const fontesTxt = fontes.map((f) => `${f.titulo}\n${f.texto}`);
   let modeloAuditor = modelo("AUDITOR_MODEL");
+  // o auditor só lê texto: a figura vai convertida em descrição estruturada
+  const qAud = montada?.figura ? { ...q, textoBase: `FIGURA DA QUESTÃO (desenhada no app):\n${descreverFigura(montada.figura)}` } : q;
 
   // 4. Auditoria cega: o auditor resolve sem ver o gabarito
   let cego: z.infer<typeof RespostaCegaZ>;
   try {
-    const r = await chatJSONAuditor(AUDITOR_CEGO_SYSTEM, auditorCegoUser(q, fontesTxt), 0, 2000);
+    const r = await chatJSONAuditor(AUDITOR_CEGO_SYSTEM, auditorCegoUser(qAud, fontesTxt), 0, 2000);
     modeloAuditor = r.modelo;
     cego = RespostaCegaZ.parse(r.json);
   } catch (e) {
@@ -298,7 +319,7 @@ async function gerarQuestaoInterna(
   // 5. Revisão completa
   let rev: z.infer<typeof RevisaoZ>;
   try {
-    const r = await chatJSONAuditor(AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(q, fontesTxt), 0, 2000);
+    const r = await chatJSONAuditor(AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(qAud, fontesTxt), 0, 2000);
     if (r.modelo !== modeloAuditor) modeloAuditor = `${modeloAuditor} + ${r.modelo}`;
     rev = RevisaoZ.parse(r.json);
   } catch (e) {
@@ -328,6 +349,8 @@ async function gerarQuestaoInterna(
     },
     variacao,
     verificacao: q.verificacao ? { ...q.verificacao, valorEsperado } : undefined,
+    // figura gerada por código: dado desenhado no site (já conferido pelas checagens e pelo auditor)
+    figuras: montada?.figura ? [{ ...montada.figura, origem: "construcao", status: "ok" }] : undefined,
     hashEnunciado: h,
   });
 
