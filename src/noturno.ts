@@ -243,7 +243,7 @@ export async function rodarFila(opcoes: { ate?: Date; max?: number; trabalhadore
         ...(opcoes.tarefaIds ? { _id: { $in: opcoes.tarefaIds.map((id) => new Types.ObjectId(id)) } } : {}),
       },
       { status: "rodando", iniciadaEm: new Date() },
-      { sort: { proximaEm: 1, createdAt: 1 }, new: true }
+      { sort: { proximaEm: 1, createdAt: 1 }, returnDocument: "after" }
     );
     const topico = t?.tipo === "gerar" ? String((t.params as ItemPlano).topicId) : null;
     if (t && topico && !trava.pegar(topico)) {

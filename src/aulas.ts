@@ -123,7 +123,7 @@ async function gerarAula(topicId: string, preferir?: string) {
             auditoria: { veredito: "reprovada", problemas: [erro], em: new Date() },
           },
         },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
+        { upsert: true, returnDocument: "after", setDefaultsOnInsert: true }
       );
       return { ok: false, motivo: "aula_invalida", detalhes: erro };
     }
@@ -147,7 +147,7 @@ async function gerarAula(topicId: string, preferir?: string) {
       auditoria: { modelo: auditor.modelo, veredito: parecer.ok ? "aprovada" : "reprovada", problemas: parecer.problemas, em: new Date() },
       erro: parecer.ok ? undefined : parecer.problemas.join(" | ").slice(0, 700),
     };
-    const salva = await Aula.findOneAndUpdate({ topicId: topic._id }, { $set: dados }, { upsert: true, new: true, setDefaultsOnInsert: true });
+    const salva = await Aula.findOneAndUpdate({ topicId: topic._id }, { $set: dados }, { upsert: true, returnDocument: "after", setDefaultsOnInsert: true });
     if (!parecer.ok) return { ok: false, motivo: "aula_reprovada", detalhes: parecer.problemas.join(" | ").slice(0, 500) };
     return { ok: true, resultadoId: salva?._id };
   } catch (e) {

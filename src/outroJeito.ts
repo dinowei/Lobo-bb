@@ -65,14 +65,14 @@ const diaEmSaoPaulo = (data = new Date()) => new Intl.DateTimeFormat("sv-SE", { 
 async function reservarUsoTutor(userId: Types.ObjectId, dia: string, limite: number) {
   if (limite < 1) return false;
   const filtro = { userId, dia, quantidade: { $lt: limite } };
-  if (await TutorUso.findOneAndUpdate(filtro, { $inc: { quantidade: 1 } }, { new: true })) return true;
+  if (await TutorUso.findOneAndUpdate(filtro, { $inc: { quantidade: 1 } }, { returnDocument: "after" })) return true;
   try {
     await TutorUso.create({ userId, dia, quantidade: 1 });
     return true;
   } catch (e) {
     if ((e as { code?: number }).code !== 11000) throw e;
     // Outra requisição criou o contador entre a leitura e a inserção.
-    return !!(await TutorUso.findOneAndUpdate(filtro, { $inc: { quantidade: 1 } }, { new: true }));
+    return !!(await TutorUso.findOneAndUpdate(filtro, { $inc: { quantidade: 1 } }, { returnDocument: "after" }));
   }
 }
 

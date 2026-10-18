@@ -368,7 +368,7 @@ export const apiServidor: Omit<Api, "modo"> = {
     const tentativa = await Attempt.findOneAndUpdate(
       { userId, questionId: qid, acertou: false, modo: { $ne: "simulado" } },
       { $set: { motivoErro: motivo } },
-      { sort: { createdAt: -1 }, new: true }
+      { sort: { createdAt: -1 }, returnDocument: "after" }
     ).lean();
     if (!tentativa) throw new Error("Não achei um erro recente nessa questão.");
     const q = await Question.findById(qid).lean<QuestaoDoc>();
