@@ -1,0 +1,86 @@
+# Blueprint do Render (docs/DEPLOY.md): site + API e o noturno, na mesma imagem (Dockerfile).
+# Nenhum valor secreto aqui: os "sync: false" são preenchidos no painel do Render, uma vez só.
+envVarGroups:
+  - name: lobo-segredos
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: GERADOR_API_KEY
+        sync: false
+      - key: AUDITOR_API_KEY
+        sync: false
+      - key: EMBED_API_KEY
+        sync: false
+  - name: lobo-config
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GERADOR_BASE_URL
+        value: https://integrate.api.nvidia.com/v1
+      - key: AUDITOR_BASE_URL
+        value: https://integrate.api.nvidia.com/v1
+      - key: EMBED_BASE_URL
+        value: https://integrate.api.nvidia.com/v1
+      - key: GERADOR_MODEL
+        value: nvidia/nemotron-3.5-lightning-30b-a3b
+      - key: AUDITOR_MODEL
+        value: nvidia/nemotron-3-super-120b-a12b
+      - key: AUDITOR_MODEL_RESERVA
+        value: nvidia/nemotron-3-ultra-550b-a55b
+      - key: ESCRITOR_PT_MODEL
+        value: z-ai/glm-5.3-flash
+      - key: ESCRITOR_PT_MODEL_RESERVA
+        value: deepseek-ai/deepseek-v4.1-flash
+      - key: EMBED_MODEL
+        value: nvidia/nemotron-3-embed-1b
+      - key: EMBED_DIM
+        value: "2048"
+      - key: EMBED_INPUT_TYPE
+        value: "1"
+      - key: VECTOR_INDEX
+        value: chunks_vector
+      - key: LLM_RESERVA_RACIOCINIO
+        value: "16000"
+      - key: LLM_TETO_TOKENS
+        value: "24000"
+      - key: LLM_TIMEOUT_SEG
+        value: "180"
+      - key: GERADOR_PENSAR
+        value: "1"
+      - key: AUDITOR_PENSAR
+        value: "1"
+      - key: GERADOR_RACIOCINIO
+        value: "6000"
+      - key: AUDITOR_RACIOCINIO
+        value: "8000"
+      - key: EMBED_MIN_SIM
+        value: "0.3"
+      - key: ALUNO_ID # o seu progresso de antes do login (o criar-admin leva para a sua conta)
+        sync: false
+      - key: GERACAO_MAX_DIA
+        value: "60"
+      - key: GERACAO_MAX_NOITE
+        value: "20"
+
+services:
+  - type: web
+    name: lobo
+    runtime: docker
+    plan: starter # sempre ligado (o "free" dorme depois de 15 min sem uso e demora ~1 min para acordar)
+    region: virginia
+    healthCheckPath: /api/saude
+    autoDeploy: true
+    envVars:
+      - fromGroup: lobo-segredos
+      - fromGroup: lobo-config
+
+  - type: cron
+    name: lobo-noturno
+    runtime: docker
+    plan: starter
+    region: virginia
+    schedule: "0 4 * * *" # 01h00 em Brasília (UTC−3)
+    dockerCommand: npx tsx src/cli.ts noturno --ate 05:30
+    envVars:
+      - fromGroup: lobo-segredos
+      - fromGroup: lobo-config

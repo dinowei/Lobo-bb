@@ -1,0 +1,14 @@
+node_modules
+web/node_modules
+web/dist
+web/dist-demo
+dist
+.env
+.env.*
+!.env.example
+provas
+fontes
+.git
+.claude
+docs/telas
+*.log

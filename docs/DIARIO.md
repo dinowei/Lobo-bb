@@ -94,6 +94,14 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - **Corrente PROVISÓRIA (aprovada pelo dono antes do fim do benchmark):** gerador Lightning → gpt-oss-20b → Muse Glimmer 30b; auditor Super → Ultra → Muse → gpt-oss-20b, recalculado pela regra de família (gerador NVIDIA → Muse; gerador OpenAI ou Meta → Super/Ultra). Ativada com `npm run bb -- corrente provisoria` (fica no banco, como o botão "Aprovar corrente"); `corrente desfazer` volta ao legado. A escolha definitiva continua esperando o OK do dono depois do benchmark.
 - E2E de login: passou (7/7) na última tentativa. A bateria e2e completa roda de uma vez na Etapa 9, com os jobs de IA parados (com a máquina ocupada, o servidor de desenvolvimento demora a compilar).
 
+## 18/10/2026 — Etapa 5: pronto para a nuvem (sem publicar)
+
+- `docs/DEPLOY.md`: Render × Railway × Fly.io com preços das páginas oficiais; recomendação Render (Blueprint com site + noturno, health check, ~US$ 8/mês sempre ligado; plano B Railway Hobby US$ 5). Passo a passo de 20 min e checklist pós-publicação.
+- `Dockerfile` (uma imagem para site e noturno), `.dockerignore` (sem `.env`, `provas/`, `fontes/`), `render.yaml` (segredos com `sync: false`, cron 01h de Brasília).
+- Servidor: helmet com CSP, HSTS, compressão, cache de 1 ano nos arquivos com hash e `no-cache` no `index.html`, `/api/saude` com 503 sem banco, `trust proxy`.
+- Conferido rodando em produção local (porta 3401): CSP/HSTS/nosniff presentes, JS com gzip, cache certo, rotas do site e API ok. Corrigido: o build do site quebrava ao incluir os testes de `shared/` (exclude no `web/tsconfig.json`).
+- A imagem Docker não foi construída aqui: o Docker Desktop estava desligado (não liguei programa do sistema). O Render constrói no primeiro deploy.
+
 RETOMAR AQUI: em segundo plano rodam a Etapa 2.3 (10 geradas com fonte) e depois o benchmark (auditor até 60, juiz, escritor), logs em scratchpad `etapa23.log` e `bench.log`. Quando acabar: aprovação da 2.3 no DIARIO, proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 5 (nuvem sem publicar).
 
 **LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.
