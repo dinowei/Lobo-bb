@@ -243,4 +243,28 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
   - Recalculado do estado atual, então atrasar só redistribui.
 - Testes: 136/136. Typecheck do servidor e do web ok.
 
-RETOMAR AQUI: a noite curta real (S4.1: META_APROVADAS_NOITE=10, 3 aulas, 3 lotes de cartões, 5 explicações, 3 temas; log em scratchpad `noite.log`) está rodando. Quando acabar: relatório da noite no DIARIO (aprovadas, aulas e cartões, motivos de descarte) e mostrar uma aula aprovada se houver. Depois: rodadas reais de 3 por assunto da Etapa 7, Etapa 9 (auditoria tela por tela + bateria e2e com os jobs de IA parados) e, por último, ADENDO-BINHO-VOZ.
+## 18/10/2026 — Etapa 6: primeira noite real (curta) — POST-IT A.1
+
+- Comando: `META_APROVADAS_NOITE=10 GERACAO_MAX_TENTATIVAS_NOITE=30 EXPLICACOES_NOITE=5 AULAS_NOITE=3 CARTOES_NOITE=3 META_TEMAS_REDACAO=3 npm run bb -- noturno --ate 20:44`, 3 trabalhadores e a corrente provisória.
+- Plano: 30 questões, 5 explicações alternativas, 3 aulas, 3 lotes de cartões e 2 temas.
+- **Resultado: 16 tarefas, 12 questões aprovadas, 3 descartadas.** O banco foi a 166 de 1.200.
+  - Aprovadas: Planilhas, Banco de dados e SQL, Python e R, Sistemas operacionais, Redes e nuvem, Editores de texto, Segurança da informação, Atendimento ao cliente, Ortografia e acentuação, Concordância, Classes de palavras e Semântica.
+  - Descartadas: Ética e direitos do consumidor (`fonte_insuficiente`: falta fonte ingerida, regra 3), Compreensão de textos (o auditor achou erro de português no enunciado gerado) e Colocação pronominal (`ignorou_gabarito_obrigatorio`).
+  - `verificar_modelos`: 7 de 9 modelos responderam.
+- **Bug achado:** a noite parou inteira ao bater a meta de aprovadas, e explicações, aulas, cartões e temas ficaram pendentes. Corrigido (`871da26`): a meta tira da fila só a geração de questões; o resto segue até acabar ou até a hora limite.
+- Aulas e cartões: rodando agora pelos comandos próprios (`aulas --n 3`, `cartoes --n 3`); resultado abaixo quando acabar.
+
+## 18/10/2026 — Etapa 9 (acabamento), até aqui
+
+- (1) `d7f8b58`:
+  - error boundary por tela com "Tentar de novo"; esqueleto no carregamento; telas divididas por rota;
+  - link "pular para o conteúdo", foco visível laranja, título da aba por tela e por questão;
+  - faixa offline e fila de respostas offline enviada sozinha;
+  - atalhos → / N / ?;
+  - confirmação ao sair de simulado, Raio-X ou redação; cronômetro do simulado pausa com a aba oculta;
+  - "Mais" do celular abre todas as telas (antes Cartões, Simulados, Redação e Plano não eram alcançáveis no celular).
+- (2) `6254ebe`: PWA instalável (manifest, ícones do lobo provisórios, theme-color, service worker que nunca guarda `/api`). O demo só é baixado sem servidor: o bundle principal foi de 93 para 70 kB gzip. Conferido no build de produção: SW ativo, manifest com 3 ícones.
+- (3) `3907098`: "Desfazer" por 5 s ao contestar e ao zerar o progresso; próxima questão pré-carregada (12 ms para trocar no demo); alvo de toque de 44 px em tela de toque.
+- Contraste: laranja `#ff5b1f` sobre `#121212` ≈ 6:1 (passa AA), então nada de cor mudou.
+
+RETOMAR AQUI: esperar `aulas --n 3` e `cartoes --n 3` (logs em scratchpad `aulas3.log` e `cartoes1.log`) e registrar o resultado (mostrar uma aula aprovada, se houver). Depois, Etapa 9: testes ponta a ponta dos fluxos (login, responder, revisão, simulado completo, redação, contestar, offline/online) com os jobs de IA parados; prints de todas as telas (1440 e 390) em docs/telas/; Lighthouse. Depois: rodadas reais de 3 por assunto da Etapa 7 e, por último, ADENDO-BINHO-VOZ.
