@@ -84,7 +84,7 @@ export function App() {
         </nav>
         {painel && (
           <div className="cartao-nivel">
-            <img className="mascote" src={MASCOTE} alt="" />
+            <img className="mascote" src={MASCOTE} alt="" width={166} height={188} />
             <span className="rotulo">Nível {painel.nivel.numero}</span>
             <h3>{painel.nivel.titulo}</h3>
             <div className="barra" role="progressbar" aria-valuenow={Math.round((painel.nivel.xpNoNivel / painel.nivel.xpParaProximo) * 100)} aria-label="Progresso do nível">

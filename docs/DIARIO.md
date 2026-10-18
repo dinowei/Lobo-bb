@@ -279,4 +279,18 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
   5. Simulado 20/50/30.
 - **Do edital também:** as cotas batem; valor por questão; cortes do 7.2.4; 5 h de prova. O simulado agora mostra "pontos como a banca conta" e se a nota eliminaria (`pontuacaoProva`, com teste).
 
+## 18/10/2026 — Lighthouse (celular), Etapa 9
+
+- Lighthouse 13.5 instalado como devDependency (decisão do dono). Build de produção servido pelo `vite preview` (:5181) e auditado no Edge; comando `npm run lighthouse` (com `CHROME_PATH` apontando para o Edge).
+- Primeira medida no painel: Desempenho 67 · Acessibilidade 96 · Boas práticas 100.
+  - Acessibilidade: o nome do cartão do carrossel não continha o texto visível (WCAG 2.5.3); as bolinhas tinham 7 px de alvo; o mascote não tinha tamanho.
+  - Corrigido: nome = texto visível + "Praticar" só para leitor de tela; área de 24 px com a mesma bolinha no meio; `width`/`height` no mascote.
+- Desempenho: a fonte do Google bloqueava a primeira pintura. Ela agora carrega com `media="print"` e troca para `all` no `main.tsx` (a CSP não aceita `onload` inline). A Inter continua aplicada (conferido).
+- **Notas finais no painel:**
+  - **Acessibilidade 100 · Boas práticas 100 · CLS 0.**
+  - Desempenho:
+    - **96** com a CPU calibrada para esta máquina (×1,3; o benchmark do Lighthouse aqui é 476, contra ~1.500 de um desktop comum: a regra do próprio Lighthouse é ajustar o multiplicador);
+    - 82 a 84 com o ×4 padrão em cima da máquina lenta.
+  - Ajustes (outra tela): mesmo padrão.
+
 RETOMAR AQUI (antigo): esperar `aulas --n 3` e `cartoes --n 3` (logs em scratchpad `aulas3.log` e `cartoes1.log`) e registrar o resultado (mostrar uma aula aprovada, se houver). Depois, Etapa 9: testes ponta a ponta dos fluxos (login, responder, revisão, simulado completo, redação, contestar, offline/online) com os jobs de IA parados; prints de todas as telas (1440 e 390) em docs/telas/; Lighthouse. Depois: rodadas reais de 3 por assunto da Etapa 7 e, por último, ADENDO-BINHO-VOZ.

@@ -291,8 +291,10 @@ function CarrosselDisciplinas({ disciplinas, onPraticar }: { disciplinas: Discip
             key={d.disciplina}
             className={`cartao-disc${i === 1 ? " laranja" : ""}`}
             onClick={() => onPraticar(d.disciplina)}
-            aria-label={`Praticar ${d.nome}. Prioridade ${i + 1} de ${disciplinas.length}. Domínio ${pct(d.dominio)}`}
+            title={`Praticar ${d.nome}`}
           >
+            {/* nome acessível = o texto visível (WCAG 2.5.3), com o verbo antes só para leitor de tela */}
+            <span className="sr-only">Praticar, prioridade </span>
             <span className="n">{String(i + 1).padStart(2, "0")}</span>
             <strong style={{ whiteSpace: "pre-line" }}>{CURTO[d.disciplina]}</strong>
             <span className="dominio-cartao"><span>Domínio</span><b className="num">{pct(d.dominio)}</b><i><u style={{ width: pct(d.dominio) }} /></i></span>

@@ -8,6 +8,7 @@
     "start": "tsx src/server.ts",
     "bb": "tsx src/cli.ts",
     "typecheck": "tsc --noEmit && npm --prefix web exec tsc -- --noEmit",
+    "lighthouse": "lighthouse http://localhost:5181/#painel --form-factor=mobile --only-categories=performance,accessibility,best-practices --chrome-flags=--headless=new --view",
     "test": "tsx --test \"shared/**/*.test.ts\" \"src/**/*.test.ts\"",
     "setup": "npm install && npm --prefix web install"
   },
@@ -30,6 +31,7 @@
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
     "concurrently": "^10.0.6",
+    "lighthouse": "^13.5.0",
     "playwright-core": "^1.64.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
