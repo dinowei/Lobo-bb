@@ -305,4 +305,70 @@ const GeracaoSchema = new Schema(
 );
 export const Geracao = model("Geracao", GeracaoSchema, "geracoes");
 
+// ------------------------------------------------------------
+// 9. TELEMETRIA DE MODELOS — uma linha por chamada HTTP (sem texto, sem chave). Some em 35 dias.
+// ------------------------------------------------------------
+export const TIPOS_FALHA = ["429", "5xx", "timeout", "formato", "permanente", "outro"] as const;
+const ChamadaModeloSchema = new Schema({
+  modelo: { type: String, required: true },
+  familia: String,
+  funcao: String, // gerador, auditor, escritor_pt, juiz_pt, embed, verificacao, benchmark…
+  ok: { type: Boolean, required: true },
+  falha: { type: String, enum: TIPOS_FALHA },
+  http: Number,
+  ms: Number,
+  reserva: Boolean, // atendeu no lugar do principal da corrente
+  em: { type: Date, default: Date.now },
+});
+ChamadaModeloSchema.index({ em: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 35 });
+ChamadaModeloSchema.index({ modelo: 1, em: -1 });
+export const ChamadaModelo = model("ChamadaModelo", ChamadaModeloSchema, "chamadas_modelo");
+
+// ------------------------------------------------------------
+// 10. CONFIGURAÇÃO — chave → valor (corrente aprovada pelo dono, última verificação dos modelos)
+// ------------------------------------------------------------
+const ConfigSchema = new Schema({ _id: { type: String, required: true }, valor: Schema.Types.Mixed, em: { type: Date, default: Date.now } });
+export const Config = model("Config", ConfigSchema, "config");
+
+// ------------------------------------------------------------
+// 11. TAREFAS — fila persistida do noturno: sobrevive a reinício; falha de infraestrutura
+// volta para a fila com espera crescente; descarte só por qualidade, com motivo.
+// ------------------------------------------------------------
+export const STATUS_TAREFA = ["pendente", "rodando", "aguardando", "concluida", "descartada", "esgotada"] as const;
+const TarefaSchema = new Schema(
+  {
+    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark"], required: true },
+    params: Schema.Types.Mixed, // gerar: { topicId, assunto, tipo? }
+    status: { type: String, enum: STATUS_TAREFA, default: "pendente", index: true },
+    tentativas: { type: Number, default: 0 }, // falhas de infraestrutura até agora
+    proximaEm: { type: Date, default: Date.now }, // "aguardando": quando pode rodar de novo
+    motivo: String,
+    detalhes: String,
+    resultadoId: Schema.Types.ObjectId, // questão aprovada
+    iniciadaEm: Date,
+    lote: String, // ex.: "noite 2026-10-17"
+  },
+  { timestamps: true }
+);
+TarefaSchema.index({ status: 1, proximaEm: 1 });
+export const Tarefa = model("Tarefa", TarefaSchema, "tarefas");
+
+// ------------------------------------------------------------
+// 12. BENCHMARK — resposta às cegas de cada modelo para cada questão da amostra
+// ------------------------------------------------------------
+const BenchmarkRespostaSchema = new Schema({
+  rodada: { type: String, required: true, index: true }, // ex.: "auditor-2026-10"
+  modelo: { type: String, required: true },
+  questionId: { type: Schema.Types.ObjectId, ref: "Question" },
+  item: String, // Português: id do caso (frase)
+  disciplina: String,
+  resposta: String, // letra, ou "correta"/"incorreta"
+  acertou: Boolean,
+  falha: { type: String, enum: TIPOS_FALHA }, // sem resposta: por quê
+  ms: Number,
+  em: { type: Date, default: Date.now },
+});
+BenchmarkRespostaSchema.index({ rodada: 1, modelo: 1, questionId: 1, item: 1 });
+export const BenchmarkResposta = model("BenchmarkResposta", BenchmarkRespostaSchema, "benchmark_respostas");
+
 export type ObjectId = Types.ObjectId;

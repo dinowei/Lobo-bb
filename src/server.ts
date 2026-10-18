@@ -7,6 +7,10 @@ import "./env.js"; // precisa ser o primeiro import
 import express, { type NextFunction, type Request, type Response } from "express";
 import mongoose, { Types } from "mongoose";
 import { listarFiguras, decidirFigura, contextoDaFigura, amostrasDeFiguras, type AcaoFigura } from "./admin.js";
+import { painelIA, painelFila, painelBenchmark, pendencias, lerDoc, DOCS_LIBERADOS } from "./adminTelas.js";
+import { aprovarCorrentes, desfazerCorrentes } from "./corrente.js";
+import { tentarDeNovoAgora } from "./noturno.js";
+import { FUNCOES, type Correntes } from "./catalogo.js";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -99,6 +103,42 @@ app.post(
 // ---------- Conferência do dono (tela Figuras) ----------
 app.get("/api/admin/figuras", rota(async (_req, res) => res.json(await listarFiguras())));
 app.get("/api/admin/figuras/amostras", (_req, res) => res.json(amostrasDeFiguras(5)));
+
+// ---------- Tela Admin (só o dono): IA, Fila, Benchmark, Pendências ----------
+app.get("/api/admin/ia", rota(async (_req, res) => res.json(await painelIA())));
+app.get("/api/admin/fila", rota(async (_req, res) => res.json(await painelFila())));
+app.post(
+  "/api/admin/fila/:id/tentar",
+  rota(async (req, res) => {
+    const id = String(req.params.id);
+    if (!Types.ObjectId.isValid(id)) return res.status(400).json({ erro: "Id inválido." });
+    if (!(await tentarDeNovoAgora(id))) return res.status(409).json({ erro: "Essa tarefa não está aguardando nem parada." });
+    res.json({ ok: true });
+  })
+);
+app.get("/api/admin/benchmark", rota(async (_req, res) => res.json(await painelBenchmark())));
+app.post(
+  "/api/admin/correntes/aprovar",
+  rota(async (req, res) => {
+    const c = (req.body ?? {}).correntes as Record<string, unknown> | undefined;
+    const ok = c && FUNCOES.every((f) => Array.isArray(c[f]) && (c[f] as unknown[]).every((x) => typeof x === "string"));
+    if (!ok) return res.status(400).json({ erro: `Envie { correntes: { ${FUNCOES.join(", ")} } } com listas de ids.` });
+    const r = await aprovarCorrentes(c as Correntes);
+    if (!r.ok) return res.status(422).json({ erro: r.erros.join(" · ") });
+    res.json({ ok: true, avisos: r.avisos });
+  })
+);
+app.post("/api/admin/correntes/desfazer", rota(async (_req, res) => res.json(await desfazerCorrentes())));
+app.get("/api/admin/pendencias", rota(async (_req, res) => res.json(await pendencias())));
+app.get(
+  "/api/admin/doc",
+  rota(async (req, res) => {
+    const nome = String(req.query.nome ?? "");
+    const md = await lerDoc(nome);
+    if (md === null) return res.status(404).json({ erro: DOCS_LIBERADOS.includes(nome) ? "Esse documento ainda não foi escrito." : "Documento não liberado." });
+    res.json({ nome, markdown: md });
+  })
+);
 
 app.get(
   "/api/admin/figuras/:questaoId/:figuraId/contexto",

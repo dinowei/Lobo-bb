@@ -1,0 +1,329 @@
+{
+  "em": "2026-10-18T00:24:40.565Z",
+  "resultados": [
+    {
+      "modelo": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "sonda": "basico",
+      "http": 200,
+      "ms": 104115,
+      "json": true,
+      "certo": true,
+      "tokens": 165
+    },
+    {
+      "modelo": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "sonda": "reasoning_budget",
+      "http": 200,
+      "ms": 4039,
+      "json": true,
+      "certo": true,
+      "tokens": 213
+    },
+    {
+      "modelo": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "sonda": "reasoning_effort",
+      "http": 200,
+      "ms": 3475,
+      "json": true,
+      "certo": true,
+      "tokens": 226
+    },
+    {
+      "modelo": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "sonda": "sem_pensar",
+      "http": 200,
+      "ms": 1970,
+      "json": true,
+      "certo": true,
+      "tokens": 9
+    },
+    {
+      "modelo": "nvidia/nemotron-3-super-120b-a12b",
+      "sonda": "basico",
+      "http": 200,
+      "ms": 17218,
+      "json": true,
+      "certo": true,
+      "tokens": 99
+    },
+    {
+      "modelo": "nvidia/nemotron-3-super-120b-a12b",
+      "sonda": "reasoning_budget",
+      "http": 200,
+      "ms": 3690,
+      "json": true,
+      "certo": true,
+      "tokens": 99
+    },
+    {
+      "modelo": "nvidia/nemotron-3-super-120b-a12b",
+      "sonda": "reasoning_effort",
+      "http": 200,
+      "ms": 3033,
+      "json": true,
+      "certo": true,
+      "tokens": 99
+    },
+    {
+      "modelo": "nvidia/nemotron-3-super-120b-a12b",
+      "sonda": "sem_pensar",
+      "http": 200,
+      "ms": 828,
+      "json": true,
+      "certo": true,
+      "tokens": 9
+    },
+    {
+      "modelo": "nvidia/nemotron-3-ultra-550b-a55b",
+      "sonda": "basico",
+      "http": 503,
+      "ms": 1080,
+      "json": false,
+      "certo": false,
+      "erro": "503 Service temporarily overloaded"
+    },
+    {
+      "modelo": "nvidia/nemotron-3-ultra-550b-a55b",
+      "sonda": "reasoning_budget",
+      "http": 503,
+      "ms": 642,
+      "json": false,
+      "certo": false,
+      "erro": "503 Service temporarily overloaded"
+    },
+    {
+      "modelo": "nvidia/nemotron-3-ultra-550b-a55b",
+      "sonda": "reasoning_effort",
+      "http": 503,
+      "ms": 2092,
+      "json": false,
+      "certo": false,
+      "erro": "503 Service temporarily overloaded"
+    },
+    {
+      "modelo": "nvidia/nemotron-3-ultra-550b-a55b",
+      "sonda": "sem_pensar",
+      "http": 503,
+      "ms": 648,
+      "json": false,
+      "certo": false,
+      "erro": "503 Service temporarily overloaded"
+    },
+    {
+      "modelo": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "sonda": "basico",
+      "http": 200,
+      "ms": 1545,
+      "json": true,
+      "certo": true,
+      "tokens": 89
+    },
+    {
+      "modelo": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "sonda": "reasoning_budget",
+      "http": 200,
+      "ms": 1652,
+      "json": true,
+      "certo": true,
+      "tokens": 89
+    },
+    {
+      "modelo": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "sonda": "reasoning_effort",
+      "http": 200,
+      "ms": 1167,
+      "json": true,
+      "certo": true,
+      "tokens": 88
+    },
+    {
+      "modelo": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "sonda": "sem_pensar",
+      "http": 200,
+      "ms": 836,
+      "json": true,
+      "certo": true,
+      "tokens": 9
+    },
+    {
+      "modelo": "openai/gpt-oss-20b",
+      "sonda": "basico",
+      "http": 200,
+      "ms": 1888,
+      "json": true,
+      "certo": true,
+      "tokens": 50
+    },
+    {
+      "modelo": "openai/gpt-oss-20b",
+      "sonda": "reasoning_budget",
+      "http": 200,
+      "ms": 1950,
+      "json": true,
+      "certo": true,
+      "tokens": 50
+    },
+    {
+      "modelo": "openai/gpt-oss-20b",
+      "sonda": "reasoning_effort",
+      "http": 200,
+      "ms": 853,
+      "json": true,
+      "certo": true,
+      "tokens": 27
+    },
+    {
+      "modelo": "openai/gpt-oss-20b",
+      "sonda": "sem_pensar",
+      "http": 200,
+      "ms": 1234,
+      "json": true,
+      "certo": true,
+      "tokens": 50
+    },
+    {
+      "modelo": "meta/muse-glimmer-30b",
+      "sonda": "basico",
+      "http": 200,
+      "ms": 13207,
+      "json": true,
+      "certo": true,
+      "tokens": 200
+    },
+    {
+      "modelo": "meta/muse-glimmer-30b",
+      "sonda": "reasoning_budget",
+      "http": 400,
+      "ms": 685,
+      "json": false,
+      "certo": false,
+      "erro": "400 Validation: Unsupported parameter(s): `reasoning_budget`"
+    },
+    {
+      "modelo": "meta/muse-glimmer-30b",
+      "sonda": "reasoning_effort",
+      "http": 200,
+      "ms": 3791,
+      "json": true,
+      "certo": true,
+      "tokens": 66
+    },
+    {
+      "modelo": "meta/muse-glimmer-30b",
+      "sonda": "sem_pensar",
+      "http": 200,
+      "ms": 4062,
+      "json": true,
+      "certo": true,
+      "tokens": 66
+    },
+    {
+      "modelo": "stepfun-ai/step-5-preview",
+      "sonda": "basico",
+      "http": 200,
+      "ms": 1514,
+      "json": true,
+      "certo": true,
+      "tokens": 67
+    },
+    {
+      "modelo": "stepfun-ai/step-5-preview",
+      "sonda": "reasoning_budget",
+      "http": 400,
+      "ms": 419,
+      "json": false,
+      "certo": false,
+      "erro": "400 Validation: Unsupported parameter(s): `reasoning_budget`"
+    },
+    {
+      "modelo": "stepfun-ai/step-5-preview",
+      "sonda": "reasoning_effort",
+      "http": 200,
+      "ms": 1662,
+      "json": true,
+      "certo": true,
+      "tokens": 36
+    },
+    {
+      "modelo": "stepfun-ai/step-5-preview",
+      "sonda": "sem_pensar",
+      "http": 200,
+      "ms": 1816,
+      "json": false,
+      "certo": false,
+      "tokens": 58
+    },
+    {
+      "modelo": "z-ai/glm-5.3-flash",
+      "sonda": "basico",
+      "http": 200,
+      "ms": 20617,
+      "json": true,
+      "certo": true,
+      "tokens": 33
+    },
+    {
+      "modelo": "z-ai/glm-5.3-flash",
+      "sonda": "reasoning_budget",
+      "http": 400,
+      "ms": 20292,
+      "json": false,
+      "certo": false,
+      "erro": "400 Validation: Unsupported parameter(s): `reasoning_budget`"
+    },
+    {
+      "modelo": "z-ai/glm-5.3-flash",
+      "sonda": "reasoning_effort",
+      "http": 200,
+      "ms": 21644,
+      "json": true,
+      "certo": true,
+      "tokens": 9
+    },
+    {
+      "modelo": "z-ai/glm-5.3-flash",
+      "sonda": "sem_pensar",
+      "http": 200,
+      "ms": 20457,
+      "json": true,
+      "certo": true,
+      "tokens": 33
+    },
+    {
+      "modelo": "deepseek-ai/deepseek-v4.1-flash",
+      "sonda": "basico",
+      "http": null,
+      "ms": 120684,
+      "json": false,
+      "certo": false,
+      "erro": "Request timed out."
+    },
+    {
+      "modelo": "deepseek-ai/deepseek-v4.1-flash",
+      "sonda": "reasoning_budget",
+      "http": null,
+      "ms": 120287,
+      "json": false,
+      "certo": false,
+      "erro": "Request timed out."
+    },
+    {
+      "modelo": "deepseek-ai/deepseek-v4.1-flash",
+      "sonda": "reasoning_effort",
+      "http": null,
+      "ms": 120145,
+      "json": false,
+      "certo": false,
+      "erro": "Request timed out."
+    },
+    {
+      "modelo": "deepseek-ai/deepseek-v4.1-flash",
+      "sonda": "sem_pensar",
+      "http": null,
+      "ms": 120177,
+      "json": false,
+      "certo": false,
+      "erro": "Request timed out."
+    }
+  ]
+}

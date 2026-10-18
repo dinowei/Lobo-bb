@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useApp, type Tela } from "./estado";
 import { MASCOTE, pct } from "./util";
 import {
-  IAlvo, IBalao, ICalendario, ICasa, IEngrenagem, IFogo, ILupa, IMais, IRaio, ISeta, ISino, ITrofeu,
+  IAlvo, IBalao, ICalendario, ICasa, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, ISeta, ISino, ITrofeu,
 } from "./componentes/Icones";
 import { Painel } from "./telas/Painel";
 import { Praticar } from "./telas/Praticar";
@@ -12,6 +12,7 @@ import { Erros } from "./telas/Erros";
 import { Conquistas } from "./telas/Conquistas";
 import { AjustesTela } from "./telas/Ajustes";
 import { Figuras } from "./telas/Figuras";
+import { Admin } from "./telas/Admin";
 
 const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa }[] = [
   { tela: "painel", rotulo: "Painel", Icone: ICasa },
@@ -25,6 +26,8 @@ const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa }[] = [
 
 export function App() {
   const { tela, ir, painel, api, toasts, subiuNivel, fecharNivel } = useApp();
+  // até o login (Etapa 4) o único usuário do modo servidor é o dono; aluno nunca vê a tela Admin
+  const ehAdmin = api.modo === "servidor";
 
   return (
     <div className="app">
@@ -38,6 +41,13 @@ export function App() {
               {t === "revisoes" && !!painel?.revisoesHoje && <span className="contador num">{painel.revisoesHoje}</span>}
             </button>
           ))}
+          {ehAdmin && (
+            <button aria-current={tela === "admin" ? "page" : undefined} onClick={() => ir("admin")}>
+              <IEscudo />
+              Admin
+              {!!painel?.alertasAdmin?.length && <span className="contador num" aria-label={`${painel.alertasAdmin.length} alerta(s)`}>{painel.alertasAdmin.length}</span>}
+            </button>
+          )}
         </nav>
         {painel && (
           <div className="cartao-nivel">
@@ -80,6 +90,7 @@ export function App() {
           {tela === "conquistas" && <Conquistas />}
           {tela === "ajustes" && <AjustesTela />}
           {tela === "figuras" && <Figuras />}
+          {tela === "admin" && <Admin />}
         </main>
       </div>
 

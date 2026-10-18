@@ -18,6 +18,7 @@ import {
   ESTADO_INICIAL,
   agendar,
   calcularPainel,
+  calcularBanco,
   cotasPorDisciplina,
   notaSM2,
   prioridade,
@@ -119,7 +120,13 @@ export const apiDemo: Api = {
 
   painel: () => {
     const e = ler();
-    return espera(calcularPainel({ topicos: TOPICOS, tentativas: e.tentativas, revisoes: Object.values(e.revisoes).map((r) => r.proxima) }));
+    const painel = calcularPainel({ topicos: TOPICOS, tentativas: e.tentativas, revisoes: Object.values(e.revisoes).map((r) => r.proxima) });
+    // cartão "Banco de questões" com a mesma regra do servidor (no demo nada entra de noite)
+    const banco = calcularBanco(
+      QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id)).map((q) => ({ id: q.id, disciplina: q.disciplina, gerada: false, criadaEm: "2026-01-01T00:00:00Z" })),
+      new Set(e.tentativas.map((t) => t.questaoId))
+    );
+    return espera({ ...painel, banco });
   },
 
   async proxima(f) {
@@ -150,7 +157,7 @@ export const apiDemo: Api = {
       return espera({
         questao: null,
         modo: "treino" as const,
-        aviso: "O modo demo ainda não tem questões de exemplo deste tópico. Com o servidor ligado, a IA gera questões dele sem parar.",
+        aviso: "O modo demo ainda não tem questões de exemplo deste tópico. Com o servidor ligado, o banco ganha questões dele toda noite.",
       });
 
     const respondidas = new Set(e.tentativas.map((t) => t.questaoId));

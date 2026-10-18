@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { PESO_PADRAO } from "../../../shared/motor";
-import { NOME_DISCIPLINA, type Disciplina, type TopicoProgresso } from "../../../shared/tipos";
+import { NOME_DISCIPLINA, type BancoDTO, type Disciplina, type TopicoProgresso } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { Ilustracao } from "../componentes/Ilustracoes";
 import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
@@ -149,6 +149,8 @@ export function Painel() {
           <div className="rodape"><span /><span className="tag amarelo"><i />Simulado</span></div>
         </button>
 
+        {painel.banco && <CartaoBanco banco={painel.banco} />}
+
         {painel.totalRespondidas === 0 && (
           <div className="vazio" style={{ marginTop: 12 }}>
             <img src={MASCOTE} alt="" style={{ width: 52 }} />
@@ -157,6 +159,37 @@ export function Painel() {
         )}
       </aside>
     </div>
+  );
+}
+
+// O que já está pronto para treinar: total, inéditas por disciplina e o que chegou de noite
+function CartaoBanco({ banco }: { banco: BancoDTO }) {
+  const { ir } = useApp();
+  return (
+    <>
+      <div className="grupo-dia">Banco</div>
+      <button className="evento cartao-banco" onClick={() => ir("praticar")}>
+        <strong>Banco de questões</strong>
+        <span className="sub num">
+          {banco.total.toLocaleString("pt-BR")} {banco.total === 1 ? "questão" : "questões"} · {banco.ineditas.toLocaleString("pt-BR")} inéditas para você
+        </span>
+        {!!banco.porDisciplina.length && (
+          <span className="banco-disciplinas">
+            {banco.porDisciplina.map((d) => (
+              <span key={d.disciplina} title={`${NOME_DISCIPLINA[d.disciplina]}: ${d.ineditas} inéditas de ${d.total}`}>
+                <i style={{ background: COR_DISC[d.disciplina] }} aria-hidden="true" />
+                <span className="sr-only">{NOME_DISCIPLINA[d.disciplina]}:</span>
+                <span aria-hidden="true">{SIGLA[d.disciplina]}</span> <b className="num">{d.ineditas}</b>
+              </span>
+            ))}
+          </span>
+        )}
+        <div className="rodape">
+          <span className="sub">{banco.estaNoite ? "Questões novas para você" : "Inéditas primeiro no treino"}</span>
+          {banco.estaNoite > 0 && <span className="tag verde"><i />+{banco.estaNoite} esta noite</span>}
+        </div>
+      </button>
+    </>
   );
 }
 

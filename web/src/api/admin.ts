@@ -1,5 +1,13 @@
 // API de conferência do dono (só no modo servidor): tela Figuras
-import type { AmostraFiguraDTO, QuestaoComFigurasDTO, RegiaoPdf } from "../../../shared/tipos";
+import type {
+  AdminBenchmarkDTO,
+  AdminFilaDTO,
+  AdminIADTO,
+  AmostraFiguraDTO,
+  PendenciaDTO,
+  QuestaoComFigurasDTO,
+  RegiaoPdf,
+} from "../../../shared/tipos";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -14,6 +22,19 @@ async function req<T>(caminho: string, init?: RequestInit): Promise<T> {
   }
   return r.json();
 }
+
+// Tela Admin: abas IA, Fila, Benchmark e Pendências
+export const adminTelas = {
+  ia: () => req<AdminIADTO>("/ia"),
+  fila: () => req<AdminFilaDTO>("/fila"),
+  tentarDeNovo: (id: string) => req<{ ok: boolean }>(`/fila/${id}/tentar`, { method: "POST" }),
+  benchmark: () => req<AdminBenchmarkDTO>("/benchmark"),
+  aprovarCorrentes: (correntes: Record<string, string[]>) =>
+    req<{ ok: boolean; avisos: string[] }>("/correntes/aprovar", { method: "POST", body: JSON.stringify({ correntes }) }),
+  desfazerCorrentes: () => req<{ modo: string }>("/correntes/desfazer", { method: "POST" }),
+  pendencias: () => req<PendenciaDTO[]>("/pendencias"),
+  doc: (nome: string) => req<{ nome: string; markdown: string }>(`/doc?nome=${encodeURIComponent(nome)}`),
+};
 
 export const adminFiguras = {
   listar: () => req<QuestaoComFigurasDTO[]>("/figuras"),

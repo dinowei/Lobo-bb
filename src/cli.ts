@@ -24,11 +24,18 @@ import { listarModelos } from "./llm.js";
 import { naFila } from "./fila.js";
 import { extrairFigurasOficiais } from "./figuras.js";
 import { indexarQuestoes, calibrar } from "./similaridade.js";
+import { carregarCatalogo } from "./catalogo.js";
+import { sondarModelos, verificarModelos } from "./sondagem.js";
+import { planejarNoite, rodarFila } from "./noturno.js";
+import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
+import { telemetriaPendente } from "./telemetria.js";
+import { writeFile } from "node:fs/promises";
 
 const AJUDA = `
 BB Estudos — comandos (npm run bb -- <comando>)
 
   modelos [--filtro nemotron]   lista os modelos que sua chave acessa
+  modelos-sondar [id ...]       testa cada modelo do catálogo (JSON, latência, parâmetros aceitos)
   testar                        testa IA e embeddings, mostra o EMBED_DIM
   indice                        cria o índice vetorial no Atlas (uma vez)
   topicos <arquivo.json>        cadastra/atualiza os tópicos do edital
@@ -42,6 +49,9 @@ BB Estudos — comandos (npm run bb -- <comando>)
   figuras-oficiais [config.json]  extrai as figuras das provas (data/figuras-oficiais.json) para conferência
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
+  noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
+  verificar-modelos             1 chamada curta por modelo do catálogo (a verificação semanal)
+  benchmark auditor|juiz|escritor|relatorio [--max N]   compara os modelos grátis (docs/BENCHMARK-MODELOS.md)
   revogar <id | parte do título>  norma mudou: tira fonte e questões de circulação
   status                        raio-x: trechos, questões, cenários e descartes por repetição por tópico
   similaridade indexar          calcula o embedding das questões que ainda não têm (filtro anti-repetição)
@@ -81,6 +91,8 @@ async function main() {
       filtro: { type: "string" },
       prova: { type: "string" },
       numero: { type: "string" },
+      max: { type: "string" },
+      ate: { type: "string" },
     },
   });
 
@@ -182,6 +194,59 @@ async function main() {
       case "status":
         return await mostrarStatus();
 
+      case "noturno": {
+        // planeja a noite (tópicos abaixo do estoque + verificação semanal) e roda a fila persistida
+        const max = o.max ? Number(o.max) : undefined;
+        let ate: Date | undefined;
+        if (o.ate) {
+          const [h, m] = o.ate.split(":").map(Number);
+          ate = new Date();
+          ate.setHours(h, m || 0, 0, 0);
+          if (+ate <= Date.now()) ate.setDate(ate.getDate() + 1);
+        }
+        return await naFila(rotulo, async () => {
+          const lote = `noite ${new Date().toISOString().slice(0, 10)}`;
+          const n = await planejarNoite(lote, { max });
+          console.log(`Plano: ${n} questão(ões) para gerar (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
+          const r = await rodarFila({ ate, max: max !== undefined ? max + 1 : undefined });
+          console.log(`\n${r.rodadas} tarefa(s): ${r.concluidas} concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa, ${r.esgotadas} esgotada(s)${r.orfas ? `, ${r.orfas} recuperada(s) de processo que caiu` : ""}`);
+        });
+      }
+
+      case "benchmark": {
+        // R2.3: auditor às cegas, juiz e escritor de Português; retomável (cada modelo × item uma vez)
+        const max = o.max ? Number(o.max) : Infinity;
+        const qual = args[0];
+        if (qual === "relatorio") {
+          await escreverRelatorio();
+          return console.log("✔ docs/BENCHMARK-MODELOS.md");
+        }
+        const rodar = { auditor: () => rodarAuditor(undefined, 60, max), juiz: () => rodarJuiz(undefined, max), escritor: () => rodarEscritor(undefined, 6, max) }[qual ?? ""];
+        if (!rodar) throw new Error('Use "benchmark auditor | juiz | escritor | relatorio" [--max N].');
+        return await naFila(rotulo, async () => {
+          console.log(`${await rodar()} chamada(s) novas`);
+          await escreverRelatorio();
+          console.log("✔ docs/BENCHMARK-MODELOS.md atualizado");
+        });
+      }
+
+      case "verificar-modelos":
+        return await naFila(rotulo, async () => {
+          const r = await verificarModelos();
+          console.log(`\n${r.filter((x) => x.http === 200 && x.json).length}/${r.length} modelos responderam`);
+        });
+
+      case "modelos-sondar": {
+        // R2.1: o que cada endpoint grátis aceita (só modelos de chat do catálogo, fora descontinuados)
+        const cat = carregarCatalogo();
+        const alvos = args.length ? args : [...cat.values()].filter((m) => m.status !== "descontinuado" && !m.funcoes.includes("embed")).map((m) => m.id);
+        return await naFila(rotulo, async () => {
+          const r = await sondarModelos(alvos);
+          await writeFile("docs/sondagem-modelos.json", JSON.stringify({ em: new Date().toISOString(), resultados: r }, null, 2), "utf8");
+          console.log(`\n✔ ${r.length} chamadas; detalhes em docs/sondagem-modelos.json`);
+        });
+      }
+
       case "similaridade":
         if (args[0] === "indexar") return await naFila(rotulo, () => indexarQuestoes());
         if (args[0] === "calibrar") return await calibrar();
@@ -191,6 +256,7 @@ async function main() {
         throw new Error(`Comando desconhecido: ${comando}. Veja "npm run bb -- ajuda".`);
     }
   } finally {
+    await telemetriaPendente(); // as últimas linhas de telemetria antes de fechar a conexão
     await mongoose.disconnect();
   }
 }

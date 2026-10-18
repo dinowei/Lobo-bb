@@ -8,6 +8,7 @@ import {
   ESTADO_INICIAL,
   agendar,
   calcularPainel,
+  calcularBanco,
   cotasPorDisciplina,
   notaSM2,
   prioridade,
@@ -36,6 +37,7 @@ import type {
 } from "../shared/tipos.js";
 import { gerarQuestao } from "./pipeline.js";
 import { seFilaLivre } from "./fila.js";
+import { alertasAdminAgora } from "./adminTelas.js";
 
 // App pessoal: um aluno só. Para multiusuário, troque por autenticação.
 export const ALUNO = () => new Types.ObjectId(process.env.ALUNO_ID || "000000000000000000000001");
@@ -204,10 +206,13 @@ export const apiServidor: Omit<Api, "modo"> = {
 
   async painel() {
     const userId = ALUNO();
-    const [topicos, tentativas, revisoes] = await Promise.all([
+    const [topicos, tentativas, revisoes, aprovadas, alertasAdmin] = await Promise.all([
       listarTopicos(),
       Attempt.find({ userId }).select("questionId topicId acertou xp modo simuladoId createdAt").lean(),
       ReviewState.find({ userId }).select("proximaRevisao").lean(),
+      Question.find({ status: "aprovada" }).select("_id topicId origem createdAt").lean(),
+      // só o admin vê (com o login da Etapa 4, só vai para o papel admin)
+      alertasAdminAgora().catch(() => [] as string[]),
     ]);
     const brutas: TentativaBruta[] = tentativas.map((t) => ({
       questaoId: String(t.questionId),
@@ -218,7 +223,16 @@ export const apiServidor: Omit<Api, "modo"> = {
       simuladoId: t.simuladoId ?? undefined,
       data: (t.createdAt as Date).toISOString(),
     }));
-    return calcularPainel({ topicos, tentativas: brutas, revisoes: revisoes.map((r) => (r.proximaRevisao as Date).toISOString()) });
+    const painel = calcularPainel({ topicos, tentativas: brutas, revisoes: revisoes.map((r) => (r.proximaRevisao as Date).toISOString()) });
+    const disciplinaDo = new Map(topicos.map((t) => [t.id, t.disciplina]));
+    const banco = calcularBanco(
+      aprovadas.flatMap((q) => {
+        const disciplina = disciplinaDo.get(String(q.topicId));
+        return disciplina ? [{ id: String(q._id), disciplina, gerada: q.origem === "gerada", criadaEm: (q.createdAt as Date).toISOString() }] : [];
+      }),
+      new Set(brutas.map((t) => t.questaoId))
+    );
+    return { ...painel, banco, alertasAdmin };
   },
 
   async proxima(f) {
@@ -259,7 +273,7 @@ export const apiServidor: Omit<Api, "modo"> = {
         questao: null,
         modo: "treino",
         aviso: process.env.GERADOR_API_KEY
-          ? "Ainda não há questões aprovadas aqui. A IA começou a gerar algumas; tente de novo em um ou dois minutos."
+          ? "O lobo está preparando questões deste tópico. Tente de novo em um ou dois minutos."
           : 'Ainda não há questões aprovadas aqui. Ingira uma prova ou rode "npm run bb -- gerar --assunto ...".',
       };
     }
@@ -285,7 +299,7 @@ export const apiServidor: Omit<Api, "modo"> = {
     return {
       questao: paraDTO(q, topicos),
       modo: "treino",
-      aviso: naoVistas ? undefined : "Você já viu todas as questões deste tópico; a IA está gerando novas. Por ora, repetindo uma.",
+      aviso: naoVistas ? undefined : "Você já viu todas as questões deste tópico; o lobo está preparando novas. Por ora, repetindo uma.",
     };
   },
 

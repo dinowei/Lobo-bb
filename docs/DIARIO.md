@@ -52,4 +52,21 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - Achado da calibragem: o template de sistema linear usava o cenário da oficial 2023 nº 19 (armários, mesas, cadeiras). Corrigido: 6 conjuntos de itens × 4 compradores, sem o da oficial.
 - Testes: 29/29. Rodada real (Juros, 3): **1/3** aprovada, 113 s em média; 1 reprovada na revisão (erro de português do gerador ao reescrever o cenário, pego pelo auditor), 1 `numero_alterado`. Nenhum descarte por repetição.
 
-RETOMAR AQUI: Etapa 1.5 (PROMPT-RETOMADA R2): sondar os 9 modelos (R2.1), depois catálogo/correntes/telemetria (R2.2; `src/catalogo.ts` e `data/modelos.json` já escritos, sem commit).
+## 17/10/2026 — Etapa 1.5 (R2): corrente de modelos grátis
+
+- **R2.1 Catálogo:** os 9 candidatos aparecem para a chave e como "Free Endpoint" em build.nvidia.com. Sondagem (36 chamadas curtas): Lightning, Super, Super VL, gpt-oss-20b, Muse, Step 5 e GLM-flash respondem JSON certo; **Ultra 503** e **DeepSeek timeout** (temporariamente fora). `reasoning_budget` só nos Nemotron; Muse, Step e GLM recusam (400); `reasoning_effort` funciona no gpt-oss, Muse, Step e GLM. **glm-5.3 (sem flash) descontinua em ~11 dias; não afeta o flash.** Detalhes em `docs/CATALOGO-MODELOS.md`.
+- **R2.2 Infra (sem trocar a produção):** `data/modelos.json` + `src/catalogo.ts` (famílias, correntes por função, regra de família, validação); `src/corrente.ts` (corrente aprovada > `.env` > legado; pula desativado e quem falhou 3× seguidas por 10 min; sem candidato elegível → "aguardando_modelo"); `src/llm.ts` (espera exponencial com variação, Retry-After até 60 s, erro permanente desativa o modelo, parâmetro de raciocínio do catálogo); `src/telemetria.ts` (coleção `chamadas_modelo`, mediana e p95); `src/noturno.ts` (fila `tarefas` que sobrevive a reinício: infraestrutura volta 3× com 10/30/90 min, qualidade descarta com motivo); verificação semanal (`verificar-modelos`) com alerta.
+- **R2.3 Benchmark:** código pronto (`src/benchmark.ts`, `benchmark auditor|juiz|escritor|relatorio`): amostra estratificada de 60 oficiais às cegas (teste garante que o gabarito não vaza), juiz com as armadilhas "à ela", "à Vossa Senhoria", "recorreu a gerência", escritor pela trava de posição; Wilson 95% e "sem vencedor" quando os intervalos se sobrepõem. Rodada pendente (provedor instável agora).
+- Teste de fumaça do legado pela corrente nova: Crase descartada (Ultra 503 no desempate, igual a antes; o juiz aceitou "recorreu a garantia", a armadilha do benchmark); Descontos com 4 timeouts do Lightning → `provedor_falhou` (volta para a fila no noturno). Testes 42/42.
+- Regra de família: o legado (Lightning + Super) fere. Registrado como PRIORIDADE ALTA em DECISOES-PENDENTES; a proposta sai do benchmark.
+
+## 17/10/2026 — R3: tela Admin e cartão do banco (com o adendo)
+
+- Uma tela **Admin** com 4 abas (IA, Fila, Benchmark, Pendências), só para o admin (modo servidor até o login): status por modelo (verde/amarelo/vermelho/cinza, com o motivo), 24 h e 7 dias, quem atendeu cada função hoje, alertas; fila com "tentar de novo agora", relatório da noite e progresso até 1.200; benchmark com IC e "Aprovar corrente" (confirmação + desfazer); pendências lidas do `DECISOES-PENDENTES.md` com atalhos e visor de documentos (markdown sem HTML cru).
+- Painel do aluno: cartão **"Banco de questões"** (total, inéditas por disciplina, "+N esta noite"), regra em `shared/motor.ts` (servidor e demo).
+- Aluno não vê menção a IA: "Inédita · revisada", "Traiçoeira: essa engana muita gente", avisos com "o lobo está preparando".
+- Conferido no navegador: as 4 abas carregam, o visor abre a calibragem, o cartão mostra 150 questões e "+1 esta noite". Prints ficam para depois do benchmark (a aba Benchmark ainda está vazia).
+
+RETOMAR AQUI: rodar `npm run bb -- benchmark auditor` (depois juiz e escritor) em segundo plano, escrever a proposta (data/proposta-correntes.json + DECISOES-PENDENTES), tirar os prints do R3 (docs/telas/admin) e seguir para a Etapa 2 (leis).
+
+**LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.

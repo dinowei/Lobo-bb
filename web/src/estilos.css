@@ -686,6 +686,83 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   .nav-inferior button[aria-current="page"] { color: var(--laranja); }
 }
 
+/* cartão "Banco de questões" (agenda do painel) */
+.banco-disciplinas { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--suave); }
+.banco-disciplinas > span { display: inline-flex; align-items: center; gap: 4px; }
+.banco-disciplinas i { width: 7px; height: 7px; border-radius: 50%; }
+.banco-disciplinas b { color: var(--texto); font-weight: 600; }
+
+/* ---------- Admin (só o dono): IA, Fila, Benchmark, Pendências ---------- */
+.abas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
+.abas .chip[aria-selected="true"] { border-color: var(--laranja); color: var(--texto); background: rgba(255,91,31,.1); }
+.admin-pilha { display: flex; flex-direction: column; gap: 16px; }
+.admin-pilha h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
+.admin-pilha h3 { margin: 0; font-size: 14px; font-weight: 600; }
+.admin-pilha h4 { margin: 14px 0 4px; font-size: 13px; }
+.linha-titulo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.alertas { margin: 0 0 14px; padding: 10px 14px 10px 30px; border-radius: 10px; background: rgba(245,197,66,.08); border: 1px solid rgba(245,197,66,.25); color: var(--amarelo); font-size: 13px; }
+.alertas li + li { margin-top: 4px; }
+.correntes { display: grid; gap: 8px; margin: 0 0 12px; }
+.correntes > div { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.correntes dt { color: var(--suave); font-size: 13px; }
+.correntes dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; }
+@media (max-width: 560px) { .correntes > div { grid-template-columns: 1fr; gap: 4px; } }
+.grade-modelos { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.cartao-modelo header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.cartao-modelo h3 { overflow-wrap: anywhere; }
+.cartao-modelo p { margin: 0 0 8px; font-size: 12.5px; }
+.bolinha-status { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--apagado); }
+.bolinha-status.verde { background: var(--certo); }
+.bolinha-status.amarelo { background: var(--amarelo); }
+.bolinha-status.vermelho { background: var(--errado); }
+.metricas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 8px 0; }
+.metricas dt { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: var(--apagado); }
+.metricas dd { margin: 2px 0 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+.nota-modelo { padding: 8px 10px; border-radius: 8px; background: var(--cartao); color: var(--suave); }
+.barra.grossa { height: 10px; margin: 4px 0 10px; }
+.lista-tarefas { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.lista-tarefas li { display: grid; grid-template-columns: 170px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-top: 1px solid var(--linha); }
+.lista-tarefas li p { margin: 2px 0 0; font-size: 12.5px; }
+.lista-tarefas .detalhe { color: var(--apagado); overflow-wrap: anywhere; }
+@media (max-width: 640px) { .lista-tarefas li { grid-template-columns: 1fr; gap: 6px; } }
+.selo.status-concluida { background: var(--certo-fundo); color: var(--certo); }
+.selo.status-descartada, .selo.status-esgotada { background: var(--errado-fundo); color: var(--errado); }
+.selo.status-aguardando, .selo.status-rodando { background: rgba(245,197,66,.12); color: var(--amarelo); }
+.numeros-noite { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.numeros-noite > div { padding: 12px; border-radius: 10px; background: var(--cartao); display: flex; flex-direction: column; gap: 2px; }
+.numeros-noite b { font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
+.numeros-noite span { font-size: 12px; color: var(--suave); }
+.descartes { margin: 0 0 12px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; }
+.selo.grupo-similaridade { background: rgba(139,124,246,.14); color: var(--roxo); }
+.selo.grupo-infraestrutura { background: rgba(245,197,66,.12); color: var(--amarelo); }
+.selo.grupo-qualidade { background: var(--errado-fundo); color: var(--errado); }
+.por-hora { display: flex; align-items: flex-end; gap: 6px; height: 90px; }
+.por-hora > div { flex: 1; max-width: 36px; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.por-hora i { width: 100%; border-radius: 4px 4px 0 0; background: var(--laranja); }
+.por-hora span { font-size: 10px; color: var(--apagado); }
+.faixa-desfazer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; border-color: var(--laranja); }
+.propostas { display: grid; gap: 12px; margin-top: 12px; }
+.cartao-proposta { padding: 16px; border-radius: 12px; background: var(--cartao); }
+.cartao-proposta ul { margin: 0; padding-left: 18px; font-size: 13px; }
+.confirmar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; padding: 12px; border-radius: 10px; border: 1px solid var(--laranja); }
+.confirmar p { flex-basis: 100%; margin: 0; }
+details.secao summary { cursor: pointer; }
+h2.inline { display: inline; }
+.pendencia.alta { border-color: var(--laranja); }
+.visor-doc { border-color: var(--laranja-forte); }
+.md-tabela { overflow-x: auto; }
+.md-tabela table, .markdown table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.md-tabela th, .md-tabela td { padding: 7px 10px; border-bottom: 1px solid var(--linha); text-align: left; vertical-align: top; }
+.md-tabela th { color: var(--suave); font-weight: 500; white-space: nowrap; }
+.md-tabela .selo { margin-left: 6px; }
+.markdown { font-size: 14px; line-height: 1.55; }
+.markdown h2, .markdown h3, .markdown h4, .markdown h5 { margin: 18px 0 8px; }
+.markdown p, .markdown ul, .markdown ol { margin: 0 0 10px; }
+.markdown ul, .markdown ol { padding-left: 20px; }
+.markdown code { padding: 1px 5px; border-radius: 5px; background: var(--cartao-2); font-size: .92em; overflow-wrap: anywhere; }
+.markdown blockquote { margin: 0 0 10px; padding: 8px 12px; border-left: 3px solid var(--laranja); background: var(--cartao); border-radius: 0 8px 8px 0; }
+.markdown hr { border: 0; border-top: 1px solid var(--linha); margin: 16px 0; }
+
 /* fundo das ilustrações (moedas sobrepostas precisam "tapar" a de trás) */
 .cartao-disc { --fundo-ilu: var(--papel); }
 .cartao-disc.laranja { --fundo-ilu: var(--laranja); }

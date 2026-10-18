@@ -13,7 +13,7 @@ export function Cabecalho({ q, traicoeira }: { q: QuestaoDTO; traicoeira?: boole
       </div>
       <div className="selos">
         <span className="selo laranja">
-          {q.origem === "oficial" ? `Oficial · ${q.prova ?? "prova anterior"}${q.numeroOriginal ? ` · nº ${q.numeroOriginal}` : ""}` : "Inédita · auditada por IA"}
+          {q.origem === "oficial" ? `Oficial · ${q.prova ?? "prova anterior"}${q.numeroOriginal ? ` · nº ${q.numeroOriginal}` : ""}` : "Inédita · revisada"}
         </span>
         <span className="selo" aria-label={`Dificuldade ${q.dificuldade} de 5`}>
           Dificuldade
@@ -21,7 +21,7 @@ export function Cabecalho({ q, traicoeira }: { q: QuestaoDTO; traicoeira?: boole
             {[1, 2, 3, 4, 5].map((i) => (<i key={i} className={i <= q.dificuldade ? "on" : ""} />))}
           </span>
         </span>
-        {traicoeira && <span className="selo alerta">Traiçoeira: a IA errou essa às cegas</span>}
+        {traicoeira && <span className="selo alerta">Traiçoeira: essa engana muita gente</span>}
         {q.notaNorma && <span className="selo atualizada">Norma atualizada</span>}
       </div>
       {q.notaNorma && (

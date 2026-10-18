@@ -208,6 +208,119 @@ export interface PainelDTO {
   conquistas: Conquista[];
   simulados: { id: string; data: string; total: number; acertos: number }[];
   totalRespondidas: number;
+  banco?: BancoDTO; // cartão "Banco de questões"
+  alertasAdmin?: string[]; // só o admin vê (modelos, regras); o aluno nunca vê menção a IA
+}
+
+// Cartão "Banco de questões" do painel: aprovadas (oficiais contam), inéditas para o aluno e
+// as que entraram desde o começo da última noite (18 h)
+export interface BancoDTO {
+  total: number;
+  ineditas: number;
+  estaNoite: number;
+  porDisciplina: { disciplina: Disciplina; total: number; ineditas: number }[];
+}
+
+// ---------- Admin (só o dono): abas IA, Fila, Benchmark e Pendências ----------
+export type CorStatus = "verde" | "amarelo" | "vermelho" | "cinza";
+export interface JanelaModeloDTO {
+  chamadas: number;
+  taxa: number;
+  medianaMs: number;
+  p95Ms: number;
+  comoReserva: number;
+  falhas: Record<string, number>;
+}
+export interface ModeloIADTO {
+  id: string;
+  familia: string;
+  funcoes: string[];
+  preview: boolean;
+  cor: CorStatus;
+  motivoCor: string;
+  statusCatalogo: string;
+  nota?: string;
+  descontinuaEm?: string;
+  h24: JanelaModeloDTO | null;
+  d7: JanelaModeloDTO | null;
+  ultimaResposta?: string;
+  ultimaFalha?: string;
+}
+export interface AdminIADTO {
+  modo: "aprovada" | "env" | "legado";
+  aprovadaEm?: string;
+  correntes: Record<string, string[]>;
+  nomesFuncoes: Record<string, string>;
+  alertas: string[];
+  modelos: ModeloIADTO[];
+  hoje: Record<string, { modelo: string; n: number }[]>;
+  verificadoEm?: string;
+}
+export type StatusTarefa = "pendente" | "rodando" | "aguardando" | "concluida" | "descartada" | "esgotada";
+export interface TarefaDTO {
+  id: string;
+  tipo: string;
+  assunto?: string;
+  status: StatusTarefa;
+  tentativas: number;
+  proximaEm?: string;
+  motivo?: string;
+  detalhes?: string;
+  resultadoId?: string;
+  lote?: string;
+  atualizadaEm: string;
+}
+export interface RelatorioNoiteDTO {
+  desde: string;
+  tentativas: number;
+  aprovadas: number;
+  descartes: { grupo: "qualidade" | "similaridade" | "infraestrutura"; motivo: string; n: number }[];
+  porHora: { hora: string; aprovadas: number }[];
+  modeloQueMaisAtendeu?: string;
+}
+export interface AdminFilaDTO {
+  contagem: Record<StatusTarefa, number>;
+  tarefas: TarefaDTO[];
+  progresso: { aprovadas: number; oficiais: number; geradas: number; meta: number };
+  noite: RelatorioNoiteDTO;
+}
+export interface BenchmarkLinhaDTO {
+  modelo: string;
+  familia: string;
+  preview: boolean;
+  tentativas: number;
+  respondidas: number;
+  acertos: number;
+  acerto: number;
+  ic: [number, number];
+  disponibilidade: number;
+  medianaS: number;
+  falhas: Record<string, number>;
+  porDisciplina: Record<string, { n: number; acertos: number }>;
+}
+export interface PropostaCorrenteDTO {
+  opcao: string;
+  titulo: string;
+  resumo: string;
+  correntes: Record<string, string[]>;
+  evidencias: string[];
+  riscos: string[];
+  reversao: string;
+  erros: string[];
+  avisos: string[];
+}
+export interface AdminBenchmarkDTO {
+  rodadas: { chave: string; titulo: string; rotuloAcerto: string; linhas: BenchmarkLinhaDTO[]; empatados: string[] }[];
+  disciplinas: string[];
+  propostas: PropostaCorrenteDTO[];
+  ativa: { modo: "aprovada" | "env" | "legado"; aprovadaEm?: string; correntes: Record<string, string[]> };
+  nomesFuncoes: Record<string, string>;
+}
+export interface PendenciaDTO {
+  titulo: string;
+  prioridade: "alta" | "media" | "baixa" | null;
+  markdown: string;
+  links: { rotulo: string; destino: string }[]; // "#figuras", "#admin?aba=benchmark", "doc:CALIBRAGEM-SIMILARIDADE.md"
 }
 
 export interface ErroDTO {

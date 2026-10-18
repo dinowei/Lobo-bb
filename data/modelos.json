@@ -1,0 +1,124 @@
+{
+  "_aviso": "Catálogo central de modelos: SÓ endpoints GRATUITOS da NVIDIA (build.nvidia.com, conferido em 17/10/2026). 'familia' decide as regras: o auditor nunca é da família de quem gerou; o juiz de Português nunca é da família do escritor. status: ativo | fora (temporariamente) | descontinuado | nao_testado. Preview/acesso antecipado nunca é principal. 'parametros' = o que o endpoint aceitou na sondagem (npm run bb -- modelos-sondar).",
+  "modelos": [
+    {
+      "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "familia": "nvidia",
+      "funcoes": ["gerador", "tutor"],
+      "gratis": true,
+      "preview": false,
+      "parametros": ["reasoning_budget", "enable_thinking"],
+      "status": "ativo"
+    },
+    {
+      "id": "nvidia/nemotron-3-super-120b-a12b",
+      "familia": "nvidia",
+      "funcoes": ["auditor", "juiz_pt", "redacao", "gerador"],
+      "gratis": true,
+      "preview": false,
+      "parametros": ["reasoning_budget", "enable_thinking"],
+      "status": "ativo"
+    },
+    {
+      "id": "nvidia/nemotron-3-ultra-550b-a55b",
+      "familia": "nvidia",
+      "funcoes": ["auditor", "juiz_pt", "redacao"],
+      "gratis": true,
+      "preview": false,
+      "parametros": ["enable_thinking"],
+      "status": "fora",
+      "nota": "recusa reasoning_budget (HTTP 400); 503 'temporarily overloaded' nas 4 sondas de 17/10/2026"
+    },
+    {
+      "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "familia": "nvidia",
+      "funcoes": ["auditor"],
+      "gratis": true,
+      "preview": true,
+      "parametros": ["reasoning_budget", "enable_thinking"],
+      "status": "ativo",
+      "nota": "acesso antecipado (early access): nunca principal"
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "familia": "openai",
+      "funcoes": ["gerador", "auditor", "tutor"],
+      "gratis": true,
+      "preview": false,
+      "parametros": ["reasoning_effort"],
+      "status": "ativo",
+      "nota": "aceita reasoning_budget e enable_thinking, mas ignora; reasoning_effort funciona"
+    },
+    {
+      "id": "meta/muse-glimmer-30b",
+      "familia": "meta",
+      "funcoes": ["gerador", "auditor", "tutor"],
+      "gratis": true,
+      "preview": false,
+      "parametros": ["reasoning_effort", "enable_thinking"],
+      "status": "ativo",
+      "nota": "recusa reasoning_budget (HTTP 400)"
+    },
+    {
+      "id": "stepfun-ai/step-5-preview",
+      "familia": "stepfun",
+      "funcoes": ["auditor", "juiz_pt"],
+      "gratis": true,
+      "preview": true,
+      "parametros": ["reasoning_effort"],
+      "status": "ativo",
+      "nota": "preview publicado há 2 dias em 17/10/2026: nunca principal. Recusa reasoning_budget (400); com enable_thinking=false devolveu resposta sem JSON"
+    },
+    {
+      "id": "z-ai/glm-5.3-flash",
+      "familia": "zai",
+      "funcoes": ["escritor_pt", "juiz_pt", "tutor"],
+      "gratis": true,
+      "preview": false,
+      "parametros": ["reasoning_effort"],
+      "status": "ativo",
+      "nota": "recusa reasoning_budget (400); ignora enable_thinking; ~20 s por resposta em 17/10/2026"
+    },
+    {
+      "id": "z-ai/glm-5.3",
+      "familia": "zai",
+      "funcoes": [],
+      "gratis": true,
+      "preview": false,
+      "parametros": [],
+      "status": "descontinuado",
+      "descontinuaEm": "2026-10-28",
+      "nota": "build.nvidia.com mostrava 'Deprecation in 11d' em 17/10/2026; não afeta o glm-5.3-flash"
+    },
+    {
+      "id": "deepseek-ai/deepseek-v4.1-flash",
+      "familia": "deepseek",
+      "funcoes": ["escritor_pt", "juiz_pt", "tutor"],
+      "gratis": true,
+      "preview": false,
+      "parametros": [],
+      "status": "fora",
+      "nota": "timeout de 120 s nas 4 sondas de 17/10/2026 (parâmetros não confirmados)"
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "familia": "openai",
+      "funcoes": [],
+      "gratis": false,
+      "preview": false,
+      "parametros": [],
+      "status": "descontinuado",
+      "nota": "endpoint grátis descontinuado: proibido"
+    },
+    {
+      "id": "nvidia/nemotron-3-embed-1b",
+      "familia": "nvidia",
+      "funcoes": ["embed"],
+      "gratis": true,
+      "preview": false,
+      "parametros": [],
+      "status": "ativo",
+      "nota": "embeddings de 2048 dimensões"
+    }
+  ]
+}

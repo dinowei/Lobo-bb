@@ -5,6 +5,7 @@
 import {
   DISCIPLINAS,
   NOME_DISCIPLINA,
+  type BancoDTO,
   type Confianca,
   type Conquista,
   type Disciplina,
@@ -255,4 +256,34 @@ export function calcularPainel(input: {
     simulados,
     totalRespondidas: tents.length,
   };
+}
+
+// ------------------------------------------------------------
+// Cartão "Banco de questões": aprovadas (oficiais contam), inéditas para o aluno e as geradas
+// desde o começo da última noite (18 h de Brasília). Nada de IA no texto para o aluno.
+// ------------------------------------------------------------
+const fmtHora = new Intl.DateTimeFormat("en-US", { timeZone: FUSO, hour: "numeric", hourCycle: "h23" });
+export function inicioDaNoite(agora: Date = new Date()): Date {
+  const hoje = diaDe(agora);
+  const dia = Number(fmtHora.format(agora)) >= 18 ? hoje : somarDias(hoje, -1);
+  return new Date(`${dia}T18:00:00-03:00`); // Brasília não tem horário de verão desde 2019
+}
+
+export function calcularBanco(
+  questoes: { id: string; disciplina: Disciplina; gerada: boolean; criadaEm: string }[],
+  respondidas: Set<string>,
+  agora: Date = new Date()
+): BancoDTO {
+  const desde = +inicioDaNoite(agora);
+  const por = new Map<Disciplina, { total: number; ineditas: number }>();
+  let estaNoite = 0;
+  for (const q of questoes) {
+    const d = por.get(q.disciplina) ?? { total: 0, ineditas: 0 };
+    d.total++;
+    if (!respondidas.has(q.id)) d.ineditas++;
+    por.set(q.disciplina, d);
+    if (q.gerada && Date.parse(q.criadaEm) >= desde) estaNoite++;
+  }
+  const porDisciplina = DISCIPLINAS.filter((d) => por.has(d)).map((d) => ({ disciplina: d, ...por.get(d)! }));
+  return { total: questoes.length, ineditas: porDisciplina.reduce((s, d) => s + d.ineditas, 0), estaNoite, porDisciplina };
 }

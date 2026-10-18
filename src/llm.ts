@@ -4,6 +4,8 @@
 // ============================================================
 import OpenAI from "openai";
 import { z } from "zod";
+import { carregarCatalogo } from "./catalogo.js";
+import { classificarErro, registrarChamada } from "./telemetria.js";
 
 function obrigatoria(nome: string): string {
   const v = process.env[nome];
@@ -33,14 +35,33 @@ function cliente(prefixo: Prefixo): OpenAI {
 }
 
 // ------------------------------------------------------------
-// Novas tentativas para erro passageiro do provedor: 429, 5xx e timeout
+// Novas tentativas para erro recuperável do provedor: 429, 5xx e timeout.
+// Espera exponencial com variação aleatória (±25%, para não sincronizar com outras chamadas);
+// o Retry-After do provedor manda, até 60 s (mais que isso: desiste e deixa a reserva tentar).
+// Erro permanente (id inválido, descontinuado, sem acesso) não repete.
 // ------------------------------------------------------------
 const ESPERAS_MS = [2000, 6000, 18000];
-const STATUS_PASSAGEIRO = new Set([429, 500, 502, 503, 504]);
+const RETRY_AFTER_MAX_MS = 60_000;
 
-function ehPassageiro(e: unknown): boolean {
-  if (e instanceof OpenAI.APIConnectionTimeoutError || e instanceof OpenAI.APIConnectionError) return true;
-  return e instanceof OpenAI.APIError && typeof e.status === "number" && STATUS_PASSAGEIRO.has(e.status);
+// falha de infraestrutura (o provedor, não a questão): a tarefa volta para a fila
+export const ehFalhaDeInfra = (e: unknown) => classificarErro(e).recuperavel || e instanceof SemModeloDisponivel;
+export class SemModeloDisponivel extends Error {}
+
+function retryAfterMs(e: unknown): number | null {
+  if (!(e instanceof OpenAI.APIError) || !e.headers) return null;
+  const h = e.headers as unknown as { get?: (k: string) => string | null } & Record<string, string | null | undefined>;
+  const v = typeof h.get === "function" ? h.get("retry-after") : h["retry-after"];
+  if (!v) return null;
+  const s = Number(v);
+  if (Number.isFinite(s)) return s * 1000;
+  const quando = Date.parse(v);
+  return Number.isFinite(quando) ? Math.max(0, quando - Date.now()) : null;
+}
+
+export function esperaAntesDe(tentativa: number, retryAfter: number | null, aleatorio = Math.random()): number | null {
+  const base = ESPERAS_MS[Math.min(tentativa, ESPERAS_MS.length - 1)] * (0.75 + aleatorio * 0.5);
+  if (retryAfter === null) return Math.round(base);
+  return retryAfter > RETRY_AFTER_MAX_MS ? null : Math.round(Math.max(base, retryAfter));
 }
 
 // maxNovas: quantas vezes repete (padrão 3). Com modelo de reserva, vale cair cedo para a reserva.
@@ -49,14 +70,18 @@ export async function comRetry<T>(rotulo: string, fn: () => Promise<T>, maxNovas
     try {
       return await fn();
     } catch (e) {
-      if (!ehPassageiro(e) || tentativa >= Math.min(maxNovas, ESPERAS_MS.length)) throw e;
-      const espera = ESPERAS_MS[tentativa];
+      if (!classificarErro(e).recuperavel || tentativa >= Math.min(maxNovas, ESPERAS_MS.length)) throw e;
+      const espera = esperaAntesDe(tentativa, retryAfterMs(e));
+      if (espera === null) throw e; // o provedor pediu para voltar muito depois
       const motivo = e instanceof OpenAI.APIError && e.status ? `HTTP ${e.status}` : "timeout/conexão";
-      console.warn(`  ↻ ${rotulo}: ${motivo}, tentando de novo em ${espera / 1000}s`);
+      console.warn(`  ↻ ${rotulo}: ${motivo}, tentando de novo em ${Math.round(espera / 1000)}s`);
       await new Promise((r) => setTimeout(r, espera));
     }
   }
 }
+
+// Modelo com erro permanente sai das correntes até o processo reiniciar
+export const desativados = new Set<string>();
 
 export const gerador = () => cliente("GERADOR");
 export const auditor = () => cliente("AUDITOR");
@@ -88,9 +113,31 @@ export function extrairJSON(raw: string): unknown {
 
 type Mensagem = { role: "system" | "user" | "assistant"; content: string };
 const semOrcamento = new Set<string>(); // modelos que recusaram reasoning_budget
+const recusaDeOrcamento = (e: unknown) => e instanceof OpenAI.APIError && e.status === 400 && /budget/i.test(e.message);
 
-// Uma chamada de chat. <PREFIXO>_PENSAR=0 desliga o "pensamento" dos Nemotron;
-// <PREFIXO>_RACIOCINIO limita quantos tokens ele pode pensar (reasoning_budget).
+// quem chama, para a telemetria (a corrente informa a função e se atendeu como reserva)
+export type MetaChamada = { funcao?: string; reserva?: boolean };
+const FUNCAO_DO_PREFIXO: Record<Prefixo, string> = { GERADOR: "gerador", AUDITOR: "auditor", EMBED: "embed", ESCRITOR_PT: "escritor_pt" };
+
+// Parâmetro de raciocínio que cada modelo aceita (catálogo, data/modelos.json).
+// Fora do catálogo: o comportamento antigo (reasoning_budget, que cai sozinho se recusado).
+// esforco: <PREFIXO>_ESFORCO; sem ele, o modelo pensa no padrão dele (como sempre foi)
+export function extrasDeRaciocinio(model: string, pensa: boolean, orcamento: number, esforco?: string): Record<string, unknown> {
+  const m = carregarCatalogo().get(model);
+  const aceita = (p: "reasoning_budget" | "reasoning_effort" | "enable_thinking") => (m ? m.parametros.includes(p) : p !== "reasoning_effort");
+  if (pensa) {
+    if (orcamento > 0 && aceita("reasoning_budget") && !semOrcamento.has(model)) return { reasoning_budget: orcamento };
+    if (esforco && aceita("reasoning_effort")) return { reasoning_effort: esforco };
+    return {};
+  }
+  if (aceita("enable_thinking")) return { chat_template_kwargs: { enable_thinking: false } };
+  if (aceita("reasoning_effort")) return { reasoning_effort: "low" };
+  return {};
+}
+
+// Uma chamada de chat. <PREFIXO>_PENSAR=0 desliga o "pensamento";
+// <PREFIXO>_RACIOCINIO limita quantos tokens ele pode pensar (reasoning_budget) e
+// <PREFIXO>_ESFORCO (low|medium|high) vale para quem usa reasoning_effort.
 async function chamar(
   client: OpenAI,
   model: string,
@@ -98,36 +145,54 @@ async function chamar(
   temperature: number,
   maxTokens: number,
   pensar?: boolean,
-  novasTentativas?: number
+  novasTentativas?: number,
+  meta: MetaChamada = {}
 ) {
+  if (desativados.has(model)) throw new SemModeloDisponivel(`${model} está desativado nesta execução (erro permanente antes)`);
   const prefixo = prefixoDo.get(client);
+  const funcao = meta.funcao ?? (prefixo ? FUNCAO_DO_PREFIXO[prefixo] : undefined);
   const pensa = pensar ?? (!prefixo || process.env[`${prefixo}_PENSAR`] !== "0");
   const orcamento = prefixo ? Number(process.env[`${prefixo}_RACIOCINIO`]) || 0 : 0;
+  const esforco = (prefixo && process.env[`${prefixo}_ESFORCO`]) || undefined;
   // maxTokens é só para o JSON; o pensamento ganha uma reserva, sem nunca passar do teto
   const reserva = pensa ? orcamento || Number(process.env.LLM_RESERVA_RACIOCINIO ?? 16000) || 0 : 0;
   const limite = Math.min(maxTokens + reserva, Number(process.env.LLM_TETO_TOKENS) || 24000);
-  const pedir = (comOrcamento: boolean) =>
+  const pedir = () =>
     comRetry(
       model,
-      () =>
-        client.chat.completions.create({
-          model,
-          temperature,
-          max_tokens: limite,
-          messages: mensagens,
-          ...(pensa ? (comOrcamento ? { reasoning_budget: orcamento } : {}) : { chat_template_kwargs: { enable_thinking: false } }),
-        } as OpenAI.ChatCompletionCreateParamsNonStreaming),
+      async () => {
+        const t0 = Date.now();
+        try {
+          const r = await client.chat.completions.create({
+            model,
+            temperature,
+            max_tokens: limite,
+            messages: mensagens,
+            ...extrasDeRaciocinio(model, pensa, orcamento, esforco),
+          } as OpenAI.ChatCompletionCreateParamsNonStreaming);
+          registrarChamada({ modelo: model, funcao, ok: true, ms: Date.now() - t0, reserva: meta.reserva });
+          return r;
+        } catch (e) {
+          // recusa de reasoning_budget não é falha do modelo: repete sem o parâmetro
+          if (!recusaDeOrcamento(e)) {
+            const c = classificarErro(e);
+            registrarChamada({ modelo: model, funcao, ok: false, falha: c.falha, http: c.http, ms: Date.now() - t0, reserva: meta.reserva });
+            if (c.falha === "permanente") desativados.add(model);
+          }
+          throw e;
+        }
+      },
       novasTentativas
     );
   let r: OpenAI.ChatCompletion;
   try {
-    r = await pedir(pensa && orcamento > 0 && !semOrcamento.has(model));
+    r = await pedir();
   } catch (e) {
     // alguns modelos (ex.: Ultra) recusam reasoning_budget com 400: repete sem e lembra
-    if (!(e instanceof OpenAI.APIError && e.status === 400 && /budget/i.test(e.message))) throw e;
+    if (!recusaDeOrcamento(e)) throw e;
     semOrcamento.add(model);
     console.warn(`  ↻ ${model} não aceita limite de pensamento; seguindo sem ele`);
-    r = await pedir(false);
+    r = await pedir(); // semOrcamento agora tem o modelo: vai sem reasoning_budget
   }
   // modelos de raciocínio podem "pensar alto" em <think>...</think> antes do JSON
   const texto = (r.choices[0]?.message?.content ?? "").replace(/<think>[\s\S]*?<\/think>/gi, "").replace(/^[\s\S]*<\/think>/i, "");
@@ -145,20 +210,23 @@ export async function chatJSON(
   temperature: number,
   maxTokens = 4000,
   // pensar: false = sem raciocínio (tarefas de cópia) · novasTentativas: repetições em erro passageiro
-  opcoes: { pensar?: boolean; novasTentativas?: number } = {}
+  opcoes: { pensar?: boolean; novasTentativas?: number } & MetaChamada = {}
 ): Promise<unknown> {
   let ultimoErro: unknown;
+  const meta = { funcao: opcoes.funcao, reserva: opcoes.reserva };
   for (let tentativa = 0; tentativa < 2; tentativa++) {
     const { texto, motivo, limite } = await chamar(client, model, [
       { role: "system", content: system },
       { role: "user", content: user },
-    ], temperature, maxTokens, opcoes.pensar, opcoes.novasTentativas);
+    ], temperature, maxTokens, opcoes.pensar, opcoes.novasTentativas, meta);
     try {
       if (!texto.includes("{") && motivo === "length")
         throw new Error(`resposta sem JSON (cortada no limite de ${limite} tokens: o modelo pensou demais)`);
       return extrairJSON(texto);
     } catch (e) {
       ultimoErro = e instanceof Error && e.message === "resposta sem JSON" ? new Error(`resposta sem JSON (finish_reason=${motivo}, ${texto.length} caracteres)`) : e;
+      // HTTP ok, mas sem JSON: falha de formato na telemetria
+      registrarChamada({ modelo: model, funcao: meta.funcao ?? (prefixoDo.get(client) ? FUNCAO_DO_PREFIXO[prefixoDo.get(client)!] : undefined), ok: false, falha: "formato", ms: 0, reserva: meta.reserva });
     }
   }
   throw new Error(`O modelo ${model} não devolveu JSON válido: ${String(ultimoErro)}`);
@@ -217,7 +285,7 @@ export async function chatJSONComReserva(
   user: string,
   temperature: number,
   maxTokens: number,
-  opcoes: { pensar?: boolean } = {}
+  opcoes: { pensar?: boolean; funcao?: string } = {}
 ): Promise<{ json: unknown; modelo: string }> {
   const temReserva = !!reserva && reserva !== principal;
   try {
@@ -229,7 +297,7 @@ export async function chatJSONComReserva(
   } catch (e) {
     if (!temReserva) throw e;
     console.warn(`  ↪ ${principal} falhou (${String(e).replace(/\s+/g, " ").slice(0, 100)}); usando a reserva ${reserva}`);
-    return { json: await chatJSON(client, reserva!, system, user, temperature, maxTokens, opcoes), modelo: reserva! };
+    return { json: await chatJSON(client, reserva!, system, user, temperature, maxTokens, { ...opcoes, reserva: true }), modelo: reserva! };
   }
 }
 
@@ -250,14 +318,23 @@ export async function embedLote(textos: string[], tipo: "query" | "passage"): Pr
     const lote = textos.slice(i, i + LOTE).map((t) => t.slice(0, 6000));
     const extra: Record<string, unknown> = process.env.EMBED_INPUT_TYPE === "1" ? { input_type: tipo, truncate: "END" } : {};
     if (Number(process.env.EMBED_DIMENSOES)) extra.dimensions = Number(process.env.EMBED_DIMENSOES); // ex.: 1024 (modelos que aceitam)
-    const r = await comRetry("embeddings", () =>
-      cliente("EMBED").embeddings.create({
-        model: modelo("EMBED_MODEL"),
-        input: lote,
-        encoding_format: "float", // alguns provedores não aceitam base64 (padrão do SDK)
-        ...extra,
-      } as OpenAI.EmbeddingCreateParams)
-    );
+    const r = await comRetry("embeddings", async () => {
+      const t0 = Date.now();
+      try {
+        const resp = await cliente("EMBED").embeddings.create({
+          model: modelo("EMBED_MODEL"),
+          input: lote,
+          encoding_format: "float", // alguns provedores não aceitam base64 (padrão do SDK)
+          ...extra,
+        } as OpenAI.EmbeddingCreateParams);
+        registrarChamada({ modelo: modelo("EMBED_MODEL"), funcao: "embed", ok: true, ms: Date.now() - t0 });
+        return resp;
+      } catch (e) {
+        const c = classificarErro(e);
+        registrarChamada({ modelo: modelo("EMBED_MODEL"), funcao: "embed", ok: false, falha: c.falha, http: c.http, ms: Date.now() - t0 });
+        throw e;
+      }
+    });
     const vetores = [...r.data].sort((a, b) => a.index - b.index).map((d) => d.embedding as number[]);
     if (dimEsperada && vetores[0] && vetores[0].length !== dimEsperada) {
       throw new Error(

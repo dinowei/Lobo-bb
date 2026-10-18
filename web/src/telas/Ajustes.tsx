@@ -46,7 +46,7 @@ export function AjustesTela() {
             <p style={{ marginTop: 0, color: "var(--suave)" }}>
               <b style={{ color: "var(--texto)" }}>Modo demo.</b> Você está usando as questões de exemplo e o progresso fica só neste navegador.
               Com o servidor ligado (npm run dev na pasta do projeto), o site passa a usar o banco de verdade, com as provas oficiais e
-              as questões geradas pela IA.
+              as questões novas que chegam toda noite.
             </p>
             {confirmarZerar ? (
               <div className="acoes">

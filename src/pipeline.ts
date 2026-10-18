@@ -34,17 +34,8 @@ import {
   auditorRevisaoUser,
   type QuestaoGerada,
 } from "./prompts.js";
-import {
-  chatJSON,
-  chatJSONAuditor,
-  chatJSONEscritorPT,
-  validarOuReparar,
-  embed,
-  gerador,
-  auditor,
-  escritorPT,
-  modelo,
-} from "./llm.js";
+import { validarOuReparar, embed, ehFalhaDeInfra, SemModeloDisponivel } from "./llm.js";
+import { chatJSONFuncao } from "./corrente.js";
 import { construir, tiposConstruidos, type Montada } from "./construcao.js";
 import { descreverFigura, tirarTabelaCopiada } from "./construcaoFiguras.js";
 import {
@@ -131,6 +122,11 @@ export type Resultado = (
 
 // erro em uma linha só (zod e afins vêm em várias)
 const umaLinha = (e: unknown) => String(e instanceof Error ? e.message : e).replace(/\s*\n\s*/g, " ⏎ ");
+
+// Falha de modelo: "aguardando_modelo" (nenhum elegível agora, a questão espera), "provedor_falhou"
+// (429, 5xx, timeout: infraestrutura) ou o motivo de qualidade de cada etapa
+export const MOTIVOS_INFRA = ["aguardando_modelo", "provedor_falhou", "auditor_falhou", "erro_inesperado"];
+const motivoDaFalha = (e: unknown, padrao: string) => (e instanceof SemModeloDisponivel ? "aguardando_modelo" : ehFalhaDeInfra(e) ? "provedor_falhou" : padrao);
 
 // confere se o enunciado trouxe cada dado fixado pelo código, sem alterar número
 function dadosFaltando(enunciado: string, dados: string[]): string[] {
@@ -276,18 +272,15 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
         cenariosRecentes,
       });
   let q: QuestaoGerada;
+  let geradoPor: { modelo: string; familia: string };
   try {
-    const bruto = await chatJSON(gerador(), modelo("GERADOR_MODEL"), GERADOR_SYSTEM, userGerador, 0.8, 4000);
-    if (bruto && typeof bruto === "object" && "erro" in bruto) return { ok: false, motivo: "fonte_insuficiente" };
+    const g = await chatJSONFuncao("gerador", GERADOR_SYSTEM, userGerador, 0.8, 4000);
+    geradoPor = { modelo: g.modelo, familia: g.familia };
+    if (g.json && typeof g.json === "object" && "erro" in g.json) return { ok: false, motivo: "fonte_insuficiente" };
     // zod falhou → o mesmo modelo recebe a resposta + o erro e devolve só o JSON corrigido
-    q = await validarOuReparar(QuestaoGeradaZ, bruto, {
-      client: gerador(),
-      model: modelo("GERADOR_MODEL"),
-      system: GERADOR_SYSTEM,
-      user: userGerador,
-    });
+    q = await validarOuReparar(QuestaoGeradaZ, g.json, { client: g.client, model: g.modelo, system: GERADOR_SYSTEM, user: userGerador });
   } catch (e) {
-    return { ok: false, motivo: "geracao_invalida", detalhes: [umaLinha(e)] };
+    return { ok: false, motivo: motivoDaFalha(e, "geracao_invalida"), detalhes: [umaLinha(e)] };
   }
 
   if (montada) {
@@ -360,18 +353,20 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
   if (sim.veredito.classe !== "nova") return { ok: false, motivo: sim.veredito.classe, detalhes: [detalheSimilaridade(sim.veredito)] };
 
   const fontesTxt = fontes.map((f) => `${f.titulo}\n${f.texto}`);
-  let modeloAuditor = modelo("AUDITOR_MODEL");
+  let modeloAuditor = "";
   // o auditor só lê texto: a figura vai convertida em descrição estruturada
   const qAud = montada?.figura ? { ...q, textoBase: `FIGURA DA QUESTÃO (desenhada no app):\n${descreverFigura(montada.figura)}` } : q;
+  // regra de família: o auditor nunca é da família de quem gerou (vale com a corrente aprovada)
+  const auditar = (system: string, user: string) => chatJSONFuncao("auditor", system, user, 0, 2000, { excluirFamilias: [geradoPor.familia] });
 
   // 4. Auditoria cega: o auditor resolve sem ver o gabarito
   let cego: z.infer<typeof RespostaCegaZ>;
   try {
-    const r = await chatJSONAuditor(AUDITOR_CEGO_SYSTEM, auditorCegoUser(qAud, fontesTxt), 0, 2000);
+    const r = await auditar(AUDITOR_CEGO_SYSTEM, auditorCegoUser(qAud, fontesTxt));
     modeloAuditor = r.modelo;
     cego = RespostaCegaZ.parse(r.json);
   } catch (e) {
-    return { ok: false, motivo: "auditor_falhou", detalhes: [umaLinha(e)] };
+    return { ok: false, motivo: motivoDaFalha(e, "auditor_falhou"), detalhes: [umaLinha(e)] };
   }
   if (cego.resposta !== q.gabarito) {
     return {
@@ -384,11 +379,11 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
   // 5. Revisão completa
   let rev: z.infer<typeof RevisaoZ>;
   try {
-    const r = await chatJSONAuditor(AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(qAud, fontesTxt), 0, 2000);
+    const r = await auditar(AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(qAud, fontesTxt));
     if (r.modelo !== modeloAuditor) modeloAuditor = `${modeloAuditor} + ${r.modelo}`;
     rev = RevisaoZ.parse(r.json);
   } catch (e) {
-    return { ok: false, motivo: "auditor_falhou", detalhes: [umaLinha(e)] };
+    return { ok: false, motivo: motivoDaFalha(e, "auditor_falhou"), detalhes: [umaLinha(e)] };
   }
   const aprovada = rev.veredito === "aprovada";
 
@@ -405,7 +400,7 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
     dicaDeProva: q.dicaDeProva ?? undefined,
     fontes: fonteDoTrecho ? [{ sourceId: fonteDoTrecho.sourceId, trecho: q.trechoFonte }] : [],
     status: aprovada ? "aprovada" : "rejeitada",
-    geradaPor: modelo("GERADOR_MODEL"),
+    geradaPor: geradoPor.modelo,
     auditoria: {
       modelo: modeloAuditor,
       respostaCega: cego.resposta,
@@ -480,15 +475,18 @@ async function gerarCraseConstruida(
     frasesRecentes: anteriores.flatMap((a) => a.alternativas.map((x) => x.texto)),
   });
 
-  // o escritor de Português é um modelo diferente do auditor (ESCRITOR_PT_MODEL), com reserva
+  // o escritor de Português é um modelo diferente do auditor (corrente "escritor_pt"); o juiz e a
+  // revisão nunca são da família de quem escreveu (vale com a corrente aprovada)
   const escritores = new Set<string>();
+  const familiasEscritor = new Set<string>();
   let escrito: z.infer<typeof FrasesCraseZ>;
   try {
-    const r = await chatJSONEscritorPT(CRASE_ESCRITOR_SYSTEM, user, 0.7, 2000);
+    const r = await chatJSONFuncao("escritor_pt", CRASE_ESCRITOR_SYSTEM, user, 0.7, 2000);
     escritores.add(r.modelo);
-    escrito = await validarOuReparar(FrasesCraseZ, r.json, { client: escritorPT(), model: r.modelo, system: CRASE_ESCRITOR_SYSTEM, user });
+    familiasEscritor.add(r.familia);
+    escrito = await validarOuReparar(FrasesCraseZ, r.json, { client: r.client, model: r.modelo, system: CRASE_ESCRITOR_SYSTEM, user });
   } catch (e) {
-    return { ok: false, motivo: "geracao_invalida", detalhes: [umaLinha(e)] };
+    return { ok: false, motivo: motivoDaFalha(e, "geracao_invalida"), detalhes: [umaLinha(e)] };
   }
   const porLetra = new Map(escrito.frases.map((f) => [f.letra, { frase: f.frase, trecho: f.trecho }]));
   if (porLetra.size !== 5) return { ok: false, motivo: "letras_repetidas" };
@@ -502,10 +500,11 @@ async function gerarCraseConstruida(
     if (!problema) continue;
     try {
       const userUma = craseReescritaUser({ contexto: variacao.contexto, regra: f.regra, fraseAnterior: atual.frase, problema });
-      const r = await chatJSONEscritorPT(CRASE_ESCRITOR_SYSTEM, userUma, 0.7, 600);
+      const r = await chatJSONFuncao("escritor_pt", CRASE_ESCRITOR_SYSTEM, userUma, 0.7, 600);
       escritores.add(r.modelo);
+      familiasEscritor.add(r.familia);
       const nova = await validarOuReparar(FraseUnicaCraseZ, r.json, {
-        client: escritorPT(),
+        client: r.client,
         model: r.modelo,
         system: CRASE_ESCRITOR_SYSTEM,
         user: userUma,
@@ -548,39 +547,43 @@ async function gerarCraseConstruida(
   const sim = await filtrarRepeticao(q.enunciado, q.alternativas.find((a) => a.correta)!.texto, topic._id, topic.disciplina);
   if (sim.veredito.classe !== "nova") return { ok: false, motivo: sim.veredito.classe, detalhes: [detalheSimilaridade(sim.veredito)] };
 
-  // auditoria por frase, cada uma isolada
+  // auditoria por frase, cada uma isolada (juiz de Português de outra família que a do escritor)
   const modelos = new Set<string>();
-  const porFrase: { letra: Letra; regraEsperada: string; correta: boolean; regra: string }[] = [];
+  const porFrase: { letra: Letra; regraEsperada: string; correta: boolean; regra: string; juiz: string }[] = [];
+  const julgar = (frase: string, excluirModelos: string[] = []) =>
+    chatJSONFuncao("juiz_pt", AUDITOR_FRASE_SYSTEM, `FRASE: ${frase}`, 0, 600, { excluirFamilias: [...familiasEscritor], excluirModelos });
   try {
     for (const f of m.frases) {
-      const r = await chatJSONAuditor(AUDITOR_FRASE_SYSTEM, `FRASE: ${porLetra.get(f.letra)!.frase}`, 0, 600);
+      const r = await julgar(porLetra.get(f.letra)!.frase);
       modelos.add(r.modelo);
       const v = VereditoFraseZ.parse(r.json);
-      porFrase.push({ letra: f.letra, regraEsperada: f.regra.nome, correta: v.correta, regra: v.regra });
+      porFrase.push({ letra: f.letra, regraEsperada: f.regra.nome, correta: v.correta, regra: v.regra, juiz: r.modelo });
     }
   } catch (e) {
-    return { ok: false, motivo: "auditor_falhou", detalhes: [umaLinha(e), ...linhas] };
+    return { ok: false, motivo: motivoDaFalha(e, "auditor_falhou"), detalhes: [umaLinha(e), ...linhas] };
   }
-  // Desempate: frase em que o auditor discorda do banco de regras vai, às cegas (só a frase),
-  // para o Ultra. Se o Ultra concordar com a regra, vale a regra; senão, a questão é descartada.
-  const ultra = process.env.AUDITOR_MODEL_RESERVA;
+  // Desempate: frase em que o juiz discorda do banco de regras vai, às cegas (só a frase), para
+  // OUTRO juiz da corrente (no legado, o Ultra). Se ele concordar com a regra, vale a regra;
+  // senão (ou sem outro juiz), a questão é descartada.
   const desempates: { letra: Letra; auditor: boolean; ultra: boolean | null; regraUltra: string }[] = [];
   for (const [k, p] of porFrase.entries()) {
     const esperado = m.frases[k].regra.correta;
     if (p.correta === esperado) continue;
-    if (!ultra) return { ok: false, motivo: "auditor_por_frase_discordou", detalhes: ["sem AUDITOR_MODEL_RESERVA para desempatar", ...linhas] };
     let veredito: z.infer<typeof VereditoFraseZ> | null = null;
+    let desempatador = "";
     try {
-      veredito = VereditoFraseZ.parse(await chatJSON(auditor(), ultra, AUDITOR_FRASE_SYSTEM, `FRASE: ${porLetra.get(p.letra)!.frase}`, 0, 600));
-      modelos.add(ultra);
+      const r = await julgar(porLetra.get(p.letra)!.frase, [p.juiz]);
+      veredito = VereditoFraseZ.parse(r.json);
+      desempatador = r.modelo;
+      modelos.add(r.modelo);
     } catch (e) {
       console.warn(`  ⚠ desempate da ${p.letra} falhou: ${umaLinha(e).slice(0, 120)}`);
     }
     desempates.push({ letra: p.letra, auditor: p.correta, ultra: veredito?.correta ?? null, regraUltra: veredito?.regra ?? "" });
     if (veredito?.correta === esperado) {
-      console.log(`  ⚖ ${p.letra}: auditor disse ${p.correta ? "SIM" : "não"}, Ultra disse ${veredito.correta ? "SIM" : "não"} = regra → vale a regra`);
+      console.log(`  ⚖ ${p.letra}: juiz disse ${p.correta ? "SIM" : "não"}, ${desempatador} disse ${veredito.correta ? "SIM" : "não"} = regra → vale a regra`);
       p.correta = esperado;
-      p.regra = `[desempate Ultra] ${veredito.regra}`;
+      p.regra = `[desempate ${desempatador}] ${veredito.regra}`;
     }
   }
   const vereditos = porFrase.map(
@@ -600,11 +603,11 @@ async function gerarCraseConstruida(
   // revisão completa de sempre
   let rev: z.infer<typeof RevisaoZ>;
   try {
-    const r = await chatJSONAuditor(AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(q, []), 0, 2000);
+    const r = await chatJSONFuncao("auditor", AUDITOR_REVISAO_SYSTEM, auditorRevisaoUser(q, []), 0, 2000, { excluirFamilias: [...familiasEscritor] });
     modelos.add(r.modelo);
     rev = RevisaoZ.parse(r.json);
   } catch (e) {
-    return { ok: false, motivo: "auditor_falhou", detalhes: [umaLinha(e), ...vereditos] };
+    return { ok: false, motivo: motivoDaFalha(e, "auditor_falhou"), detalhes: [umaLinha(e), ...vereditos] };
   }
   const aprovada = rev.veredito === "aprovada";
 

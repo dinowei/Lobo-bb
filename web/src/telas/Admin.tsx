@@ -1,0 +1,553 @@
+// Tela Admin (só o dono): IA, Fila, Benchmark e Pendências numa tela só, com abas
+// (PROMPT-RETOMADA R3 + adendo do banco grande, item 7). O aluno nunca vê esta tela.
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import type {
+  AdminBenchmarkDTO,
+  AdminFilaDTO,
+  AdminIADTO,
+  BenchmarkLinhaDTO,
+  ModeloIADTO,
+  PendenciaDTO,
+  PropostaCorrenteDTO,
+  StatusTarefa,
+  TarefaDTO,
+} from "../../../shared/tipos";
+import { adminTelas } from "../api/admin";
+import { Markdown } from "../componentes/Markdown";
+import { useApp } from "../estado";
+import { MASCOTE, pct } from "../util";
+
+type Aba = "ia" | "fila" | "benchmark" | "pendencias";
+const ABAS: { id: Aba; rotulo: string }[] = [
+  { id: "ia", rotulo: "IA" },
+  { id: "fila", rotulo: "Fila" },
+  { id: "benchmark", rotulo: "Benchmark" },
+  { id: "pendencias", rotulo: "Pendências" },
+];
+// "#admin?aba=benchmark" abre direto numa aba (links das pendências e prints automáticos)
+const abaDoHash = (): Aba => {
+  const a = new URLSearchParams(location.hash.split("?")[1] ?? "").get("aba");
+  return ABAS.some((x) => x.id === a) ? (a as Aba) : "ia";
+};
+
+// ---------- utilidades de exibição ----------
+const seg = (ms: number) => (ms < 1000 ? `${ms} ms` : `${(ms / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} s`);
+function haQuanto(iso?: string): string {
+  if (!iso) return "nunca";
+  const min = Math.round((Date.now() - Date.parse(iso)) / 60_000);
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min} min`;
+  const h = Math.round(min / 60);
+  return h < 48 ? `há ${h} h` : `há ${Math.round(h / 24)} dias`;
+}
+const quando = (iso?: string) => (iso ? new Date(iso).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—");
+
+// Carrega dados de uma aba com estado de carregando / erro / pronto
+function useDados<T>(carregar: () => Promise<T>) {
+  const [dados, setDados] = useState<T | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const recarregar = useCallback(async () => {
+    setErro(null);
+    try {
+      setDados(await carregar());
+    } catch (e) {
+      setErro((e as Error).message);
+    }
+  }, [carregar]);
+  useEffect(() => {
+    recarregar();
+  }, [recarregar]);
+  return { dados, erro, recarregar };
+}
+
+function Estado({ erro, carregando, tentar, children }: { erro: string | null; carregando: boolean; tentar: () => void; children: ReactNode }) {
+  if (erro)
+    return (
+      <div className="vazio" role="alert">
+        <img src={MASCOTE} alt="" />
+        <div><b>Não deu para carregar.</b><p>{erro}</p><button className="botao-linha" onClick={tentar}>Tentar de novo</button></div>
+      </div>
+    );
+  if (carregando) return <div className="esqueleto" style={{ height: 260 }} aria-busy="true" aria-label="Carregando" />;
+  return <>{children}</>;
+}
+
+export function Admin() {
+  const { api } = useApp();
+  const [aba, setAba] = useState<Aba>(abaDoHash);
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  useEffect(() => {
+    const f = () => location.hash.startsWith("#admin") && setAba(abaDoHash());
+    window.addEventListener("hashchange", f);
+    return () => window.removeEventListener("hashchange", f);
+  }, []);
+
+  const escolher = (a: Aba) => {
+    setAba(a);
+    try {
+      history.replaceState(null, "", `#admin?aba=${a}`);
+    } catch {
+      /* ok */
+    }
+  };
+  // teclado nas abas: setas, Home e End (padrão WAI-ARIA)
+  const teclas = (e: KeyboardEvent, i: number) => {
+    const n = ABAS.length;
+    const alvo = { ArrowRight: (i + 1) % n, ArrowLeft: (i - 1 + n) % n, Home: 0, End: n - 1 }[e.key];
+    if (alvo === undefined) return;
+    e.preventDefault();
+    escolher(ABAS[alvo].id);
+    refs.current[alvo]?.focus();
+  };
+
+  if (api.modo !== "servidor")
+    return (
+      <div className="pagina">
+        <div className="vazio"><img src={MASCOTE} alt="" /><div><b>A tela Admin precisa do servidor.</b><p>Rode "npm run dev" na pasta do projeto.</p></div></div>
+      </div>
+    );
+
+  return (
+    <div className="pagina">
+      <div className="pagina-cabeca">
+        <div>
+          <h1>Admin</h1>
+          <p>Modelos, fila do noturno, benchmark e o que espera a sua decisão.</p>
+        </div>
+      </div>
+      <div className="abas" role="tablist" aria-label="Seções do Admin">
+        {ABAS.map((a, i) => (
+          <button
+            key={a.id}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            role="tab"
+            id={`aba-${a.id}`}
+            aria-selected={aba === a.id}
+            aria-controls={`painel-${a.id}`}
+            tabIndex={aba === a.id ? 0 : -1}
+            className="chip"
+            onClick={() => escolher(a.id)}
+            onKeyDown={(e) => teclas(e, i)}
+          >
+            {a.rotulo}
+          </button>
+        ))}
+      </div>
+      <section role="tabpanel" id={`painel-${aba}`} aria-labelledby={`aba-${aba}`} className="painel-aba">
+        {aba === "ia" && <AbaIA />}
+        {aba === "fila" && <AbaFila />}
+        {aba === "benchmark" && <AbaBenchmark />}
+        {aba === "pendencias" && <AbaPendencias irPara={escolher} />}
+      </section>
+    </div>
+  );
+}
+
+// ---------- IA ----------
+const MODO: Record<AdminIADTO["modo"], string> = {
+  legado: "Legado: os modelos do .env (nada aprovado ainda)",
+  env: "Corrente do .env (CORRENTE_ATIVA=1)",
+  aprovada: "Corrente aprovada por você",
+};
+
+function AbaIA() {
+  const { dados, erro, recarregar } = useDados(adminTelas.ia);
+  return (
+    <Estado erro={erro} carregando={!dados} tentar={recarregar}>
+      {dados && (
+        <div className="admin-pilha">
+          <div className="secao">
+            <div className="linha-titulo">
+              <h2>Corrente em uso</h2>
+              <span className={`selo ${dados.modo === "legado" ? "alerta" : ""}`}>{MODO[dados.modo]}{dados.aprovadaEm ? ` em ${quando(dados.aprovadaEm)}` : ""}</span>
+            </div>
+            {!!dados.alertas.length && (
+              <ul className="alertas" aria-label="Alertas">
+                {dados.alertas.map((a) => <li key={a}>{a}</li>)}
+              </ul>
+            )}
+            <dl className="correntes">
+              {Object.entries(dados.correntes).map(([f, ids]) => (
+                <div key={f}>
+                  <dt>{dados.nomesFuncoes[f] ?? f}</dt>
+                  <dd>
+                    {ids.map((id, i) => <span key={id} className={`selo ${i === 0 ? "laranja" : ""}`} title={i === 0 ? "principal" : `reserva ${i}`}>{id.split("/")[1] ?? id}</span>)}
+                    {!!dados.hoje[f]?.length && <span className="suave"> · hoje: {dados.hoje[f].map((h) => `${h.modelo.split("/")[1]} (${h.n})`).join(", ")}</span>}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="suave">Verificação semanal dos modelos: {dados.verificadoEm ? quando(dados.verificadoEm) : "ainda não rodou"} (no noturno).</p>
+          </div>
+          <div className="grade-modelos">
+            {dados.modelos.map((m) => <CartaoModelo key={m.id} m={m} />)}
+          </div>
+        </div>
+      )}
+    </Estado>
+  );
+}
+
+const ROTULO_COR = { verde: "Respondendo", amarelo: "Instável", vermelho: "Fora", cinza: "Sem dados" } as const;
+function CartaoModelo({ m }: { m: ModeloIADTO }) {
+  const falhas = m.h24 ? Object.entries(m.h24.falhas).filter(([, n]) => n) : [];
+  return (
+    <article className="secao cartao-modelo" aria-label={m.id}>
+      <header>
+        <span className={`bolinha-status ${m.cor}`} aria-hidden="true" />
+        <h3>{m.id}</h3>
+      </header>
+      <p className="suave">
+        <span className="sr-only">{ROTULO_COR[m.cor]}: </span>
+        {m.motivoCor} · {m.familia}
+        {m.preview && " · preview"}
+        {m.statusCatalogo !== "ativo" && ` · catálogo: ${m.statusCatalogo}`}
+      </p>
+      <dl className="metricas">
+        <div><dt>24 h</dt><dd>{m.h24 ? `${m.h24.chamadas} chamadas · ${pct(m.h24.taxa)}` : "—"}</dd></div>
+        <div><dt>7 dias</dt><dd>{m.d7 ? `${m.d7.chamadas} chamadas · ${pct(m.d7.taxa)}` : "—"}</dd></div>
+        <div><dt>Latência (24 h)</dt><dd>{m.h24?.chamadas ? `${seg(m.h24.medianaMs)} · p95 ${seg(m.h24.p95Ms)}` : "—"}</dd></div>
+        <div><dt>Última resposta</dt><dd>{haQuanto(m.ultimaResposta)}</dd></div>
+      </dl>
+      {(!!falhas.length || !!m.h24?.comoReserva) && (
+        <p className="suave">
+          {falhas.map(([t, n]) => `${t}: ${n}`).join(" · ")}
+          {m.h24?.comoReserva ? `${falhas.length ? " · " : ""}atendeu ${m.h24.comoReserva}× como reserva` : ""}
+        </p>
+      )}
+      {(m.nota || m.descontinuaEm) && <p className="nota-modelo">{m.descontinuaEm ? `Descontinua em ${m.descontinuaEm}. ` : ""}{m.nota}</p>}
+    </article>
+  );
+}
+
+// ---------- Fila ----------
+const STATUS: Record<StatusTarefa, string> = {
+  pendente: "Pendente",
+  rodando: "Rodando",
+  aguardando: "Aguardando nova tentativa",
+  concluida: "Concluída",
+  descartada: "Descartada",
+  esgotada: "Parada (3 falhas do provedor)",
+};
+const GRUPO = { qualidade: "Qualidade", similaridade: "Repetição", infraestrutura: "Provedor" } as const;
+
+function AbaFila() {
+  const { avisar } = useApp();
+  const { dados, erro, recarregar } = useDados(adminTelas.fila);
+  const [filtro, setFiltro] = useState<StatusTarefa | "todas">("todas");
+  const [ocupado, setOcupado] = useState<string | null>(null);
+  const tentar = async (t: TarefaDTO) => {
+    setOcupado(t.id);
+    try {
+      await adminTelas.tentarDeNovo(t.id);
+      avisar("Tarefa de volta na fila");
+      await recarregar();
+    } catch (e) {
+      avisar(`Não deu: ${(e as Error).message}`);
+    } finally {
+      setOcupado(null);
+    }
+  };
+  return (
+    <Estado erro={erro} carregando={!dados} tentar={recarregar}>
+      {dados && (
+        <div className="admin-pilha">
+          <div className="secao">
+            <div className="linha-titulo">
+              <h2>Banco até a meta</h2>
+              <span className="num">{dados.progresso.aprovadas.toLocaleString("pt-BR")} de {dados.progresso.meta.toLocaleString("pt-BR")}</span>
+            </div>
+            <div className="barra grossa" role="progressbar" aria-valuemin={0} aria-valuemax={dados.progresso.meta} aria-valuenow={dados.progresso.aprovadas} aria-label="Questões aprovadas até a meta">
+              <i style={{ width: pct(Math.min(1, dados.progresso.aprovadas / dados.progresso.meta)) }} />
+            </div>
+            <p className="suave">{dados.progresso.oficiais} oficiais + {dados.progresso.geradas} geradas aprovadas.</p>
+          </div>
+          <RelatorioNoite noite={dados.noite} />
+          <div className="secao">
+            <div className="linha-titulo">
+              <h2>Tarefas</h2>
+              <button className="botao-linha" onClick={recarregar}>Atualizar</button>
+            </div>
+            <div className="filtros" role="group" aria-label="Filtrar tarefas">
+              <button className="chip" aria-pressed={filtro === "todas"} onClick={() => setFiltro("todas")}>Todas</button>
+              {(Object.keys(STATUS) as StatusTarefa[]).map((s) => (
+                <button key={s} className="chip" aria-pressed={filtro === s} onClick={() => setFiltro(s)}>
+                  {STATUS[s].split(" (")[0]} <span className="num">{dados.contagem[s]}</span>
+                </button>
+              ))}
+            </div>
+            {!dados.tarefas.length ? (
+              <div className="vazio"><img src={MASCOTE} alt="" /><div><b>Fila vazia.</b><p>O noturno cria as tarefas: <code>npm run bb -- noturno</code>.</p></div></div>
+            ) : (
+              <ul className="lista-tarefas">
+                {dados.tarefas.filter((t) => filtro === "todas" || t.status === filtro).map((t) => (
+                  <li key={t.id}>
+                    <span className={`selo status-${t.status}`}>{STATUS[t.status]}</span>
+                    <div>
+                      <b>{t.tipo === "gerar" ? `Gerar · ${t.assunto ?? "?"}` : t.tipo === "verificar_modelos" ? "Verificar modelos" : t.tipo}</b>
+                      <p className="suave">
+                        {t.motivo ? `${t.motivo}` : ""}
+                        {t.tentativas ? ` · ${t.tentativas} falha(s) do provedor` : ""}
+                        {t.status === "aguardando" && t.proximaEm ? ` · tenta de novo ${quando(t.proximaEm)}` : ""}
+                        {` · ${haQuanto(t.atualizadaEm)}`}
+                      </p>
+                      {t.detalhes && <p className="detalhe">{t.detalhes}</p>}
+                    </div>
+                    {(t.status === "aguardando" || t.status === "esgotada") && (
+                      <button className="botao-linha" disabled={ocupado === t.id} onClick={() => tentar(t)}>Tentar de novo agora</button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+    </Estado>
+  );
+}
+
+function RelatorioNoite({ noite }: { noite: AdminFilaDTO["noite"] }) {
+  const max = Math.max(1, ...noite.porHora.map((h) => h.aprovadas));
+  return (
+    <div className="secao">
+      <div className="linha-titulo">
+        <h2>Esta noite</h2>
+        <span className="suave">desde {quando(noite.desde)}</span>
+      </div>
+      <div className="numeros-noite">
+        <div><b className="num">{noite.aprovadas}</b><span>aprovadas</span></div>
+        <div><b className="num">{noite.tentativas}</b><span>tentativas</span></div>
+        <div><b className="num">{noite.tentativas ? pct(noite.aprovadas / noite.tentativas) : "—"}</b><span>aprovação</span></div>
+        <div><b>{noite.modeloQueMaisAtendeu?.split("/")[1] ?? "—"}</b><span>gerador que mais atendeu</span></div>
+      </div>
+      {!!noite.descartes.length && (
+        <ul className="descartes">
+          {noite.descartes.map((d) => <li key={d.motivo}><span className={`selo grupo-${d.grupo}`}>{GRUPO[d.grupo]}</span> {d.motivo} <span className="num">{d.n}</span></li>)}
+        </ul>
+      )}
+      {!!noite.porHora.length && (
+        <div className="por-hora" aria-label="Aprovadas por hora">
+          {noite.porHora.map((h) => (
+            <div key={h.hora} title={`${h.aprovadas} às ${h.hora}`}>
+              <i style={{ height: `${Math.max(8, (h.aprovadas / max) * 100)}%` }} />
+              <span>{h.hora}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {!noite.tentativas && <p className="suave">Nenhuma geração desde as 18 h.</p>}
+    </div>
+  );
+}
+
+// ---------- Benchmark ----------
+function AbaBenchmark() {
+  const { avisar } = useApp();
+  const { dados, erro, recarregar } = useDados(adminTelas.benchmark);
+  const [confirmar, setConfirmar] = useState<PropostaCorrenteDTO | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [aprovouAgora, setAprovouAgora] = useState(false);
+
+  const aprovar = async (p: PropostaCorrenteDTO) => {
+    setOcupado(true);
+    try {
+      const r = await adminTelas.aprovarCorrentes(p.correntes);
+      setConfirmar(null);
+      setAprovouAgora(true);
+      avisar(r.avisos.length ? `Corrente aprovada (${r.avisos.length} aviso(s))` : "Corrente aprovada");
+      await recarregar();
+    } catch (e) {
+      avisar(`Não deu: ${(e as Error).message}`);
+    } finally {
+      setOcupado(false);
+    }
+  };
+  const desfazer = async () => {
+    setOcupado(true);
+    try {
+      await adminTelas.desfazerCorrentes();
+      setAprovouAgora(false);
+      avisar("Aprovação desfeita: voltou a corrente anterior");
+      await recarregar();
+    } catch (e) {
+      avisar(`Não deu: ${(e as Error).message}`);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  return (
+    <Estado erro={erro} carregando={!dados} tentar={recarregar}>
+      {dados && (
+        <div className="admin-pilha">
+          {(aprovouAgora || dados.ativa.modo === "aprovada") && (
+            <div className="secao faixa-desfazer" role="status">
+              <span>Em uso: corrente aprovada{dados.ativa.aprovadaEm ? ` em ${quando(dados.ativa.aprovadaEm)}` : ""}.</span>
+              <button className="botao-linha" disabled={ocupado} onClick={desfazer}>Desfazer aprovação</button>
+            </div>
+          )}
+          {dados.rodadas.map((r) => <TabelaRodada key={r.chave} titulo={r.titulo} rotulo={r.rotuloAcerto} linhas={r.linhas} empatados={r.empatados} />)}
+          {!!dados.rodadas[0]?.linhas.length && <PorDisciplina linhas={dados.rodadas[0].linhas} disciplinas={dados.disciplinas} />}
+          <div className="secao">
+            <h2>Proposta de corrente</h2>
+            {!dados.propostas.length ? (
+              <p className="suave">A proposta aparece aqui quando o benchmark tiver amostra suficiente. Até lá, nada muda na produção.</p>
+            ) : (
+              <div className="propostas">
+                {dados.propostas.map((p) => (
+                  <article key={p.opcao} className="cartao-proposta">
+                    <h3>Opção {p.opcao}: {p.titulo}</h3>
+                    <p>{p.resumo}</p>
+                    <dl className="correntes">
+                      {Object.entries(p.correntes).map(([f, ids]) => (
+                        <div key={f}><dt>{dados.nomesFuncoes[f] ?? f}</dt><dd>{ids.map((id, i) => <span key={id} className={`selo ${i === 0 ? "laranja" : ""}`}>{id.split("/")[1] ?? id}</span>)}</dd></div>
+                      ))}
+                    </dl>
+                    {!!p.evidencias.length && <><h4>Evidência</h4><ul>{p.evidencias.map((e) => <li key={e}>{e}</li>)}</ul></>}
+                    {!!p.riscos.length && <><h4>Riscos</h4><ul>{p.riscos.map((e) => <li key={e}>{e}</li>)}</ul></>}
+                    <p className="suave"><b>Reversão:</b> {p.reversao}</p>
+                    {!!p.erros.length && <ul className="alertas">{p.erros.map((e) => <li key={e}>{e}</li>)}</ul>}
+                    {!!p.avisos.length && <p className="suave">Avisos: {p.avisos.join(" · ")}</p>}
+                    {confirmar === p ? (
+                      <div className="confirmar" role="alertdialog" aria-label="Confirmar aprovação">
+                        <p><b>Trocar os modelos de produção pela opção {p.opcao}?</b> Dá para desfazer depois.</p>
+                        <button className="botao-laranja" disabled={ocupado} onClick={() => aprovar(p)}>Sim, aprovar</button>
+                        <button className="botao-linha" disabled={ocupado} onClick={() => setConfirmar(null)}>Cancelar</button>
+                      </div>
+                    ) : (
+                      <button className="botao-laranja" disabled={!!p.erros.length || ocupado} onClick={() => setConfirmar(p)}>Aprovar corrente</button>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </Estado>
+  );
+}
+
+function TabelaRodada({ titulo, rotulo, linhas, empatados }: { titulo: string; rotulo: string; linhas: BenchmarkLinhaDTO[]; empatados: string[] }) {
+  return (
+    <div className="secao">
+      <h2>{titulo}</h2>
+      {!linhas.length ? (
+        <p className="suave">Ainda não rodou: <code>npm run bb -- benchmark {titulo.startsWith("Auditor") ? "auditor" : titulo.includes("Juiz") ? "juiz" : "escritor"}</code>.</p>
+      ) : (
+        <div className="md-tabela">
+          <table>
+            <thead>
+              <tr><th>Modelo</th><th>{rotulo}</th><th>IC 95%</th><th>Disponibilidade</th><th>Mediana</th><th>Falhas</th></tr>
+            </thead>
+            <tbody>
+              {linhas.map((l) => (
+                <tr key={l.modelo}>
+                  <td>{l.modelo}{l.preview && <span className="selo">preview</span>}</td>
+                  <td className="num"><b>{pct(l.acerto)}</b> ({l.acertos}/{l.respondidas})</td>
+                  <td className="num">{pct(l.ic[0])}–{pct(l.ic[1])}</td>
+                  <td className="num">{pct(l.disponibilidade)} ({l.respondidas}/{l.tentativas})</td>
+                  <td className="num">{l.medianaS} s</td>
+                  <td>{Object.entries(l.falhas).map(([k, v]) => `${k}: ${v}`).join(", ") || "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {!!empatados.length && <p className="suave">Empate estatístico com o primeiro: {empatados.join(", ")}. Sem vencedor claro.</p>}
+    </div>
+  );
+}
+
+function PorDisciplina({ linhas, disciplinas }: { linhas: BenchmarkLinhaDTO[]; disciplinas: string[] }) {
+  return (
+    <details className="secao">
+      <summary><h2 className="inline">Auditor por disciplina</h2></summary>
+      <div className="md-tabela">
+        <table>
+          <thead><tr><th>Modelo</th>{disciplinas.map((d) => <th key={d}>{d.replace(/_/g, " ")}</th>)}</tr></thead>
+          <tbody>
+            {linhas.map((l) => (
+              <tr key={l.modelo}>
+                <td>{l.modelo.split("/")[1]}</td>
+                {disciplinas.map((d) => <td key={d} className="num">{l.porDisciplina[d] ? `${l.porDisciplina[d].acertos}/${l.porDisciplina[d].n}` : "—"}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  );
+}
+
+// ---------- Pendências ----------
+const ATALHOS = [
+  { rotulo: "Figuras", destino: "#figuras" },
+  { rotulo: "Glossário de Vendas", destino: "doc:fontes-vendas/glossario.md" },
+  { rotulo: "Benchmark", destino: "#admin?aba=benchmark" },
+  { rotulo: "Calibragem de similaridade", destino: "doc:CALIBRAGEM-SIMILARIDADE.md" },
+];
+const PRIORIDADE = { alta: "Prioridade alta", media: "Média", baixa: "Baixa" } as const;
+
+function AbaPendencias({ irPara }: { irPara: (a: Aba) => void }) {
+  const { ir } = useApp();
+  const { dados, erro, recarregar } = useDados(adminTelas.pendencias);
+  const [doc, setDoc] = useState<{ nome: string; markdown?: string; erro?: string } | null>(null);
+  const abrir = async (destino: string) => {
+    if (destino.startsWith("doc:")) {
+      const nome = destino.slice(4);
+      setDoc({ nome });
+      try {
+        setDoc({ nome, markdown: (await adminTelas.doc(nome)).markdown });
+      } catch (e) {
+        setDoc({ nome, erro: (e as Error).message });
+      }
+      return;
+    }
+    if (destino.startsWith("#admin")) return irPara((new URLSearchParams(destino.split("?")[1]).get("aba") ?? "ia") as Aba);
+    if (destino === "#figuras") ir("figuras");
+  };
+  return (
+    <Estado erro={erro} carregando={!dados} tentar={recarregar}>
+      {dados && (
+        <div className="admin-pilha">
+          <nav className="filtros" aria-label="Atalhos">
+            {ATALHOS.map((a) => <button key={a.destino} className="chip" onClick={() => abrir(a.destino)}>{a.rotulo}</button>)}
+          </nav>
+          {doc && (
+            <div className="secao visor-doc" role="region" aria-label={`Documento ${doc.nome}`}>
+              <div className="linha-titulo">
+                <h2>{doc.nome}</h2>
+                <button className="botao-linha" onClick={() => setDoc(null)}>Fechar</button>
+              </div>
+              {doc.erro ? <p className="suave">{doc.erro}</p> : doc.markdown === undefined ? <div className="esqueleto" style={{ height: 160 }} aria-busy="true" /> : <Markdown texto={doc.markdown} />}
+            </div>
+          )}
+          {!dados.length ? (
+            <div className="vazio"><img src={MASCOTE} alt="" /><div><b>Nada esperando você.</b><p>Quando algo precisar da sua decisão, aparece aqui.</p></div></div>
+          ) : (
+            dados.map((p: PendenciaDTO) => (
+              <article key={p.titulo} className={`secao pendencia ${p.prioridade ?? ""}`}>
+                <div className="linha-titulo">
+                  <h2>{p.titulo}</h2>
+                  {p.prioridade && <span className={`selo ${p.prioridade === "alta" ? "laranja" : p.prioridade === "media" ? "alerta" : ""}`}>{PRIORIDADE[p.prioridade]}</span>}
+                </div>
+                <Markdown texto={p.markdown} />
+                {!!p.links.length && (
+                  <div className="acoes">
+                    {p.links.map((l) => <button key={l.destino} className="botao-linha" onClick={() => abrir(l.destino)}>{l.rotulo}</button>)}
+                  </div>
+                )}
+              </article>
+            ))
+          )}
+        </div>
+      )}
+    </Estado>
+  );
+}

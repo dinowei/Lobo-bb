@@ -5,6 +5,20 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ---
 
+## PRIORIDADE ALTA — Gerador e auditor da mesma família (Nemotron)
+
+- **O que é:** a regra nova diz que o auditor nunca é da família de quem gerou (e o juiz de Português nunca
+  é da família do escritor). Hoje o gerador é o Lightning e o auditor é o Super: os dois são Nemotron (NVIDIA).
+- **O que já está pronto:** catálogo (`data/modelos.json`), correntes por função com 3 opções, a regra de
+  família testada (`src/catalogo.ts`, `src/corrente.ts`), telemetria por modelo, e o benchmark
+  (`docs/BENCHMARK-MODELOS.md`). Enquanto você não aprovar, o app segue no **legado** (os modelos do `.env`,
+  sem trocar nada), e a tela IA mostra o alerta "Regra de família ferida".
+- **Por que precisa de você:** trocar modelo de produção é decisão sua (PROMPT-RETOMADA R2).
+- **Opções:** A) gerador Nemotron + auditor de outra família; B) gerador gpt-oss/Muse + auditor Nemotron.
+  A proposta com evidência, riscos e plano de reversão entra aqui quando o benchmark terminar.
+- **Como aprovar:** tela Benchmark → "Aprovar corrente" (com confirmação e "Desfazer"), ou
+  `CORRENTE_ATIVA=1` + `CORRENTE_<FUNÇÃO>` no `.env`.
+
 ## 1. Revisar o glossário de Vendas (Etapa 2.4)
 
 - **O que é:** `docs/fontes-vendas/glossario.md`, escrito a partir das 28 questões oficiais.
