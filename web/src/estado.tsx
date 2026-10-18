@@ -1,7 +1,6 @@
 // Estado global: API ativa, painel, navegação, ajustes, avisos de XP e nível
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Api, Disciplina, PainelDTO } from "../../shared/tipos";
-import { apiDemo } from "./api/demo";
 import { apiHttp, servidorDisponivel } from "./api/http";
 import { conta, EVENTO_SESSAO, type UsuarioDTO } from "./api/conta";
 import { Entrar } from "./telas/Entrar";
@@ -106,6 +105,8 @@ export function Provedor({ children }: { children: ReactNode }) {
   useEffect(() => {
     servidorDisponivel().then(async (ok) => {
       if (!ok) {
+        // o demo (com as questões de exemplo) só é baixado quando não há servidor
+        const { apiDemo } = await import("./api/demo");
         setLogin("livre");
         return setApi(apiDemo);
       }

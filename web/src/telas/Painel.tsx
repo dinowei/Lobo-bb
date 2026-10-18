@@ -7,7 +7,7 @@ import { dificuldadeDoRating } from "../../../shared/rating";
 import { diagnosticoPendente } from "../../../shared/diagnostico";
 import { NOME_FASE, planoDeHoje } from "../../../shared/plano";
 import { hojeLocal, usePlano } from "../usePlano";
-import { textoItem } from "./Plano";
+import { textoItem } from "../itensPlano";
 import { Ilustracao } from "../componentes/Ilustracoes";
 import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
 import { COR_DISC, CURTO, MASCOTE, SIGLA, diasAte, pct } from "../util";

@@ -1,30 +1,13 @@
-import { NOME_DISCIPLINA, type Disciplina } from "../../../shared/tipos";
-import { NOME_FASE, SEMANAS_RETA_FINAL, type ItemPlano } from "../../../shared/plano";
-import { useApp, type FiltroPratica, type Tela } from "../estado";
+import type { Disciplina } from "../../../shared/tipos";
+import { NOME_FASE, SEMANAS_RETA_FINAL } from "../../../shared/plano";
+import { useApp } from "../estado";
+import { destinoItem, textoItem } from "../itensPlano";
 import { hojeLocal, usePlano } from "../usePlano";
 import { ISeta } from "../componentes/Icones";
 import { MASCOTE } from "../util";
 
 const fmtData = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
 
-export function textoItem(i: ItemPlano) {
-  switch (i.tipo) {
-    case "questoes": return `${i.questoes} questões de ${NOME_DISCIPLINA[i.disciplina]}`;
-    case "revisao": return `Revisão espaçada (${i.minutos} min)`;
-    case "erros": return `Caderno de erros (${i.minutos} min)`;
-    case "redacao": return `Uma redação (${i.minutos} min)`;
-    case "simulado": return `Simulado de ${i.questoes} questões`;
-  }
-}
-export function destinoItem(i: ItemPlano): [Tela, FiltroPratica?] {
-  switch (i.tipo) {
-    case "questoes": return ["praticar", { disciplina: i.disciplina }];
-    case "revisao": return ["praticar", { revisao: true }];
-    case "erros": return ["erros"];
-    case "redacao": return ["redacao"];
-    case "simulado": return ["simulados"];
-  }
-}
 
 // Plano até a prova: recalculado do seu estado atual toda vez (atrasou, ele redistribui, sem culpa)
 export function Plano() {
