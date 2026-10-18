@@ -21,17 +21,20 @@
 - [x] Anti-repetição (5.8, fase 4): embedding + trechos (Jaccard) + impressão estrutural, cenários (perfil + situação) menos usados, teto diário de geração, descartes no `status`
 
 ## Estado atual
-- Etapas 8.1, 8.2 e 8.3 concluídas e registradas no `docs/DIARIO.md`.
-- Etapa 8.4 (redação com correção por IA) concluída; E2E real no app gerou tema, corrigiu redação e salvou nota 87/100 no histórico.
-- Etapa 8.5 (aulas curtas e tutor) implementada; testes focados passaram 23/23. Geração real de três aulas auditadas em andamento para fechamento.
-- Etapa 6 (noturno + adendo do banco grande): código e testes concluídos; rodada real noturna ainda pendente.
-- Etapa 9 (carrossel de matérias do painel) implementada; conferida em 360 px e 1440 px, com navegação por teclado, setas, bolinhas e clique para Praticar.
+- Fase B (8.1 a 8.9) concluída no código, no servidor e no demo. Redação: regra de 25 a 30 linhas por código (DECISOES nº 8).
+- Aulas (8.5): 0 aprovadas em duas rodadas reais; citação e formato endurecidos por código (DECISOES nº 9).
+- Etapa 6: primeira noite real feita (12 aprovadas em 16 tarefas); a meta de aprovadas agora só para a geração.
+- Etapa 9:
+  - estados (erro, vazio, carregando), offline com fila, atalhos, PWA, Desfazer, menu "Mais" no celular;
+  - bateria e2e 6/6 (`scripts/e2e-fluxos.ts`) e prints em `docs/telas/`;
+  - Lighthouse pendente (DECISOES nº 10).
 
 ## Próximo (em ordem)
-1. Fechar a prova real e o commit da Etapa 8.5.
-2. Rodar a validação real do noturno da Etapa 6, sem concorrência com outros jobs de IA.
-3. Aplicar `docs/ADENDO-BINHO-VOZ.md` depois da Etapa 9.
-4. Revisar pendências restantes: fontes oficiais, tela de revisão, PWA, deploy e edital novo.
+1. Rodadas reais de 3 por assunto da Etapa 7 (Amortização, Taxas, Combinatória, Probabilidade, Concordância, Regência, Pontuação).
+2. Benchmark completo de madrugada (retomando as amostras gravadas) → escolha definitiva da corrente (espera o dono).
+3. Bateria e2e completa (fluxos + login) com os jobs de IA parados; Lighthouse.
+4. Aplicar `docs/ADENDO-BINHO-VOZ.md` (depois de tudo).
+5. Pendências do dono: fontes do BCB, edital novo (cotas, pesos, duração, regra de linhas), deploy.
 
 ## Ideias para depois
 - Questões com imagem/tabela: cadastro com figura para as de `docs/PENDENTES-FIGURA.md`

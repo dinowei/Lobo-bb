@@ -81,6 +81,18 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   `npx tsx scripts/limpar-figura-no-texto.ts --gravar` corrige.
 - **Recomendação:** rodar com `--gravar` (só remove o trecho entre o primeiro e o último "|").
 
+## 10. Lighthouse (Etapa 9) — baixa
+
+- **O que é:** a Etapa 9 pede nota ≥ 90 no Lighthouse (celular). A ferramenta não está instalada, e
+  eu não instalei pacote novo sem você saber.
+- **Como rodar (2 min):** com o site de produção de pé (`npm run build` e depois `npm start`), rode
+  `npx lighthouse http://localhost:3333 --form-factor=mobile --only-categories=performance,accessibility,best-practices --view`.
+  Ou, no Edge, F12 → Lighthouse → Celular.
+- **Já feito para a nota:** divisão de código por rota (bundle principal 70 kB gzip), demo carregado
+  só sem servidor, fonte com `display=swap`, contraste do laranja ≈ 6:1, rótulos e foco visível,
+  alvo de toque de 44 px, manifest e service worker.
+- **Recomendação:** dizer "pode instalar o lighthouse", e eu rodo e registro as notas no DIARIO.
+
 ## 9. Aulas curtas (8.5): 0 aprovadas em duas rodadas reais (média)
 
 - **O que aconteceu:** 6 aulas tentadas em 2 rodadas (o Lightning deu timeout e o `gpt-oss-20b`
