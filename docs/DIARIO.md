@@ -160,3 +160,18 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor), log em scratchpad `bench.log`. Quando acabar: proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 8.3 (calibragem da confiança).
 
 **LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.
+
+## 18/10/2026 — Corrente provisória: atualização entre processos
+
+- Causa do comportamento legado: `correnteAtiva()` guardava o resultado por 60 s em cache local. A aprovação feita pela CLI/painel grava no Mongo, mas não invalida o cache de outro processo; um job iniciado nesse intervalo continuava usando Lightning sozinho durante toda a chamada longa. Erros de leitura do Mongo também eram convertidos silenciosamente em configuração ausente.
+- Correção: ler a configuração aprovada a cada chamada e propagar falha de leitura, sem degradar para o legado. O log agora identifica o modelo/família que atendeu e a reserva, incluindo a família excluída ao escolher auditor.
+- Teste direcionado: 11/11 em `src/corrente.test.ts`, incluindo atualização entre chamadas no mesmo processo e erro de leitura sem fallback silencioso. Typecheck concluído.
+- Geração real de Juros compostos solicitada para provar Lightning → gpt-oss-20b → auditor Super; aguarda a liberação da fila global, ocupada pelo benchmark `auditor`.
+
+## 18/10/2026 — Etapa 9 (acabamento): carrossel de matérias do painel
+
+- Transformar os cartões hero de matérias em carrossel conforme a regra visual 8: arraste com o dedo e scroll-snap no celular; setas laterais no hover, roda do mouse e arraste no computador; esmaecido nas bordas e bolinhas de posição; teclado ←/→, foco visível e `aria-label` nas setas.
+- Clique no cartão abre Praticar daquela disciplina. Ordenar por prioridade do treino (peso na prova × fraqueza), incluir barra fina de domínio (%) e respeitar `prefers-reduced-motion`.
+- Verificar visualmente em 360 px e 1440 px.
+
+RETOMAR AQUI: concluir a geração real já na fila; em seguida continuar a Etapa 8.3 (calibragem da confiança).

@@ -15,7 +15,7 @@ import {
 } from "./catalogo.js";
 import { classificarErro, percentil, agregar } from "./telemetria.js";
 import { esperaAntesDe, extrasDeRaciocinio } from "./llm.js";
-import { anotarResultado, foraAgora } from "./corrente.js";
+import { anotarResultado, correnteAtiva, foraAgora } from "./corrente.js";
 import { destinoDaTarefa } from "./noturno.js";
 
 const LIGHTNING = "nvidia/nemotron-3.5-lightning-30b-a3b";
@@ -34,6 +34,36 @@ const ENV = {
   ESCRITOR_PT_MODEL: GLM,
   ESCRITOR_PT_MODEL_RESERVA: DEEPSEEK,
 } as NodeJS.ProcessEnv;
+
+test("correnteAtiva rereads an approval written by another process", async () => {
+  let valor: { ativa: boolean; correntes: Correntes } | null = null;
+  let leituras = 0;
+  const lerConfig = async () => {
+    leituras++;
+    return valor ? { valor } : null;
+  };
+
+  assert.notEqual((await correnteAtiva(lerConfig)).modo, "aprovada");
+  valor = {
+    ativa: true,
+    correntes: {
+      ...correntesLegado(ENV),
+      gerador: [LIGHTNING, GPT, MUSE],
+      auditor: [SUPER, ULTRA, MUSE, GPT],
+      tutor: [LIGHTNING, GPT, MUSE],
+    },
+  };
+  const ativa = await correnteAtiva(lerConfig);
+
+  assert.equal(leituras, 2, "each call reads the latest stored configuration");
+  assert.equal(ativa.modo, "aprovada");
+  assert.deepEqual(ativa.correntes.gerador, [LIGHTNING, GPT, MUSE]);
+  assert.deepEqual(ativa.correntes.auditor, [SUPER, ULTRA, MUSE, GPT]);
+});
+
+test("correnteAtiva does not silently downgrade when Mongo config cannot be read", async () => {
+  await assert.rejects(() => correnteAtiva(async () => { throw new Error("Mongo unavailable"); }), /Mongo unavailable/);
+});
 
 test("catálogo: famílias, gratuidade e descontinuados", () => {
   const cat = carregarCatalogo();

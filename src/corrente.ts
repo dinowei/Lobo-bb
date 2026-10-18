@@ -29,15 +29,16 @@ export interface CorrenteAtiva {
 }
 type ValorConfig = { ativa?: boolean; correntes?: Correntes; aprovadaEm?: string; anterior?: unknown };
 
-let cache: { em: number; valor: CorrenteAtiva } | null = null;
-export async function correnteAtiva(forcar = false): Promise<CorrenteAtiva> {
-  if (!forcar && cache && Date.now() - cache.em < 60_000) return cache.valor;
-  const doc = await Config.findById("correntes").lean().catch(() => null);
+export async function correnteAtiva(
+  lerConfig: () => Promise<{ valor?: unknown } | null> = () => Config.findById("correntes").lean()
+): Promise<CorrenteAtiva> {
+  // Approval may be changed by another process (CLI, server or admin panel).
+  // Always read it fresh so a long job cannot stay on the legacy chain.
+  const doc = await lerConfig();
   const v = doc?.valor as ValorConfig | undefined;
   const [modo, correntes]: [Modo, Correntes] =
     v?.ativa && v.correntes ? ["aprovada", v.correntes] : process.env.CORRENTE_ATIVA === "1" ? ["env", correntesDoEnv()] : ["legado", correntesLegado()];
   const valor: CorrenteAtiva = { modo, correntes, aprovadaEm: modo === "aprovada" ? v?.aprovadaEm : undefined, violacoes: violacoesDeFamilia(correntes) };
-  cache = { em: Date.now(), valor };
   return valor;
 }
 
@@ -116,6 +117,10 @@ export async function chatJSONFuncao(
         ...(temProximo ? { novasTentativas: 1 } : {}),
       });
       anotarResultado(modelo, true);
+      const familiasDiferentes = opcoes.excluirFamilias?.length
+        ? `; familia diferente de ${opcoes.excluirFamilias.join(", ")}`
+        : "";
+      console.info(`[OK] ${funcao}: ${modelo} [familia ${familiaDe(modelo)}${reserva ? ", reserva" : ""}]${familiasDiferentes}`);
       return { json, modelo, familia: familiaDe(modelo), client, reserva };
     } catch (e) {
       ultimo = e;
@@ -136,14 +141,12 @@ export async function aprovarCorrentes(correntes: Correntes) {
     { valor: { ativa: true, correntes, aprovadaEm: new Date().toISOString(), anterior: atual?.valor ?? null }, em: new Date() },
     { upsert: true }
   );
-  cache = null;
-  return { ok: true as const, erros, avisos, ativa: await correnteAtiva(true) };
+  return { ok: true as const, erros, avisos, ativa: await correnteAtiva() };
 }
 
 export async function desfazerCorrentes() {
   const atual = await Config.findById("correntes").lean();
   const anterior = (atual?.valor as ValorConfig | undefined)?.anterior;
   await Config.findByIdAndUpdate("correntes", { valor: anterior ?? { ativa: false }, em: new Date() }, { upsert: true });
-  cache = null;
-  return correnteAtiva(true);
+  return correnteAtiva();
 }
