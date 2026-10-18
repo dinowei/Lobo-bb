@@ -1,7 +1,9 @@
 // Gera um progresso de demo realista (7 dias de estudo) para prints e testes visuais.
 // uso: npx tsx scripts/semente-demo.ts <arquivo.json>  → depois PRINTS_ESTADO=<arquivo.json> npx tsx scripts/prints.ts ...
 import { writeFileSync } from "node:fs";
-import { QUESTOES_DEMO } from "../web/src/demo/questoes.js";
+// caminho em variável: o typecheck do servidor (NodeNext) não segue para o código do site (bundler)
+const CAMINHO_DEMO = "../web/src/demo/questoes.js";
+const { QUESTOES_DEMO } = (await import(CAMINHO_DEMO)) as { QUESTOES_DEMO: { id: string; disciplina: string; assunto: string; dificuldade: number }[] };
 import { ESTADO_INICIAL, agendar, notaSM2, xpDaTentativa } from "../shared/motor.js";
 import { MOTIVOS_ERRO, type Confianca, type TentativaBruta } from "../shared/tipos.js";
 

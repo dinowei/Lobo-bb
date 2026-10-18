@@ -10,7 +10,7 @@ import { correnteAtiva, chatJSONFuncao } from "./corrente.js";
 import { SemModeloDisponivel, ehFalhaDeInfra } from "./llm.js";
 import { CartoesZ, CARTOES_NORMA_SYSTEM, CARTOES_VOCAB_SYSTEM, cartoesUser, ConfereCartoesZ, CONFERE_CARTOES_SYSTEM, confereCartoesUser } from "./prompts.js";
 import { pregeracoes, rodarFila } from "./noturno.js";
-import { fontesDoTopico } from "./aulas.js";
+import { ancorarCitacao, fontesDoTopico } from "./aulas.js";
 import { usuarioAtualId } from "./auth.js";
 import { ESTADO_INICIAL, agendar } from "../shared/motor.js";
 import type { CartaoDTO, Disciplina, FilaCartoesDTO, NotaCartao } from "../shared/tipos.js";
@@ -65,7 +65,12 @@ async function gerarCartoes(topicId: string, preferir?: string) {
   const chaves = new Set(existentes.map((c) => c.chave));
   try {
     const escritor = await chatJSONFuncao("tutor", tipo === "vocabulario" ? CARTOES_VOCAB_SYSTEM : CARTOES_NORMA_SYSTEM, cartoesUser(topic.assunto, fontes, existentes.map((c) => c.frente).slice(0, 60), POR_RODADA), 0.3, 2400, { preferir });
-    const gerados = CartoesZ.parse(escritor.json).cartoes;
+    // trecho parafraseado ou longo: vira a frase literal da fonte (mesma regra das aulas); a checagem de
+    // números do verso e da palavra do vocabulário roda depois, sobre o trecho já literal
+    const gerados = CartoesZ.parse(escritor.json).cartoes.map((c) => {
+      const fonte = fontes.find((f) => f.indice === c.indice);
+      return fonte ? { ...c, trecho: ancorarCitacao(c.trecho, fonte.texto) } : c;
+    });
     const candidatos: (Gerado & { chave: string })[] = [];
     const recusas: string[] = [];
     for (const c of gerados) {

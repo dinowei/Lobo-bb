@@ -2,6 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { chaveDe, validarCartao } from "./cartoes.js";
+import { ancorarCitacao } from "./aulas.js";
 
 const norma = [{ indice: 1, titulo: "Lei 9.613/1998", texto: "As pessoas referidas no art. 9º deverão comunicar ao Coaf, no prazo de 24 (vinte e quatro) horas, a proposta ou realização de operações." }];
 const texto = [{ indice: 1, titulo: "Texto da prova", texto: "However, data can only be shared with the customer's explicit consent, which may be withdrawn at any time." }];
@@ -19,6 +20,14 @@ test("vocabulário: a palavra da frente aparece no trecho literal", () => {
   assert.equal(validarCartao(ok, "vocabulario", texto), undefined);
   assert.match(validarCartao({ ...ok, frente: "revoked" }, "vocabulario", texto) ?? "", /não aparece no trecho/);
   assert.match(validarCartao({ ...ok, verso: "Withdrawn" }, "vocabulario", texto) ?? "", /verso igual/);
+});
+
+test("trecho parafraseado ancorado na frase literal passa; número inventado continua barrado", () => {
+  const parafrase = "deverão comunicar ao Coaf no prazo de 24 horas a proposta de operações";
+  const ancorado = ancorarCitacao(parafrase, norma[0].texto);
+  assert.ok(norma[0].texto.includes(ancorado));
+  assert.equal(validarCartao({ frente: "Prazo para comunicar ao Coaf?", verso: "24 horas.", indice: 1, trecho: ancorado }, "norma", norma), undefined);
+  assert.match(validarCartao({ frente: "Prazo?", verso: "72 horas.", indice: 1, trecho: ancorado }, "norma", norma) ?? "", /número fora/);
 });
 
 test("chave normaliza acento, caixa e pontuação (não repete no tópico)", () => {

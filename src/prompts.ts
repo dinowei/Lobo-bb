@@ -438,7 +438,7 @@ export const CartoesZ = z.object({
         frente: z.string().min(3).max(200),
         verso: z.string().min(2).max(320),
         indice: z.number().int().min(1),
-        trecho: z.string().min(12).max(240),
+        trecho: z.string().min(12).max(800), // longo ou parafraseado é ancorado por código (ancorarCitacao)
       })
     )
     .max(12),
