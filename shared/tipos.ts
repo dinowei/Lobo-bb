@@ -174,6 +174,7 @@ export interface TentativaBruta {
   confianca?: Confianca; // simulado não pergunta
   motivoErro?: MotivoErro;
   resposta?: Letra | null; // modo demo: a letra marcada (o servidor guarda na tentativa)
+  tempoSeg?: number; // tempo ativo na questão (aba visível); base das horas líquidas
 }
 
 // Motivos de erro por disciplina (gráfico do painel)
@@ -252,6 +253,7 @@ export interface PainelDTO {
   totalRespondidas: number;
   motivosErro: MotivosDisciplinaDTO[];
   calibragem: CalibragemDTO[]; // primeiro o geral, depois por disciplina
+  horasSemana: { disciplina: Disciplina; seg: number }[]; // horas líquidas dos últimos 7 dias
   redacaoCorrigidaPendente?: boolean;
   banco?: BancoDTO; // cartão "Banco de questões"
   alertasAdmin?: string[]; // só o admin vê (modelos, regras); o aluno nunca vê menção a IA

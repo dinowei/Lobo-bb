@@ -143,6 +143,7 @@ export function Painel() {
         {painel.redacaoCorrigidaPendente && <button className="evento" onClick={() => ir("redacao")}><strong>Sua redação foi corrigida</strong><span className="sub">Veja sua nota e os próximos ajustes</span></button>}
         {painel.motivosErro?.some((d) => d.erros) && <CartaoMotivos linhas={painel.motivosErro} />}
         {painel.calibragem && <CartaoCalibragem linhas={painel.calibragem} />}
+        {!!painel.horasSemana?.length && <CartaoHoras linhas={painel.horasSemana} />}
 
         {painel.totalRespondidas === 0 && (
           <div className="vazio" style={{ marginTop: 12 }}>
@@ -348,6 +349,28 @@ function CartaoMotivos({ linhas }: { linhas: MotivosDisciplinaDTO[] }) {
             </span>
           </>
         )}
+      </div>
+    </>
+  );
+}
+
+// Horas líquidas: só o tempo ativo respondendo, últimos 7 dias, por disciplina
+const fmtHoras = (seg: number) => (seg >= 3600 ? `${Math.floor(seg / 3600)}h${String(Math.round((seg % 3600) / 60)).padStart(2, "0")}` : `${Math.max(1, Math.round(seg / 60))} min`);
+function CartaoHoras({ linhas }: { linhas: { disciplina: Disciplina; seg: number }[] }) {
+  const total = linhas.reduce((s, l) => s + l.seg, 0);
+  const maior = Math.max(...linhas.map((l) => l.seg));
+  return (
+    <>
+      <div className="grupo-dia">Horas líquidas na semana</div>
+      <div className="evento cartao-motivos">
+        <span className="sub num">{fmtHoras(total)} de estudo de verdade, sem contar aba parada</span>
+        {[...linhas].sort((a, b) => b.seg - a.seg).map((l) => (
+          <div key={l.disciplina} className="linha-motivo" title={`${NOME_DISCIPLINA[l.disciplina]}: ${fmtHoras(l.seg)}`}>
+            <span className="sigla">{SIGLA[l.disciplina]}</span>
+            <span className="pilha"><i style={{ width: pct(l.seg / maior), background: COR_DISC[l.disciplina] }} /></span>
+            <span className="num sub">{fmtHoras(l.seg)}</span>
+          </div>
+        ))}
       </div>
     </>
   );

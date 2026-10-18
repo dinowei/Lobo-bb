@@ -94,6 +94,25 @@ export function calibragem(tents: TentativaBruta[], disciplinaDo: Map<string, Di
   return linhas;
 }
 
+// ---------- Horas líquidas (PLANO-MESTRE 5.5) ----------
+// Só o tempo ativo em cada questão (aba visível, contado no site); uma questão vale no máximo 10 min,
+// para uma aba esquecida aberta não virar "estudo".
+export const TEMPO_MAX_QUESTAO_SEG = 600;
+export function horasLiquidasSemana(tents: TentativaBruta[], disciplinaDo: Map<string, Disciplina>, agora = new Date()) {
+  const desde = agora.getTime() - 7 * 86_400_000;
+  const seg = new Map<Disciplina, number>();
+  for (const t of tents) {
+    const d = disciplinaDo.get(t.topicoId);
+    if (!d || !t.tempoSeg || new Date(t.data).getTime() < desde) continue;
+    seg.set(d, (seg.get(d) ?? 0) + Math.min(TEMPO_MAX_QUESTAO_SEG, Math.max(0, t.tempoSeg)));
+  }
+  return DISCIPLINAS.flatMap((d) => (seg.get(d) ? [{ disciplina: d, seg: Math.round(seg.get(d)!) }] : []));
+}
+
+// Ciclos de foco: 25/5 ou 50/10 minutos de foco/pausa
+export const CICLOS_FOCO = { "25/5": { foco: 25, pausa: 5 }, "50/10": { foco: 50, pausa: 10 } } as const;
+export type CicloFoco = keyof typeof CICLOS_FOCO | "desligado";
+
 export const MENSAGEM_MOTIVO: Record<MotivoErro, string> = {
   nao_sabia: "Anotado. Esse tópico sobe na sua fila de estudo nas próximas duas semanas.",
   confundi: "Anotado. A próxima questão é parecida, para você separar os dois conceitos.",

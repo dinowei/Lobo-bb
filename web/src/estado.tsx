@@ -15,6 +15,7 @@ export interface FiltroPratica {
   revisao?: boolean;
   misto?: boolean; // treino misturado (8.6)
 }
+import type { CicloFoco } from "../../shared/aprendizado";
 
 export interface Ajustes {
   nome: string;
@@ -23,8 +24,9 @@ export interface Ajustes {
   duracaoProvaMin: number; // 0 = sem contagem regressiva (só cronômetro), até o edital dizer
   linhaDeCorte: number; // % para "nota de corte batida"
   linhasRedacaoMax: number; // limite de linhas do treino (edital pode mudar)
+  cicloFoco: CicloFoco; // 25/5, 50/10 ou desligado
 }
-const AJUSTES_PADRAO: Ajustes = { nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70, linhasRedacaoMax: 30 };
+const AJUSTES_PADRAO: Ajustes = { nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70, linhasRedacaoMax: 30, cicloFoco: "25/5" };
 const CHAVE_AJUSTES = "lobo-ajustes";
 function lerAjustes(): Ajustes {
   try {

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { calibragem, fatorNaoSabia, motivosPorDisciplina, naoSabiaPorTopico, palavrasDecisivas } from "./aprendizado.js";
+import { calibragem, fatorNaoSabia, horasLiquidasSemana, TEMPO_MAX_QUESTAO_SEG, motivosPorDisciplina, naoSabiaPorTopico, palavrasDecisivas } from "./aprendizado.js";
 import type { Disciplina, TentativaBruta } from "./tipos.js";
 
 const t = (p: Partial<TentativaBruta>): TentativaBruta => ({ questaoId: "q", topicoId: "t1", acertou: false, xp: 0, modo: "treino", data: new Date().toISOString(), ...p });
@@ -55,6 +55,19 @@ test("ilusão de domínio: certeza abaixo de 85% com 10+ respostas", () => {
   assert.equal(calibragem(certezas(8, 10), disc)[1].ilusao, true); // 80%
   assert.equal(calibragem(certezas(9, 10), disc)[1].ilusao, false); // 90%
   assert.equal(calibragem(certezas(5, 9), disc)[1].ilusao, false); // só 9 respostas
+});
+
+test("horas líquidas: últimos 7 dias, teto de 10 min por questão, por disciplina", () => {
+  const disc = new Map<string, Disciplina>([["t1", "informatica"], ["t2", "lingua_portuguesa"]]);
+  const velho = new Date(Date.now() - 8 * 86_400_000).toISOString();
+  const r = horasLiquidasSemana(
+    [t({ tempoSeg: 90 }), t({ tempoSeg: 5000 }), t({ tempoSeg: 60, data: velho }), t({ topicoId: "t2", tempoSeg: 30 }), t({})],
+    disc
+  );
+  assert.deepEqual(r, [
+    { disciplina: "lingua_portuguesa", seg: 30 },
+    { disciplina: "informatica", seg: 90 + TEMPO_MAX_QUESTAO_SEG },
+  ]);
 });
 
 test("motivos por disciplina: só erros fora de simulado", () => {

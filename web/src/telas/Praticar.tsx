@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AcaoMotivoDTO, AulaDTO, Confianca, CorrecaoDTO, Disciplina, Letra, MotivoContestacao, MotivoErro, QuestaoDTO } from "../../../shared/tipos";
 import { LETRAS, MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO } from "../../../shared/tipos";
 import { useApp } from "../estado";
+import { RelogioAtivo } from "../relogio";
+import { CICLOS_FOCO, TEMPO_MAX_QUESTAO_SEG } from "../../../shared/aprendizado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { Markdown } from "../componentes/Markdown";
 import { ISeta } from "../componentes/Icones";
@@ -14,7 +16,7 @@ const CONFIANCAS: { v: Confianca; rotulo: string }[] = [
 ];
 
 export function Praticar() {
-  const { api, filtro, ir, recarregar, painel, avisar } = useApp();
+  const { api, filtro, ir, recarregar, painel, avisar, ajustes } = useApp();
   const [q, setQ] = useState<QuestaoDTO | null>(null);
   const [modo, setModo] = useState<"treino" | "revisao">("treino");
   const [aviso, setAviso] = useState<string>();
@@ -36,6 +38,14 @@ export function Praticar() {
   const [restantesTutor, setRestantesTutor] = useState<number | undefined>();
   const [consultandoTutor, setConsultandoTutor] = useState(false);
   const inicio = useRef(Date.now());
+  const relogio = useRef<RelogioAtivo>(null as unknown as RelogioAtivo);
+  if (!relogio.current) relogio.current = new RelogioAtivo();
+  useEffect(() => () => relogio.current.desligar(), []);
+  // ciclo de foco (25/5 ou 50/10): conta só o tempo ativo respondendo
+  const focoRespondido = useRef(0); // segundos das questões já respondidas nesta sessão
+  const [focoBase, setFocoBase] = useState(0); // onde começou o ciclo atual
+  const [focoAgora, setFocoAgora] = useState(0);
+  const [emPausa, setEmPausa] = useState(false);
   const filtroUsado = useRef(filtro);
   const ultimaDisciplina = useRef<Disciplina | undefined>(undefined); // treino misturado não repete a anterior
 
@@ -56,6 +66,7 @@ export function Praticar() {
     setAviso(r.aviso);
     setCarregando(false);
     inicio.current = Date.now();
+    relogio.current.zerar();
   }, [api]);
 
   useEffect(() => {
@@ -124,6 +135,20 @@ export function Praticar() {
     return () => clearInterval(t);
   }, [q, correcao]);
 
+  const ciclo = ajustes.cicloFoco !== "desligado" ? CICLOS_FOCO[ajustes.cicloFoco] : null;
+  useEffect(() => {
+    if (!ciclo) return;
+    const t = setInterval(() => {
+      const agora = focoRespondido.current + (correcao ? 0 : relogio.current.segundos());
+      setFocoAgora(agora);
+      if (!emPausa && agora - focoBase >= ciclo.foco * 60) {
+        setEmPausa(true);
+        avisar(`${ciclo.foco} min de foco. Pausa de ${ciclo.pausa} min: levanta, bebe água.`);
+      }
+    }, 1000);
+    return () => clearInterval(t);
+  }, [ciclo, correcao, emPausa, focoBase, avisar]);
+
   // confundi: a próxima é a questão que compara os dois conceitos
   const proxima = useCallback(() => {
     if (acaoMotivo?.proximaQuestaoId) filtroUsado.current = { ...filtroUsado.current, questaoId: acaoMotivo.proximaQuestaoId };
@@ -148,9 +173,10 @@ export function Praticar() {
         questaoId: q.id,
         resposta: marcada,
         confianca,
-        tempoSeg: Math.round((Date.now() - inicio.current) / 1000),
+        tempoSeg: Math.min(TEMPO_MAX_QUESTAO_SEG, relogio.current.segundos()), // só tempo com a aba visível
         modo,
       });
+      focoRespondido.current += Math.min(TEMPO_MAX_QUESTAO_SEG, relogio.current.segundos());
       setCorrecao(c);
       setSessao((s) => ({ total: s.total + 1, acertos: s.acertos + (c.acertou ? 1 : 0), xp: s.xp + c.xpGanho }));
       avisar(<><b>+{c.xpGanho} XP</b> {c.acertou ? "acertou" : "por tentar"}</>);
@@ -374,6 +400,25 @@ export function Praticar() {
           <div><b className="num">{sessao.acertos}/{sessao.total}</b><span>acertos na sessão</span></div>
           <div><b className="num">+{sessao.xp}</b><span>XP na sessão</span></div>
         </div>
+        {ciclo && (
+          <div className="secao ciclo-foco" style={{ padding: 14 }}>
+            {emPausa ? (
+              <>
+                <div style={{ fontSize: 13 }}>Pausa de {ciclo.pausa} min. O lobo espera.</div>
+                <button className="link" onClick={() => { setFocoBase(focoAgora); setEmPausa(false); }}>Voltei, bora</button>
+              </>
+            ) : (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--suave)", marginBottom: 8 }}>
+                  <span>Foco ({ciclo.foco}/{ciclo.pausa})</span>
+                  <span className="num">{Math.floor((focoAgora - focoBase) / 60)} de {ciclo.foco} min</span>
+                </div>
+                <div className="barra"><i style={{ width: pct(Math.min(1, (focoAgora - focoBase) / (ciclo.foco * 60))) }} /></div>
+                <div style={{ fontSize: 12, color: "var(--suave)", marginTop: 8 }}>Só conta com a aba aberta e você respondendo.</div>
+              </>
+            )}
+          </div>
+        )}
         {topico && (
           <div className="secao" style={{ padding: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--suave)", marginBottom: 8 }}>

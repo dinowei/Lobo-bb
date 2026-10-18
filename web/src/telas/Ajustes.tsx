@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useApp } from "../estado";
+import { useApp, type Ajustes } from "../estado";
 import { zerarDemo } from "../api/demo";
 import { conta, ErroCampo } from "../api/conta";
 import { CampoSenha } from "./Entrar";
@@ -141,6 +141,14 @@ export function AjustesTela() {
         <label htmlFor="linhas-redacao">
           Limite de linhas da redação (padrão 30; confira no edital)
           <input id="linhas-redacao" type="number" min={5} max={60} value={form.linhasRedacaoMax} onChange={(e) => setForm({ ...form, linhasRedacaoMax: Number(e.target.value) })} />
+        </label>
+        <label htmlFor="ciclo-foco">
+          Ciclo de foco no treino (minutos de foco/pausa)
+          <select id="ciclo-foco" value={form.cicloFoco} onChange={(e) => setForm({ ...form, cicloFoco: e.target.value as Ajustes["cicloFoco"] })}>
+            <option value="25/5">25 de foco, 5 de pausa</option>
+            <option value="50/10">50 de foco, 10 de pausa</option>
+            <option value="desligado">Desligado</option>
+          </select>
         </label>
         <div><button className="botao-laranja" type="submit">Salvar</button></div>
       </form>

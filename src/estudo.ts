@@ -237,7 +237,7 @@ export const apiServidor: Omit<Api, "modo"> = {
     const userId = ALUNO();
     const [topicos, tentativas, revisoes, aprovadas, alertasAdmin, redacaoCorrigidaPendente, redacoes] = await Promise.all([
       listarTopicos(),
-      Attempt.find({ userId }).select("questionId topicId acertou xp modo simuladoId confianca motivoErro createdAt").lean(),
+      Attempt.find({ userId }).select("questionId topicId acertou xp modo simuladoId confianca motivoErro tempoSeg createdAt").lean(),
       ReviewState.find({ userId }).select("proximaRevisao").lean(),
       Question.find({ status: "aprovada" }).select("_id topicId origem createdAt").lean(),
       // só o admin vê (com o login da Etapa 4, só vai para o papel admin)
@@ -255,6 +255,7 @@ export const apiServidor: Omit<Api, "modo"> = {
       data: (t.createdAt as Date).toISOString(),
       confianca: (t.confianca ?? undefined) as Confianca | undefined,
       motivoErro: (t.motivoErro ?? undefined) as MotivoErro | undefined,
+      tempoSeg: t.tempoSeg ?? undefined,
     }));
     const painel = calcularPainel({
       topicos,

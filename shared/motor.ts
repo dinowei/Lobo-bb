@@ -18,7 +18,7 @@ import {
   type TopicoProgresso,
 } from "./tipos.js";
 import { cotasDaProva } from "./estruturaProva.js";
-import { calibragem, motivosPorDisciplina } from "./aprendizado.js";
+import { calibragem, horasLiquidasSemana, motivosPorDisciplina } from "./aprendizado.js";
 
 export const FUSO = "America/Sao_Paulo";
 const DIA_MS = 86_400_000;
@@ -268,6 +268,7 @@ export function calcularPainel(input: {
     totalRespondidas: tents.length,
     motivosErro: motivosPorDisciplina(tents, disciplinaDo),
     calibragem: calibragem(tents, disciplinaDo),
+    horasSemana: horasLiquidasSemana(tents, disciplinaDo, agora),
   };
 }
 

@@ -251,7 +251,7 @@ export const apiDemo: Api = {
     const acertou = r.resposta === q.gabarito;
     const xp = xpDaTentativa({ acertou, dificuldade: q.dificuldade, confianca: r.confianca, modo: r.modo });
     const dias = registrar(e, q, acertou, notaSM2(acertou, r.confianca), xp, r.modo, undefined, r.confianca);
-    e.tentativas[e.tentativas.length - 1].resposta = r.resposta;
+    Object.assign(e.tentativas[e.tentativas.length - 1], { resposta: r.resposta, tempoSeg: r.tempoSeg });
     gravar(e);
     return espera(correcao(q, r.resposta, xp, dias));
   },
@@ -324,6 +324,7 @@ export const apiDemo: Api = {
       const acertou = r.resposta === q.gabarito;
       const xp = xpDaTentativa({ acertou, dificuldade: q.dificuldade, confianca: 2, modo: "simulado" });
       const dias = registrar(e, q, acertou, notaSM2(acertou, 2), xp, "simulado", simuladoId);
+      e.tentativas[e.tentativas.length - 1].tempoSeg = r.tempoSeg;
       if (acertou) acertos++;
       xpTotal += xp;
       const d = porDisc.get(q.disciplina) ?? { total: 0, acertos: 0 };
