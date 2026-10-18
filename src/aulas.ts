@@ -56,7 +56,7 @@ export function validarAulaGerada(aula: Gerada, disciplina: string, fontes: Font
   return undefined;
 }
 
-async function fontesDoTopico(topicId: Types.ObjectId): Promise<FonteEntrada[]> {
+export async function fontesDoTopico(topicId: Types.ObjectId): Promise<FonteEntrada[]> {
   const chunks = await Chunk.find({ topicIds: topicId, revogada: false })
     .sort({ ordem: 1, pagina: 1 })
     .limit(12)

@@ -11,6 +11,7 @@ import {
   Chunk,
   Question,
   Geracao,
+  Cartao,
   DISCIPLINAS,
   LETRAS,
   INDICE_VETORIAL,
@@ -830,8 +831,9 @@ export async function revogarFonte(alvo: string) {
     { origem: "gerada", status: "aprovada", "fontes.sourceId": fonte._id },
     { status: "desatualizada" }
   );
+  const k = await Cartao.updateMany({ sourceId: fonte._id, status: "aprovado" }, { status: "desatualizado" });
   console.log(
-    `✔ "${fonte.titulo}" revogada · ${c.modifiedCount} trechos fora da busca · ${q.modifiedCount} questões geradas tiradas de circulação`
+    `✔ "${fonte.titulo}" revogada · ${c.modifiedCount} trechos fora da busca · ${q.modifiedCount} questões geradas e ${k.modifiedCount} cartões tirados de circulação`
   );
 }
 

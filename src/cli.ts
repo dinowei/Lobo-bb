@@ -20,7 +20,7 @@ import {
   type MetaFonte,
 } from "./ingestao.js";
 import { gerarQuestao, reabastecerEstoque } from "./pipeline.js";
-import { Topic, Source, User, Sessao, Question, Relatorio, Aula, Tarefa } from "./models.js";
+import { Topic, Source, User, Sessao, Question, Relatorio, Aula, Tarefa, Cartao } from "./models.js";
 import { randomBytes } from "node:crypto";
 import { createInterface } from "node:readline";
 import { hashSenha, migrarProgresso, donoAntigoId, criarConvite } from "./auth.js";
@@ -53,6 +53,7 @@ import { planejarNoite, rodarFila } from "./noturno.js";
 import { planejarPregeracoes } from "./outroJeito.js";
 import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { gerarAulas, planejarAulas } from "./aulas.js";
+import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
@@ -77,6 +78,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   figuras-oficiais [config.json]  extrai as figuras das provas (data/figuras-oficiais.json) para conferência
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   aulas [--assunto "<parte do nome>"] [--n 3]   prepara aulas curtas aprovadas por tópico
+  cartoes [--assunto "<parte do nome>"] [--n 3] prepara cartões (normas com fonte e vocabulário de Inglês)
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
   temas [--n 10]                prepara temas inéditos para redação
@@ -229,6 +231,15 @@ async function main() {
         });
       }
 
+      case "cartoes": {
+        return await naFila(rotulo, async () => {
+          const r = await gerarCartoesAgora({ assunto: o.assunto, n: o.n ? Number(o.n) : 3 });
+          console.log(`Cartões: ${r.concluidas} lote(s) com aprovados, ${r.descartadas} descartado(s), ${r.aguardando} aguardando nova tentativa.`);
+          const amostra = await Cartao.find({ status: "aprovado" }).sort({ createdAt: -1 }).limit(3).lean();
+          for (const c of amostra) console.log(`\n  ${c.frente}\n  → ${c.verso}\n  [${c.titulo}] "${c.trecho}"`);
+        });
+      }
+
       case "aulas": {
         return await naFila(rotulo, async () => {
           const r = await gerarAulas({ assunto: o.assunto, n: o.n ? Number(o.n) : 3 });
@@ -266,9 +277,10 @@ async function main() {
           const n = await planejarNoite(lote, { max });
           const extras = await planejarPregeracoes(lote);
           const aulas = await planejarAulas(lote);
+          const cartoes = await planejarCartoes(lote);
           const temas = await planejarTemasRedacao(lote);
-          console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s), ${aulas} aula(s) e ${temas} tema(s) de redação (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
-          const r = await rodarFila({ ate, max: max !== undefined ? max + extras + aulas + temas + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
+          console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s), ${aulas} aula(s), ${cartoes} lote(s) de cartões e ${temas} tema(s) de redação (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
+          const r = await rodarFila({ ate, max: max !== undefined ? max + extras + aulas + cartoes + temas + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
           console.log(`\n${r.rodadas} tarefa(s): ${r.aprovadas} questão(ões) aprovada(s), ${r.concluidas} concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa, ${r.esgotadas} esgotada(s)${r.orfas ? `, ${r.orfas} recuperada(s) de processo que caiu` : ""}`);
           const noite = await relatorioDaNoite(inicio);
           const aprovadas = await Question.countDocuments({ status: "aprovada" });

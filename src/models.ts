@@ -385,6 +385,43 @@ const AulaSchema = new Schema(
 );
 export const Aula = model("Aula", AulaSchema, "aulas");
 
+// Cartões (8.6): frente/verso de normas (com trecho literal da fonte) e vocabulário de Inglês (trecho
+// literal da prova oficial). Só "aprovado" (auditor de outra família) aparece para o aluno.
+const CartaoSchema = new Schema(
+  {
+    topicId: { type: Schema.Types.ObjectId, ref: "Topic", required: true, index: true },
+    tipo: { type: String, enum: ["norma", "vocabulario"], required: true },
+    frente: { type: String, required: true },
+    verso: { type: String, required: true },
+    chave: { type: String, required: true }, // frente normalizada: não repete no tópico
+    sourceId: { type: Schema.Types.ObjectId, ref: "Source" }, // norma
+    questionId: { type: Schema.Types.ObjectId, ref: "Question" }, // vocabulário (texto da prova)
+    titulo: String,
+    trecho: { type: String, required: true },
+    status: { type: String, enum: ["aprovado", "reprovado", "desatualizado"], default: "aprovado", index: true },
+    geradoPor: String,
+    auditoria: { modelo: String, problema: String, em: Date, _id: false },
+  },
+  { timestamps: true }
+);
+CartaoSchema.index({ topicId: 1, chave: 1 }, { unique: true });
+export const Cartao = model("Cartao", CartaoSchema, "cartoes");
+
+const CartaoRevisaoSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    cartaoId: { type: Schema.Types.ObjectId, ref: "Cartao", required: true },
+    facilidade: { type: Number, default: 2.5 },
+    intervaloDias: { type: Number, default: 0 },
+    repeticoes: { type: Number, default: 0 },
+    proximaRevisao: { type: Date, required: true },
+  },
+  { timestamps: true }
+);
+CartaoRevisaoSchema.index({ userId: 1, cartaoId: 1 }, { unique: true });
+CartaoRevisaoSchema.index({ userId: 1, proximaRevisao: 1 });
+export const CartaoRevisao = model("CartaoRevisao", CartaoRevisaoSchema, "cartoes_revisao");
+
 // Respostas do tutor pedidas durante o treino, em cache por aluno/questão/dúvida.
 const ExplicacaoTutorSchema = new Schema(
   {
@@ -419,7 +456,7 @@ export const STATUS_TAREFA = ["pendente", "rodando", "aguardando", "concluida", 
 const TarefaSchema = new Schema(
   {
     // aula e tema: ganchos prontos, ativados na Fase B (8.5 e 8.4)
-    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark", "explicar_outro_jeito", "aula", "tema", "corrigir_redacao"], required: true },
+    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark", "explicar_outro_jeito", "aula", "tema", "corrigir_redacao", "cartoes"], required: true },
     params: Schema.Types.Mixed, // gerar: { topicId, assunto, tipo? }
     status: { type: String, enum: STATUS_TAREFA, default: "pendente", index: true },
     tentativas: { type: Number, default: 0 }, // falhas de infraestrutura até agora

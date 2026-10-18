@@ -19,7 +19,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { apiServidor } from "./estudo.js";
-import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro } from "../shared/tipos.js";
+import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro, type NotaCartao } from "../shared/tipos.js";
 
 const app = express();
 app.set("trust proxy", 1); // atrás do proxy do provedor: IP real no limite de tentativas e cookie Secure
@@ -121,6 +121,16 @@ app.post(
     const { questaoId, motivo } = req.body ?? {};
     if (!texto(questaoId) || !(MOTIVOS_ERRO as readonly unknown[]).includes(motivo)) return res.status(400).json({ erro: "Envie questaoId e um motivo válido." });
     res.json(await apiServidor.motivoErro(questaoId, motivo as MotivoErro));
+  })
+);
+
+app.get("/api/cartoes", rota(async (_req, res) => res.json(await apiServidor.cartoes())));
+app.post(
+  "/api/cartoes/:id",
+  rota(async (req, res) => {
+    const nota = Number(req.body?.nota);
+    if (![1, 3, 4, 5].includes(nota)) return res.status(400).json({ erro: "Nota inválida (1, 3, 4 ou 5)." });
+    res.json(await apiServidor.avaliarCartao(String(req.params.id), nota as NotaCartao));
   })
 );
 

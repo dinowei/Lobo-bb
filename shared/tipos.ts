@@ -194,6 +194,25 @@ export interface CalibragemDTO {
   ilusao: boolean; // certeza acerta menos de 85% (com amostra mínima)
 }
 
+// Cartões (flashcards) de normas e vocabulário de Inglês, na revisão espaçada própria
+export interface CartaoDTO {
+  id: string;
+  disciplina: Disciplina;
+  assunto: string;
+  tipo: "norma" | "vocabulario";
+  frente: string;
+  verso: string;
+  fonte?: { titulo: string; trecho: string };
+  novo: boolean; // nunca visto
+}
+export interface FilaCartoesDTO {
+  cartoes: CartaoDTO[]; // vencidos primeiro, depois novos até o limite do dia
+  vencidos: number;
+  novosRestantesHoje: number;
+  total: number; // aprovados no banco
+}
+export type NotaCartao = 1 | 3 | 4 | 5; // errei · difícil · bom · fácil
+
 // O que o app faz com o motivo informado
 export interface AcaoMotivoDTO {
   motivo: MotivoErro;
@@ -465,6 +484,8 @@ export interface Api {
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;
   aula(topicoId: string): Promise<AulaDTO | null>;
   explicarMais(questaoId: string, duvida?: string): Promise<ExplicacaoMaisDTO>;
+  cartoes(): Promise<FilaCartoesDTO>;
+  avaliarCartao(cartaoId: string, nota: NotaCartao): Promise<{ proximaRevisaoDias: number }>;
   // motivo do último erro nessa questão; devolve a ação (aula/tópico, comparação, palavra-chave, revisão antecipada)
   motivoErro(questaoId: string, motivo: MotivoErro): Promise<AcaoMotivoDTO>;
   simulado(n: number): Promise<QuestaoDTO[]>;

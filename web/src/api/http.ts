@@ -38,6 +38,8 @@ export const apiHttp: Api = {
   aula: (topicoId) => req(`/aula/${encodeURIComponent(topicoId)}`),
   explicarMais: (questaoId, duvida) => post("/explicar-mais", { questaoId, duvida }),
   motivoErro: (questaoId, motivo) => post("/motivo-erro", { questaoId, motivo }),
+  cartoes: () => req("/cartoes"),
+  avaliarCartao: (id, nota) => post(`/cartoes/${encodeURIComponent(id)}`, { nota }),
   simulado: (n) => req(`/simulado?n=${n}`),
   corrigirSimulado: (respostas) => post("/simulado/corrigir", { respostas }),
   misturaSimulado: () => req("/simulado/mistura"),

@@ -48,6 +48,7 @@ import type { AcaoMotivoDTO, MotivoErro } from "../shared/tipos.js";
 import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
 import { aulaDoTopico } from "./aulas.js";
 import { explicarSobDemanda } from "./outroJeito.js";
+import { avaliarCartao, filaCartoes } from "./cartoes.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
@@ -232,6 +233,8 @@ export const apiServidor: Omit<Api, "modo"> = {
   topicos: listarTopicos,
   aula: aulaDoTopico,
   explicarMais: (questaoId, duvida) => explicarSobDemanda(questaoId, String(ALUNO()), duvida),
+  cartoes: filaCartoes,
+  avaliarCartao,
 
   async painel() {
     const userId = ALUNO();

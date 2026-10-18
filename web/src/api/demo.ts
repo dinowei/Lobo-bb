@@ -7,6 +7,7 @@ import {
   DISCIPLINAS,
   type AcaoMotivoDTO,
   type Api,
+  type CartaoDTO,
   type AulaDTO,
   type Confianca,
   type CorrecaoDTO,
@@ -87,9 +88,23 @@ const AULAS_DEMO: Record<string, AulaDTO> = Object.fromEntries(
   })
 );
 
+// Cartões de exemplo: o "trecho" é cópia literal do texto de uma questão do demo
+const TEXTO_OPEN_BANKING = "Open banking lets customers share their financial data with authorized third-party providers. However, data can only be shared with the customer's explicit consent, which may be withdrawn at any time. Supporters say it increases competition and leads to cheaper services; critics worry about cybersecurity risks.";
+const CARTOES_DEMO: CartaoDTO[] = [
+  { frente: "withdrawn", verso: "retirado, revogado (o consentimento pode ser retirado a qualquer momento)", trecho: "which may be withdrawn at any time", tipo: "vocabulario" as const, disciplina: "lingua_inglesa" as const, assunto: "Compreensão de textos em inglês", titulo: "Texto da questão de exemplo" },
+  { frente: "third-party providers", verso: "provedores terceiros (empresas de fora autorizadas)", trecho: "authorized third-party providers", tipo: "vocabulario" as const, disciplina: "lingua_inglesa" as const, assunto: "Compreensão de textos em inglês", titulo: "Texto da questão de exemplo" },
+  { frente: "leads to", verso: "leva a, resulta em", trecho: "leads to cheaper services", tipo: "vocabulario" as const, disciplina: "lingua_inglesa" as const, assunto: "Compreensão de textos em inglês", titulo: "Texto da questão de exemplo" },
+  { frente: "eventually", verso: "por fim, no final das contas (falso cognato: não é 'eventualmente')", trecho: "The bank will eventually replace its old payment system", tipo: "vocabulario" as const, disciplina: "lingua_inglesa" as const, assunto: "Vocabulário de finanças e tecnologia em inglês", titulo: "Enunciado da questão de exemplo" },
+  { frente: "Qual órgão formula a política da moeda e do crédito no SFN?", verso: "O Conselho Monetário Nacional (CMN), órgão normativo máximo do SFN.", trecho: "O CMN é o órgão normativo máximo do SFN e formula a política da moeda e do crédito.", tipo: "norma" as const, disciplina: "conhecimentos_bancarios" as const, assunto: "Estrutura do Sistema Financeiro Nacional", titulo: "Explicação da questão de exemplo" },
+  { frente: "Quem regula e fiscaliza o mercado de valores mobiliários?", verso: "A CVM (Comissão de Valores Mobiliários).", trecho: "A CVM regula e fiscaliza o mercado de valores mobiliários", tipo: "norma" as const, disciplina: "conhecimentos_bancarios" as const, assunto: "Estrutura do Sistema Financeiro Nacional", titulo: "Explicação da questão de exemplo" },
+].map(({ titulo, trecho, ...c }, i) => ({ ...c, id: `cartao-demo-${i + 1}`, fonte: { titulo, trecho }, novo: true }));
+// confere no carregamento que os trechos de vocabulário são literais do texto de exemplo
+if (import.meta.env.DEV) for (const c of CARTOES_DEMO) if (c.fonte!.titulo === "Texto da questão de exemplo" && !TEXTO_OPEN_BANKING.includes(c.fonte!.trecho)) console.warn(`cartão demo sem trecho literal: ${c.frente}`);
+
 interface Estado {
   tentativas: TentativaBruta[];
   revisoes: Record<string, EstadoRevisao & { proxima: string; comTempo?: boolean }>;
+  cartoes?: Record<string, EstadoRevisao & { proxima: string; desde: string }>;
   contestadas: string[];
 }
 const vazio = (): Estado => ({ tentativas: [], revisoes: {}, contestadas: [] });
@@ -261,6 +276,29 @@ export const apiDemo: Api = {
   },
   explicarMais() {
     return espera({ requerServidor: true, mensagem: "O tutor precisa do servidor. No demo, use a explicação da questão." });
+  },
+
+  async cartoes() {
+    const e = ler();
+    const estado = e.cartoes ?? {};
+    const agora = Date.now();
+    const hoje = new Date().toDateString();
+    const vistosHoje = Object.values(estado).filter((r) => new Date(r.desde).toDateString() === hoje).length;
+    const novosRestantesHoje = Math.max(0, 20 - vistosHoje);
+    const devidos = CARTOES_DEMO.filter((c) => estado[c.id] && new Date(estado[c.id].proxima).getTime() <= agora).map((c) => ({ ...c, novo: false }));
+    const novos = CARTOES_DEMO.filter((c) => !estado[c.id]).slice(0, novosRestantesHoje);
+    return espera({ cartoes: [...devidos, ...novos], vencidos: devidos.length, novosRestantesHoje, total: CARTOES_DEMO.length });
+  },
+
+  async avaliarCartao(id, nota) {
+    const e = ler();
+    e.cartoes ??= {};
+    const atual = e.cartoes[id];
+    const novo = agendar(atual ?? ESTADO_INICIAL, nota);
+    const proxima = nota === 1 ? Date.now() + 10 * 60_000 : Date.now() + novo.intervaloDias * 86_400_000;
+    e.cartoes[id] = { ...novo, proxima: new Date(proxima).toISOString(), desde: atual?.desde ?? new Date().toISOString() };
+    gravar(e);
+    return espera({ proximaRevisaoDias: nota === 1 ? 0 : novo.intervaloDias });
   },
 
   // Diagnóstico do erro (mesma regra do servidor); no demo a resposta marcada sai das tentativas
