@@ -31,7 +31,8 @@ export const origemDe = (q: { origem: string; prova?: string | null; numeroOrigi
 
 // Checagens determinísticas sobre a resposta do conferente: trecho literal, fonte existente e vigente,
 // "mudou" com antes/hoje. Falhou → "pendente" (nada é gravado como verdade).
-export function validarConferencia(r: ReturnType<typeof ConfereFonteAtualZ.parse>, fontes: FonteConsulta[]): { situacao: Situacao; fonte?: FonteConsulta; motivo?: string } {
+type Conferencia = { situacao: "confirmada" | "mudou" | "pendente"; indice?: number; trecho?: string; antes?: string; hoje?: string; respostaMudaria?: boolean };
+export function validarConferencia(r: Conferencia, fontes: FonteConsulta[]): { situacao: Situacao; fonte?: FonteConsulta; motivo?: string } {
   if (r.situacao === "pendente") return { situacao: "pendente", motivo: "sem fonte atual ingerida sobre o assunto" };
   const fonte = fontes.find((f) => f.indice === r.indice);
   if (!fonte) return { situacao: "pendente", motivo: "trecho aponta para fonte inexistente" };

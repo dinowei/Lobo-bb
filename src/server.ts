@@ -12,9 +12,10 @@ import { listarFiguras, decidirFigura, contextoDaFigura, amostrasDeFiguras, type
 import { painelIA, painelFila, painelBenchmark, pendencias, lerDoc, DOCS_LIBERADOS } from "./adminTelas.js";
 import { aprovarCorrentes, desfazerCorrentes } from "./corrente.js";
 import { aprovarMudancas, relatorioFontesAtuais } from "./fontesAtuais.js";
+import { audioDe, audioPronto, VOZES_PT, vozPadrao } from "./voz.js";
 import { tentarDeNovoAgora } from "./noturno.js";
 import { FUNCOES, type Correntes } from "./catalogo.js";
-import { autenticar } from "./auth.js";
+import { autenticar, usuarioAtualId } from "./auth.js";
 import { registrarRotasDeLogin } from "./rotasLogin.js";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -35,6 +36,7 @@ app.use(
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         connectSrc: ["'self'"],
+        mediaSrc: ["'self'", "blob:"], // áudio do Binho tocado a partir do MP3 baixado
         objectSrc: ["'none'"],
         frameAncestors: ["'none'"],
       },
@@ -125,7 +127,34 @@ app.post(
   })
 );
 
-app.get("/api/cartoes", rota(async (_req, res) => res.json(await apiServidor.cartoes())));
+// Voz do Binho: áudio pronto (pré-gerado de noite) ou, para o chat, gerado na hora dentro da cota.
+// 204 = sem áudio agora: o site usa a voz do navegador (sempre com paraFala).
+const usoVozHoje = new Map<string, { dia: string; n: number }>();
+app.post(
+  "/api/voz",
+  rota(async (req, res) => {
+    const texto = typeof req.body?.texto === "string" ? req.body.texto.slice(0, 4000) : "";
+    if (!texto.trim()) return res.status(400).json({ erro: "Envie { texto }." });
+    const pedida = VOZES_PT.find((v) => v.endsWith(`.${req.body?.voz}`));
+    const voz = pedida ?? vozPadrao();
+    let mp3 = await audioPronto(texto, voz);
+    if (!mp3 && req.body?.naHora === true) {
+      const quem = String(usuarioAtualId());
+      const dia = new Date().toISOString().slice(0, 10);
+      const uso = usoVozHoje.get(quem)?.dia === dia ? usoVozHoje.get(quem)! : { dia, n: 0 };
+      if (uso.n < (Number(process.env.VOZ_NA_HORA_MAX_DIA) || 40)) {
+        mp3 = (await audioDe(texto, voz))?.mp3 ?? null;
+        if (mp3) usoVozHoje.set(quem, { dia, n: uso.n + 1 });
+      }
+    }
+    if (!mp3) return res.status(204).end();
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "private, max-age=86400");
+    res.end(mp3);
+  })
+);
+
+app.get("/api/cartoes",rota(async (_req, res) => res.json(await apiServidor.cartoes())));
 app.post(
   "/api/cartoes/:id",
   rota(async (req, res) => {

@@ -164,6 +164,23 @@ export function AjustesTela() {
           Limite de linhas da redação (padrão 30; confira no edital)
           <input id="linhas-redacao" type="number" min={5} max={60} value={form.linhasRedacaoMax} onChange={(e) => setForm({ ...form, linhasRedacaoMax: Number(e.target.value) })} />
         </label>
+        <label htmlFor="voz-binho">
+          Voz do Binho (🔊)
+          <select id="voz-binho" value={form.vozBinho} onChange={(e) => setForm({ ...form, vozBinho: e.target.value as Ajustes["vozBinho"] })}>
+            <option value="Diego">Diego</option>
+            <option value="Isabela">Isabela</option>
+            <option value="Louise">Louise</option>
+          </select>
+        </label>
+        <label htmlFor="velocidade-voz">
+          Velocidade da voz
+          <select id="velocidade-voz" value={form.velocidadeVoz} onChange={(e) => setForm({ ...form, velocidadeVoz: Number(e.target.value) })}>
+            <option value={0.85}>Mais devagar</option>
+            <option value={1}>Normal</option>
+            <option value={1.2}>Mais rápida</option>
+            <option value={1.5}>Bem rápida</option>
+          </select>
+        </label>
         <label htmlFor="ciclo-foco">
           Ciclo de foco no treino (minutos de foco/pausa)
           <select id="ciclo-foco" value={form.cicloFoco} onChange={(e) => setForm({ ...form, cicloFoco: e.target.value as Ajustes["cicloFoco"] })}>

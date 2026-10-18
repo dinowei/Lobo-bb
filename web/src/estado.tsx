@@ -27,10 +27,12 @@ export interface Ajustes {
   horasPorDia: number; // plano até a prova (8.9)
   diasSemana: number[]; // 0 = domingo … 6 = sábado
   inicioPlano: string; // quando a data da prova foi definida (Semana X de Y)
+  velocidadeVoz: number; // 🔊 do Binho
+  vozBinho: "Diego" | "Isabela" | "Louise";
 }
 const AJUSTES_PADRAO: Ajustes = {
   nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70, linhasRedacaoMax: 30, cicloFoco: "25/5",
-  horasPorDia: 2, diasSemana: [1, 2, 3, 4, 5, 6], inicioPlano: "",
+  horasPorDia: 2, diasSemana: [1, 2, 3, 4, 5, 6], inicioPlano: "", velocidadeVoz: 1, vozBinho: "Diego",
 };
 const CHAVE_AJUSTES = "lobo-ajustes";
 function lerAjustes(): Ajustes {

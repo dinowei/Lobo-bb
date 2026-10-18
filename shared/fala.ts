@@ -151,6 +151,13 @@ export function paraFala(texto: string, siglas: Record<string, string> = SIGLAS_
   return t.replace(/\s+([,.;:!?])/g, "$1").replace(/\s{2,}/g, " ").trim();
 }
 
+// Texto corrido de uma aula para ouvir (Markdown sem marcação + seções). O mesmo texto no servidor
+// (pré-geração) e no site (botão): o hash bate e o áudio pronto é achado.
+export function textoDaAula(a: { assunto: string; conteudo: string; pontosChave: string[]; comoABancaCobra: string; pegadinhasComuns: string[] }) {
+  const limpo = a.conteudo.replace(/\[\d+\]/g, "").replace(/[#*_`>]/g, "").replace(/\n{2,}/g, "\n").trim();
+  return [`Aula: ${a.assunto}.`, limpo, `Pontos-chave: ${a.pontosChave.join("; ")}.`, `Como a banca cobra: ${a.comoABancaCobra}`, `Pegadinhas comuns: ${a.pegadinhasComuns.join("; ")}.`].join("\n");
+}
+
 // Frases curtas para a voz (o modelo erra mais em pt-BR com texto longo): quebra em sentenças
 export function frasesParaFala(texto: string, max = 220): string[] {
   const frases = texto.match(/[^.!?;]+[.!?;]?/g)?.map((s) => s.trim()).filter(Boolean) ?? [];

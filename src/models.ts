@@ -514,7 +514,7 @@ export const STATUS_TAREFA = ["pendente", "rodando", "aguardando", "concluida", 
 const TarefaSchema = new Schema(
   {
     // aula e tema: ganchos prontos, ativados na Fase B (8.5 e 8.4)
-    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark", "explicar_outro_jeito", "aula", "tema", "corrigir_redacao", "cartoes", "fonte_atual"], required: true },
+    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark", "explicar_outro_jeito", "aula", "tema", "corrigir_redacao", "cartoes", "fonte_atual", "voz"], required: true },
     params: Schema.Types.Mixed, // gerar: { topicId, assunto, tipo? }
     status: { type: String, enum: STATUS_TAREFA, default: "pendente", index: true },
     tentativas: { type: Number, default: 0 }, // falhas de infraestrutura até agora

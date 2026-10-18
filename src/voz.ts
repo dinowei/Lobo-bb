@@ -5,9 +5,10 @@
 // ============================================================
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { Audio } from "./models.js";
+import { Audio, Aula, Question, Tarefa, Topic } from "./models.js";
 import { registrarChamada } from "./telemetria.js";
-import { frasesParaFala, paraFala } from "../shared/fala.js";
+import { pregeracoes } from "./noturno.js";
+import { frasesParaFala, paraFala, textoDaAula } from "../shared/fala.js";
 
 export const VOZES_PT = ["Magpie-Multilingual.PT-BR.Diego", "Magpie-Multilingual.PT-BR.Isabela", "Magpie-Multilingual.PT-BR.Louise"] as const;
 export const vozPadrao = () => process.env.NVIDIA_TTS_VOZ || VOZES_PT[0];
@@ -98,6 +99,42 @@ export async function audioDe(textoTela: string, voz = vozPadrao()): Promise<{ h
     console.warn(`[voz] ${String(e instanceof Error ? e.message : e).slice(0, 200)}`);
     return null;
   }
+}
+
+// ---------- pré-geração noturna: áudio das aulas e das explicações (de dia não se chama a NVIDIA) ----------
+async function textoParaVoz(params: { tipo: "aula" | "explicacao"; id: string }): Promise<string | null> {
+  if (params.tipo === "aula") {
+    const a = await Aula.findOne({ _id: params.id, status: "aprovada" }).lean();
+    const t = a ? await Topic.findById(a.topicId).select("assunto").lean() : null;
+    return a && t ? textoDaAula({ assunto: t.assunto, conteudo: a.conteudo, pontosChave: a.pontosChave, comoABancaCobra: a.comoABancaCobra, pegadinhasComuns: a.pegadinhasComuns }) : null;
+  }
+  const q = await Question.findOne({ _id: params.id, status: "aprovada" }).select("explicacaoGeral").lean();
+  return q?.explicacaoGeral ?? null;
+}
+
+pregeracoes["voz"] = async (params) => {
+  if (!vozConfigurada()) return { ok: false, motivo: "aguardando_modelo", detalhes: "voz da NVIDIA não configurada no .env" };
+  const texto = await textoParaVoz(params as { tipo: "aula" | "explicacao"; id: string });
+  if (!texto) return { ok: false, motivo: "sem_texto" };
+  const a = await audioDe(texto);
+  return a ? { ok: true } : { ok: false, motivo: "provedor_falhou", detalhes: "TTS falhou; tenta de novo na próxima noite" };
+};
+
+export async function planejarVoz(lote: string, max = Number(process.env.VOZ_NOITE) || 40) {
+  if (!vozConfigurada()) return 0;
+  const voz = vozPadrao();
+  const abertas = new Set((await Tarefa.distinct("params.id", { tipo: "voz", status: { $in: ["pendente", "rodando", "aguardando"] } })).map(String));
+  const candidatos: { tipo: "aula" | "explicacao"; id: string; texto: string }[] = [];
+  for (const a of await Aula.find({ status: "aprovada" }).select("_id").lean()) {
+    const texto = await textoParaVoz({ tipo: "aula", id: String(a._id) });
+    if (texto) candidatos.push({ tipo: "aula", id: String(a._id), texto });
+  }
+  for (const q of await Question.find({ status: "aprovada", explicacaoGeral: { $nin: [null, ""] } }).select("explicacaoGeral").sort({ updatedAt: -1 }).limit(max * 10).lean())
+    candidatos.push({ tipo: "explicacao", id: String(q._id), texto: q.explicacaoGeral! });
+  const prontos = new Set((await Audio.find({ voz, hash: { $in: candidatos.map((c) => hashFala(paraFala(c.texto), voz)) } }).select("hash").lean()).map((a) => a.hash));
+  const novos = candidatos.filter((c) => !abertas.has(c.id) && !prontos.has(hashFala(paraFala(c.texto), voz))).slice(0, max);
+  if (novos.length) await Tarefa.insertMany(novos.map((c) => ({ tipo: "voz", params: { tipo: c.tipo, id: c.id }, lote })));
+  return novos.length;
 }
 
 // Só o que já está pronto (de dia não se chama a NVIDIA para explicação: vem da pré-geração)

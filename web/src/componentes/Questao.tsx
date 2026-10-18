@@ -2,6 +2,7 @@
 import type { AlternativaCorrigida, CorrecaoDTO, Letra, QuestaoDTO } from "../../../shared/tipos";
 import { NOME_DISCIPLINA } from "../../../shared/tipos";
 import { Figura } from "./Figura";
+import { Ouvir } from "./Ouvir";
 
 export function Cabecalho({ q, traicoeira }: { q: QuestaoDTO; traicoeira?: boolean }) {
   return (
@@ -99,6 +100,7 @@ export function Licao({ c }: { c: CorrecaoDTO }) {
     <div className="licao">
       <h3>O conceito por trás</h3>
       <p>{c.explicacaoGeral}</p>
+      <Ouvir texto={c.explicacaoGeral} titulo="O conceito por trás" />
       {c.referencias ? (
         <FontesDaQuestao f={c.referencias} />
       ) : (

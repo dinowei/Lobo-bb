@@ -4,6 +4,8 @@ import { LETRAS, MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO } from "../../../sha
 import { useApp } from "../estado";
 import { RelogioAtivo } from "../relogio";
 import { RespostaGuardada } from "../api/http";
+import { Ouvir } from "../componentes/Ouvir";
+import { textoDaAula } from "../../../shared/fala";
 import { CICLOS_FOCO, TEMPO_MAX_QUESTAO_SEG } from "../../../shared/aprendizado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { Markdown } from "../componentes/Markdown";
@@ -326,6 +328,7 @@ export function Praticar() {
                 {carregandoAula ? <p>Carregando a aula…</p> : aula ? (
                   <>
                     <h2>{aula.assunto}</h2>
+                    <Ouvir texto={textoDaAula(aula)} titulo={`Aula: ${aula.assunto}`} rotulo="Ouvir a aula" />
                     <Markdown texto={aula.conteudo} />
                     <section><h3>Pontos-chave</h3><ul>{aula.pontosChave.map((p) => <li key={p}>{p}</li>)}</ul></section>
                     <section><h3>Como a banca cobra</h3><p>{aula.comoABancaCobra}</p></section>
@@ -411,6 +414,7 @@ export function Praticar() {
                   </button>
                   {origemTutor && <small>{origemTutor}{restantesTutor !== undefined ? ` · ${restantesTutor} pedido(s) novo(s) restante(s) hoje` : ""}</small>}
                   {respostaTutor && <p className="resposta-tutor" aria-live="polite">{respostaTutor}</p>}
+                  {respostaTutor && <Ouvir texto={respostaTutor} titulo="Resposta do Binho" naHora />}
                 </div>
                 <div className="acoes">
                   <button className="botao-laranja" onClick={proxima} autoFocus>
