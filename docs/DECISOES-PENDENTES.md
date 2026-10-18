@@ -81,6 +81,15 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   `npx tsx scripts/limpar-figura-no-texto.ts --gravar` corrige.
 - **Recomendação:** rodar com `--gravar` (só remove o trecho entre o primeiro e o último "|").
 
+## 7. "Nota estimada por IA" na tela de Redação (baixa)
+
+- **O que é:** a regra 17 do CLAUDE.md manda sinalizar que a nota da redação é estimativa da IA; o
+  ADENDO-BANCO-GRANDE diz que o aluno não vê menção a IA nem a modelos.
+- **Hoje:** a tela mostra "Nota estimada por IA; use como treino, não como garantia."
+- **Opções:** (a) manter; (b) trocar por "Nota estimada pelo corretor automático; use como treino,
+  não como garantia." (sinaliza a estimativa sem dizer IA).
+- **Recomendação:** (b). Basta dizer "troque o aviso da redação".
+
 ## 6. Mistura de dificuldade dos simulados (baixa)
 
 - **O que é:** o simulado segue a mistura de dificuldade das 130 oficiais: hoje **72% fáceis, 27%

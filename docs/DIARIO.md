@@ -173,6 +173,8 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - Transformar os cartões hero de matérias em carrossel conforme a regra visual 8: arraste com o dedo e scroll-snap no celular; setas laterais no hover, roda do mouse e arraste no computador; esmaecido nas bordas e bolinhas de posição; teclado ←/→, foco visível e `aria-label` nas setas.
 - Clique no cartão abre Praticar daquela disciplina. Ordenar por prioridade do treino (peso na prova × fraqueza), incluir barra fina de domínio (%) e respeitar `prefers-reduced-motion`.
 - Verificar visualmente em 360 px e 1440 px.
+- Implementado: carrossel horizontal com snap, setas no desktop, navegação por roda/arrasto/teclado, esmaecimento, bolinhas, foco visível, domínio por disciplina e preferência por movimento reduzido.
+- Conferência visual e funcional: 360 px (sem overflow horizontal da página, snap ativo e setas ocultas) e 1440 px; teclado avançou até a posição 4, seta e bolinhas levaram ao fim/início e clique em “Vendas e Negociação” abriu Praticar nessa disciplina.
 
 ## 18/10/2026 — Etapa 8.3: calibragem da confiança
 
@@ -189,4 +191,13 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - E2E no app: tema "A responsabilidade das fintechs na prevenção de fraudes digitais" gerado com `openai/gpt-oss-20b` após dois timeouts do Lightning; redação sintética de 2.073 caracteres enviada, salva com 5 linhas e 76 s.
 - Correção real concluída e persistida no histórico: 87/100 (22, 20, 22 e 23 nos quatro critérios), acima da linha de 70. Duas avaliações do auditor Super; todos os trechos citados passaram na validação literal e aparecem marcados no texto. Redação `6ad4fa75108c0380e4a8e026`; tema `6ad4f9dc108c0380e4a8e025`.
 
-RETOMAR AQUI: implementar a Etapa 8.5 (aulas curtas por tópico e tutor por questão). A prova real da corrente e o E2E da redação já foram registrados acima; a rodada real noturna da Etapa 6 segue pendente.
+## 18/10/2026 — Sincronização: Claude Code assume o trabalho do Codex (PROMPT-SYNC-CODEX)
+
+- Revisado o que o Codex deixou sem commit (8.5, carrossel, docs). Não havia chave nem `MONGODB_URI` no diff; `.env.example` só ganhou nomes (`AULAS_NOITE`, `EXPLICACOES_MAIS_MAX_DIA`); as regras 18 e 19 novas do CLAUDE.md não contradizem as anteriores. O timeout padrão continua 180 s (`LLM_TIMEOUT_SEG`); o único `120_000` em `src/` é o da sondagem de modelos, que já existia antes do Codex.
+- Corrigido: `.aula-topico h3` usava `#ffb08c`, fora da paleta (regra 8) → `var(--laranja-forte)`. O demo dizia "O tutor por IA precisa do servidor" (aluno não vê menção a IA) → "O tutor precisa do servidor".
+- Para o dono decidir: a tela de Redação mostra "Nota estimada por IA". A regra 17 manda sinalizar que a nota é estimativa, e o adendo diz que o aluno não vê menção a IA. Mantive o texto atual (a regra 17 é a mais específica). Anotado em DECISOES-PENDENTES.
+- Validação: typecheck do servidor e do web passaram (cada um sozinho, binário direto no web); testes focados 24/24 (aulas, corrente, noturno); suíte completa 109/109.
+- Commits separados: `1d75f8c` (8.5 aulas + tutor, com só o trecho de CSS das aulas), `c233dc3` (carrossel) e este, de docs.
+- O benchmark em segundo plano (`bmuzpinm9`) não chegou ao fim antes de a sessão anterior terminar; a retomada das amostras gravadas fica para a madrugada (POST-IT A.3).
+
+RETOMAR AQUI: S3 do PROMPT-SYNC-CODEX — geração real de 3 aulas com o reparo novo (meta ≥ 2 aprovadas), conferir cartão de aula, tutor e "Já sei" no demo e no real. Depois S4 (POST-IT A: noite curta real, Etapa 7, limite de 5 falhas do benchmark, linhas da redação) e S5 (8.6 em diante).

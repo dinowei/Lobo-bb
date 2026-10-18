@@ -20,6 +20,7 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 - Coleção `geracoes` (model `Geracao`): toda tentativa de gerar; dá o teto diário `GERACAO_MAX_DIA` e os descartes no `status`
 - `src/ingestao.ts` + `src/cli.ts`: comandos `npm run bb -- <comando>`
 - `src/estudo.ts`: implementação da interface `Api` (shared/tipos.ts) no servidor
+- `src/aulas.ts` e `src/outroJeito.ts`: aulas curtas por tópico auditadas e tutor alternativo com pré-geração, cache e cota diária
 - `src/server.ts`: rotas `/api/*` e serve `web/dist`
 - `web/src/api/demo.ts`: a mesma `Api` rodando no navegador (localStorage + `web/src/demo/questoes.ts`)
 - `web/src/api/http.ts`: `Api` via fetch; o site cai no demo se `/api/saude` não responder
@@ -54,6 +55,8 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 16. Questão nova passa pelo filtro de similaridade (`src/similaridade.ts`) antes do auditor: cosseno do embedding contra o mesmo tópico e as oficiais da disciplina, trechos em comum (Jaccard) e, nas por construção, a impressão estrutural (tipo, contexto, parâmetros) que não se repete no tópico. Paráfrase de oficial é descartada. Template não copia o cenário de questão oficial. Limites no `.env` (`SIMILAR_*`).
 
 17. Nota de redação é estimativa da IA, sempre sinalizada.
+18. Aulas só aparecem com auditoria aprovada; Conhecimentos Bancários, Atualidades e Vendas exigem fonte ingerida, citação literal validada e auditor de família diferente da do tutor.
+19. O tutor alternativo recebe gabarito e explicações salvas, nunca pode contradizê-los; dúvidas novas são cacheadas por aluno, questão e texto normalizado, com limite diário `EXPLICACOES_MAIS_MAX_DIA`.
 
 ## Estado atual
 - Tudo compila (`npm run typecheck`). Leitura de PDF, fatiamento, gabarito, validações e motor de progressão foram testados.

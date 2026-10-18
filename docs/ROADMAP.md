@@ -23,15 +23,15 @@
 ## Estado atual
 - Etapas 8.1, 8.2 e 8.3 concluídas e registradas no `docs/DIARIO.md`.
 - Etapa 8.4 (redação com correção por IA) concluída; E2E real no app gerou tema, corrigiu redação e salvou nota 87/100 no histórico.
+- Etapa 8.5 (aulas curtas e tutor) implementada; testes focados passaram 23/23. Geração real de três aulas auditadas em andamento para fechamento.
 - Etapa 6 (noturno + adendo do banco grande): código e testes concluídos; rodada real noturna ainda pendente.
-- Etapa 9: requisitos do carrossel do painel registrados no `docs/DIARIO.md`; implementação e validação em 360 px e 1440 px pendentes.
+- Etapa 9 (carrossel de matérias do painel) implementada; conferida em 360 px e 1440 px, com navegação por teclado, setas, bolinhas e clique para Praticar.
 
 ## Próximo (em ordem)
-1. Implementar a Etapa 8.5 (aulas curtas por tópico e tutor por questão), incluindo o pré-gerador noturno previsto no adendo.
-2. Implementar o carrossel de matérias da Etapa 9 conforme a especificação em `docs/DIARIO.md`.
-3. Rodar a validação real do noturno da Etapa 6, sem concorrência com outros jobs de IA.
-4. Aplicar `docs/ADENDO-BINHO-VOZ.md` depois da Etapa 9.
-5. Revisar pendências restantes: fontes oficiais, tela de revisão, PWA, deploy e edital novo.
+1. Fechar a prova real e o commit da Etapa 8.5.
+2. Rodar a validação real do noturno da Etapa 6, sem concorrência com outros jobs de IA.
+3. Aplicar `docs/ADENDO-BINHO-VOZ.md` depois da Etapa 9.
+4. Revisar pendências restantes: fontes oficiais, tela de revisão, PWA, deploy e edital novo.
 
 ## Ideias para depois
 - Questões com imagem/tabela: cadastro com figura para as de `docs/PENDENTES-FIGURA.md`
