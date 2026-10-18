@@ -200,4 +200,20 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - Commits separados: `1d75f8c` (8.5 aulas + tutor, com só o trecho de CSS das aulas), `c233dc3` (carrossel) e este, de docs.
 - O benchmark em segundo plano (`bmuzpinm9`) não chegou ao fim antes de a sessão anterior terminar; a retomada das amostras gravadas fica para a madrugada (POST-IT A.3).
 
-RETOMAR AQUI: S3 do PROMPT-SYNC-CODEX — geração real de 3 aulas com o reparo novo (meta ≥ 2 aprovadas), conferir cartão de aula, tutor e "Já sei" no demo e no real. Depois S4 (POST-IT A: noite curta real, Etapa 7, limite de 5 falhas do benchmark, linhas da redação) e S5 (8.6 em diante).
+## 18/10/2026 — POST-IT A.3 e A.4 (sem IA)
+
+- **Benchmark, limite de 5 falhas (A.3):** a causa foi achada nos registros do banco. O GLM tem só 2 respostas no `juiz-pt-v1`, ambas `timeout` com ~750 s cada. O contador contava ITENS, mas cada item escondia até 4 chamadas, porque o retry interno do `chamar()` repete o timeout 3 vezes (2 s, 6 s, 18 s, cada uma esperando 180 s). Assim, 2 itens já davam os 8 timeouts seguidos vistos na telemetria, com o contador parado em 2. Correção: no benchmark cada item é UMA chamada (`novasTentativas: 0`; o retry entre rodadas já existe em `jaFeito`, que aceita 2 falhas por item). O contador virou a classe `PausaPorFalhas`, com teste. Commit `68ad24a`.
+- **Redação (A.4):**
+  - (a) As linhas eram contadas por quebra de parágrafo. Agora são linhas da folha, estimadas em 70 caracteres com quebra por palavra (`shared/redacaoLinhas.ts`, igual no servidor e na tela). O texto do E2E (2.073 caracteres em 5 parágrafos) dá ~30 linhas, não 5; então o 87/100 não era absurdo, o erro estava na contagem.
+  - (b) Regra das provas BB 2021 e 2023 (capa): "de 25 a 30 linhas". A penalidade não está na prova (o edital não está em `provas/`) → DECISOES-PENDENTES nº 8, com a regra mais conservadora.
+  - (c) Abaixo de 25, a nota é zero por código, antes da IA, e o envio nem gera tarefa de correção. Acima de 30, só o texto até a linha 30 vai para a correção, como prefixo literal, e o resultado avisa. Testes com texto curto, no limite (25), normal e longo. Commit `43a7d82`.
+- Também: `new: true` (deprecado no Mongoose) → `returnDocument: "after"` em 7 lugares (`53452fe`).
+
+## 18/10/2026 — 8.5: geração real de aulas (S3)
+
+- 1ª rodada (3 aulas, código anterior ao commit `dda51ef`), com o Lightning em timeout e o tutor `gpt-oss-20b` como reserva:
+  - aula 1 descartada por formato (JSON sem `pontosChave`, `comoABancaCobra`…); só havia reparo para citação não literal;
+  - aula 2 (Drex) reprovada pelo auditor Super, de outra família: "mais de 400 palavras" (o código já confere o campo `conteudo`; o auditor contou a aula inteira) e menção à Lei 14.478 sem apoio nos trechos (reprovação correta).
+- Ajustes (`dda51ef`): uma rodada de reparo de formato; auditor sem critério de extensão (já conferida por código); proibição explícita de citar número de lei, resolução ou circular ausente dos trechos.
+
+RETOMAR AQUI: S3 — esperar a 3ª aula da 1ª rodada; depois a 2ª (e última) rodada real de 3 aulas com os ajustes (meta ≥ 2 aprovadas); conferir cartão de aula, tutor e "Já sei" no demo e no real. Depois S4.1 (noite curta real, META_APROVADAS_NOITE=10) e S5 (8.6 em diante). Etapa 7: código de todos os assuntos feito (DIARIO acima); faltam só as rodadas reais de 3.

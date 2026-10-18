@@ -103,7 +103,7 @@ export function Praticar() {
     try {
       const r = await api.explicarMais(q.id, duvidaTutor.trim() || undefined);
       setRespostaTutor(r.explicacao ?? r.mensagem ?? "Não consegui buscar uma explicação agora.");
-      setOrigemTutor(r.origem === "pregerada" ? "Explicação preparada para esta questão." : r.origem === "cache" ? "Resposta salva da mesma dúvida." : "Nova resposta conferida.");
+      setOrigemTutor(!r.origem ? "" : r.origem === "pregerada" ? "Explicação preparada para esta questão." : r.origem === "cache" ? "Resposta salva da mesma dúvida." : "Nova resposta conferida.");
       setRestantesTutor(r.restantesHoje);
     } catch (e) {
       setRespostaTutor(e instanceof Error ? e.message : "Não deu para buscar outra explicação agora.");
