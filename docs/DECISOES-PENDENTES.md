@@ -86,6 +86,15 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   `npx tsx scripts/limpar-figura-no-texto.ts --gravar` corrige.
 - **Recomendação:** rodar com `--gravar` (só remove o trecho entre o primeiro e o último "|").
 
+## 11. Voz padrão do Binho e as 5 poses (baixa)
+
+- **Voz:** ouça `docs/voz/diego-*.mp3` e `docs/voz/isabela-*.mp3` (mesmas 3 frases) e diga qual vira a padrão
+  (`NVIDIA_TTS_VOZ` no .env; o aluno ainda pode trocar em Ajustes). Até lá: Diego.
+- **Poses:** a Parte 1 do ADENDO-BINHO-VOZ (Binho espalhado pelo site, ícone da cabeça e nome "Lobo Binho")
+  começa quando as 5 poses estiverem em `web/src/assets/lobos/` (lendo, escrevendo, comemorando,
+  pensativo, acenando).
+- **Microfone:** não há reconhecimento de voz grátis com pt-BR na NVIDIA; o 🎤 usa o do navegador.
+
 ## 10. Lighthouse (Etapa 9) — RESOLVIDO 18/10/2026: aprovado como devDependency
 
 - **O que é:** a Etapa 9 pede nota ≥ 90 no Lighthouse (celular). A ferramenta não está instalada, e

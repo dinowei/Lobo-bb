@@ -5,6 +5,7 @@ import { useApp } from "../estado";
 import { RelogioAtivo } from "../relogio";
 import { RespostaGuardada } from "../api/http";
 import { Ouvir } from "../componentes/Ouvir";
+import { Microfone } from "../componentes/Microfone";
 import { textoDaAula } from "../../../shared/fala";
 import { CICLOS_FOCO, TEMPO_MAX_QUESTAO_SEG } from "../../../shared/aprendizado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
@@ -409,6 +410,7 @@ export function Praticar() {
                 <div className="tutor-outro-jeito">
                   <label htmlFor="duvida-tutor">Me explica de outro jeito</label>
                   <textarea id="duvida-tutor" rows={2} maxLength={500} value={duvidaTutor} onChange={(e) => setDuvidaTutor(e.target.value)} placeholder="Se quiser, diga qual parte ficou confusa (opcional)." />
+                  <Microfone aoFalar={(t) => setDuvidaTutor((d) => `${d ? `${d} ` : ""}${t}`.slice(0, 500))} />
                   <button className="botao-linha" onClick={pedirOutraExplicacao} disabled={consultandoTutor}>
                     {consultandoTutor ? "Buscando uma explicação…" : "Me explica de outro jeito"}
                   </button>

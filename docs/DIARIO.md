@@ -317,6 +317,24 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - `scripts/e2e-login.ts`: **7/7** (foco no e-mail, erros, mostrar senha, senha errada, criar conta com convite, entrar, sessão expirada).
 - Carrossel conferido contra o POST-IT C.7: snap e arraste, setas, esmaecido, bolinhas (agora com 24 px de toque), teclado, clique abre Praticar, ordem por prioridade, barra de domínio, reduced-motion.
 
-RETOMAR AQUI: ADENDO-FONTES-ATUAIS (POST-IT 5b), em andamento. Já há campos novos em `models.ts` (`referencias`, `situacaoFonte`, `oQueMudou`) e o tipo `FontesQuestaoDTO`, sem commit. Depois, ADENDO-BINHO-VOZ.
+## 18/10/2026 — ADENDO-FONTES-ATUAIS e ADENDO-BINHO-VOZ
+
+- **Fontes atuais** (`44c9e59`, `579ed27`):
+  - camada nova, sem reescrever nada; migração de 199 questões; conferência na fila com auditor de outra família e checagens por código; "mudou" só com o OK do dono (Admin → Pendências); bloco "Fontes" na correção;
+  - 1ª rodada real: o conferente mandava `indice: 0` no pendente e o schema recusava; 2ª: 1 confirmada (trecho literal) e 5 pendentes (Vendas e Informática sem norma ingerida, listadas no relatório).
+- **Binho, voz:**
+  - (1) `shared/fala.ts`: normalizador de fala, 77 casos.
+  - (2) Magpie TTS pt-BR, conferido no `list_voices` (Diego, Isabela, Louise), MP3 com cache no Mongo e amostras em `docs/voz/` para o dono escolher. Um 429 do plano grátis levou ao retry; o cache lia `Binary` do BSON como vazio, corrigido.
+  - (3) 🔊 na explicação, na aula e na resposta do Binho; voz e velocidade em Ajustes; pré-geração noturna; `media-src blob:` na CSP.
+  - (4) "Estudar ouvindo" no caderno de erros (Media Session).
+  - STT: a NVIDIA não tem ASR grátis com pt-BR (Whisper é gRPC de parceiro; o catálogo de ASR não mostra endpoint grátis). O 🎤 usa o reconhecimento do navegador e some onde não há suporte.
+- **Falta do Binho:**
+  - Parte 1 (poses): `web/src/assets/lobos/` ainda não existe, as poses são do dono. Ícone da cabeça e nome "Lobo Binho" entram junto com elas.
+  - Chat "Pergunte ao Binho" por tópico: o da questão já existe (tutor com cota e cache).
+  - Telemetria de voz no Admin: as chamadas já vão para `chamadas_modelo` como função "voz"; falta a linha na aba IA.
+
+RETOMAR AQUI: Binho, o que falta: chat por tópico; telemetria de voz na aba IA; Parte 1 quando o dono puser as 5 poses em `web/src/assets/lobos/`. A voz padrão espera a escolha do dono (amostras em `docs/voz/`). Depois: ENTREGA FINAL do PROMPT-VIAGEM (RELATORIO-VIAGEM.md).
+
+RETOMAR AQUI (antigo, concluído): ADENDO-FONTES-ATUAIS (POST-IT 5b), em andamento. Já há campos novos em `models.ts` (`referencias`, `situacaoFonte`, `oQueMudou`) e o tipo `FontesQuestaoDTO`, sem commit. Depois, ADENDO-BINHO-VOZ.
 
 RETOMAR AQUI (antigo): esperar `aulas --n 3` e `cartoes --n 3` (logs em scratchpad `aulas3.log` e `cartoes1.log`) e registrar o resultado (mostrar uma aula aprovada, se houver). Depois, Etapa 9: testes ponta a ponta dos fluxos (login, responder, revisão, simulado completo, redação, contestar, offline/online) com os jobs de IA parados; prints de todas as telas (1440 e 390) em docs/telas/; Lighthouse. Depois: rodadas reais de 3 por assunto da Etapa 7 e, por último, ADENDO-BINHO-VOZ.
