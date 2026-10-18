@@ -1,0 +1,124 @@
+{
+  "_aviso": "Cenários por grupo de disciplinas: QUEM aparece na questão (perfil) e POR QUÊ (situação). Sem números (a conta é do código) e sem produto (o produto vem do contexto de variacoes.json, regra 11). Perfis 'pf' e 'pj' casam com o contexto (pessoa física/jurídica); 'func' é funcionário do banco. O sorteio pega o menos usado no tópico e nunca um dos 15 últimos (src/cenarios.ts).",
+  "grupos": {
+    "calculo": {
+      "disciplinas": ["matematica", "matematica_financeira", "probabilidade_estatistica"],
+      "perfis": {
+        "pf": [
+          "aposentada que complementa a renda",
+          "jovem no primeiro emprego",
+          "casal planejando o casamento",
+          "estudante universitário que divide o aluguel",
+          "servidora pública da área da saúde",
+          "motorista de aplicativo",
+          "professora da rede municipal",
+          "agricultor familiar",
+          "enfermeira que faz plantões extras",
+          "pai que organiza o orçamento da família",
+          "manicure autônoma",
+          "recém-chegado à cidade abrindo a primeira conta",
+          "técnico de informática que trabalha como freelancer",
+          "vendedora comissionada de uma loja de eletrodomésticos"
+        ],
+        "pj": [
+          "microempreendedora individual do ramo de alimentação",
+          "pequena loja de roupas do centro",
+          "oficina mecânica de bairro",
+          "padaria familiar",
+          "clínica veterinária",
+          "cooperativa de agricultores",
+          "escritório de contabilidade",
+          "distribuidora de bebidas",
+          "startup de tecnologia",
+          "construtora de pequeno porte",
+          "papelaria perto de uma escola",
+          "transportadora regional"
+        ]
+      },
+      "situacoes": [
+        "comparando duas propostas antes de decidir",
+        "planejando um objetivo para os próximos meses",
+        "conferindo um valor informado pelo banco",
+        "reorganizando as finanças depois de um imprevisto",
+        "pedindo uma simulação ao gerente",
+        "decidindo se antecipa ou mantém um pagamento",
+        "preparando o caixa para uma data de vendas fortes",
+        "avaliando se vale a pena trocar de aplicação",
+        "explicando a conta para um familiar",
+        "revisando um contrato antes de assinar",
+        "separando uma reserva de emergência",
+        "fechando o balanço do mês"
+      ]
+    },
+    "informatica": {
+      "disciplinas": ["informatica"],
+      "perfis": {
+        "func": [
+          "escriturária recém-empossada",
+          "gerente de relacionamento",
+          "assistente de atendimento",
+          "analista do setor de crédito",
+          "caixa da agência",
+          "coordenador de equipe comercial",
+          "estagiária do setor administrativo",
+          "técnico de suporte da agência",
+          "gerente de agência",
+          "funcionário da área de controles internos"
+        ]
+      },
+      "situacoes": [
+        "preparando o relatório semanal de metas",
+        "organizando os arquivos compartilhados da equipe",
+        "enviando uma planilha por e-mail a outro setor",
+        "conferindo dados de clientes antes de uma reunião",
+        "protegendo um documento com informações sigilosas",
+        "consolidando os números de várias agências",
+        "pesquisando uma norma na intranet",
+        "montando uma apresentação para a equipe",
+        "registrando os atendimentos do dia",
+        "ajustando o acesso de uma pasta da equipe"
+      ]
+    },
+    "atendimento": {
+      "disciplinas": ["vendas_negociacao", "conhecimentos_bancarios", "atualidades_mercado_financeiro"],
+      "perfis": {
+        "pf": [
+          "aposentada que prefere atendimento presencial",
+          "jovem que resolve tudo pelo aplicativo",
+          "cliente com deficiência visual",
+          "servidor público recém-nomeado",
+          "motorista de aplicativo",
+          "professora que acabou de receber o salário",
+          "agricultor familiar",
+          "estudante universitária",
+          "casal que acabou de ter o primeiro filho",
+          "cliente que voltou a morar no Brasil"
+        ],
+        "pj": [
+          "microempreendedor individual do ramo de serviços",
+          "loja de materiais de construção",
+          "restaurante familiar",
+          "clínica odontológica",
+          "cooperativa de crédito parceira",
+          "empresa de tecnologia em expansão",
+          "comércio que vende pela internet",
+          "associação de moradores"
+        ]
+      },
+      "situacoes": [
+        "chegou à agência com uma reclamação",
+        "está indeciso entre duas opções",
+        "pesquisou a concorrência antes de vir",
+        "quer entender uma cobrança",
+        "foi indicado por outro cliente",
+        "voltou depois de uma experiência ruim",
+        "está com pressa e quer resolver rápido",
+        "pediu ajuda para usar o aplicativo",
+        "recebeu uma oferta por telefone e desconfiou",
+        "quer ampliar o relacionamento com o banco",
+        "está renegociando uma dívida",
+        "precisa de orientação depois de mudar de cidade"
+      ]
+    }
+  }
+}

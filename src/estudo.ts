@@ -182,7 +182,10 @@ function reabastecerEmSegundoPlano(topicId: string, quantas = 3) {
     try {
       // um job de IA por vez: se a CLI estiver gerando/explicando/ingerindo, tenta de novo depois
       const rodou = await seFilaLivre(`estoque do tópico ${topicId} (servidor)`, async () => {
-        for (let i = 0; i < quantas; i++) await gerarQuestao(topicId);
+        for (let i = 0; i < quantas; i++) {
+          const r = await gerarQuestao(topicId);
+          if (!r.ok && r.motivo === "teto_diario") break; // GERACAO_MAX_DIA
+        }
       });
       if (!rodou) console.log(`[estoque] ${topicId}: fila ocupada, fica para a próxima`);
     } catch (e) {

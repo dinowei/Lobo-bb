@@ -10,6 +10,7 @@ import {
   Source,
   Chunk,
   Question,
+  Geracao,
   DISCIPLINAS,
   LETRAS,
   INDICE_VETORIAL,
@@ -43,7 +44,8 @@ import {
   RespostaCegaZ,
   type QuestaoExtraida,
 } from "./prompts.js";
-import { buscarFontesPorConsulta } from "./pipeline.js";
+import { buscarFontesPorConsulta, geracoesHoje, tetoDiario } from "./pipeline.js";
+import { MOTIVOS_REPETICAO } from "./similaridade.js";
 
 const ehDisciplina = (s: string): s is Disciplina => (DISCIPLINAS as readonly string[]).includes(s);
 
@@ -821,6 +823,22 @@ export async function revogarFonte(alvo: string) {
 // 7. STATUS — o raio-x do seu banco
 // ============================================================
 export async function mostrarStatus() {
+  const [cenariosPorTopico, repeticoesPorTopico, hoje] = await Promise.all([
+    // cenários distintos (perfil + situação) nas geradas que estão no banco
+    Question.aggregate<{ _id: Types.ObjectId; n: number }>([
+      { $match: { origem: "gerada", status: { $ne: "rejeitada" }, "cenario.perfil": { $exists: true } } },
+      { $group: { _id: { t: "$topicId", p: "$cenario.perfil", s: "$cenario.situacao" } } },
+      { $group: { _id: "$_id.t", n: { $sum: 1 } } },
+    ]),
+    // descartes por repetição (filtro de similaridade e impressão estrutural)
+    Geracao.aggregate<{ _id: Types.ObjectId; n: number }>([
+      { $match: { motivo: { $in: MOTIVOS_REPETICAO } } },
+      { $group: { _id: "$topicId", n: { $sum: 1 } } },
+    ]),
+    geracoesHoje(),
+  ]);
+  const cenarios = new Map(cenariosPorTopico.map((c) => [String(c._id), c.n]));
+  const repeticoes = new Map(repeticoesPorTopico.map((c) => [String(c._id), c.n]));
   const [topicos, porTopicoChunks, porTopicoQuestoes, orfaos, fontes] = await Promise.all([
     Topic.find({ ativo: true }).select("disciplina assunto questoesNaProva").sort({ disciplina: 1, assunto: 1 }).lean(),
     Chunk.aggregate<{ _id: Types.ObjectId; n: number }>([
@@ -848,7 +866,9 @@ export async function mostrarStatus() {
       oficiais: qtd(t._id, "oficial", "aprovada"),
       "oficiais pend.": qtd(t._id, "oficial", "pendente"),
       geradas: qtd(t._id, "gerada", "aprovada"),
+      "cenários": cenarios.get(String(t._id)) ?? 0,
+      "desc. repetição": repeticoes.get(String(t._id)) ?? 0,
     }))
   );
-  console.log(`${fontes} fonte(s) ativa(s) · ${orfaos} trecho(s) sem tópico`);
+  console.log(`${fontes} fonte(s) ativa(s) · ${orfaos} trecho(s) sem tópico · ${hoje}/${tetoDiario()} gerações hoje (GERACAO_MAX_DIA)`);
 }

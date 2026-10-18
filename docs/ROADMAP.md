@@ -16,11 +16,14 @@
 - [x] Crase por construção: banco de regras, trava de posição, auditor por frase, enunciado conforme as alternativas, regras menos usadas primeiro
 - [x] Provas oficiais BB 2023 (69/70) e BB 2021 (67/70) ingeridas: gabarito por código, disciplina lida da capa, texto de apoio conferido no PDF, conferência literal campo a campo (corrige palavra trocada pela IA), comando `anular`
 - [x] Pendentes de figura listados em `docs/PENDENTES-FIGURA.md` (status `precisa_imagem`, fora do treino)
+- [x] Fila de um job de IA por vez (`src/fila.ts`); escritor de Português com reserva; desempate da Crase pelo Ultra
+- [x] Figuras (5.8, fases 1 a 3): inventário, extração fiel das oficiais com tela de conferência, figuras desenhadas por código nas geradas (planilha, sistema linear, série de depósitos, taxa de abandono)
+- [x] Anti-repetição (5.8, fase 4): embedding + trechos (Jaccard) + impressão estrutural, cenários (perfil + situação) menos usados, teto diário de geração, descartes no `status`
 
 ## Próximo (em ordem)
 1. **Leis e normas**: Lei 4.595, Pix, Lei 9.613, LC 105, CDC (etapa C, item 4 do `docs/INTEGRACAO.md`).
 2. **Tela de revisão das traiçoeiras, contestadas e pendentes de figura**: lista para aprovar, corrigir ou descartar sem mexer no banco na mão (seção 5.8 do plano).
-3. **Escritor de Português com reserva**: o `glm-5.3-flash` deu timeout em 4 de 10 questões de Crase quando rodou junto com o `explicar`; usar `deepseek-v4.1-flash` como reserva.
+3. **Corrente de modelos grátis** (Etapa 1.5 do `PROMPT-RETOMADA`): catálogo, reservas por função, auditor de outra família, benchmark.
 4. **Construção em outras matérias**: Amortização, Probabilidade, Concordância, Regência, Pontuação.
 5. **Pesos do edital**: preencher `questoesNaProva` (o simulado e a prioridade já usam esse peso).
 6. **Estoque automático / geração noturna**: um job diário (`npm run bb -- estoque`) num servidor ou numa tarefa agendada.

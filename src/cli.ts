@@ -23,6 +23,7 @@ import { Topic } from "./models.js";
 import { listarModelos } from "./llm.js";
 import { naFila } from "./fila.js";
 import { extrairFigurasOficiais } from "./figuras.js";
+import { indexarQuestoes, calibrar } from "./similaridade.js";
 
 const AJUDA = `
 BB Estudos — comandos (npm run bb -- <comando>)
@@ -42,7 +43,9 @@ BB Estudos — comandos (npm run bb -- <comando>)
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   revogar <id | parte do título>  norma mudou: tira fonte e questões de circulação
-  status                        raio-x: trechos e questões por tópico
+  status                        raio-x: trechos, questões, cenários e descartes por repetição por tópico
+  similaridade indexar          calcula o embedding das questões que ainda não têm (filtro anti-repetição)
+  similaridade calibrar         gera docs/CALIBRAGEM-SIMILARIDADE.md com os pares perto dos limites
 `;
 
 function exigir(v: string | undefined, nome: string): string {
@@ -164,6 +167,7 @@ async function main() {
             const v = r.variacao ? ` [${r.variacao.tipo} · ${r.variacao.contexto}${r.variacao.duasEtapas ? " · 2 etapas" : ""}]` : "";
             if (r.ok) aprovadas++;
             console.log(r.ok ? `✔ aprovada: ${r.questionId}${v} (${seg}s)` : `✖ ${r.motivo}${v} (${seg}s) ${r.detalhes?.join(" | ") ?? ""}`);
+            if (!r.ok && r.motivo === "teto_diario") break; // GERACAO_MAX_DIA: amanhã tem mais
           }
           console.log(`\n${aprovadas}/${n} aprovadas · ${Math.round((Date.now() - t0) / 1000 / n)}s em média por questão`);
         });
@@ -177,6 +181,11 @@ async function main() {
 
       case "status":
         return await mostrarStatus();
+
+      case "similaridade":
+        if (args[0] === "indexar") return await naFila(rotulo, () => indexarQuestoes());
+        if (args[0] === "calibrar") return await calibrar();
+        throw new Error('Use "similaridade indexar" ou "similaridade calibrar".');
 
       default:
         throw new Error(`Comando desconhecido: ${comando}. Veja "npm run bb -- ajuda".`);

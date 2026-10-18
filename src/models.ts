@@ -210,6 +210,11 @@ const QuestionSchema = new Schema(
       _id: false,
     },
     hashEnunciado: { type: String, index: true, unique: true, sparse: true }, // evita duplicata
+    // filtro anti-repetição (src/similaridade.ts): embedding de enunciado + correta,
+    // impressão estrutural (tipo, contexto, parâmetros) e cenário sorteado (src/cenarios.ts)
+    embedding: { type: [Number], select: false, default: undefined },
+    impressao: { type: String, index: true },
+    cenario: { perfil: String, situacao: String, _id: false },
 
     // estatística agregada (taxa de acerto geral = termômetro de dificuldade real)
     stats: {
@@ -281,5 +286,23 @@ const ReportSchema = new Schema(
   { timestamps: true }
 );
 export const Report = model("Report", ReportSchema);
+
+// ------------------------------------------------------------
+// 8. GERAÇÕES — cada tentativa de gerar uma questão (aprovada, rejeitada ou descartada).
+// Dá o teto diário (GERACAO_MAX_DIA), os descartes por motivo no "status" e a taxa de aprovação.
+// ------------------------------------------------------------
+const GeracaoSchema = new Schema(
+  {
+    topicId: { type: Schema.Types.ObjectId, ref: "Topic", index: true },
+    resultado: { type: String, enum: ["aprovada", "rejeitada", "descartada"], required: true },
+    motivo: String, // descartada: motivo do pipeline (ex.: "parecida", "auditor_discordou")
+    questionId: { type: Schema.Types.ObjectId, ref: "Question" },
+    tipo: String,
+    contexto: String,
+    ms: Number,
+    em: { type: Date, default: Date.now, index: true },
+  }
+);
+export const Geracao = model("Geracao", GeracaoSchema, "geracoes");
 
 export type ObjectId = Types.ObjectId;

@@ -82,7 +82,15 @@ Inclua no JSON o campo "verificacao": {"expressao": "...", "fatoresDados": {...}
 - Se a resposta correta não for um número (ex.: uma afirmação conceitual), use "verificacao": null.
 O valor será recalculado por código: se não bater, a questão é descartada.`;
 
-export function geradorUser(p: {
+// cenário sorteado pelo código (src/cenarios.ts): quem aparece na questão e por quê
+type CenarioPrompt = { cenario?: { perfil: string; situacao: string } | null; cenariosRecentes?: string[] };
+function blocoCenario(p: CenarioPrompt) {
+  if (!p.cenario) return "";
+  const recentes = p.cenariosRecentes?.length ? `\nCENÁRIOS RECENTES DESTE TÓPICO (não repita nenhum): ${p.cenariosRecentes.join("; ")}` : "";
+  return `\nCENÁRIO (sorteado, use como pano de fundo do enunciado): ${p.cenario.perfil}, ${p.cenario.situacao}. Não acrescente número, produto ou regra por causa dele.${recentes}`;
+}
+
+export function geradorUser(p: CenarioPrompt & {
   disciplina: string;
   assunto: string;
   subtopicos: string[];
@@ -101,7 +109,7 @@ GABARITO_OBRIGATORIO: ${p.gabaritoObrigatorio}
 
 === FORMATO OBRIGATÓRIO DESTA QUESTÃO (sorteado, não troque) ===
 TIPO: ${p.variacao.tipo}
-CONTEXTO: ${p.variacao.contexto}${
+CONTEXTO: ${p.variacao.contexto}${blocoCenario(p)}${
     p.variacao.duasEtapas
       ? `
 DUAS ETAPAS: a resolução precisa de DOIS cálculos encadeados, em que o resultado do primeiro é usado no segundo (ex.: achar a taxa e depois o montante; aplicar por um prazo e reaplicar o resultado em outra condição). Uma conta só não resolve.`
@@ -122,7 +130,7 @@ ${p.enunciadosRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhum
 
 // Matemática por construção: os números já vêm prontos do código (src/construcao.ts).
 // A IA escreve só o texto: enunciado, explicações e pegadinhas.
-export function geradorConstruidoUser(p: {
+export function geradorConstruidoUser(p: CenarioPrompt & {
   disciplina: string;
   assunto: string;
   dificuldade: number;
@@ -147,7 +155,7 @@ ${p.figura.descricao}
   return `DISCIPLINA: ${p.disciplina}
 ASSUNTO: ${p.assunto}
 DIFICULDADE ALVO (1–5): ${p.dificuldade}
-CONTEXTO OBRIGATÓRIO: ${p.contexto}${p.duasEtapas ? "\nA resolução tem DUAS etapas encadeadas: deixe isso natural no enunciado." : ""}${figura}
+CONTEXTO OBRIGATÓRIO: ${p.contexto}${blocoCenario(p)}${p.duasEtapas ? "\nA resolução tem DUAS etapas encadeadas: deixe isso natural no enunciado." : ""}${figura}
 
 === OS NÚMEROS JÁ ESTÃO PRONTOS (calculados por código; NÃO altere nenhum) ===
 A questão pede: ${p.pergunta}
@@ -273,6 +281,7 @@ REJEITE se houver QUALQUER um destes problemas:
 - alternativa correta identificável só pela forma (muito mais longa ou com mais ressalvas);
 - conteúdo potencialmente desatualizado;
 - incoerência textual no enunciado ou nas alternativas: gênero, número ou pessoa trocados no meio do texto (ex.: "uma cliente" e depois "o cliente");
+- cenário irreal (pessoa, empresa ou situação que não acontece no dia a dia de um banco) ou fora do edital;
 - palavra em outro idioma (ex.: "en", "the", "por ejemplo") fora de citação proposital;
 - erro de português no próprio enunciado ou nas alternativas (ortografia, concordância, regência, crase, pontuação), exceto quando o erro é o objeto da questão e está marcado como tal.
 

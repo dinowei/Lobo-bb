@@ -16,6 +16,8 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 - `src/construcao.ts`: Matemática por construção (Juros compostos, Descontos): o código sorteia números e distratores
 - `src/portugues.ts`: Português por construção (Crase): banco de regras; o código sorteia 1 regra correta + 4 de erro
 - `src/verificacao.ts`: confere a conta com mathjs (regra 10)
+- `src/similaridade.ts` + `src/cenarios.ts` + `data/cenarios.json`: filtro anti-repetição (regra 16) e cenário (perfil + situação) sorteado, o menos usado no tópico
+- Coleção `geracoes` (model `Geracao`): toda tentativa de gerar; dá o teto diário `GERACAO_MAX_DIA` e os descartes no `status`
 - `src/ingestao.ts` + `src/cli.ts`: comandos `npm run bb -- <comando>`
 - `src/estudo.ts`: implementação da interface `Api` (shared/tipos.ts) no servidor
 - `src/server.ts`: rotas `/api/*` e serve `web/dist`
@@ -49,6 +51,7 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 13. Crase por construção só é aprovada se o auditor, julgando cada frase isoladamente e sem saber a regra, disser "correta" para exatamente uma frase, a do gabarito. Depois passa pela revisão completa.
 14. Nas questões por construção de Português, explicação, pegadinha, correção e explicação geral vêm do banco de regras (`src/portugues.ts`), nunca da IA. As frases são escritas pelo `ESCRITOR_PT_MODEL`, que precisa ser diferente do auditor. Cada frase passa pela trava de posição (o "à" exatamente onde a regra manda) antes do auditor; a que não bate é reescrita uma vez.
 15. Figura é dado desenhado por código (tabela, planilha, gráfico, tela de programa), nunca imagem gerada por IA. A IA não copia a figura no enunciado. Figura oficial extraída do PDF só entra no treino depois do OK do dono (tela Figuras).
+16. Questão nova passa pelo filtro de similaridade (`src/similaridade.ts`) antes do auditor: cosseno do embedding contra o mesmo tópico e as oficiais da disciplina, trechos em comum (Jaccard) e, nas por construção, a impressão estrutural (tipo, contexto, parâmetros) que não se repete no tópico. Paráfrase de oficial é descartada. Template não copia o cenário de questão oficial. Limites no `.env` (`SIMILAR_*`).
 
 ## Estado atual
 - Tudo compila (`npm run typecheck`). Leitura de PDF, fatiamento, gabarito, validações e motor de progressão foram testados.

@@ -144,16 +144,27 @@ function planilhaFormula(): Construida {
 // Matemática · sistema linear em tabela (estilo BB 2023 nº 19)
 // A linha pedida é combinação das outras duas: a resposta é única sem achar os preços.
 // ============================================================
+// Itens e compradores variam. Nunca o cenário da oficial 2023 nº 19 (armários, mesas e cadeiras
+// de três agências): estilo da banca sim, paráfrase de questão oficial não (5.8, item 20).
 const ITENS_TABELA = [
-  ["Armário", "Mesa", "Cadeira"],
   ["Cofre", "Terminal", "Impressora"],
-  ["Pacote A", "Pacote B", "Pacote C"],
   ["Notebook", "Monitor", "Teclado"],
+  ["Resma de papel", "Toner", "Grampeador"],
+  ["Camiseta", "Boné", "Caneca"],
+  ["Câmera", "Sensor", "Alarme"],
+  ["Pacote A", "Pacote B", "Pacote C"],
+] as const;
+const COMPRADORES = [
+  { rotulos: ["Loja X", "Loja Y", "Loja Z"], alvo: "da Loja Z", por: "loja" },
+  { rotulos: ["Filial Norte", "Filial Sul", "Filial Centro"], alvo: "da Filial Centro", por: "filial" },
+  { rotulos: ["Pedido 1", "Pedido 2", "Pedido 3"], alvo: "do Pedido 3", por: "pedido" },
+  { rotulos: ["Unidade A", "Unidade B", "Unidade C"], alvo: "da Unidade C", por: "unidade" },
 ] as const;
 
 function sistemaLinearTabela(): Construida {
   for (;;) {
     const itens = sortear(ITENS_TABELA);
+    const quem = sortear(COMPRADORES);
     const precos = itens.map(() => inteiro(120, 900, 10));
     const qX = itens.map(() => inteiro(1, 6));
     const qY = itens.map(() => inteiro(1, 6));
@@ -165,9 +176,9 @@ function sistemaLinearTabela(): Construida {
     const tabela: TabelaDados = {
       cabecalho: ["", ...itens, "Custo total (R$)"],
       linhas: [
-        ["Agência X", ...qX.map(String), String(TX)],
-        ["Agência Y", ...qY.map(String), String(TY)],
-        ["Agência Z", ...qZ.map(String), "?"],
+        [quem.rotulos[0], ...qX.map(String), String(TX)],
+        [quem.rotulos[1], ...qY.map(String), String(TY)],
+        [quem.rotulos[2], ...qZ.map(String), "?"],
       ],
     };
     const soma = (q: number[]) => q.reduce((s, x) => s + x, 0);
@@ -175,11 +186,11 @@ function sistemaLinearTabela(): Construida {
     return {
       tipo: "sistema linear em tabela (com figura)",
       etapas: 2,
-      pergunta: "o custo total da compra para a Agência Z, em reais",
-      dados: ["Agência X", "Agência Y", "Agência Z"],
+      pergunta: `o custo total ${quem.alvo}, em reais`,
+      dados: [...quem.rotulos],
       fatoresDados: {},
       expressao: `${a} * ${TX} + ${b} * ${TY}`,
-      resolucao: `As quantidades de Z são ${a} × (X) ${sinal} × (Y), item a item. Logo o custo de Z = ${a} × ${TX} ${sinal} × ${TY} = ${TZ} (sem precisar achar o preço de cada item).`,
+      resolucao: `As quantidades de ${quem.rotulos[2]} são ${a} × (${quem.rotulos[0]}) ${sinal} × (${quem.rotulos[1]}), item a item. Logo o custo ${quem.alvo} = ${a} × ${TX} ${sinal} × ${TY} = ${TZ} (sem precisar achar o preço de cada item).`,
       unidade: "reais",
       correta: TZ,
       distratores: [
@@ -194,7 +205,7 @@ function sistemaLinearTabela(): Construida {
         { valor: 2 * TX, erro: "dobrou o total de X" },
         { valor: 2 * TY, erro: "dobrou o total de Y" },
       ],
-      figura: { tipo: "tabela", posicao: "enunciado", legenda: `Quantidades de ${itens.join(", ").toLowerCase()} e custo total por agência`, dados: tabela },
+      figura: { tipo: "tabela", posicao: "enunciado", legenda: `Quantidades de ${itens.join(", ").toLowerCase()} e custo total por ${quem.por}`, dados: tabela },
     };
   }
 }

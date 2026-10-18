@@ -43,4 +43,13 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - Problema: nas 2 aprovadas a IA **copiou a tabela no enunciado** ("| Agência | Contas |…"). Correção: prompt mais explícito + `tirarTabelaCopiada` no pipeline antes das checagens (teste cobre o "|x|" de módulo). As 2 já salvas ficaram com a cópia: a gravação no banco por script foi bloqueada pela checagem de permissões; vai para DECISOES-PENDENTES com script pronto.
 - Prints: `docs/telas/figuras/` (4 tipos × 5 amostras + as 2 questões reais, desktop e celular), pela aba nova Figuras → "Geradas (amostra)" (código monta na hora, sem IA, nada salvo).
 
-RETOMAR AQUI: Etapa 1, Fase 4 (anti-repetição: embedding + Jaccard + impressão estrutural + catálogo de cenários; limites conservadores no .env; docs/CALIBRAGEM-SIMILARIDADE.md com 20 pares).
+## 17/10/2026 — Etapa 1, Fase 4: anti-repetição
+
+- `src/similaridade.ts`: antes do auditor, cosseno do embedding (enunciado + correta) contra o mesmo tópico e as oficiais da disciplina; trechos de 4 palavras (Jaccard, pega cópia com palavra trocada; texto curto não conta); impressão estrutural (tipo, contexto, parâmetros) nas por construção e na Crase, checada **antes** de chamar a IA. "parecida" → descarta e pede outro cenário 1 vez; "duplicada" e "paráfrase de oficial" → descarta.
+- Cenários (`data/cenarios.json`, 3 grupos): perfil + situação, sem número e sem produto (o produto vem do contexto, regra 11); sorteia o menos usado no tópico, nunca um dos 15 últimos (que vão ao gerador como proibidos). O auditor rejeita cenário irreal.
+- Coleção `geracoes`: toda tentativa registrada → teto diário `GERACAO_MAX_DIA` (regra A7, padrão 60) e descartes por repetição no `status` (colunas "cenários" e "desc. repetição").
+- Calibragem: `similaridade indexar` (162 embeddings) + `similaridade calibrar` → 657 pares, 650 abaixo de 0,80. O único acima de 0,90 (0,939) é a mesma questão de Juros com outro capital; o seguinte (0,871) é diferente. Limites: duplicada 0,97, parecida 0,93, oficial 0,93, trechos 0,60. Os 20 pares estão em `docs/CALIBRAGEM-SIMILARIDADE.md` para você classificar.
+- Achado da calibragem: o template de sistema linear usava o cenário da oficial 2023 nº 19 (armários, mesas, cadeiras). Corrigido: 6 conjuntos de itens × 4 compradores, sem o da oficial.
+- Testes: 29/29. Rodada real (Juros, 3): **1/3** aprovada, 113 s em média; 1 reprovada na revisão (erro de português do gerador ao reescrever o cenário, pego pelo auditor), 1 `numero_alterado`. Nenhum descarte por repetição.
+
+RETOMAR AQUI: Etapa 1.5 (PROMPT-RETOMADA R2): sondar os 9 modelos (R2.1), depois catálogo/correntes/telemetria (R2.2; `src/catalogo.ts` e `data/modelos.json` já escritos, sem commit).

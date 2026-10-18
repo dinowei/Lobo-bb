@@ -8,6 +8,7 @@ import {
   Source,
   Chunk,
   Question,
+  Geracao,
   INDICE_VETORIAL,
   DISCIPLINAS_COM_FONTE_OBRIGATORIA,
   type Disciplina,
@@ -54,10 +55,13 @@ import {
   DICA_CRASE,
   REGRAS_CRASE,
   type HistoricoCrase,
+  type CraseMontada,
 } from "./portugues.js";
 import { normalizar, hashTexto } from "./extrair.js";
 import { ehDisciplinaDeCalculo, verificarConta, numerosDoTexto } from "./verificacao.js";
 import { sortearVariacao, type Variacao } from "./variacao.js";
+import { filtrarRepeticao, detalheSimilaridade, impressaoEstrutural } from "./similaridade.js";
+import { carregarCenarios, sortearCenario, descreverCenario, N_PROIBIDOS, type Cenario } from "./cenarios.js";
 
 // ------------------------------------------------------------
 // RAG (Atlas Vector Search na coleção de trechos)
@@ -122,7 +126,7 @@ const letraAleatoria = (): Letra => (["A", "B", "C", "D", "E"] as const)[Math.fl
 // ------------------------------------------------------------
 export type Resultado = (
   | { ok: true; questionId: Types.ObjectId }
-  | { ok: false; motivo: string; detalhes?: string[] }
+  | { ok: false; motivo: string; detalhes?: string[]; questionId?: Types.ObjectId } // questionId: salva como rejeitada
 ) & { variacao?: Variacao };
 
 // erro em uma linha só (zod e afins vêm em várias)
@@ -140,20 +144,59 @@ function dadosFaltando(enunciado: string, dados: string[]): string[] {
 }
 
 // Nenhuma falha (rede, banco, IA) derruba o lote: vira um Resultado com o motivo
+type EstadoGeracao = { variacao?: Variacao; tipo?: string; cenario?: Cenario | null; evitar: Cenario[] };
+
 export async function gerarQuestao(topicId: string, dificuldade = 3, opcoes: { tipo?: string } = {}): Promise<Resultado> {
-  const estado: { variacao?: Variacao; tipo?: string } = { tipo: opcoes.tipo };
-  try {
-    return { ...(await gerarQuestaoInterna(topicId, dificuldade, estado)), variacao: estado.variacao };
-  } catch (e) {
-    return { ok: false, motivo: "erro_inesperado", detalhes: [umaLinha(e)], variacao: estado.variacao };
-  }
+  const estado: EstadoGeracao = { tipo: opcoes.tipo, evitar: [] };
+  const r = await tentarGerar(topicId, dificuldade, estado);
+  if (r.ok || r.motivo !== "parecida") return r;
+  // "parecida" com outra do banco: descarta e pede outro cenário, uma vez só
+  if (estado.cenario) estado.evitar.push(estado.cenario);
+  return tentarGerar(topicId, dificuldade, estado);
 }
 
-async function gerarQuestaoInterna(
-  topicId: string,
-  dificuldadePedida: number,
-  estado: { variacao?: Variacao; tipo?: string }
-): Promise<Resultado> {
+// Teto de gerações por dia (regra A7): cada tentativa conta, aprovada ou não
+export async function geracoesHoje() {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return Geracao.countDocuments({ em: { $gte: hoje } });
+}
+export const tetoDiario = () => Number(process.env.GERACAO_MAX_DIA) || 60;
+
+async function tentarGerar(topicId: string, dificuldade: number, estado: EstadoGeracao): Promise<Resultado> {
+  if ((await geracoesHoje()) >= tetoDiario())
+    return { ok: false, motivo: "teto_diario", detalhes: [`já foram ${tetoDiario()} gerações hoje (GERACAO_MAX_DIA)`] };
+  const inicio = Date.now();
+  let r: Resultado;
+  try {
+    r = { ...(await gerarQuestaoInterna(topicId, dificuldade, estado)), variacao: estado.variacao };
+  } catch (e) {
+    r = { ok: false, motivo: "erro_inesperado", detalhes: [umaLinha(e)], variacao: estado.variacao };
+  }
+  // registro de toda tentativa: teto diário, aprovação e descartes por motivo no "status"
+  await Geracao.create({
+    topicId: Types.ObjectId.isValid(topicId) ? topicId : undefined,
+    resultado: r.ok ? "aprovada" : r.questionId ? "rejeitada" : "descartada",
+    motivo: r.ok ? undefined : r.motivo,
+    questionId: r.questionId,
+    tipo: estado.variacao?.tipo,
+    contexto: estado.variacao?.contexto,
+    ms: Date.now() - inicio,
+  }).catch(() => undefined);
+  return r;
+}
+
+// cenários já usados no tópico (fora as rejeitadas), do mais recente para o mais antigo
+async function historicoCenarios(topicId: Types.ObjectId): Promise<Cenario[]> {
+  const qs = await Question.find({ topicId, status: { $ne: "rejeitada" }, "cenario.perfil": { $exists: true } })
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .select("cenario")
+    .lean();
+  return qs.flatMap((q) => (q.cenario?.perfil && q.cenario.situacao ? [{ perfil: q.cenario.perfil, situacao: q.cenario.situacao }] : []));
+}
+
+async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, estado: EstadoGeracao): Promise<Resultado> {
   const topic = await Topic.findById(topicId);
   if (!topic) return { ok: false, motivo: "topico_inexistente" };
 
@@ -176,15 +219,29 @@ async function gerarQuestaoInterna(
     .limit(15)
     .select("enunciado");
 
+  // Cenário (perfil + situação) sorteado pelo código: o menos usado no tópico, nunca um dos 15 últimos
+  const historico = await historicoCenarios(topic._id);
+  const cenario = sortearCenario(carregarCenarios(), topic.disciplina, variacao.contexto, historico, estado.evitar);
+  estado.cenario = cenario;
+  const cenariosRecentes = historico.slice(0, N_PROIBIDOS).map(descreverCenario);
+
   // 2. Geração
   const gabaritoObrigatorio = letraAleatoria();
 
   // Por construção (Matemática, figuras): o código fixa números, figura, alternativas e gabarito;
   // a IA só escreve. Vale para todo tipo que tem template (inclusive Informática e Vendas com figura).
+  // Impressão digital estrutural (tipo, contexto, parâmetros) não se repete no tópico: monta de novo.
   let montada: Montada | null = null;
+  let impressao: string | undefined;
   if (tiposConstruidos(topic.assunto).includes(variacao.tipo)) {
-    montada = construir(topic.assunto, variacao.tipo, gabaritoObrigatorio);
-    if (!montada) return { ok: false, motivo: "construcao_falhou", detalhes: [`sem template para "${variacao.tipo}"`] };
+    for (let k = 0; k < 20 && !montada; k++) {
+      const m = construir(topic.assunto, variacao.tipo, gabaritoObrigatorio);
+      if (!m) return { ok: false, motivo: "construcao_falhou", detalhes: [`sem template para "${variacao.tipo}"`] };
+      const imp = impressaoEstrutural(variacao.tipo, variacao.contexto, [m.dados, m.figura?.dados ?? null]);
+      if (await Question.exists({ topicId: topic._id, impressao: imp, status: { $ne: "rejeitada" } })) continue;
+      [montada, impressao] = [m, imp];
+    }
+    if (!montada) return { ok: false, motivo: "impressao_repetida", detalhes: ["20 montagens já existiam no tópico"] };
     variacao.duasEtapas = montada.etapas >= 2; // a verdade vem do template
   }
 
@@ -202,6 +259,8 @@ async function gerarQuestaoInterna(
         gabarito: montada.gabarito,
         enunciadosRecentes: recentes.map((r) => r.enunciado),
         figura: montada.figura ? { tipo: montada.figura.tipo, descricao: descreverFigura(montada.figura) } : undefined,
+        cenario,
+        cenariosRecentes,
       })
     : geradorUser({
         disciplina: topic.disciplina,
@@ -213,6 +272,8 @@ async function gerarQuestaoInterna(
         exemplosOficiais: await exemplosOficiais(topic._id),
         enunciadosRecentes: recentes.map((r) => r.enunciado),
         variacao,
+        cenario,
+        cenariosRecentes,
       });
   let q: QuestaoGerada;
   try {
@@ -294,6 +355,10 @@ async function gerarQuestaoInterna(
     valorEsperado = conta.valorEsperado;
   }
 
+  // Filtro anti-repetição (antes de gastar com o auditor): mesmo tópico + oficiais da disciplina
+  const sim = await filtrarRepeticao(q.enunciado, corretas[0].texto, topic._id, topic.disciplina);
+  if (sim.veredito.classe !== "nova") return { ok: false, motivo: sim.veredito.classe, detalhes: [detalheSimilaridade(sim.veredito)] };
+
   const fontesTxt = fontes.map((f) => `${f.titulo}\n${f.texto}`);
   let modeloAuditor = modelo("AUDITOR_MODEL");
   // o auditor só lê texto: a figura vai convertida em descrição estruturada
@@ -352,11 +417,14 @@ async function gerarQuestaoInterna(
     // figura gerada por código: dado desenhado no site (já conferido pelas checagens e pelo auditor)
     figuras: montada?.figura ? [{ ...montada.figura, origem: "construcao", status: "ok" }] : undefined,
     hashEnunciado: h,
+    embedding: sim.embedding ?? undefined,
+    impressao,
+    cenario: cenario ?? undefined,
   });
 
   return aprovada
     ? { ok: true, questionId: doc._id }
-    : { ok: false, motivo: "reprovada_na_revisao", detalhes: rev.problemas };
+    : { ok: false, motivo: "reprovada_na_revisao", detalhes: rev.problemas, questionId: doc._id };
 }
 
 // ------------------------------------------------------------
@@ -387,7 +455,21 @@ async function gerarCraseConstruida(
   variacao: Variacao
 ): Promise<Resultado> {
   const gabarito = letraAleatoria();
-  const m = construirCrase(gabarito, variacao.contexto, await historicoCrase(topic._id));
+  // impressão estrutural: (contexto, regra correta, regras de erro) não se repete no tópico
+  const historico = await historicoCrase(topic._id);
+  const montar = async (): Promise<[CraseMontada, string] | null> => {
+    for (let k = 0; k < 20; k++) {
+      const c = construirCrase(gabarito, variacao.contexto, historico);
+      const certa = c.frases.find((f) => f.letra === c.gabarito)!.regra.id;
+      const erros = c.frases.filter((f) => f.letra !== c.gabarito).map((f) => f.regra.id).sort();
+      const imp = impressaoEstrutural(TIPO_CRASE, variacao.contexto, { certa, erros });
+      if (!(await Question.exists({ topicId: topic._id, impressao: imp, status: { $ne: "rejeitada" } }))) return [c, imp];
+    }
+    return null;
+  };
+  const montagem = await montar();
+  if (!montagem) return { ok: false, motivo: "impressao_repetida", detalhes: ["20 montagens já existiam no tópico"] };
+  const [m, impressao] = montagem;
   const anteriores = await Question.find({ topicId: topic._id, "variacao.tipo": TIPO_CRASE })
     .sort({ createdAt: -1 })
     .limit(6)
@@ -462,6 +544,9 @@ async function gerarCraseConstruida(
   // o enunciado é fixo: o que identifica a questão são as frases
   const h = hashTexto(q.enunciado + q.alternativas.map((a) => a.texto).join("|"));
   if (await Question.exists({ hashEnunciado: h })) return { ok: false, motivo: "duplicada" };
+  // filtro anti-repetição antes dos auditores (enunciado + frase correta)
+  const sim = await filtrarRepeticao(q.enunciado, q.alternativas.find((a) => a.correta)!.texto, topic._id, topic.disciplina);
+  if (sim.veredito.classe !== "nova") return { ok: false, motivo: sim.veredito.classe, detalhes: [detalheSimilaridade(sim.veredito)] };
 
   // auditoria por frase, cada uma isolada
   const modelos = new Set<string>();
@@ -545,10 +630,12 @@ async function gerarCraseConstruida(
     },
     variacao,
     hashEnunciado: h,
+    embedding: sim.embedding ?? undefined,
+    impressao,
   });
   return aprovada
     ? { ok: true, questionId: doc._id }
-    : { ok: false, motivo: "reprovada_na_revisao", detalhes: [...rev.problemas, ...vereditos] };
+    : { ok: false, motivo: "reprovada_na_revisao", detalhes: [...rev.problemas, ...vereditos], questionId: doc._id };
 }
 
 // ------------------------------------------------------------
@@ -566,6 +653,7 @@ export async function reabastecerEstoque(minPorTopico = 30, maxTentativas = 3) {
         const r = await gerarQuestao(String(t._id), 1 + Math.floor(Math.random() * 5));
         if (r.ok) break;
         console.warn(`  ✖ ${r.motivo}`, r.detalhes?.join(" | ") ?? "");
+        if (r.motivo === "teto_diario") return; // GERACAO_MAX_DIA: para tudo até amanhã
         if (r.motivo === "sem_fontes_para_o_topico") {
           i = faltam; // não adianta insistir: falta ingerir fonte para esse tópico
           break;
