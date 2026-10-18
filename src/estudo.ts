@@ -3,7 +3,8 @@
 // As regras (XP, SM-2, prioridade, painel) vêm de shared/motor.ts — as mesmas do modo demo.
 // ============================================================
 import { Types } from "mongoose";
-import { Attempt, Question, ReviewState, Topic, Report, Source, Redacao } from "./models.js";
+import { Attempt, Question, RatingAluno, ReviewState, Topic, Report, Source, Redacao } from "./models.js";
+import { atualizarRatings, dificuldadeExibida, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../shared/rating.js";
 import {
   ESTADO_INICIAL,
   agendar,
@@ -97,6 +98,8 @@ type QuestaoDoc = {
   gabarito: string;
   dificuldade?: number | null;
   variacao?: { tipo?: string | null } | null;
+  rating?: number | null;
+  ratingN?: number | null;
   explicacaoGeral?: string | null;
   dicaDeProva?: string | null;
   fontes?: { sourceId?: Types.ObjectId | null; trecho?: string | null }[];
@@ -137,7 +140,7 @@ function paraDTO(q: QuestaoDoc, topicos: Map<string, { disciplina: string; assun
     textoBase: q.textoBase ?? undefined,
     enunciado: q.enunciado,
     alternativas: q.alternativas.map((a) => ({ letra: a.letra as Letra, texto: a.texto })),
-    dificuldade: q.dificuldade ?? 3,
+    dificuldade: dificuldadeExibida(q.dificuldade ?? 3, q.rating, q.ratingN),
     notaNorma: q.notaNorma ?? undefined,
     figuras: figurasDTO(q),
   };
@@ -183,7 +186,13 @@ async function registrar(
   const xp = xpDaTentativa({ acertou, dificuldade: q.dificuldade ?? 3, confianca, modo });
 
   await Attempt.create({ userId, questionId: q._id, topicId: q.topicId, resposta: resposta ?? undefined, acertou, tempoSeg, confianca, modo, xp, simuladoId });
-  await Question.updateOne({ _id: q._id }, { $inc: { "stats.tentativas": 1, "stats.acertos": acertou ? 1 : 0 } });
+
+  // rating Elo: aluno (por disciplina) × questão; simulado também conta
+  const disciplina = (await Topic.findById(q.topicId).select("disciplina").lean())?.disciplina;
+  const ra = disciplina ? await RatingAluno.findOne({ userId, disciplina }).lean() : null;
+  const r = atualizarRatings(ra?.rating ?? RATING_ALUNO_INICIAL, q.rating ?? ratingInicialQuestao(q.dificuldade ?? 3), acertou, confianca);
+  await Question.updateOne({ _id: q._id }, { $inc: { "stats.tentativas": 1, "stats.acertos": acertou ? 1 : 0, ratingN: 1 }, $set: { rating: r.questao } });
+  if (disciplina) await RatingAluno.updateOne({ userId, disciplina }, { $set: { rating: r.aluno }, $inc: { n: 1 } }, { upsert: true });
 
   const atual = await ReviewState.findOne({ userId, questionId: q._id });
   const novo = agendar(atual ?? ESTADO_INICIAL, notaSM2(acertou, confianca));
@@ -275,7 +284,8 @@ export const apiServidor: Omit<Api, "modo"> = {
       new Set(brutas.map((t) => t.questaoId))
     );
     banco.repetidasNoite = await Geracao.countDocuments({ em: { $gte: inicioDaNoite() }, motivo: { $in: MOTIVOS_REPETICAO } });
-    return { ...painel, banco, alertasAdmin, redacaoCorrigidaPendente: !!redacaoCorrigidaPendente };
+    const niveis = (await RatingAluno.find({ userId }).select("disciplina rating n").lean()).map((r) => ({ disciplina: r.disciplina as Disciplina, rating: Math.round(r.rating), n: r.n ?? 0 }));
+    return { ...painel, banco, alertasAdmin, redacaoCorrigidaPendente: !!redacaoCorrigidaPendente, niveis };
   },
 
   async proxima(f) {
@@ -355,10 +365,16 @@ export const apiServidor: Omit<Api, "modo"> = {
     const respondidas = await Attempt.distinct("questionId", { userId, topicId: escolhido._id });
     const naoVistas = await Question.countDocuments({ topicId: escolhido._id, status: "aprovada", _id: { $nin: respondidas } });
     if (naoVistas < 3) reabastecerEmSegundoPlano(String(escolhido._id));
-    const [q] = await Question.aggregate<QuestaoDoc>([
+    // no seu nível: entre até 40 candidatas, mais chance para rating perto do seu + 50 (Elo, 8.7)
+    const candidatas = await Question.aggregate<{ _id: Types.ObjectId; rating?: number; dificuldade?: number }>([
       { $match: { topicId: escolhido._id, status: "aprovada", ...(naoVistas ? { _id: { $nin: respondidas } } : {}) } },
-      { $sample: { size: 1 } },
+      { $sample: { size: 40 } },
+      { $project: { rating: 1, dificuldade: 1 } },
     ]);
+    const meu = (await RatingAluno.findOne({ userId, disciplina: escolhido.disciplina }).lean())?.rating ?? RATING_ALUNO_INICIAL;
+    const alvo = sortearPonderado(candidatas, (c) => pesoPorProximidade(c.rating ?? ratingInicialQuestao(c.dificuldade ?? 3), meu + ALVO_ACIMA))!;
+    const q = await Question.findById(alvo._id).lean<QuestaoDoc>();
+    if (!q) return { questao: null, modo: "treino", aviso: "Não deu para buscar a questão agora. Tente de novo." };
     return {
       questao: paraDTO(q, topicos),
       modo: "treino",

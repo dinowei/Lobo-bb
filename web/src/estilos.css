@@ -793,6 +793,10 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .legenda-motivos i { width: 7px; height: 7px; border-radius: 50%; }
 .aviso-ilusao { font-size: 12px; color: var(--errado); }
 
+/* nível estimado (Elo) no módulo do painel */
+.nivel-estimado { display: grid; gap: 5px; margin-top: 6px; max-width: 320px; font-size: 12px; }
+.nivel-estimado .barra { height: 4px; }
+
 /* tela Cartões */
 .cartao-estudo { max-width: 680px; }
 .cartao-face { display: flex; flex-direction: column; gap: 14px; width: 100%; min-height: 220px; padding: 26px; text-align: left; color: var(--texto); background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio-g); transition: border-color .15s; }

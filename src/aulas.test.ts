@@ -46,6 +46,10 @@ test("normalizarFontes tira as não citadas e repetidas e limita a 8, sem mexer 
   assert.ok(n.fontes.every((f) => f.indice === 1 || f.indice === 3));
   assert.ok(n.fontes.length <= 8);
   assert.equal(n.fontes.filter((f) => f.indice === 1 && f.trecho === trecho).length, 1);
+  // citação longa é cortada numa palavra e continua literal
+  const longa = normalizarFontes(montar(`Regra [1]. ${"Explicação conceitual suficiente para esta aula. ".repeat(3)}`, [{ indice: 1, trecho: `${trecho} ${trecho}` }]));
+  assert.ok(longa.fontes[0].trecho.length <= 120 && `${trecho} ${trecho}`.startsWith(longa.fontes[0].trecho));
+  assert.equal(validarAulaGerada(longa, "matematica", [{ ...fonte, texto: `${trecho} ${trecho}` }]), undefined);
   // a não citada que reprovava antes agora sai, e a aula passa
   const semUso = normalizarFontes(montar(`Regra [1]. ${"Explicação conceitual suficiente para esta aula. ".repeat(3)}`, [{ indice: 1, trecho }, { indice: 2, trecho }]));
   assert.equal(validarAulaGerada(semUso, "matematica", [fonte]), undefined);

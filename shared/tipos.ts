@@ -273,6 +273,7 @@ export interface PainelDTO {
   motivosErro: MotivosDisciplinaDTO[];
   calibragem: CalibragemDTO[]; // primeiro o geral, depois por disciplina
   horasSemana: { disciplina: Disciplina; seg: number }[]; // horas líquidas dos últimos 7 dias
+  niveis?: { disciplina: Disciplina; rating: number; n: number }[]; // nível estimado (Elo) por disciplina
   redacaoCorrigidaPendente?: boolean;
   banco?: BancoDTO; // cartão "Banco de questões"
   alertasAdmin?: string[]; // só o admin vê (modelos, regras); o aluno nunca vê menção a IA

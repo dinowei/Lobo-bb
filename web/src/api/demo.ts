@@ -34,6 +34,7 @@ import {
 } from "../../../shared/motor";
 import { QUESTOES_DEMO, type QuestaoDemo } from "../demo/questoes";
 import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, sortearDisciplinaMista } from "../../../shared/estruturaProva";
+import { reprocessar, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../../../shared/rating";
 import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../../../shared/aprendizado";
 
 const CHAVE = "lobo-demo-v1";
@@ -168,6 +169,14 @@ function registrar(e: Estado, q: QuestaoDemo, acertou: boolean, nota: number, xp
   return novo.intervaloDias;
 }
 
+// Elo no demo: reprocessa o histórico (pequeno) com a mesma função do servidor
+function ratingsDemo(e: Estado) {
+  return reprocessar(
+    [...e.tentativas].sort((a, b) => a.data.localeCompare(b.data)).map((t) => ({ questaoId: t.questaoId, disciplina: t.topicoId.split(":")[0], acertou: t.acertou, confianca: t.modo === "simulado" ? 2 : t.confianca })),
+    (id) => porId.get(id)?.dificuldade ?? 3
+  );
+}
+
 const espera = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 120));
 
 const TEMA_REDACAO_DEMO: TemaRedacaoDTO = {
@@ -193,7 +202,8 @@ export const apiDemo: Api = {
       QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id)).map((q) => ({ id: q.id, disciplina: q.disciplina, gerada: false, criadaEm: "2026-01-01T00:00:00Z" })),
       new Set(e.tentativas.map((t) => t.questaoId))
     );
-    return espera({ ...painel, banco });
+    const niveis = [...ratingsDemo(e).alunos].map(([d, a]) => ({ disciplina: d as Disciplina, rating: Math.round(a.rating), n: a.n }));
+    return espera({ ...painel, banco, niveis });
   },
 
   async proxima(f) {
@@ -251,7 +261,10 @@ export const apiDemo: Api = {
       return prioridade(tp?.peso ?? null, n, a) * fatorNaoSabia(naoSabia.get(id) ?? 0);
     })!;
     const daqui = pool.filter((q) => topicoDe(q) === tid);
-    const q = daqui[Math.floor(Math.random() * daqui.length)];
+    // no seu nível (Elo): mais chance para rating perto do seu + 50
+    const r = ratingsDemo(e);
+    const meu = r.alunos.get(tid.split(":")[0])?.rating ?? RATING_ALUNO_INICIAL;
+    const q = sortearPonderado(daqui, (x) => pesoPorProximidade(r.questoes.get(x.id)?.rating ?? ratingInicialQuestao(x.dificuldade), meu + ALVO_ACIMA))!;
     return espera({
       questao: paraDTO(q),
       modo: "treino" as const,

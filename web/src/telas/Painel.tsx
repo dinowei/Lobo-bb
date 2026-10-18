@@ -3,6 +3,7 @@ import { PESO_PADRAO } from "../../../shared/motor";
 import { MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO, type BancoDTO, type Disciplina, type MotivoErro, type MotivosDisciplinaDTO, type TopicoProgresso } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { CartaoCalibragem } from "../componentes/Calibragem";
+import { dificuldadeDoRating } from "../../../shared/rating";
 import { Ilustracao } from "../componentes/Ilustracoes";
 import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
 import { COR_DISC, CURTO, MASCOTE, SIGLA, diasAte, pct } from "../util";
@@ -77,6 +78,7 @@ export function Painel() {
               Disciplina {recomendadas.indexOf(disc) + 1} de {recomendadas.length} · {disc.dominados}/{disc.topicos} tópicos dominados
             </div>
             <h2 id="titulo-modulo">{disc.nome}</h2>
+            <NivelEstimado nivel={painel.niveis?.find((n) => n.disciplina === disc.disciplina)} />
           </div>
           <div className="progresso-modulo">
             <div className="barra" aria-hidden="true"><i style={{ width: pct(disc.progresso) }} /></div>
@@ -351,6 +353,18 @@ function CartaoMotivos({ linhas }: { linhas: MotivosDisciplinaDTO[] }) {
         )}
       </div>
     </>
+  );
+}
+
+// Nível estimado (Elo) da disciplina: barra de 800 a 1800, com o rótulo de dificuldade equivalente
+function NivelEstimado({ nivel }: { nivel?: { rating: number; n: number } }) {
+  if (!nivel || nivel.n < 5) return <div className="nivel-estimado sub">Nível estimado: responda 5 questões para medir</div>;
+  const faixa = Math.min(1, Math.max(0, (nivel.rating - 800) / 1000));
+  return (
+    <div className="nivel-estimado" title={`Rating ${nivel.rating} em ${nivel.n} respostas: você acerta metade das questões de dificuldade ${dificuldadeDoRating(nivel.rating)}`}>
+      <span className="sub num">Nível estimado {nivel.rating.toLocaleString("pt-BR")} · dá conta da dificuldade {dificuldadeDoRating(nivel.rating)}</span>
+      <div className="barra" aria-hidden="true"><i style={{ width: pct(faixa) }} /></div>
+    </div>
   );
 }
 

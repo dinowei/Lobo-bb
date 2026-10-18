@@ -219,6 +219,9 @@ const QuestionSchema = new Schema(
     explicacaoAlternativa: { texto: String, modelo: String, conferidaPor: String, em: Date, _id: false },
 
     // estatística agregada (taxa de acerto geral = termômetro de dificuldade real)
+    // rating Elo (shared/rating.ts): começa pela dificuldade rotulada e se ajusta com as respostas
+    rating: Number,
+    ratingN: { type: Number, default: 0 },
     stats: {
       tentativas: { type: Number, default: 0 },
       acertos: { type: Number, default: 0 },
@@ -384,6 +387,19 @@ const AulaSchema = new Schema(
   { timestamps: true }
 );
 export const Aula = model("Aula", AulaSchema, "aulas");
+
+// Rating Elo do aluno por disciplina (8.7)
+const RatingAlunoSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    disciplina: { type: String, enum: DISCIPLINAS, required: true },
+    rating: { type: Number, required: true },
+    n: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+RatingAlunoSchema.index({ userId: 1, disciplina: 1 }, { unique: true });
+export const RatingAluno = model("RatingAluno", RatingAlunoSchema, "ratings_aluno");
 
 // Cartões (8.6): frente/verso de normas (com trecho literal da fonte) e vocabulário de Inglês (trecho
 // literal da prova oficial). Só "aprovado" (auditor de outra família) aparece para o aluno.

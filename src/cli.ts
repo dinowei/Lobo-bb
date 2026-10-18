@@ -54,6 +54,7 @@ import { planejarPregeracoes } from "./outroJeito.js";
 import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { gerarAulas, planejarAulas } from "./aulas.js";
 import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
+import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
@@ -79,6 +80,8 @@ BB Estudos — comandos (npm run bb -- <comando>)
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   aulas [--assunto "<parte do nome>"] [--n 3]   prepara aulas curtas aprovadas por tópico
   cartoes [--assunto "<parte do nome>"] [--n 3] prepara cartões (normas com fonte e vocabulário de Inglês)
+  rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
+  calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
   temas [--n 10]                prepara temas inéditos para redação
@@ -229,6 +232,20 @@ async function main() {
           const r = await gerarTemas(n);
           console.log(`Temas: ${r.concluidas} tarefa(s) concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa.`);
         });
+      }
+
+      case "rating-migrar": {
+        const r = await migrarRatings();
+        console.log(`✔ Ratings recalculados: ${r.tentativas} tentativas, ${r.questoes} questões, ${r.alunos} rating(s) de aluno por disciplina.`);
+        return;
+      }
+
+      case "calibragem": {
+        const linhas = await relatorioCalibragem();
+        if (!linhas.length) return console.log(`Ainda não há questões com 5+ respostas para comparar o rótulo com o rating.`);
+        console.log("Rótulo da dificuldade × dificuldade medida pelo rating (erro > 0: o rótulo exagera a dificuldade)\n");
+        for (const l of linhas) console.log(`${l.erroMedio >= 0 ? "+" : ""}${l.erroMedio.toFixed(2)}  n=${l.n}  ↑${l.superestima} ↓${l.subestima}  ${l.grupo}`);
+        return;
       }
 
       case "cartoes": {

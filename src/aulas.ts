@@ -31,7 +31,15 @@ export const MAX_FONTES_AULA = 8;
 export function normalizarFontes(aula: Gerada): Gerada {
   const citados = new Set([...aula.conteudo.matchAll(/\[(\d+)\]/g)].map((m) => Number(m[1])));
   const vistos = new Set<string>();
+  // citação longa: corta na última palavra antes de 120 caracteres (continua sendo trecho literal)
+  const curto = (s: string) => {
+    if (s.length <= 120) return s;
+    const corte = s.slice(0, 120);
+    const espaco = corte.lastIndexOf(" ");
+    return (espaco >= 40 ? corte.slice(0, espaco) : corte).trim();
+  };
   const fontes = aula.fontes
+    .map((f) => ({ ...f, trecho: curto(f.trecho) }))
     .filter((f) => citados.has(f.indice))
     .filter((f) => !vistos.has(`${f.indice}|${f.trecho}`) && vistos.add(`${f.indice}|${f.trecho}`))
     .slice(0, MAX_FONTES_AULA);
