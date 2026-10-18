@@ -43,9 +43,19 @@ function limpar(s: string): string {
     .trim();
 }
 
-function htmlParaTexto(html: string): string {
+// Entidades nomeadas comuns em páginas de lei (Planalto, DOU)
+const ENTIDADES: Record<string, string> = {
+  aacute: "á", eacute: "é", iacute: "í", oacute: "ó", uacute: "ú", Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú",
+  acirc: "â", ecirc: "ê", ocirc: "ô", Acirc: "Â", Ecirc: "Ê", Ocirc: "Ô", atilde: "ã", otilde: "õ", Atilde: "Ã", Otilde: "Õ",
+  agrave: "à", Agrave: "À", ccedil: "ç", Ccedil: "Ç", uuml: "ü", ordm: "º", ordf: "ª", sect: "§", deg: "°",
+  ndash: "–", mdash: "—", lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”", hellip: "…", laquo: "«", raquo: "»",
+};
+
+export function htmlParaTexto(html: string): string {
   return html
     .replace(/<(script|style|noscript)[\s\S]*?<\/\1>/gi, " ")
+    // texto riscado (Planalto: dispositivo revogado ou com redação antiga) não é norma vigente
+    .replace(/<(strike|s|del)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|li|tr|h[1-6]|section|article)>/gi, "\n")
     .replace(/<[^>]+>/g, " ")
@@ -54,7 +64,9 @@ function htmlParaTexto(html: string): string {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&([A-Za-z]+);/g, (e, nome: string) => ENTIDADES[nome] ?? e);
 }
 
 // PDF escaneado (imagem) quase não tem texto extraível → precisa de OCR antes

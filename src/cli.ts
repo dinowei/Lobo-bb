@@ -28,6 +28,7 @@ import { carregarCatalogo } from "./catalogo.js";
 import { sondarModelos, verificarModelos } from "./sondagem.js";
 import { planejarNoite, rodarFila } from "./noturno.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
+import { baixarFontes } from "./baixar.js";
 import { telemetriaPendente } from "./telemetria.js";
 import { writeFile } from "node:fs/promises";
 
@@ -50,6 +51,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
+  baixar-fontes [id ...]        baixa as leis e normas de data/fontes-oficiais.json (só sites oficiais) para fontes/
   verificar-modelos             1 chamada curta por modelo do catálogo (a verificação semanal)
   benchmark auditor|juiz|escritor|relatorio [--max N]   compara os modelos grátis (docs/BENCHMARK-MODELOS.md)
   revogar <id | parte do título>  norma mudou: tira fonte e questões de circulação
@@ -211,6 +213,12 @@ async function main() {
           const r = await rodarFila({ ate, max: max !== undefined ? max + 1 : undefined });
           console.log(`\n${r.rodadas} tarefa(s): ${r.concluidas} concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa, ${r.esgotadas} esgotada(s)${r.orfas ? `, ${r.orfas} recuperada(s) de processo que caiu` : ""}`);
         });
+      }
+
+      case "baixar-fontes": {
+        // Etapa 2.1: só sites oficiais (planalto.gov.br, bcb.gov.br, in.gov.br); grava em fontes/ (fora do Git)
+        const r = await baixarFontes(args);
+        return console.log(`\n${r.length} fonte(s) em fontes/LEIAME.json`);
       }
 
       case "benchmark": {

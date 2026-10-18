@@ -129,14 +129,17 @@ function seguidasDepois(seguidas: number, r: Resposta, modelo: string): number {
   return n;
 }
 
+// Questão por questão, todos os modelos em sequência: rodada parcial (--max) ou provedor instável
+// afetam todos igual, e a amostra de cada modelo cresce junto
 export async function rodarAuditor(modelos = CANDIDATOS.auditor, n = 60, max = Infinity) {
   const amostra = await amostraOficiais(n);
   let feitas = 0;
-  for (const modelo of modelos) {
-    let seguidas = 0;
-    for (const { q, estrato } of amostra) {
+  const seguidasDe = new Map<string, number>();
+  for (const { q, estrato } of amostra) {
+    for (const modelo of modelos) {
       if (feitas >= max) return feitas;
-      if (seguidas >= MAX_SEGUIDAS) break;
+      let seguidas = seguidasDe.get(modelo) ?? 0;
+      if (seguidas >= MAX_SEGUIDAS) continue;
       if (await jaFeito(RODADAS.auditor, modelo, { questionId: q._id })) continue;
       const r = await medir(async () => {
         const json = await chatJSON(auditor(), modelo, AUDITOR_CEGO_SYSTEM, auditorCegoUser(questaoCega(q), []), 0, 2000, { funcao: "benchmark" });
@@ -147,6 +150,7 @@ export async function rodarAuditor(modelos = CANDIDATOS.auditor, n = 60, max = I
       feitas++;
       console.log(`${r.falha ? `✖ ${r.falha}` : r.acertou ? "✔" : "✗"} ${modelo} · ${estrato} · ${Math.round(r.ms / 1000)}s`);
       seguidas = seguidasDepois(seguidas, r, modelo);
+      seguidasDe.set(modelo, seguidas);
       await pausa(2000);
     }
   }
@@ -156,11 +160,12 @@ export async function rodarAuditor(modelos = CANDIDATOS.auditor, n = 60, max = I
 export async function rodarJuiz(modelos = CANDIDATOS.juiz, max = Infinity) {
   const casos = [...CASOS_ARMADILHA, ...(await casosDaCrase())];
   let feitas = 0;
-  for (const modelo of modelos) {
-    let seguidas = 0;
-    for (const c of casos) {
+  const seguidasDe = new Map<string, number>();
+  for (const c of casos) {
+    for (const modelo of modelos) {
       if (feitas >= max) return feitas;
-      if (seguidas >= MAX_SEGUIDAS) break;
+      let seguidas = seguidasDe.get(modelo) ?? 0;
+      if (seguidas >= MAX_SEGUIDAS) continue;
       if (await jaFeito(RODADAS.juiz, modelo, { item: c.item })) continue;
       const r = await medir(async () => {
         const json = await chatJSON(auditor(), modelo, AUDITOR_FRASE_SYSTEM, `FRASE: ${c.frase}`, 0, 600, { funcao: "benchmark" });
@@ -171,6 +176,7 @@ export async function rodarJuiz(modelos = CANDIDATOS.juiz, max = Infinity) {
       feitas++;
       console.log(`${r.falha ? `✖ ${r.falha}` : r.acertou ? "✔" : "✗"} ${modelo} · ${c.item} · ${Math.round(r.ms / 1000)}s`);
       seguidas = seguidasDepois(seguidas, r, modelo);
+      seguidasDe.set(modelo, seguidas);
       await pausa(2000);
     }
   }
@@ -181,11 +187,12 @@ export async function rodarJuiz(modelos = CANDIDATOS.juiz, max = Infinity) {
 export async function rodarEscritor(modelos = CANDIDATOS.escritor, porModelo = 6, max = Infinity) {
   const contextos = carregarVariacoes().contextos;
   let feitas = 0;
-  for (const modelo of modelos) {
-    let seguidas = 0;
-    for (let k = 0; k < porModelo; k++) {
+  const seguidasDe = new Map<string, number>();
+  for (let k = 0; k < porModelo; k++) {
+    for (const modelo of modelos) {
       if (feitas >= max) return feitas;
-      if (seguidas >= MAX_SEGUIDAS) break;
+      let seguidas = seguidasDe.get(modelo) ?? 0;
+      if (seguidas >= MAX_SEGUIDAS) continue;
       const item = `montagem:${k}`;
       if (await jaFeito(RODADAS.escritor, modelo, { item })) continue;
       const gabarito = "ABCDE"[k % 5] as Letra;
@@ -205,6 +212,7 @@ export async function rodarEscritor(modelos = CANDIDATOS.escritor, porModelo = 6
       feitas++;
       console.log(`${r.falha ? `✖ ${r.falha}` : r.acertou ? "✔" : "✗"} ${modelo} · ${item} · ${r.resposta ?? ""} · ${Math.round(r.ms / 1000)}s`);
       seguidas = seguidasDepois(seguidas, r, modelo);
+      seguidasDe.set(modelo, seguidas);
       await pausa(2000);
     }
   }

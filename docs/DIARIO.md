@@ -67,6 +67,13 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - Aluno não vê menção a IA: "Inédita · revisada", "Traiçoeira: essa engana muita gente", avisos com "o lobo está preparando".
 - Conferido no navegador: as 4 abas carregam, o visor abre a calibragem, o cartão mostra 150 questões e "+1 esta noite". Prints ficam para depois do benchmark (a aba Benchmark ainda está vazia).
 
-RETOMAR AQUI: rodar `npm run bb -- benchmark auditor` (depois juiz e escritor) em segundo plano, escrever a proposta (data/proposta-correntes.json + DECISOES-PENDENTES), tirar os prints do R3 (docs/telas/admin) e seguir para a Etapa 2 (leis).
+## 17/10/2026 — Etapa 2.1 (em andamento): leis e normas oficiais
+
+- `npm run bb -- baixar-fontes` (`src/baixar.ts` + `data/fontes-oficiais.json`): só planalto.gov.br, bcb.gov.br e in.gov.br (lista de hosts no código, inclusive depois de redirecionamento). Grava `fontes/<id>/<id>.txt` (texto limpo) + `.original.html` e `fontes/LEIAME.json` (data, sha256, vigência, atos do DOU que citam a norma).
+- 1ª rodada: 18/24 baixadas. O site do BCB recusou tudo (400, até no navegador): resoluções e circulares vêm do DOU.
+- Vigência conferida: 4.935 (art. 8º revogado pela Res. Conjunta 17/2025) e 4.753 (art. 12 revogado pela 4.949) saem sem esses artigos; 4.656 trocada pela 5.050/2022; 4.949, 4.860 e 4.893 alteradas por 5.117/2024, 5.182/2024 e 5.274/2025 (entram junto). **Pendentes** (só há texto consolidado no BCB): Res. BCB 1/2020 (Pix, alterada até 2026), Circular 3.978 (alterada em 30/09/2026), Res. CMN 3.919/2010.
+- Correção na ingestão: texto riscado do Planalto (revogado) não entra mais; entidades HTML decodificadas.
+
+RETOMAR AQUI: (1) rodar `npm run bb -- baixar-fontes` de novo (lista já corrigida; conferir as 24); (2) criar `ingerir-fontes` (itera o LEIAME.json chamando `ingerirFonte`, pela fila) e registrar no DIARIO os trechos por norma; (3) o benchmark do auditor (`--max 150`) estava rodando em segundo plano: ver `docs/BENCHMARK-MODELOS.md`, rodar juiz e escritor, escrever a proposta (data/proposta-correntes.json + DECISOES-PENDENTES); (4) prints do R3 em docs/telas/admin; (5) Etapa 2.3 em diante.
 
 **LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.
