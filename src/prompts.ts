@@ -403,10 +403,11 @@ export function confereOutroJeitoUser(q: ContextoOutroJeito, alternativa: string
 // ============================================================
 export const AulaZ = z.object({
   conteudo: z.string().min(120),
-  pontosChave: z.array(z.string().min(8)).min(3).max(7),
+  // listas longas demais são cortadas por código (7, 6 e 4), não recusadas
+  pontosChave: z.array(z.string().min(8)).min(3).transform((xs) => xs.slice(0, 7)),
   comoABancaCobra: z.string().min(30),
-  pegadinhasComuns: z.array(z.string().min(8)).min(2).max(6),
-  exemplos: z.array(z.string().min(12)).min(1).max(4),
+  pegadinhasComuns: z.array(z.string().min(8)).min(2).transform((xs) => xs.slice(0, 6)),
+  exemplos: z.array(z.string().min(12)).min(1).transform((xs) => xs.slice(0, 4)),
   // até 16 aceitas na leitura; o código fica só com as citadas no conteúdo, no máximo 8 (normalizarFontes)
   fontes: z.array(z.object({ indice: z.number().int().min(1), trecho: z.string().min(20) })).max(16),
 });

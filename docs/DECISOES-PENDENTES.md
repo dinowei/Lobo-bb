@@ -81,6 +81,29 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   `npx tsx scripts/limpar-figura-no-texto.ts --gravar` corrige.
 - **Recomendação:** rodar com `--gravar` (só remove o trecho entre o primeiro e o último "|").
 
+## 9. Aulas curtas (8.5): 0 aprovadas em duas rodadas reais (média)
+
+- **O que aconteceu:** 6 aulas tentadas em 2 rodadas (o Lightning deu timeout e o `gpt-oss-20b`
+  escreveu todas), 0 aprovadas. Motivos, todos barrados ANTES do aluno ver:
+  - citação parafraseada em vez de literal (3 vezes);
+  - JSON fora do formato na 1ª resposta (todas as vezes; o reparo resolveu);
+  - lista com itens demais (1);
+  - duas reprovações do auditor: uma por "mais de 400 palavras" (erro do auditor, que contou a aula
+    inteira) e uma por citar lei ausente das fontes (reprovação correta).
+- **O que já mudei (sem afrouxar a regra 18):**
+  - citação longa cortada numa palavra;
+  - citação parafraseada ancorada na frase literal da fonte com ≥ 60% das palavras;
+  - JSON embrulhado desembrulhado por código;
+  - listas longas cortadas;
+  - fonte não citada retirada;
+  - auditor sem critério de extensão.
+  Tudo com teste. A citação que chega ao aluno continua sendo literal, e o auditor de outra família
+  continua julgando.
+- **Próxima prova real:** a noite curta (POST-IT A.1) inclui aulas. O resultado vai para o DIARIO.
+- **Se continuar falhando:** (a) testar outro escritor da corrente "tutor" (Muse Glimmer escreveu uma
+  e só caiu na citação); (b) deixar as aulas só para tópicos com fonte curta. Não há decisão sua
+  agora; anoto aqui para você saber por que o cartão de aula ainda não aparece no servidor.
+
 ## 8. Regra de linhas da redação (média)
 
 - **O que está confirmado:** as provas BB 2021 e 2023 (capa, instrução da redação) dizem "O texto
