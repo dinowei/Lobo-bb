@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RedacaoDTO, TemaRedacaoDTO } from "../../../shared/tipos";
 import { useApp } from "../estado";
+import { LINHAS_REDACAO, linhasDaFolha } from "../../../shared/redacaoLinhas";
 
 type Rascunho = { texto: string; tempoSeg: number };
 const chaveRascunho = (temaId: string) => `lobo-redacao-${temaId}`;
-const linhasDe = (texto: string) => texto.trim() ? texto.split(/\r\n|\r|\n/).filter((l) => l.trim()).length : 0;
+// linhas da folha de prova (estimadas por caracteres), igual ao servidor
+const linhasDe = (texto: string) => linhasDaFolha(texto);
 const tempo = (seg: number) => `${String(Math.floor(seg / 60)).padStart(2, "0")}:${String(seg % 60).padStart(2, "0")}`;
 
 function trechosMarcados(texto: string, trechos: string[]) {
@@ -29,6 +31,7 @@ function Resultado({ r }: { r: RedacaoDTO }) {
         <span className={`redacao-corte${c.notaTotal >= 70 ? " passou" : ""}`}>{c.notaTotal >= 70 ? "Acima da linha de 70" : "Abaixo da linha de 70"}</span>
       </div>
       <p className="redacao-aviso">Nota estimada por IA; use como treino, não como garantia.</p>
+      {c.penalidade && <p className="msg-erro">{c.penalidade}</p>}
       <div className="redacao-colunas">
         {c.criterios.map((x) => (
           <article className="redacao-criterio" key={x.nome}>
@@ -193,7 +196,7 @@ export function Redacao() {
                 <h2>{tema.tema}</h2>
                 <p>{tema.proposta}</p>
                 <div className="redacao-motivadores"><b>Textos motivadores</b>{tema.textosMotivadores.map((t, i) => <blockquote key={i}>{t}</blockquote>)}</div>
-                <div className="redacao-controles"><span>Tempo: <b className="num">{tempo(tempoSeg)}</b></span><span>{linhas}/{ajustes.linhasRedacaoMax} linhas · confira no edital</span></div>
+                <div className="redacao-controles"><span>Tempo: <b className="num">{tempo(tempoSeg)}</b></span><span>~{linhas} linhas da folha (prova: {LINHAS_REDACAO.minimo} a {Math.min(ajustes.linhasRedacaoMax, LINHAS_REDACAO.maximo)})</span></div>
                 <textarea
                   className="redacao-area"
                   value={texto}
@@ -210,6 +213,9 @@ export function Redacao() {
                   </button>
                 </div>
                 {linhas > ajustes.linhasRedacaoMax && <p className="msg-erro">O limite atual é {ajustes.linhasRedacaoMax} linhas. Confira o edital antes de ajustar em Configurações.</p>}
+                {texto.trim() && linhas < LINHAS_REDACAO.minimo && (
+                  <p className="sub">Abaixo de {LINHAS_REDACAO.minimo} linhas da folha a redação fica com nota zero, como na banca. Cada linha da folha tem uns {LINHAS_REDACAO.caracteresPorLinha} caracteres.</p>
+                )}
               </>}
             </>
           ) : (

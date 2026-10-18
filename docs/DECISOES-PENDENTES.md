@@ -81,6 +81,18 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   `npx tsx scripts/limpar-figura-no-texto.ts --gravar` corrige.
 - **Recomendação:** rodar com `--gravar` (só remove o trecho entre o primeiro e o último "|").
 
+## 8. Regra de linhas da redação (média)
+
+- **O que está confirmado:** as provas BB 2021 e 2023 (capa, instrução da redação) dizem "O texto
+  deverá ter de 25 a 30 linhas".
+- **O que NÃO está nas provas:** a penalidade de quem fica abaixo de 25 e quantos caracteres cabem
+  numa linha da folha. Os editais não estão em `provas/`.
+- **O que o app faz até você confirmar:** a regra mais conservadora. Abaixo de 25 linhas da folha,
+  nota zero por código, sem correção. Acima de 30, só o texto até a linha 30 é corrigido. As linhas
+  são estimadas em 70 caracteres cada, com quebra por palavra e parágrafo novo em linha nova.
+- **Como mudar:** `shared/redacaoLinhas.ts` (`LINHAS_REDACAO`). Se o edital disser "penalidade
+  proporcional" em vez de zero, eu troco a regra.
+
 ## 7. "Nota estimada por IA" na tela de Redação (baixa)
 
 - **O que é:** a regra 17 do CLAUDE.md manda sinalizar que a nota da redação é estimativa da IA; o

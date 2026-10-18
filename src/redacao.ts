@@ -8,6 +8,7 @@ import { naFila } from "./fila.js";
 import { Redacao, TemaRedacao, Tarefa } from "./models.js";
 import { pregeracoes, rodarFila } from "./noturno.js";
 import { SemModeloDisponivel, ehFalhaDeInfra } from "./llm.js";
+import { LINHAS_REDACAO, linhasDaFolha, situacaoDasLinhas, textoAteOLimite } from "../shared/redacaoLinhas.js";
 
 const TemaZ = z.object({
   tema: z.string().trim().min(8).max(140),
@@ -95,6 +96,23 @@ async function avaliarUma(redacao: { tema: string; proposta: string; texto: stri
   return avaliacao;
 }
 
+// Abaixo do mínimo de linhas da folha: nota zero decidida por código, antes de qualquer IA
+export function correcaoZerada(linhas: number): CorrecaoRedacaoDTO {
+  const motivo = `O texto ocupa cerca de ${linhas} linhas da folha; o mínimo da prova é ${LINHAS_REDACAO.minimo}.`;
+  return {
+    criterios: NOMES_CRITERIO.map((nome) => ({ nome, nota: 0, max: 25 as const, comentario: "Não avaliado: texto abaixo do mínimo de linhas.", trechos: [] })),
+    notaTotal: 0,
+    pontosFortes: [],
+    melhorias: [
+      `Escreva de ${LINHAS_REDACAO.minimo} a ${LINHAS_REDACAO.maximo} linhas (cerca de ${LINHAS_REDACAO.minimo * LINHAS_REDACAO.caracteresPorLinha} a ${LINHAS_REDACAO.maximo * LINHAS_REDACAO.caracteresPorLinha} caracteres).`,
+      "Planeje introdução, dois parágrafos de desenvolvimento e conclusão com proposta.",
+    ],
+    paragrafoReescrito: "",
+    estimada: true,
+    penalidade: `${motivo} Na banca, isso costuma zerar a redação; aqui ela fica com nota zero até o edital confirmar a regra.`,
+  };
+}
+
 const mediana = (nums: number[]) => [...nums].sort((a, b) => a - b)[Math.floor(nums.length / 2)];
 function combinar(avaliacoes: z.infer<typeof CorrecaoZ>[]): CorrecaoRedacaoDTO {
   const totalMediano = mediana(avaliacoes.map((a) => a.notaTotal));
@@ -127,9 +145,14 @@ async function corrigirRedacao(id: string, preferir?: string) {
   if (doc.status === "corrigida") return { ok: true, resultadoId: doc._id };
   await Redacao.updateOne({ _id: doc._id }, { $set: { status: "corrigindo", erro: null } });
   try {
-    const avaliacoes = [await avaliarUma(doc, preferir), await avaliarUma(doc, preferir)];
-    if (Math.abs(avaliacoes[0].notaTotal - avaliacoes[1].notaTotal) > 15) avaliacoes.push(await avaliarUma(doc, preferir));
+    // a banca só lê até a linha 30: o que passa disso nem vai para a correção
+    const lido = textoAteOLimite(doc.texto);
+    const alvo = { ...doc, texto: lido };
+    const avaliacoes = [await avaliarUma(alvo, preferir), await avaliarUma(alvo, preferir)];
+    if (Math.abs(avaliacoes[0].notaTotal - avaliacoes[1].notaTotal) > 15) avaliacoes.push(await avaliarUma(alvo, preferir));
     const correcao = combinar(avaliacoes);
+    if (lido.length < doc.texto.trim().length)
+      correcao.penalidade = `Passou de ${LINHAS_REDACAO.maximo} linhas da folha: só o texto até a linha ${LINHAS_REDACAO.maximo} foi corrigido, como na prova.`;
     await Redacao.updateOne({ _id: doc._id }, { $set: { status: "corrigida", correcao, erro: null, avisada: false } });
     return { ok: true, resultadoId: doc._id };
   } catch (e) {
@@ -169,7 +192,7 @@ export async function pedirTemaRedacao() {
   let tarefa = await Tarefa.findOneAndUpdate(
     { tipo: "tema", status: { $in: ["pendente", "aguardando"] } },
     { $set: { status: "pendente", proximaEm: agora } },
-    { sort: { proximaEm: 1, createdAt: 1 }, new: true }
+    { sort: { proximaEm: 1, createdAt: 1 }, returnDocument: "after" }
   );
   if (!tarefa && !(await Tarefa.exists({ tipo: "tema", status: "rodando" }))) {
     tarefa = await Tarefa.create({ tipo: "tema", params: {}, lote: `sob demanda ${agora.toISOString().slice(0, 10)}` });
@@ -192,7 +215,23 @@ export async function enviarRedacao(input: { temaId: string; texto: string; temp
   if (texto.length > 12_000) throw new Error("A redação passou do limite de 12.000 caracteres.");
   const tema = await TemaRedacao.findOne({ _id: input.temaId, ativo: true }).lean();
   if (!tema) throw new Error("Esse tema não está mais disponível.");
-  const linhas = texto.split(/\r\n|\r|\n/).filter((l) => l.trim()).length;
+  const linhas = linhasDaFolha(texto);
+  // abaixo do mínimo: zero por código, sem gastar correção (regra mais conservadora até o edital)
+  if (situacaoDasLinhas(linhas) === "abaixo") {
+    const doc = await Redacao.create({
+      userId: usuarioAtualId(),
+      temaId: tema._id,
+      tema: tema.tema,
+      proposta: tema.proposta,
+      texto,
+      linhas,
+      tempoSeg: Math.max(0, Math.min(8 * 60 * 60, Math.floor(input.tempoSeg || 0))),
+      status: "corrigida",
+      correcao: correcaoZerada(linhas),
+      avisada: false,
+    });
+    return redacaoDTO(doc.toObject());
+  }
   const doc = await Redacao.create({
     userId: usuarioAtualId(),
     temaId: tema._id,

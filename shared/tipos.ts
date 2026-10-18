@@ -407,6 +407,8 @@ export interface CorrecaoRedacaoDTO {
   melhorias: string[];
   paragrafoReescrito: string;
   estimada: true;
+  /** regra de linhas aplicada por código antes da correção (abaixo do mínimo = zero; acima = cortada) */
+  penalidade?: string;
 }
 export type StatusRedacaoDTO = "aguardando" | "corrigindo" | "corrigida" | "erro";
 export interface RedacaoDTO {
