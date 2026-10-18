@@ -122,6 +122,15 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - Um commit para os quatro assuntos (o plano pede um por assunto): estão no mesmo arquivo e foram testados juntos.
 - Rodadas reais de 3 por assunto: esperam a fila (benchmark rodando). Português por construção (Concordância, Regência, Pontuação) vem a seguir.
 
+## 18/10/2026 — Etapa 7 (parte por código): Concordância, Regência, Pontuação
+
+- `src/regrasPT.ts`: bancos de regras no molde da Crase. Concordância 16 regras (8 certas, 8 erros: haver/fazer impessoais, existir, sujeito posposto, "se" apassivador, meio, é proibida a, anexas), Regência 14 (assistir, obedecer, preferir, implicar, chegar, esquecer-se, aspirar), Pontuação 9 (aposto, vocativo, enumeração, ou seja; vírgula entre sujeito e verbo, entre verbo e complemento, aposto sem fechar, vocativo sem vírgula, vírgula antes do "e").
+- Nada facultativo: concordância proíbe "a maioria de", "parte de", "um dos que", "mais de um", "cerca de"; regência usa substantivo masculino no ponto da regra (sem crase no meio) e evita verbos com duas regências aceitas; pontuação exige que a frase só tenha as vírgulas do trecho.
+- Explicação, pegadinha, correção ("O certo seria…") e explicação geral vêm do banco (regra 14); juiz de cada área julga só o seu aspecto.
+- Pipeline: o caminho da Crase virou `gerarPorRegras(área)`; a Crase usa exatamente as mesmas funções e prompts de antes (área "crase" aponta para eles).
+- Testes: 87/87 (cada regra tem um exemplo que passa na própria trava; 1.000 montagens por área; correção do erro sai da forma errada; vírgula a mais e concordância facultativa barradas).
+- Rodadas reais de 3 por área: esperam a fila.
+
 RETOMAR AQUI: em segundo plano rodam a Etapa 2.3 (10 geradas com fonte) e depois o benchmark (auditor até 60, juiz, escritor), logs em scratchpad `etapa23.log` e `bench.log`. Quando acabar: aprovação da 2.3 no DIARIO, proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 5 (nuvem sem publicar).
 
 **LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.

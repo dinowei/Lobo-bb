@@ -23,11 +23,9 @@ import {
   geradorConstruidoUser,
   FrasesCraseZ,
   FraseUnicaCraseZ,
-  CRASE_ESCRITOR_SYSTEM,
   craseEscritorUser,
   craseReescritaUser,
   VereditoFraseZ,
-  AUDITOR_FRASE_SYSTEM,
   AUDITOR_CEGO_SYSTEM,
   auditorCegoUser,
   AUDITOR_REVISAO_SYSTEM,
@@ -38,16 +36,8 @@ import { validarOuReparar, embed, ehFalhaDeInfra, SemModeloDisponivel } from "./
 import { chatJSONFuncao } from "./corrente.js";
 import { construir, tiposConstruidos, type Montada } from "./construcao.js";
 import { descreverFigura, tirarTabelaCopiada } from "./construcaoFiguras.js";
-import {
-  construirCrase,
-  conferirFrase,
-  explicarAlternativa,
-  explicacaoGeralCrase,
-  DICA_CRASE,
-  REGRAS_CRASE,
-  type HistoricoCrase,
-  type CraseMontada,
-} from "./portugues.js";
+import type { HistoricoCrase } from "./portugues.js";
+import { AREAS_PT, TIPO_CRASE, type AreaPT, type MontagemPT } from "./regrasPT.js";
 import { normalizar, hashTexto } from "./extrair.js";
 import { ehDisciplinaDeCalculo, verificarConta, numerosDoTexto } from "./verificacao.js";
 import { sortearVariacao, type Variacao } from "./variacao.js";
@@ -221,7 +211,9 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
   if (exigeFonte && fontes.length === 0) return { ok: false, motivo: "sem_fontes_para_o_topico" };
 
   // Português por construção (Crase): caminho próprio, com auditoria frase a frase
-  if (variacao.tipo === TIPO_CRASE) return gerarCraseConstruida(topic, variacao);
+  // Português por construção (Crase, Concordância, Regência, Pontuação): caminho próprio, com auditoria frase a frase
+  const areaPT = AREAS_PT[variacao.tipo];
+  if (areaPT) return gerarPorRegras(topic, variacao, areaPT);
 
   const recentes = await Question.find({ topicId: topic._id, status: "aprovada" })
     .sort({ createdAt: -1 })
@@ -440,17 +432,18 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
 }
 
 // ------------------------------------------------------------
-// Crase por construção: o código sorteia 1 regra correta + 4 de erro e a letra;
-// a IA escreve as frases; o auditor julga cada frase isolada (sem saber a regra).
-// Aprova só se exatamente 1 frase for "correta" e for a do gabarito; depois, revisão completa.
+// Português por construção (Crase, Concordância, Regência, Pontuação — src/regrasPT.ts):
+// o código sorteia 1 regra correta + 4 de erro e a letra; a IA escreve as frases; o juiz da
+// área julga cada frase isolada (sem saber a regra). Aprova só se exatamente 1 frase for
+// "correta" e for a do gabarito; depois, revisão completa.
 // ------------------------------------------------------------
-export const TIPO_CRASE = "crase (por construção)";
+export { TIPO_CRASE };
 
 // Histórico SÓ das aprovadas no banco: contagem de uso por regra e as regras da última
 // aprovada (para não repetir). Tentativa descartada não conta.
-async function historicoCrase(topicId: Types.ObjectId): Promise<HistoricoCrase> {
-  const idPorNome = new Map(REGRAS_CRASE.map((r) => [r.nome, r.id]));
-  const aprovadas = await Question.find({ topicId, "variacao.tipo": TIPO_CRASE, status: "aprovada" })
+async function historicoRegras(topicId: Types.ObjectId, area: AreaPT): Promise<HistoricoCrase> {
+  const idPorNome = new Map(area.regras.map((r) => [r.nome, r.id]));
+  const aprovadas = await Question.find({ topicId, "variacao.tipo": area.tipo, status: "aprovada" })
     .sort({ _id: 1 })
     .select("auditoria.porFrase.regraEsperada")
     .lean();
@@ -462,19 +455,20 @@ async function historicoCrase(topicId: Types.ObjectId): Promise<HistoricoCrase> 
   return { uso, anterior: new Set(ultima ? ids(ultima) : []) };
 }
 
-async function gerarCraseConstruida(
+async function gerarPorRegras(
   topic: { _id: Types.ObjectId; disciplina: string; assunto: string },
-  variacao: Variacao
+  variacao: Variacao,
+  area: AreaPT
 ): Promise<Resultado> {
   const gabarito = letraAleatoria();
   // impressão estrutural: (contexto, regra correta, regras de erro) não se repete no tópico
-  const historico = await historicoCrase(topic._id);
-  const montar = async (): Promise<[CraseMontada, string] | null> => {
+  const historico = await historicoRegras(topic._id, area);
+  const montar = async (): Promise<[MontagemPT, string] | null> => {
     for (let k = 0; k < 20; k++) {
-      const c = construirCrase(gabarito, variacao.contexto, historico);
+      const c = area.construir(gabarito, variacao.contexto, historico);
       const certa = c.frases.find((f) => f.letra === c.gabarito)!.regra.id;
       const erros = c.frases.filter((f) => f.letra !== c.gabarito).map((f) => f.regra.id).sort();
-      const imp = impressaoEstrutural(TIPO_CRASE, variacao.contexto, { certa, erros });
+      const imp = impressaoEstrutural(area.tipo, variacao.contexto, { certa, erros });
       if (!(await Question.exists({ topicId: topic._id, impressao: imp, status: { $ne: "rejeitada" } }))) return [c, imp];
     }
     return null;
@@ -482,7 +476,7 @@ async function gerarCraseConstruida(
   const montagem = await montar();
   if (!montagem) return { ok: false, motivo: "impressao_repetida", detalhes: ["20 montagens já existiam no tópico"] };
   const [m, impressao] = montagem;
-  const anteriores = await Question.find({ topicId: topic._id, "variacao.tipo": TIPO_CRASE })
+  const anteriores = await Question.find({ topicId: topic._id, "variacao.tipo": area.tipo })
     .sort({ createdAt: -1 })
     .limit(6)
     .select("alternativas");
@@ -498,10 +492,10 @@ async function gerarCraseConstruida(
   const familiasEscritor = new Set<string>();
   let escrito: z.infer<typeof FrasesCraseZ>;
   try {
-    const r = await chatJSONFuncao("escritor_pt", CRASE_ESCRITOR_SYSTEM, user, 0.7, 2000);
+    const r = await chatJSONFuncao("escritor_pt", area.escritorSystem, user, 0.7, 2000);
     escritores.add(r.modelo);
     familiasEscritor.add(r.familia);
-    escrito = await validarOuReparar(FrasesCraseZ, r.json, { client: r.client, model: r.modelo, system: CRASE_ESCRITOR_SYSTEM, user });
+    escrito = await validarOuReparar(FrasesCraseZ, r.json, { client: r.client, model: r.modelo, system: area.escritorSystem, user });
   } catch (e) {
     return { ok: false, motivo: motivoDaFalha(e, "geracao_invalida"), detalhes: [umaLinha(e)] };
   }
@@ -513,20 +507,20 @@ async function gerarCraseConstruida(
   const reescritas: string[] = [];
   for (const f of m.frases) {
     const atual = porLetra.get(f.letra)!;
-    const problema = conferirFrase(atual.frase, atual.trecho, f.regra);
+    const problema = area.conferir(atual.frase, atual.trecho, f.regra);
     if (!problema) continue;
     try {
       const userUma = craseReescritaUser({ contexto: variacao.contexto, regra: f.regra, fraseAnterior: atual.frase, problema });
-      const r = await chatJSONFuncao("escritor_pt", CRASE_ESCRITOR_SYSTEM, userUma, 0.7, 600);
+      const r = await chatJSONFuncao("escritor_pt", area.escritorSystem, userUma, 0.7, 600);
       escritores.add(r.modelo);
       familiasEscritor.add(r.familia);
       const nova = await validarOuReparar(FraseUnicaCraseZ, r.json, {
         client: r.client,
         model: r.modelo,
-        system: CRASE_ESCRITOR_SYSTEM,
+        system: area.escritorSystem,
         user: userUma,
       });
-      const problema2 = conferirFrase(nova.frase, nova.trecho, f.regra);
+      const problema2 = area.conferir(nova.frase, nova.trecho, f.regra);
       if (problema2)
         return {
           ok: false,
@@ -548,11 +542,11 @@ async function gerarCraseConstruida(
     enunciado: m.enunciado,
     alternativas: m.frases.map((f) => {
       const e = porLetra.get(f.letra)!;
-      return { letra: f.letra, texto: e.frase, correta: f.letra === gabarito, ...explicarAlternativa(f.regra, e.trecho) };
+      return { letra: f.letra, texto: e.frase, correta: f.letra === gabarito, ...area.explicar(f.regra, e.trecho) };
     }),
     gabarito,
-    explicacaoGeral: explicacaoGeralCrase(certa),
-    dicaDeProva: DICA_CRASE,
+    explicacaoGeral: area.explicacaoGeral(certa),
+    dicaDeProva: area.dica,
     trechoFonte: null,
     dificuldade: m.dificuldade,
     verificacao: null,
@@ -568,7 +562,7 @@ async function gerarCraseConstruida(
   const modelos = new Set<string>();
   const porFrase: { letra: Letra; regraEsperada: string; correta: boolean; regra: string; juiz: string }[] = [];
   const julgar = (frase: string, excluirModelos: string[] = []) =>
-    chatJSONFuncao("juiz_pt", AUDITOR_FRASE_SYSTEM, `FRASE: ${frase}`, 0, 600, { excluirFamilias: [...familiasEscritor], excluirModelos });
+    chatJSONFuncao("juiz_pt", area.juizSystem, `FRASE: ${frase}`, 0, 600, { excluirFamilias: [...familiasEscritor], excluirModelos });
   try {
     for (const f of m.frases) {
       const r = await julgar(porLetra.get(f.letra)!.frase);

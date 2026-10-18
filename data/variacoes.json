@@ -82,7 +82,13 @@
     },
     "Regência verbal e nominal e crase": {
       "crase (por construção)": "todos",
-      "regência de verbos frequentes": "todos"
+      "regência (por construção)": "todos"
+    },
+    "Concordância verbal e nominal": {
+      "concordância (por construção)": "todos"
+    },
+    "Pontuação": {
+      "pontuação (por construção)": "todos"
     },
     "Análise combinatória": {
       "arranjo (a ordem importa)": ["formação de equipes na agência", "cliente pessoa jurídica negociando com o gerente"],
