@@ -33,8 +33,9 @@ import {
   type EstadoRevisao,
 } from "../../../shared/motor";
 import { QUESTOES_DEMO, type QuestaoDemo } from "../demo/questoes";
-import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, sortearDisciplinaMista } from "../../../shared/estruturaProva";
-import { reprocessar, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../../../shared/rating";
+import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PROVA } from "../../../shared/estruturaProva";
+import { ehDiagnostico, MISTURA_DIAGNOSTICO, PREFIXO_DIAGNOSTICO, ratingDoDiagnostico } from "../../../shared/diagnostico";
+import { reprocessar, type EventoRating, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../../../shared/rating";
 import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../../../shared/aprendizado";
 
 const CHAVE = "lobo-demo-v1";
@@ -171,10 +172,21 @@ function registrar(e: Estado, q: QuestaoDemo, acertou: boolean, nota: number, xp
 
 // Elo no demo: reprocessa o histórico (pequeno) com a mesma função do servidor
 function ratingsDemo(e: Estado) {
-  return reprocessar(
-    [...e.tentativas].sort((a, b) => a.data.localeCompare(b.data)).map((t) => ({ questaoId: t.questaoId, disciplina: t.topicoId.split(":")[0], acertou: t.acertou, confianca: t.modo === "simulado" ? 2 : t.confianca })),
-    (id) => porId.get(id)?.dificuldade ?? 3
-  );
+  const ordenadas = [...e.tentativas].sort((a, b) => a.data.localeCompare(b.data));
+  const eventos: EventoRating[] = [];
+  ordenadas.forEach((t, i) => {
+    const disciplina = t.topicoId.split(":")[0];
+    eventos.push({ questaoId: t.questaoId, disciplina, acertou: t.acertou, confianca: t.modo === "simulado" ? 2 : t.confianca });
+    // fim de um Raio-X: o resultado fixa o nível de cada disciplina medida (igual ao servidor)
+    if (ehDiagnostico(t.simuladoId) && ordenadas[i + 1]?.simuladoId !== t.simuladoId) {
+      const doDiag = ordenadas.filter((x) => x.simuladoId === t.simuladoId);
+      for (const d of new Set(doDiag.map((x) => x.topicoId.split(":")[0]))) {
+        const daDisc = doDiag.filter((x) => x.topicoId.startsWith(`${d}:`));
+        eventos.push({ fixar: ratingDoDiagnostico(daDisc.filter((x) => x.acertou).length, daDisc.length), disciplina: d });
+      }
+    }
+  });
+  return reprocessar(eventos, (id) => porId.get(id)?.dificuldade ?? 3);
 }
 
 const espera = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 120));
@@ -345,12 +357,12 @@ export const apiDemo: Api = {
   // sem oficiais no demo: mistura estimada (20/50/30), igual à regra do servidor
   misturaSimulado: () => espera(misturaDasOficiais([])),
 
-  async simulado(n) {
+  async simulado(n, opcoes) {
     const e = ler();
     const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id));
     const comQuestao = TOPICOS.filter((t) => ativas.some((q) => topicoDe(q) === t.id));
     const cotas = cotasPorDisciplina(Math.min(n, ativas.length), comQuestao);
-    const mistura = misturaDasOficiais([]);
+    const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : misturaDasOficiais([]);
     const escolhidas: QuestaoDemo[] = [];
     for (const [d, k] of cotas) {
       const daDisc = ativas.filter((q) => q.disciplina === d).sort(() => Math.random() - 0.5);
@@ -359,14 +371,15 @@ export const apiDemo: Api = {
       pegas.push(...daDisc.filter((x) => !pegas.includes(x)).slice(0, k - pegas.length));
       escolhidas.push(...pegas);
     }
-    const resto = ativas.filter((q) => !escolhidas.includes(q)).sort(() => Math.random() - 0.5);
+    // completa só com disciplinas da prova (igual ao servidor)
+    const resto = ativas.filter((q) => !escolhidas.includes(q) && (COTAS_PROVA[q.disciplina] ?? 0) > 0).sort(() => Math.random() - 0.5);
     while (escolhidas.length < Math.min(n, ativas.length) && resto.length) escolhidas.push(resto.pop()!);
     return espera(escolhidas.map(paraDTO));
   },
 
-  async corrigirSimulado(respostas) {
+  async corrigirSimulado(respostas, opcoes) {
     const e = ler();
-    const simuladoId = `sim-${Date.now()}`;
+    const simuladoId = `${opcoes?.diagnostico ? PREFIXO_DIAGNOSTICO : "sim-"}${Date.now()}`;
     let acertos = 0;
     let xpTotal = 0;
     const porDisc = new Map<Disciplina, { total: number; acertos: number }>();

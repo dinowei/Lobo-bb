@@ -136,7 +136,9 @@ app.post(
 
 app.get(
   "/api/simulado",
-  rota(async (req, res) => res.json(await apiServidor.simulado(Math.min(120, Math.max(1, Number(req.query.n) || 20)))))
+  rota(async (req, res) =>
+    res.json(await apiServidor.simulado(Math.min(120, Math.max(1, Number(req.query.n) || 20)), { diagnostico: req.query.diagnostico === "1" }))
+  )
 );
 app.get("/api/simulado/mistura", rota(async (_req, res) => res.json(await apiServidor.misturaSimulado())));
 
@@ -151,7 +153,8 @@ app.post(
           questaoId: String(r.questaoId),
           resposta: ehLetra(r.resposta) ? r.resposta : null,
           tempoSeg: Number(r.tempoSeg) || 0,
-        }))
+        })),
+        { diagnostico: req.body?.diagnostico === true }
       )
     );
   })

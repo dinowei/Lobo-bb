@@ -19,6 +19,7 @@ import {
 } from "./tipos.js";
 import { cotasDaProva } from "./estruturaProva.js";
 import { calibragem, horasLiquidasSemana, motivosPorDisciplina } from "./aprendizado.js";
+import { diagnosticosDe, ehDiagnostico } from "./diagnostico.js";
 
 export const FUSO = "America/Sao_Paulo";
 const DIA_MS = 86_400_000;
@@ -205,7 +206,7 @@ export function calcularPainel(input: {
   // simulados
   const sims = new Map<string, { data: string; total: number; acertos: number }>();
   for (const t of tents) {
-    if (t.modo !== "simulado" || !t.simuladoId) continue;
+    if (t.modo !== "simulado" || !t.simuladoId || ehDiagnostico(t.simuladoId)) continue; // Raio-X tem histórico próprio
     const s = sims.get(t.simuladoId) ?? { data: t.data, total: 0, acertos: 0 };
     s.total++;
     if (t.acertou) s.acertos++;
@@ -249,6 +250,7 @@ export function calcularPainel(input: {
     meta("rev50", "Faro de lobo", "Faça 50 revisões em dia", revisoesFeitas, 50),
     meta("sim1", "Primeiro simulado", "Termine um simulado", simulados.length, 1),
     meta("sim70", "Nota de corte", "Tire 70% num simulado de 10+ questões", melhorSimulado, 0.7),
+    meta("raiox", "Raio-X feito", "Faça o diagnóstico inicial de 30 questões", diagnosticosDe(tents, disciplinaDo).length, 1),
     meta("redacao1", "Primeira redação", "Envie sua primeira redação para correção", input.redacoes?.length ?? 0, 1),
     meta("redacao70", "Acima da linha", "Tire 70 pontos ou mais em uma redação", Math.max(0, ...(input.redacoes ?? []).map((r) => r.notaTotal)), 70),
   ];
@@ -269,6 +271,7 @@ export function calcularPainel(input: {
     motivosErro: motivosPorDisciplina(tents, disciplinaDo),
     calibragem: calibragem(tents, disciplinaDo),
     horasSemana: horasLiquidasSemana(tents, disciplinaDo, agora),
+    diagnosticos: diagnosticosDe(tents, disciplinaDo),
   };
 }
 

@@ -8,6 +8,7 @@ import { Painel } from "./telas/Painel";
 import { Praticar } from "./telas/Praticar";
 import { Revisoes } from "./telas/Revisoes";
 import { Cartoes } from "./telas/Cartoes";
+import { Diagnostico } from "./telas/Diagnostico";
 import { Simulados } from "./telas/Simulados";
 import { Redacao } from "./telas/Redacao";
 import { Erros } from "./telas/Erros";
@@ -89,6 +90,7 @@ export function App() {
           {tela === "praticar" && <Praticar />}
           {tela === "revisoes" && <Revisoes />}
           {tela === "cartoes" && <Cartoes />}
+          {tela === "diagnostico" && <Diagnostico />}
           {tela === "simulados" && <Simulados />}
           {tela === "redacao" && <Redacao />}
           {tela === "erros" && <Erros />}

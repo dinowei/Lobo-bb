@@ -6,8 +6,8 @@ import { apiHttp, servidorDisponivel } from "./api/http";
 import { conta, EVENTO_SESSAO, type UsuarioDTO } from "./api/conta";
 import { Entrar } from "./telas/Entrar";
 
-export type Tela = "painel" | "praticar" | "revisoes" | "cartoes" | "simulados" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin";
-export const TELAS: Tela[] = ["painel", "praticar", "revisoes", "cartoes", "simulados", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin"];
+export type Tela = "painel" | "praticar" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin";
+export const TELAS: Tela[] = ["painel", "praticar", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin"];
 export interface FiltroPratica {
   topicoId?: string;
   disciplina?: Disciplina;

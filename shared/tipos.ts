@@ -194,6 +194,10 @@ export interface CalibragemDTO {
   ilusao: boolean; // certeza acerta menos de 85% (com amostra mínima)
 }
 
+// Diagnóstico inicial (8.8)
+export interface ResultadoDisciplina { disciplina: Disciplina; total: number; acertos: number }
+export interface DiagnosticoResumo { id: string; data: string; total: number; acertos: number; porDisciplina: ResultadoDisciplina[] }
+
 // Cartões (flashcards) de normas e vocabulário de Inglês, na revisão espaçada própria
 export interface CartaoDTO {
   id: string;
@@ -274,6 +278,7 @@ export interface PainelDTO {
   calibragem: CalibragemDTO[]; // primeiro o geral, depois por disciplina
   horasSemana: { disciplina: Disciplina; seg: number }[]; // horas líquidas dos últimos 7 dias
   niveis?: { disciplina: Disciplina; rating: number; n: number }[]; // nível estimado (Elo) por disciplina
+  diagnosticos: DiagnosticoResumo[]; // Raio-X feitos, do mais antigo ao mais novo
   redacaoCorrigidaPendente?: boolean;
   banco?: BancoDTO; // cartão "Banco de questões"
   alertasAdmin?: string[]; // só o admin vê (modelos, regras); o aluno nunca vê menção a IA
@@ -489,8 +494,9 @@ export interface Api {
   avaliarCartao(cartaoId: string, nota: NotaCartao): Promise<{ proximaRevisaoDias: number }>;
   // motivo do último erro nessa questão; devolve a ação (aula/tópico, comparação, palavra-chave, revisão antecipada)
   motivoErro(questaoId: string, motivo: MotivoErro): Promise<AcaoMotivoDTO>;
-  simulado(n: number): Promise<QuestaoDTO[]>;
-  corrigirSimulado(r: { questaoId: string; resposta: Letra | null; tempoSeg: number }[]): Promise<ResultadoSimuladoDTO>;
+  // diagnostico: Raio-X de 30 questões médias; na correção, define o nível inicial por disciplina
+  simulado(n: number, opcoes?: { diagnostico?: boolean }): Promise<QuestaoDTO[]>;
+  corrigirSimulado(r: { questaoId: string; resposta: Letra | null; tempoSeg: number }[], opcoes?: { diagnostico?: boolean }): Promise<ResultadoSimuladoDTO>;
   // mistura de dificuldade do simulado: a das oficiais (≥ 30 com dificuldade) ou a estimativa 20/50/30
   misturaSimulado(): Promise<{ facil: number; media: number; dificil: number; estimativa: boolean; base: number }>;
   erros(): Promise<ErroDTO[]>;

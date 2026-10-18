@@ -34,13 +34,16 @@ export const dificuldadeExibida = (rotulada: number, rating?: number | null, res
 export const pesoPorProximidade = (ratingQuestao: number, alvo: number) => Math.exp(-Math.abs(ratingQuestao - alvo) / 150);
 
 // Reprocessa um histórico (migração e modo demo): tentativas em ordem de data
-export function reprocessar(
-  tentativas: { questaoId: string; disciplina: string; acertou: boolean; confianca?: Confianca }[],
-  dificuldadeDe: (questaoId: string) => number
-) {
+// ("fixar": o diagnóstico define o nível da disciplina naquele ponto do histórico)
+export type EventoRating = { questaoId: string; disciplina: string; acertou: boolean; confianca?: Confianca } | { fixar: number; disciplina: string };
+export function reprocessar(tentativas: EventoRating[], dificuldadeDe: (questaoId: string) => number) {
   const alunos = new Map<string, { rating: number; n: number }>();
   const questoes = new Map<string, { rating: number; n: number }>();
   for (const t of tentativas) {
+    if ("fixar" in t) {
+      alunos.set(t.disciplina, { rating: t.fixar, n: alunos.get(t.disciplina)?.n ?? 0 });
+      continue;
+    }
     const a = alunos.get(t.disciplina) ?? { rating: RATING_ALUNO_INICIAL, n: 0 };
     const q = questoes.get(t.questaoId) ?? { rating: ratingInicialQuestao(dificuldadeDe(t.questaoId)), n: 0 };
     const r = atualizarRatings(a.rating, q.rating, t.acertou, t.confianca);

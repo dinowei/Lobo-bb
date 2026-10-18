@@ -4,6 +4,7 @@
 // ============================================================
 import { Types } from "mongoose";
 import { Attempt, Question, RatingAluno, ReviewState, Topic, Report, Source, Redacao } from "./models.js";
+import { MISTURA_DIAGNOSTICO, PREFIXO_DIAGNOSTICO, ratingDoDiagnostico } from "../shared/diagnostico.js";
 import { atualizarRatings, dificuldadeExibida, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../shared/rating.js";
 import {
   ESTADO_INICIAL,
@@ -43,7 +44,7 @@ import { usuarioAtualId, usuarioAtual } from "./auth.js";
 import { Geracao } from "./models.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
 import { inicioDaNoite } from "../shared/motor.js";
-import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, sortearDisciplinaMista, type Mistura } from "../shared/estruturaProva.js";
+import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PROVA, type Mistura } from "../shared/estruturaProva.js";
 import { fatorNaoSabia, palavrasDecisivas, JANELA_NAO_SABIA_DIAS, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../shared/aprendizado.js";
 import type { AcaoMotivoDTO, MotivoErro } from "../shared/tipos.js";
 import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
@@ -438,12 +439,13 @@ export const apiServidor: Omit<Api, "modo"> = {
   },
 
   // Simulado fiel: cotas da prova real por disciplina e, dentro delas, a mistura de dificuldade
-  async simulado(n) {
+  async simulado(n, opcoes) {
     const topicos = await listarTopicos();
     const comQuestao = new Set((await Question.distinct("topicId", { status: "aprovada" })).map(String));
     const validos = topicos.filter((t) => comQuestao.has(t.id));
     const cotas = cotasPorDisciplina(n, validos);
-    const mistura = await misturaOficial();
+    // Raio-X: só dificuldade média (completa com outras se faltar)
+    const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : await misturaOficial();
     const mapa = await mapaTopicos();
     const escolhidas: QuestaoDoc[] = [];
     const FAIXAS = { facil: [1, 2], media: [3], dificil: [4, 5] } as const;
@@ -467,8 +469,10 @@ export const apiServidor: Omit<Api, "modo"> = {
       escolhidas.push(...daDisc);
     }
     if (escolhidas.length < n) {
+      // completa só com disciplinas da prova (fora do edital não entra em simulado nem no Raio-X)
+      const daProva = validos.filter((t) => (COTAS_PROVA[t.disciplina] ?? 0) > 0).map((t) => oid(t.id));
       const extra = await Question.aggregate<QuestaoDoc>([
-        { $match: { status: "aprovada", _id: { $nin: escolhidas.map((q) => q._id) } } },
+        { $match: { status: "aprovada", topicId: { $in: daProva }, _id: { $nin: escolhidas.map((q) => q._id) } } },
         { $sample: { size: n - escolhidas.length } },
       ]);
       escolhidas.push(...extra);
@@ -476,8 +480,8 @@ export const apiServidor: Omit<Api, "modo"> = {
     return escolhidas.sort(() => Math.random() - 0.5).map((q) => paraDTO(q, mapa));
   },
 
-  async corrigirSimulado(respostas) {
-    const simuladoId = new Types.ObjectId().toString();
+  async corrigirSimulado(respostas, opcoes) {
+    const simuladoId = `${opcoes?.diagnostico ? PREFIXO_DIAGNOSTICO : ""}${new Types.ObjectId().toString()}`;
     const mapa = await mapaTopicos();
     const porDisc = new Map<Disciplina, { total: number; acertos: number }>();
     let acertos = 0;
@@ -495,6 +499,12 @@ export const apiServidor: Omit<Api, "modo"> = {
       if (acertou) d.acertos++;
       porDisc.set(disc, d);
       correcoes.push({ ...(await correcaoDe(q, r.resposta, xp, dias)), questaoId: String(q._id), enunciado: q.enunciado, resposta: r.resposta });
+    }
+    // Raio-X: o resultado vira o nível inicial (rating) de cada disciplina medida
+    if (opcoes?.diagnostico) {
+      const userId = ALUNO();
+      for (const [disciplina, v] of porDisc)
+        await RatingAluno.updateOne({ userId, disciplina }, { $set: { rating: ratingDoDiagnostico(v.acertos, v.total) }, $setOnInsert: { n: v.total } }, { upsert: true });
     }
     return {
       simuladoId,

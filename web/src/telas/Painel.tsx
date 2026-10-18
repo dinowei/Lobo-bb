@@ -4,6 +4,7 @@ import { MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO, type BancoDTO, type Discipl
 import { useApp } from "../estado";
 import { CartaoCalibragem } from "../componentes/Calibragem";
 import { dificuldadeDoRating } from "../../../shared/rating";
+import { diagnosticoPendente } from "../../../shared/diagnostico";
 import { Ilustracao } from "../componentes/Ilustracoes";
 import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
 import { COR_DISC, CURTO, MASCOTE, SIGLA, diasAte, pct } from "../util";
@@ -104,6 +105,15 @@ export function Painel() {
         </div>
 
         <div className="grupo-dia">Hoje</div>
+        {diagnosticoPendente(painel.diagnosticos?.[painel.diagnosticos.length - 1]?.data) && (
+          <button className="evento convite-raiox" onClick={() => ir("diagnostico")}>
+            <img src={MASCOTE} alt="" />
+            <span>
+              <strong>{painel.diagnosticos?.length ? "Hora de refazer o Raio-X" : "Faça seu Raio-X"}</strong>
+              <span className="sub">{painel.diagnosticos?.length ? "Já faz 30 dias: veja quanto você evoluiu." : "30 questões para o lobo saber onde você está e não gastar seu tempo com o que já sabe."}</span>
+            </span>
+          </button>
+        )}
         <button className="evento" onClick={() => ir("praticar")}>
           <strong>Meta do dia</strong>
           <span className="sub num">

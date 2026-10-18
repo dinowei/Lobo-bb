@@ -49,4 +49,7 @@ test("reprocessar: migração por disciplina, na ordem", () => {
   assert.ok(r.alunos.get("informatica")!.rating > RATING_ALUNO_INICIAL);
   assert.ok(r.alunos.get("matematica")!.rating < RATING_ALUNO_INICIAL);
   assert.ok(r.questoes.get("q1")!.rating < 1300);
+  // diagnóstico fixa o nível naquele ponto; o que vem depois parte dele
+  const f = reprocessar([{ fixar: 1500, disciplina: "matematica" }, { questaoId: "q2", disciplina: "matematica", acertou: true }], () => 3);
+  assert.ok(f.alunos.get("matematica")!.rating > 1500 && f.alunos.get("matematica")!.rating < 1510);
 });
