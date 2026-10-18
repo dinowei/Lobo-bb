@@ -46,7 +46,8 @@ import { listarModelos } from "./llm.js";
 import { naFila } from "./fila.js";
 import { extrairFigurasOficiais } from "./figuras.js";
 import { indexarQuestoes, calibrar } from "./similaridade.js";
-import { carregarCatalogo } from "./catalogo.js";
+import { carregarCatalogo, correntesLegado } from "./catalogo.js";
+import { aprovarCorrentes, desfazerCorrentes } from "./corrente.js";
 import { sondarModelos, verificarModelos } from "./sondagem.js";
 import { planejarNoite, rodarFila } from "./noturno.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -246,6 +247,26 @@ async function main() {
         // Etapa 2.1: só sites oficiais (planalto.gov.br, bcb.gov.br, in.gov.br); grava em fontes/ (fora do Git)
         const r = await baixarFontes(args);
         return console.log(`\n${r.length} fonte(s) em fontes/LEIAME.json`);
+      }
+
+      case "corrente": {
+        // decisão do dono em 18/10/2026: reserva PROVISÓRIA do gerador antes do benchmark terminar;
+        // o auditor é recalculado pela regra de família (corrente.ts). "corrente desfazer" volta ao anterior.
+        if (args[0] === "desfazer") return console.log(`✔ voltou para: ${(await desfazerCorrentes()).modo}`);
+        if (args[0] !== "provisoria") throw new Error('Use "corrente provisoria" ou "corrente desfazer".');
+        const LIGHTNING = "nvidia/nemotron-3.5-lightning-30b-a3b", GPT = "openai/gpt-oss-20b", MUSE = "meta/muse-glimmer-30b";
+        const SUPER = "nvidia/nemotron-3-super-120b-a12b", ULTRA = "nvidia/nemotron-3-ultra-550b-a55b";
+        const legado = correntesLegado();
+        const r = await aprovarCorrentes({
+          ...legado,
+          gerador: [LIGHTNING, GPT, MUSE],
+          // gerador NVIDIA → Muse (outra família); gerador OpenAI ou Meta → Super, Ultra
+          auditor: [SUPER, ULTRA, MUSE, GPT],
+          tutor: [LIGHTNING, GPT, MUSE],
+        });
+        if (!r.ok) throw new Error(r.erros.join(" · "));
+        console.log("✔ Corrente provisória ativa (gerador Lightning → gpt-oss-20b → Muse).");
+        return r.avisos.forEach((a) => console.log(`  aviso: ${a}`));
       }
 
       case "criar-admin": {

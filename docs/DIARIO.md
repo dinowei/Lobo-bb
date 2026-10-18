@@ -89,6 +89,11 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - Testes: 6 de login (inclui "dois usuários não enxergam o progresso um do outro" e a migração) + `scripts/e2e-login.ts` (7 fluxos no Edge, rotas de login simuladas: nenhuma conta real criada). Prints em `docs/telas/login/`.
 - Etapa 2.3 rodando: Lightning dando timeout (4 × 180 s por questão); a corrente de hoje não tem gerador reserva.
 
+## 18/10/2026 — Decisões do dono aplicadas
+
+- **Corrente PROVISÓRIA (aprovada pelo dono antes do fim do benchmark):** gerador Lightning → gpt-oss-20b → Muse Glimmer 30b; auditor Super → Ultra → Muse → gpt-oss-20b, recalculado pela regra de família (gerador NVIDIA → Muse; gerador OpenAI ou Meta → Super/Ultra). Ativada com `npm run bb -- corrente provisoria` (fica no banco, como o botão "Aprovar corrente"); `corrente desfazer` volta ao legado. A escolha definitiva continua esperando o OK do dono depois do benchmark.
+- E2E de login: passou (7/7) na última tentativa. A bateria e2e completa roda de uma vez na Etapa 9, com os jobs de IA parados (com a máquina ocupada, o servidor de desenvolvimento demora a compilar).
+
 RETOMAR AQUI: em segundo plano rodam a Etapa 2.3 (10 geradas com fonte) e depois o benchmark (auditor até 60, juiz, escritor), logs em scratchpad `etapa23.log` e `bench.log`. Quando acabar: aprovação da 2.3 no DIARIO, proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 5 (nuvem sem publicar).
 
 **LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.

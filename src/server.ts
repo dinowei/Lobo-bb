@@ -6,6 +6,8 @@
 import "./env.js"; // precisa ser o primeiro import
 import express, { type NextFunction, type Request, type Response } from "express";
 import mongoose, { Types } from "mongoose";
+import helmet from "helmet";
+import compression from "compression";
 import { listarFiguras, decidirFigura, contextoDaFigura, amostrasDeFiguras, type AcaoFigura } from "./admin.js";
 import { painelIA, painelFila, painelBenchmark, pendencias, lerDoc, DOCS_LIBERADOS } from "./adminTelas.js";
 import { aprovarCorrentes, desfazerCorrentes } from "./corrente.js";
@@ -21,6 +23,25 @@ import { DISCIPLINAS, LETRAS, type Confianca, type Disciplina, type Letra, type 
 
 const app = express();
 app.set("trust proxy", 1); // atrás do proxy do provedor: IP real no limite de tentativas e cookie Secure
+app.disable("x-powered-by");
+// cabeçalhos de segurança: o site só carrega o que é dele (+ fontes do Google, se usadas) e imagens data:
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", "data:"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  })
+);
+app.use(compression());
 app.use(express.json({ limit: "1mb" }));
 // quem está usando (sessão) e quem pode o quê; sem usuário cadastrado, modo dono único
 app.use(autenticar());
@@ -31,8 +52,10 @@ const rota = (fn: Handler) => (req: Request, res: Response, next: NextFunction) 
 const texto = (v: unknown) => (typeof v === "string" && v ? v : undefined);
 const ehLetra = (v: unknown): v is Letra => (LETRAS as readonly unknown[]).includes(v);
 
+// health check do provedor: 503 enquanto o banco não está conectado
 app.get("/api/saude", (_req, res) => {
-  res.json({ ok: mongoose.connection.readyState === 1 });
+  const ok = mongoose.connection.readyState === 1;
+  res.status(ok ? 200 : 503).json({ ok });
 });
 
 app.get("/api/topicos", rota(async (_req, res) => res.json(await apiServidor.topicos())));
@@ -177,8 +200,13 @@ app.post(
 const raiz = join(dirname(fileURLToPath(import.meta.url)), "..");
 const site = join(raiz, "web", "dist");
 if (existsSync(site)) {
-  app.use(express.static(site));
-  app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(join(site, "index.html")));
+  // arquivos com hash no nome (assets/) ficam 1 ano em cache; o index.html sempre é conferido
+  app.use("/assets", express.static(join(site, "assets"), { immutable: true, maxAge: "365d" }));
+  app.use(express.static(site, { index: false, maxAge: "1h" }));
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache");
+    res.sendFile(join(site, "index.html"));
+  });
 }
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
