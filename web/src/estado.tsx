@@ -6,8 +6,8 @@ import { apiHttp, servidorDisponivel } from "./api/http";
 import { conta, EVENTO_SESSAO, type UsuarioDTO } from "./api/conta";
 import { Entrar } from "./telas/Entrar";
 
-export type Tela = "painel" | "praticar" | "revisoes" | "simulados" | "erros" | "conquistas" | "ajustes" | "figuras" | "admin";
-export const TELAS: Tela[] = ["painel", "praticar", "revisoes", "simulados", "erros", "conquistas", "ajustes", "figuras", "admin"];
+export type Tela = "painel" | "praticar" | "revisoes" | "simulados" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin";
+export const TELAS: Tela[] = ["painel", "praticar", "revisoes", "simulados", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin"];
 export interface FiltroPratica {
   topicoId?: string;
   disciplina?: Disciplina;
@@ -21,8 +21,9 @@ export interface Ajustes {
   dataProva: string; // "" = sem data
   duracaoProvaMin: number; // 0 = sem contagem regressiva (só cronômetro), até o edital dizer
   linhaDeCorte: number; // % para "nota de corte batida"
+  linhasRedacaoMax: number; // limite de linhas do treino (edital pode mudar)
 }
-const AJUSTES_PADRAO: Ajustes = { nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70 };
+const AJUSTES_PADRAO: Ajustes = { nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70, linhasRedacaoMax: 30 };
 const CHAVE_AJUSTES = "lobo-ajustes";
 function lerAjustes(): Ajustes {
   try {

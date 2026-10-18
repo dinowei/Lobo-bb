@@ -151,6 +151,7 @@ export function Painel() {
         </button>
 
         {painel.banco && <CartaoBanco banco={painel.banco} />}
+        {painel.redacaoCorrigidaPendente && <button className="evento" onClick={() => ir("redacao")}><strong>Sua redação foi corrigida</strong><span className="sub">Veja sua nota e os próximos ajustes</span></button>}
         {painel.motivosErro?.some((d) => d.erros) && <CartaoMotivos linhas={painel.motivosErro} />}
         {painel.calibragem && <CartaoCalibragem linhas={painel.calibragem} />}
 

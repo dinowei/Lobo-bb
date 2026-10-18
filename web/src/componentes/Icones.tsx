@@ -35,3 +35,4 @@ export const IBandeira = (p: P) => (<svg {...base(p)}><path d="M5 21V4M5 4h11l-2
 export const IMais = (p: P) => (<svg {...base(p)}><circle cx="5" cy="12" r="1.2" /><circle cx="12" cy="12" r="1.2" /><circle cx="19" cy="12" r="1.2" /></svg>);
 export const IEscudo = (p: P) => (<svg {...base(p)}><path d="M12 3 19 6v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" /><path d="m9 12 2 2 4-4" /></svg>);
 export const IFolha = (p: P) => (<svg {...base({ tam: 15, ...p })}><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v4h4M10 12h5M10 16h5" /></svg>);
+export const IRedacao = (p: P) => (<svg {...base(p)}><path d="M6 4h9l4 4v7" /><path d="M15 4v4h4M8 12h7M8 16h4" /><path d="m14 20 5.8-5.8 1.5 1.5L15.5 22H14z" /></svg>);

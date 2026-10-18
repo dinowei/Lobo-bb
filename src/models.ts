@@ -334,6 +334,38 @@ export const ChamadaModelo = model("ChamadaModelo", ChamadaModeloSchema, "chamad
 const ConfigSchema = new Schema({ _id: { type: String, required: true }, valor: Schema.Types.Mixed, em: { type: Date, default: Date.now } });
 export const Config = model("Config", ConfigSchema, "config");
 
+// 11. Redação: temas pré-gerados e textos corrigidos por usuário.
+const TemaRedacaoSchema = new Schema(
+  {
+    tema: { type: String, required: true },
+    proposta: { type: String, required: true },
+    textosMotivadores: { type: [String], required: true },
+    ativo: { type: Boolean, default: true, index: true },
+    modelo: String,
+  },
+  { timestamps: true }
+);
+export const TemaRedacao = model("TemaRedacao", TemaRedacaoSchema, "temas_redacao");
+
+const RedacaoSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    temaId: { type: Schema.Types.ObjectId, ref: "TemaRedacao", required: true },
+    tema: { type: String, required: true },
+    proposta: { type: String, required: true },
+    texto: { type: String, required: true },
+    linhas: { type: Number, required: true },
+    tempoSeg: { type: Number, required: true },
+    status: { type: String, enum: ["aguardando", "corrigindo", "corrigida", "erro"], default: "aguardando", index: true },
+    correcao: Schema.Types.Mixed,
+    avisada: { type: Boolean, default: false },
+    erro: String,
+  },
+  { timestamps: true }
+);
+RedacaoSchema.index({ userId: 1, createdAt: -1 });
+export const Redacao = model("Redacao", RedacaoSchema, "redacoes");
+
 // ------------------------------------------------------------
 // 11. TAREFAS — fila persistida do noturno: sobrevive a reinício; falha de infraestrutura
 // volta para a fila com espera crescente; descarte só por qualidade, com motivo.
@@ -342,7 +374,7 @@ export const STATUS_TAREFA = ["pendente", "rodando", "aguardando", "concluida", 
 const TarefaSchema = new Schema(
   {
     // aula e tema: ganchos prontos, ativados na Fase B (8.5 e 8.4)
-    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark", "explicar_outro_jeito", "aula", "tema"], required: true },
+    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark", "explicar_outro_jeito", "aula", "tema", "corrigir_redacao"], required: true },
     params: Schema.Types.Mixed, // gerar: { topicId, assunto, tipo? }
     status: { type: String, enum: STATUS_TAREFA, default: "pendente", index: true },
     tentativas: { type: Number, default: 0 }, // falhas de infraestrutura até agora

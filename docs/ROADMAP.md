@@ -20,18 +20,19 @@
 - [x] Figuras (5.8, fases 1 a 3): inventário, extração fiel das oficiais com tela de conferência, figuras desenhadas por código nas geradas (planilha, sistema linear, série de depósitos, taxa de abandono)
 - [x] Anti-repetição (5.8, fase 4): embedding + trechos (Jaccard) + impressão estrutural, cenários (perfil + situação) menos usados, teto diário de geração, descartes no `status`
 
+## Estado atual
+- Etapas 8.1, 8.2 e 8.3 concluídas e registradas no `docs/DIARIO.md`.
+- Etapa 8.4 (redação com correção por IA) concluída; E2E real no app gerou tema, corrigiu redação e salvou nota 87/100 no histórico.
+- Etapa 6 (noturno + adendo do banco grande): código e testes concluídos; rodada real noturna ainda pendente.
+- Etapa 9: requisitos do carrossel do painel registrados no `docs/DIARIO.md`; implementação e validação em 360 px e 1440 px pendentes.
+
 ## Próximo (em ordem)
-1. **Leis e normas**: Lei 4.595, Pix, Lei 9.613, LC 105, CDC (etapa C, item 4 do `docs/INTEGRACAO.md`).
-2. **Tela de revisão das traiçoeiras, contestadas e pendentes de figura**: lista para aprovar, corrigir ou descartar sem mexer no banco na mão (seção 5.8 do plano).
-3. **Corrente de modelos grátis** (Etapa 1.5 do `PROMPT-RETOMADA`): catálogo, reservas por função, auditor de outra família, benchmark.
-4. **Construção em outras matérias**: Amortização, Probabilidade, Concordância, Regência, Pontuação.
-5. **Pesos do edital**: conferir as cotas em `shared/estruturaProva.ts` (hoje das provas 2021/2023) e preencher `pesos` e `duracaoMin`; `questoesNaProva` por tópico continua tendo prioridade no treino. Simulado fiel (cotas exatas, mistura de dificuldade, contagem regressiva, resultado por bloco) feito na Etapa 8.1.
-6. **Estoque automático / geração noturna**: um job diário (`npm run bb -- estoque`) num servidor ou numa tarefa agendada.
-7. **PWA**: manifest + ícone para instalar no celular e cache das próximas 20 questões para estudar offline.
-8. **Deploy**: hospedar API + site (Render, Railway ou VPS) com login simples, porque hoje a API não tem autenticação.
-9. **Edital novo**: quando sair, atualizar `data/topicos.json`, rodar `topicos` de novo e ajustar o estilo da nova banca nos prompts.
+1. Implementar a Etapa 8.5 (aulas curtas por tópico e tutor por questão), incluindo o pré-gerador noturno previsto no adendo.
+2. Implementar o carrossel de matérias da Etapa 9 conforme a especificação em `docs/DIARIO.md`.
+3. Rodar a validação real do noturno da Etapa 6, sem concorrência com outros jobs de IA.
+4. Aplicar `docs/ADENDO-BINHO-VOZ.md` depois da Etapa 9.
+5. Revisar pendências restantes: fontes oficiais, tela de revisão, PWA, deploy e edital novo.
 
 ## Ideias para depois
 - Questões com imagem/tabela: cadastro com figura para as de `docs/PENDENTES-FIGURA.md`
-- Redação: correção por IA com critérios da banca
 - Gráfico de evolução do domínio por disciplina ao longo das semanas

@@ -143,6 +143,7 @@ export function calcularPainel(input: {
   topicos: TopicoDTO[];
   tentativas: TentativaBruta[];
   revisoes: string[]; // datas ISO de próxima revisão
+  redacoes?: { notaTotal: number }[];
   agora?: Date;
 }): PainelDTO {
   const agora = input.agora ?? new Date();
@@ -248,6 +249,8 @@ export function calcularPainel(input: {
     meta("rev50", "Faro de lobo", "Faça 50 revisões em dia", revisoesFeitas, 50),
     meta("sim1", "Primeiro simulado", "Termine um simulado", simulados.length, 1),
     meta("sim70", "Nota de corte", "Tire 70% num simulado de 10+ questões", melhorSimulado, 0.7),
+    meta("redacao1", "Primeira redação", "Envie sua primeira redação para correção", input.redacoes?.length ?? 0, 1),
+    meta("redacao70", "Acima da linha", "Tire 70 pontos ou mais em uma redação", Math.max(0, ...(input.redacoes ?? []).map((r) => r.notaTotal)), 70),
   ];
 
   return {

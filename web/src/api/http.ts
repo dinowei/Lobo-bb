@@ -39,6 +39,11 @@ export const apiHttp: Api = {
   misturaSimulado: () => req("/simulado/mistura"),
   erros: () => req("/erros"),
   contestar: (questaoId, motivo, comentario) => post("/contestar", { questaoId, motivo, comentario }),
+  temasRedacao: () => req("/redacao/temas"),
+  pedirTemaRedacao: () => post("/redacao/tema", {}),
+  corrigirRedacao: (r) => post("/redacoes/corrigir", r),
+  redacoes: () => req("/redacoes"),
+  marcarRedacoesVistas: () => post("/redacoes/vistas", {}),
 };
 
 // O servidor está de pé? (no site publicado sem backend, cai no modo demo)

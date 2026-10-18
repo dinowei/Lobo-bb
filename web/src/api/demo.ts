@@ -13,6 +13,8 @@ import {
   type Letra,
   type MotivoContestacao,
   type QuestaoDTO,
+  type RedacaoDTO,
+  type TemaRedacaoDTO,
   type TentativaBruta,
   type TopicoDTO,
 } from "../../../shared/tipos";
@@ -119,6 +121,16 @@ function registrar(e: Estado, q: QuestaoDemo, acertou: boolean, nota: number, xp
 }
 
 const espera = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 120));
+
+const TEMA_REDACAO_DEMO: TemaRedacaoDTO = {
+  id: "tema-demo",
+  tema: "Tecnologia e inclusão no acesso a serviços financeiros",
+  proposta: "Redija um texto dissertativo-argumentativo sobre os desafios de ampliar o acesso digital a serviços financeiros sem deixar grupos vulneráveis para trás.",
+  textosMotivadores: [
+    "A digitalização pode reduzir deslocamentos e facilitar o uso de serviços financeiros, mas depende de conexão, equipamentos e familiaridade com aplicativos.",
+    "A inclusão exige canais acessíveis, proteção contra fraudes e atendimento que considere as diferentes realidades dos clientes.",
+  ],
+};
 
 export const apiDemo: Api = {
   modo: "demo",
@@ -312,4 +324,12 @@ export const apiDemo: Api = {
     gravar(e);
     return espera(undefined);
   },
+
+  temasRedacao: () => espera([TEMA_REDACAO_DEMO]),
+  pedirTemaRedacao: () => espera({ status: "demo" as const }),
+  async corrigirRedacao(_r): Promise<RedacaoDTO> {
+    throw new Error("A correção de redação precisa do servidor. Seu rascunho continua salvo neste navegador.");
+  },
+  redacoes: () => espera([] as RedacaoDTO[]),
+  marcarRedacoesVistas: async () => espera(undefined),
 };

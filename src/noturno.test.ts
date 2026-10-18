@@ -2,7 +2,7 @@
 // "antes de salvar" pega a parecida que outro trabalhador acabou de salvar (sem banco e sem IA)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { planoDaNoite, metaDoTopico, TravaTopicos, type AlunoPlano } from "./noturno.js";
+import { planoDaNoite, metaDoTopico, destinoDaTarefa, TravaTopicos, type AlunoPlano } from "./noturno.js";
 import { Balde } from "./llm.js";
 import { pior, textoComparavel, type Comparavel } from "./similaridade.js";
 
@@ -68,4 +68,13 @@ test("antes de salvar: a parecida que outro trabalhador acabou de salvar é pega
   assert.equal(pior(textoComparavel(minha, "R$ 5.474,40"), [1, 0], banco).classe, "nova", "no começo era nova");
   banco.push({ id: "do-outro", texto: textoComparavel(minha.replace("Um cliente", "Uma cliente"), "R$ 5.474,40"), oficial: false, embedding: v(0.99) });
   assert.equal(pior(textoComparavel(minha, "R$ 5.474,40"), [1, 0], banco).classe, "duplicada");
+});
+
+test("correção de redação fica persistente depois do limite comum de falhas de infraestrutura", () => {
+  const agora = new Date("2026-10-18T12:00:00.000Z");
+  const destino = destinoDaTarefa({ ok: false, motivo: "provedor_falhou" }, 3, agora, [10, 30, 90], true);
+  if (destino.status !== "aguardando") assert.fail("a redação deve continuar aguardando nova tentativa");
+  assert.equal(destino.tentativas, 4);
+  assert.equal(destino.proximaEm.getTime(), agora.getTime() + 90 * 60_000);
+  assert.equal(destinoDaTarefa({ ok: false, motivo: "aguardando_modelo" }, 3, agora, [10, 30, 90], true).status, "aguardando");
 });

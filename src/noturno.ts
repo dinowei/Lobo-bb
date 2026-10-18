@@ -35,14 +35,15 @@ const amanhaCedo = (agora: Date) => {
 };
 
 // Para onde vai a tarefa depois de rodar (puro, testado)
-export function destinoDaTarefa(r: { ok: boolean; motivo?: string }, tentativas: number, agora: Date, esperas = esperasMin()): Destino {
+export function destinoDaTarefa(r: { ok: boolean; motivo?: string }, tentativas: number, agora: Date, esperas = esperasMin(), persistente = false): Destino {
   if (r.ok) return { status: "concluida" };
   const motivo = r.motivo ?? "sem_motivo";
   // teto diário não é falha: fica para amanhã, sem gastar tentativa
   if (motivo === "teto_diario") return { status: "aguardando", tentativas, proximaEm: amanhaCedo(agora), motivo };
   if (!MOTIVOS_INFRA.includes(motivo)) return { status: "descartada", motivo };
   const n = tentativas + 1;
-  if (n > MAX_FALHAS_INFRA) return { status: "esgotada", tentativas: n, motivo };
+  // A correção de redação mantém a tarefa persistida até a IA voltar; os demais jobs têm limite de voltas.
+  if (n > MAX_FALHAS_INFRA && !persistente) return { status: "esgotada", tentativas: n, motivo };
   const espera = esperas[Math.min(n - 1, esperas.length - 1)] ?? 10;
   return { status: "aguardando", tentativas: n, proximaEm: new Date(+agora + espera * 60_000), motivo };
 }
@@ -224,7 +225,7 @@ export interface ResumoNoite { rodadas: number; concluidas: number; aprovadas: n
 // nunca dois no mesmo tópico, cada um começando por um gerador diferente da corrente.
 // Para no que vier primeiro: META_APROVADAS_NOITE (100), "max" tarefas ou o fim da janela ("ate").
 // Com "ate", espera a próxima que estiver aguardando nova tentativa, se couber na janela.
-export async function rodarFila(opcoes: { ate?: Date; max?: number; trabalhadores?: number; metaAprovadas?: number; geradores?: string[] } = {}) {
+export async function rodarFila(opcoes: { ate?: Date; max?: number; trabalhadores?: number; metaAprovadas?: number; geradores?: string[]; tarefaIds?: string[] } = {}) {
   const n = Math.max(1, opcoes.trabalhadores ?? (Number(process.env.NOTURNO_TRABALHADORES) || 3));
   const metaAprovadas = opcoes.metaAprovadas ?? (Number(process.env.META_APROVADAS_NOITE) || 100);
   const geradores = opcoes.geradores ?? [];
@@ -235,7 +236,12 @@ export async function rodarFila(opcoes: { ate?: Date; max?: number; trabalhadore
 
   const pegar = async () => {
     const t = await Tarefa.findOneAndUpdate(
-      { status: { $in: ["pendente", "aguardando"] }, proximaEm: { $lte: new Date() }, $nor: [{ tipo: "gerar", "params.topicId": { $in: trava.lista } }] },
+      {
+        status: { $in: ["pendente", "aguardando"] },
+        proximaEm: { $lte: new Date() },
+        $nor: [{ tipo: "gerar", "params.topicId": { $in: trava.lista } }],
+        ...(opcoes.tarefaIds ? { _id: { $in: opcoes.tarefaIds.map((id) => new Types.ObjectId(id)) } } : {}),
+      },
       { status: "rodando", iniciadaEm: new Date() },
       { sort: { proximaEm: 1, createdAt: 1 }, new: true }
     );
@@ -269,7 +275,7 @@ export async function rodarFila(opcoes: { ate?: Date; max?: number; trabalhadore
       } finally {
         if (topico) trava.soltar(topico);
       }
-      const d = destinoDaTarefa(r, t.tentativas ?? 0, new Date());
+      const d = destinoDaTarefa(r, t.tentativas ?? 0, new Date(), undefined, t.tipo === "corrigir_redacao");
       await Tarefa.updateOne({ _id: t._id }, { ...d, detalhes: r.detalhes, resultadoId: r.resultadoId });
       const chave = ({ concluida: "concluidas", descartada: "descartadas", aguardando: "aguardando", esgotada: "esgotadas" } as const)[d.status];
       resumo[chave]++;

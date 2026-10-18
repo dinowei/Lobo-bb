@@ -252,6 +252,7 @@ export interface PainelDTO {
   totalRespondidas: number;
   motivosErro: MotivosDisciplinaDTO[];
   calibragem: CalibragemDTO[]; // primeiro o geral, depois por disciplina
+  redacaoCorrigidaPendente?: boolean;
   banco?: BancoDTO; // cartão "Banco de questões"
   alertasAdmin?: string[]; // só o admin vê (modelos, regras); o aluno nunca vê menção a IA
 }
@@ -386,6 +387,42 @@ export interface ResultadoSimuladoDTO {
   correcoes: (CorrecaoDTO & { questaoId: string; enunciado: string; resposta: Letra | null })[];
 }
 
+export interface TemaRedacaoDTO {
+  id: string;
+  tema: string;
+  proposta: string;
+  textosMotivadores: string[];
+}
+export interface CriterioRedacaoDTO {
+  nome: string;
+  nota: number;
+  max: 25;
+  comentario: string;
+  trechos: string[];
+}
+export interface CorrecaoRedacaoDTO {
+  criterios: CriterioRedacaoDTO[];
+  notaTotal: number;
+  pontosFortes: string[];
+  melhorias: string[];
+  paragrafoReescrito: string;
+  estimada: true;
+}
+export type StatusRedacaoDTO = "aguardando" | "corrigindo" | "corrigida" | "erro";
+export interface RedacaoDTO {
+  id: string;
+  temaId: string;
+  tema: string;
+  proposta: string;
+  texto: string;
+  linhas: number;
+  tempoSeg: number;
+  status: StatusRedacaoDTO;
+  correcao?: CorrecaoRedacaoDTO;
+  erro?: string;
+  criadoEm: string;
+}
+
 export type MotivoContestacao = "gabarito_errado" | "duas_corretas" | "desatualizada" | "ambigua" | "explicacao_ruim";
 
 // A mesma interface serve para o modo demo (navegador) e para o servidor de verdade
@@ -407,4 +444,9 @@ export interface Api {
   misturaSimulado(): Promise<{ facil: number; media: number; dificil: number; estimativa: boolean; base: number }>;
   erros(): Promise<ErroDTO[]>;
   contestar(questaoId: string, motivo: MotivoContestacao, comentario?: string): Promise<void>;
+  temasRedacao(): Promise<TemaRedacaoDTO[]>;
+  pedirTemaRedacao(): Promise<{ status: "gerando" | "demo" }>;
+  corrigirRedacao(r: { temaId: string; texto: string; linhas: number; tempoSeg: number }): Promise<RedacaoDTO>;
+  redacoes(): Promise<RedacaoDTO[]>;
+  marcarRedacoesVistas(): Promise<void>;
 }

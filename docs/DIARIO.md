@@ -180,12 +180,13 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - Servidor e demo usam o mesmo motor. O Painel mostra o resumo geral e alertas por disciplina; Conquistas mostra a tabela completa com taxas e amostras.
 - Testes direcionados: 6/6 em `shared/aprendizado.test.ts`. Typecheck concluído.
 
-## 18/10/2026 — Etapa 8.4: redação (implementação em validação)
+## 18/10/2026 — Etapa 8.4: redação (concluída, E2E real)
 
 - Modelo de temas e redações, geração de tema por comando/sob demanda, rubrica de quatro critérios, citações literais verificadas, duas avaliações e terceira com mediana quando a diferença passa de 15 pontos.
 - Tela Redação no servidor e no demo: tema, textos motivadores, limite de linhas configurável, cronômetro, rascunho local, correção, trechos marcados, histórico e conquistas. O noturno pré-gera a meta de 40 temas.
 - Ajuste do adendo: correções de redação com falha de infraestrutura permanecem na fila persistente, com intervalo crescente, até a IA voltar.
 - `npm run typecheck` passou; `npx tsx --test src/corrente.test.ts src/noturno.test.ts` passou 18/18; tela demo conferida no navegador.
-- Validação real da redação em andamento: tema solicitado pelo app; concluir submissão de texto sintético e conferir a correção persistida.
+- E2E no app: tema "A responsabilidade das fintechs na prevenção de fraudes digitais" gerado com `openai/gpt-oss-20b` após dois timeouts do Lightning; redação sintética de 2.073 caracteres enviada, salva com 5 linhas e 76 s.
+- Correção real concluída e persistida no histórico: 87/100 (22, 20, 22 e 23 nos quatro critérios), acima da linha de 70. Duas avaliações do auditor Super; todos os trechos citados passaram na validação literal e aparecem marcados no texto. Redação `6ad4fa75108c0380e4a8e026`; tema `6ad4f9dc108c0380e4a8e025`.
 
-RETOMAR AQUI: concluir o E2E real da Etapa 8.4 (tema, envio de redação sintética, correção e histórico). Depois implementar a Etapa 8.5. A prova real da corrente já foi registrada acima.
+RETOMAR AQUI: implementar a Etapa 8.5 (aulas curtas por tópico e tutor por questão). A prova real da corrente e o E2E da redação já foram registrados acima; a rodada real noturna da Etapa 6 segue pendente.

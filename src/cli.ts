@@ -51,6 +51,7 @@ import { aprovarCorrentes, desfazerCorrentes, correnteAtiva } from "./corrente.j
 import { sondarModelos, verificarModelos } from "./sondagem.js";
 import { planejarNoite, rodarFila } from "./noturno.js";
 import { planejarPregeracoes } from "./outroJeito.js";
+import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
@@ -76,6 +77,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
+  temas [--n 10]                prepara temas inéditos para redação
   criar-admin <email>           sua conta de administrador (pede a senha) e leva seu progresso para ela
   convite [--max 7]             código de cadastro de uso único (validade em dias)
   senha <email>                 senha provisória para quem esqueceu
@@ -217,6 +219,14 @@ async function main() {
         });
       }
 
+      case "temas": {
+        return await naFila(rotulo, async () => {
+          const n = o.n ? Number(o.n) : 10;
+          const r = await gerarTemas(n);
+          console.log(`Temas: ${r.concluidas} tarefa(s) concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa.`);
+        });
+      }
+
       case "estoque":
         return await naFila(rotulo, () => reabastecerEstoque(o.min ? Number(o.min) : 30));
 
@@ -242,8 +252,9 @@ async function main() {
           // ordem da noite (adendo): questões até a meta → explicações alternativas → aulas → temas
           const n = await planejarNoite(lote, { max });
           const extras = await planejarPregeracoes(lote);
-          console.log(`Plano: ${n} questão(ões) e ${extras} explicação(ões) alternativa(s) (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
-          const r = await rodarFila({ ate, max: max !== undefined ? max + extras + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
+          const temas = await planejarTemasRedacao(lote);
+          console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s) e ${temas} tema(s) de redação (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
+          const r = await rodarFila({ ate, max: max !== undefined ? max + extras + temas + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
           console.log(`\n${r.rodadas} tarefa(s): ${r.aprovadas} questão(ões) aprovada(s), ${r.concluidas} concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa, ${r.esgotadas} esgotada(s)${r.orfas ? `, ${r.orfas} recuperada(s) de processo que caiu` : ""}`);
           const noite = await relatorioDaNoite(inicio);
           const aprovadas = await Question.countDocuments({ status: "aprovada" });

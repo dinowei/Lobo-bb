@@ -28,6 +28,7 @@ export function Conquistas() {
         </div>
         <div className="acoes" style={{ marginTop: 0 }}>
           <button className="botao-linha" onClick={() => ir("erros")}>Caderno de erros</button>
+          <button className="botao-linha" onClick={() => ir("redacao")}>Treinar redação</button>
           <button className="botao-linha" onClick={() => ir("ajustes")}>Ajustes</button>
           <button className="botao-laranja" onClick={() => ir("praticar")}>Ganhar XP <ISeta /></button>
         </div>

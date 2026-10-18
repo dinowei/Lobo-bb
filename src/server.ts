@@ -139,6 +139,20 @@ app.post(
   })
 );
 
+app.get("/api/redacao/temas", rota(async (_req, res) => res.json(await apiServidor.temasRedacao())));
+app.post("/api/redacao/tema", rota(async (_req, res) => res.json(await apiServidor.pedirTemaRedacao())));
+app.get("/api/redacoes", rota(async (_req, res) => res.json(await apiServidor.redacoes())));
+app.post(
+  "/api/redacoes/corrigir",
+  rota(async (req, res) => {
+    const { temaId, texto: corpo, linhas, tempoSeg } = req.body ?? {};
+    if (!texto(temaId) || typeof corpo !== "string" || !Number.isFinite(Number(linhas)) || !Number.isFinite(Number(tempoSeg)))
+      return res.status(400).json({ erro: "Envie temaId, texto, linhas e tempoSeg válidos." });
+    res.json(await apiServidor.corrigirRedacao({ temaId, texto: corpo, linhas: Number(linhas), tempoSeg: Number(tempoSeg) }));
+  })
+);
+app.post("/api/redacoes/vistas", rota(async (_req, res) => { await apiServidor.marcarRedacoesVistas(); res.status(204).end(); }));
+
 // ---------- Conferência do dono (tela Figuras) ----------
 app.get("/api/admin/figuras", rota(async (_req, res) => res.json(await listarFiguras())));
 app.get("/api/admin/figuras/amostras", (_req, res) => res.json(amostrasDeFiguras(5)));

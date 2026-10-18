@@ -113,6 +113,7 @@ export function AjustesTela() {
             metaDiaria: Math.max(1, Math.min(300, form.metaDiaria || 20)),
             duracaoProvaMin: Math.max(0, Math.min(600, Math.round(form.duracaoProvaMin || 0))),
             linhaDeCorte: Math.max(1, Math.min(100, Math.round(form.linhaDeCorte || 70))),
+            linhasRedacaoMax: Math.max(5, Math.min(60, Math.round(form.linhasRedacaoMax || 30))),
           });
           avisar("Ajustes salvos");
         }}
@@ -136,6 +137,10 @@ export function AjustesTela() {
         <label htmlFor="corte">
           Linha de corte nos simulados (%)
           <input id="corte" type="number" min={1} max={100} value={form.linhaDeCorte} onChange={(e) => setForm({ ...form, linhaDeCorte: Number(e.target.value) })} />
+        </label>
+        <label htmlFor="linhas-redacao">
+          Limite de linhas da redação (padrão 30; confira no edital)
+          <input id="linhas-redacao" type="number" min={5} max={60} value={form.linhasRedacaoMax} onChange={(e) => setForm({ ...form, linhasRedacaoMax: Number(e.target.value) })} />
         </label>
         <div><button className="botao-laranja" type="submit">Salvar</button></div>
       </form>

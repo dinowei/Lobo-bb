@@ -3,7 +3,7 @@
 // As regras (XP, SM-2, prioridade, painel) vêm de shared/motor.ts — as mesmas do modo demo.
 // ============================================================
 import { Types } from "mongoose";
-import { Attempt, Question, ReviewState, Topic, Report, Source } from "./models.js";
+import { Attempt, Question, ReviewState, Topic, Report, Source, Redacao } from "./models.js";
 import {
   ESTADO_INICIAL,
   agendar,
@@ -45,6 +45,7 @@ import { inicioDaNoite } from "../shared/motor.js";
 import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, type Mistura } from "../shared/estruturaProva.js";
 import { fatorNaoSabia, palavrasDecisivas, JANELA_NAO_SABIA_DIAS, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../shared/aprendizado.js";
 import type { AcaoMotivoDTO, MotivoErro } from "../shared/tipos.js";
+import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
@@ -230,13 +231,15 @@ export const apiServidor: Omit<Api, "modo"> = {
 
   async painel() {
     const userId = ALUNO();
-    const [topicos, tentativas, revisoes, aprovadas, alertasAdmin] = await Promise.all([
+    const [topicos, tentativas, revisoes, aprovadas, alertasAdmin, redacaoCorrigidaPendente, redacoes] = await Promise.all([
       listarTopicos(),
       Attempt.find({ userId }).select("questionId topicId acertou xp modo simuladoId confianca motivoErro createdAt").lean(),
       ReviewState.find({ userId }).select("proximaRevisao").lean(),
       Question.find({ status: "aprovada" }).select("_id topicId origem createdAt").lean(),
       // só o admin vê (com o login da Etapa 4, só vai para o papel admin)
       usuarioAtual()?.papel === "aluno" ? ([] as string[]) : alertasAdminAgora().catch(() => [] as string[]),
+      Redacao.exists({ userId, status: "corrigida", avisada: false }),
+      Redacao.find({ userId, status: "corrigida" }).select("correcao").lean(),
     ]);
     const brutas: TentativaBruta[] = tentativas.map((t) => ({
       questaoId: String(t.questionId),
@@ -249,7 +252,12 @@ export const apiServidor: Omit<Api, "modo"> = {
       confianca: (t.confianca ?? undefined) as Confianca | undefined,
       motivoErro: (t.motivoErro ?? undefined) as MotivoErro | undefined,
     }));
-    const painel = calcularPainel({ topicos, tentativas: brutas, revisoes: revisoes.map((r) => (r.proximaRevisao as Date).toISOString()) });
+    const painel = calcularPainel({
+      topicos,
+      tentativas: brutas,
+      revisoes: revisoes.map((r) => (r.proximaRevisao as Date).toISOString()),
+      redacoes: redacoes.map((r) => ({ notaTotal: Number((r.correcao as { notaTotal?: number } | null)?.notaTotal ?? 0) })),
+    });
     const disciplinaDo = new Map(topicos.map((t) => [t.id, t.disciplina]));
     const banco = calcularBanco(
       aprovadas.flatMap((q) => {
@@ -259,7 +267,7 @@ export const apiServidor: Omit<Api, "modo"> = {
       new Set(brutas.map((t) => t.questaoId))
     );
     banco.repetidasNoite = await Geracao.countDocuments({ em: { $gte: inicioDaNoite() }, motivo: { $in: MOTIVOS_REPETICAO } });
-    return { ...painel, banco, alertasAdmin };
+    return { ...painel, banco, alertasAdmin, redacaoCorrigidaPendente: !!redacaoCorrigidaPendente };
   },
 
   async proxima(f) {
@@ -508,4 +516,10 @@ export const apiServidor: Omit<Api, "modo"> = {
     await Report.create({ userId: ALUNO(), questionId: id, motivo, comentario });
     await Question.updateOne({ _id: id }, { status: "contestada" }); // sai de circulação até você revisar
   },
+
+  temasRedacao: listarTemasRedacao,
+  pedirTemaRedacao,
+  corrigirRedacao: enviarRedacao,
+  redacoes: historicoRedacoes,
+  marcarRedacoesVistas,
 };
