@@ -2,7 +2,13 @@
 // "antes de salvar" pega a parecida que outro trabalhador acabou de salvar (sem banco e sem IA)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { planoDaNoite, metaDoTopico, destinoDaTarefa, TravaTopicos, type AlunoPlano } from "./noturno.js";
+import { planoDaNoite, metaDoTopico, destinoDaTarefa, TravaTopicos, filtroDaMeta, type AlunoPlano } from "./noturno.js";
+
+test("meta de aprovadas para só a geração: explicações, aulas, cartões e temas seguem", () => {
+  assert.deepEqual(filtroDaMeta(9, 10), {});
+  assert.deepEqual(filtroDaMeta(10, 10), { tipo: { $ne: "gerar" } });
+  assert.deepEqual(filtroDaMeta(12, 10), { tipo: { $ne: "gerar" } });
+});
 import { Balde } from "./llm.js";
 import { pior, textoComparavel, type Comparavel } from "./similaridade.js";
 

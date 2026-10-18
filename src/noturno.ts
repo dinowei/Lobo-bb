@@ -225,20 +225,25 @@ export interface ResumoNoite { rodadas: number; concluidas: number; aprovadas: n
 // nunca dois no mesmo tópico, cada um começando por um gerador diferente da corrente.
 // Para no que vier primeiro: META_APROVADAS_NOITE (100), "max" tarefas ou o fim da janela ("ate").
 // Com "ate", espera a próxima que estiver aguardando nova tentativa, se couber na janela.
+// Meta de aprovadas batida: a fila deixa de pegar "gerar" (o que sobrou fica para a próxima noite)
+export const filtroDaMeta = (aprovadas: number, meta: number): { tipo?: { $ne: "gerar" } } => (aprovadas >= meta ? { tipo: { $ne: "gerar" } } : {});
+
 export async function rodarFila(opcoes: { ate?: Date; max?: number; trabalhadores?: number; metaAprovadas?: number; geradores?: string[]; tarefaIds?: string[] } = {}) {
   const n = Math.max(1, opcoes.trabalhadores ?? (Number(process.env.NOTURNO_TRABALHADORES) || 3));
   const metaAprovadas = opcoes.metaAprovadas ?? (Number(process.env.META_APROVADAS_NOITE) || 100);
   const geradores = opcoes.geradores ?? [];
   const resumo: ResumoNoite = { rodadas: 0, concluidas: 0, aprovadas: 0, descartadas: 0, aguardando: 0, esgotadas: 0, orfas: await recuperarOrfas() };
   const trava = new TravaTopicos();
-  const acabou = () =>
-    (opcoes.max !== undefined && resumo.rodadas >= opcoes.max) || resumo.aprovadas >= metaAprovadas || (!!opcoes.ate && Date.now() >= +opcoes.ate);
+  // a meta de aprovadas para só a geração de questões; explicações, aulas, cartões e temas seguem
+  // (ordem do adendo: questões até a meta → explicações → aulas → temas)
+  const acabou = () => (opcoes.max !== undefined && resumo.rodadas >= opcoes.max) || (!!opcoes.ate && Date.now() >= +opcoes.ate);
 
   const pegar = async () => {
     const t = await Tarefa.findOneAndUpdate(
       {
         status: { $in: ["pendente", "aguardando"] },
         proximaEm: { $lte: new Date() },
+        ...filtroDaMeta(resumo.aprovadas, metaAprovadas),
         $nor: [{ tipo: "gerar", "params.topicId": { $in: trava.lista } }],
         ...(opcoes.tarefaIds ? { _id: { $in: opcoes.tarefaIds.map((id) => new Types.ObjectId(id)) } } : {}),
       },
