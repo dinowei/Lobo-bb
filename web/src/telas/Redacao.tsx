@@ -30,7 +30,7 @@ function Resultado({ r }: { r: RedacaoDTO }) {
         </div>
         <span className={`redacao-corte${c.notaTotal >= 70 ? " passou" : ""}`}>{c.notaTotal >= 70 ? "Acima da linha de 70" : "Abaixo da linha de 70"}</span>
       </div>
-      <p className="redacao-aviso">Nota estimada por IA; use como treino, não como garantia.</p>
+      <p className="redacao-aviso">Nota estimada (correção automática; pode variar da banca)</p>
       {c.penalidade && <p className="msg-erro">{c.penalidade}</p>}
       <div className="redacao-colunas">
         {c.criterios.map((x) => (

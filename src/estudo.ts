@@ -44,7 +44,7 @@ import { usuarioAtualId, usuarioAtual } from "./auth.js";
 import { Geracao } from "./models.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
 import { inicioDaNoite } from "../shared/motor.js";
-import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PROVA, type Mistura } from "../shared/estruturaProva.js";
+import { pesoDoTopico, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PROVA, MISTURA_SIMULADO } from "../shared/estruturaProva.js";
 import { fatorNaoSabia, palavrasDecisivas, JANELA_NAO_SABIA_DIAS, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../shared/aprendizado.js";
 import type { AcaoMotivoDTO, MotivoErro } from "../shared/tipos.js";
 import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
@@ -67,11 +67,6 @@ async function mapaTopicos() {
   return new Map(ts.map((t) => [String(t._id), t]));
 }
 
-// mistura de dificuldade das oficiais (≥ 30 com dificuldade) ou a estimativa padrão
-async function misturaOficial(): Promise<Mistura> {
-  const difs = await Question.find({ origem: "oficial", status: "aprovada", dificuldade: { $exists: true } }).select("dificuldade").lean();
-  return misturaDasOficiais(difs.map((q) => q.dificuldade ?? 3));
-}
 
 // peso no treino: o do edital (questoesNaProva) ou a cota da disciplina na prova ÷ tópicos dela
 async function listarTopicos(): Promise<TopicoDTO[]> {
@@ -434,8 +429,9 @@ export const apiServidor: Omit<Api, "modo"> = {
     return acao;
   },
 
+  // simulado: 20/50/30 fixo (decisão do dono); a dificuldade estimada das oficiais saía 72% fácil
   async misturaSimulado() {
-    return misturaOficial();
+    return MISTURA_SIMULADO;
   },
 
   // Simulado fiel: cotas da prova real por disciplina e, dentro delas, a mistura de dificuldade
@@ -445,7 +441,7 @@ export const apiServidor: Omit<Api, "modo"> = {
     const validos = topicos.filter((t) => comQuestao.has(t.id));
     const cotas = cotasPorDisciplina(n, validos);
     // Raio-X: só dificuldade média (completa com outras se faltar)
-    const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : await misturaOficial();
+    const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : MISTURA_SIMULADO;
     const mapa = await mapaTopicos();
     const escolhidas: QuestaoDoc[] = [];
     const FAIXAS = { facil: [1, 2], media: [3], dificil: [4, 5] } as const;

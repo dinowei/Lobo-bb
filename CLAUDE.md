@@ -58,7 +58,7 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 15. Figura é dado desenhado por código (tabela, planilha, gráfico, tela de programa), nunca imagem gerada por IA. A IA não copia a figura no enunciado. Figura oficial extraída do PDF só entra no treino depois do OK do dono (tela Figuras).
 16. Questão nova passa pelo filtro de similaridade (`src/similaridade.ts`) antes do auditor: cosseno do embedding contra o mesmo tópico e as oficiais da disciplina, trechos em comum (Jaccard) e, nas por construção, a impressão estrutural (tipo, contexto, parâmetros) que não se repete no tópico. Paráfrase de oficial é descartada. Template não copia o cenário de questão oficial. Limites no `.env` (`SIMILAR_*`).
 
-17. Nota de redação é estimativa da IA, sempre sinalizada.
+17. Nota de redação é estimativa, sempre sinalizada para o aluno como "Nota estimada (correção automática; pode variar da banca)" (sem a palavra IA). Nota zero: casos do item 7.3.5 do edital (na correção) e menos de 25 linhas da folha (por código, decisão do dono); além de 30 linhas, o texto é desconsiderado.
 18. Aulas só aparecem com auditoria aprovada; Conhecimentos Bancários, Atualidades e Vendas exigem fonte ingerida, citação literal validada e auditor de família diferente da do tutor.
 19. O tutor alternativo recebe gabarito e explicações salvas, nunca pode contradizê-los; dúvidas novas são cacheadas por aluno, questão e texto normalizado, com limite diário `EXPLICACOES_MAIS_MAX_DIA`.
 

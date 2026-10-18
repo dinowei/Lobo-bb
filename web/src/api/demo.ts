@@ -33,7 +33,7 @@ import {
   type EstadoRevisao,
 } from "../../../shared/motor";
 import { QUESTOES_DEMO, type QuestaoDemo } from "../demo/questoes";
-import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PROVA } from "../../../shared/estruturaProva";
+import { pesoDoTopico, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PROVA, MISTURA_SIMULADO } from "../../../shared/estruturaProva";
 import { ehDiagnostico, MISTURA_DIAGNOSTICO, PREFIXO_DIAGNOSTICO, ratingDoDiagnostico } from "../../../shared/diagnostico";
 import { reprocessar, type EventoRating, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../../../shared/rating";
 import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../../../shared/aprendizado";
@@ -355,14 +355,14 @@ export const apiDemo: Api = {
   },
 
   // sem oficiais no demo: mistura estimada (20/50/30), igual à regra do servidor
-  misturaSimulado: () => espera(misturaDasOficiais([])),
+  misturaSimulado: () => espera(MISTURA_SIMULADO),
 
   async simulado(n, opcoes) {
     const e = ler();
     const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id));
     const comQuestao = TOPICOS.filter((t) => ativas.some((q) => topicoDe(q) === t.id));
     const cotas = cotasPorDisciplina(Math.min(n, ativas.length), comQuestao);
-    const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : misturaDasOficiais([]);
+    const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : MISTURA_SIMULADO;
     const escolhidas: QuestaoDemo[] = [];
     for (const [d, k] of cotas) {
       const daDisc = ativas.filter((q) => q.disciplina === d).sort(() => Math.random() - 0.5);

@@ -6,7 +6,7 @@ import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { IEsq, IDir, ISeta } from "../componentes/Icones";
 import { MASCOTE, pct } from "../util";
 import { RelogioAtivo } from "../relogio";
-import { COTAS_PROVA, ESTRUTURA_PROVA, resumoPorBloco, notaPonderada, type Mistura } from "../../../shared/estruturaProva";
+import { COTAS_PROVA, ESTRUTURA_PROVA, resumoPorBloco, pontuacaoProva, type Mistura } from "../../../shared/estruturaProva";
 
 // prova completa = exatamente as cotas do edital (soma dos blocos)
 const N_PROVA = Object.values(COTAS_PROVA).reduce((s, c) => s + (c ?? 0), 0);
@@ -99,7 +99,7 @@ export function Simulados() {
   if (resultado && questoes) {
     const nota = resultado.acertos / Math.max(1, resultado.total);
     const blocos = resumoPorBloco(resultado.porDisciplina);
-    const ponderada = notaPonderada(blocos);
+    const prova = pontuacaoProva(resultado.porDisciplina);
     return (
       <div className="pagina">
         <div className="pagina-cabeca">
@@ -119,8 +119,13 @@ export function Simulados() {
               {nota >= corte ? "Linha de corte batida. O lobo aprova." : `Abaixo de ${pct(corte)}. Use o caderno de erros antes do próximo.`}
             </p>
             <p className="num" style={{ color: "var(--suave)", margin: "6px 0 0", fontSize: 13 }}>
-              {ponderada === null ? "Nota ponderada: pesos dos blocos ainda não confirmados pelo edital." : `Nota ponderada pelos blocos: ${pct(ponderada)}`}
+              Pontos como a banca conta: {prova.pontos.toLocaleString("pt-BR")} de {prova.maximo.toLocaleString("pt-BR")} ({pct(prova.aproveitamento)}).
             </p>
+            {prova.eliminado.length > 0 && (
+              <p className="num" style={{ color: "var(--errado)", margin: "6px 0 0", fontSize: 13 }}>
+                Na prova, isso eliminaria: {prova.eliminado.join(", ")}.
+              </p>
+            )}
           </div>
           <div className="secao rolagem">
             <h2>Por bloco</h2>
@@ -241,7 +246,7 @@ export function Simulados() {
       <p className="num" style={{ color: "var(--suave)", margin: "0 0 6px", fontSize: 13 }}>Prova completa: {COMPOSICAO}</p>
       <p className="num" style={{ color: "var(--suave)", margin: "0 0 16px", fontSize: 13 }}>
         {mistura
-          ? `Dificuldade: ${pct(mistura.facil)} fáceis, ${pct(mistura.media)} médias, ${pct(mistura.dificil)} difíceis${mistura.estimativa ? " (estimativa, até termos provas oficiais suficientes)" : ` (como nas ${mistura.base} questões oficiais, pela dificuldade estimada de cada uma)`}.`
+          ? `Dificuldade: ${pct(mistura.facil)} fáceis, ${pct(mistura.media)} médias, ${pct(mistura.dificil)} difíceis, como numa prova de verdade.`
           : ""}
         {ajustes.duracaoProvaMin > 0 ? ` Tempo: ${ajustes.duracaoProvaMin} min na completa, proporcional nos menores; acabou, entrega.` : " Sem tempo limite (defina a duração em Ajustes)."}
       </p>

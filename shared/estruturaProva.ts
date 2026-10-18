@@ -1,19 +1,27 @@
 // Estrutura da prova de Escriturário (Agente Comercial) — usada pelo simulado, pelo treino e pelo
-// noturno, no servidor E no modo demo. Lida das provas oficiais BB 2021 e BB 2023 (disciplina de
-// cada questão tirada da capa por código). Pesos por bloco e duração: não confirmados (null).
+// noturno, no servidor E no modo demo. Conferida no EDITAL Nº 01 – 2022/001 (Cesgranrio, prova de
+// 23/04/2023), itens 7.2.2 a 7.2.4, 7.3 e 8.1; bate com as capas das provas BB 2021 e 2023.
 import type { Disciplina } from "./tipos.js";
 
 export const ESTRUTURA_PROVA = {
-  fonte: "distribuição das provas oficiais BB 2021 e BB 2023 (capa); conferir no próximo edital",
-  conferido: false,
+  fonte: "Edital nº 01 – 2022/001 do Banco do Brasil (Cesgranrio), itens 7.2.2, 7.2.4, 7.3 e 8.1",
+  conferido: true,
   totalQuestoes: 70,
   blocos: [
     { nome: "Conhecimentos Básicos", cotas: { lingua_portuguesa: 10, lingua_inglesa: 5, matematica: 5, atualidades_mercado_financeiro: 5 } },
     { nome: "Conhecimentos Específicos", cotas: { matematica_financeira: 5, conhecimentos_bancarios: 10, informatica: 15, vendas_negociacao: 15 } },
   ] as { nome: string; cotas: Partial<Record<Disciplina, number>> }[],
+  // valor de cada questão (7.2.2.1 e 7.2.2.2): 32,5 pontos em Básicos + 67,5 em Específicos = 100
+  valorQuestao: {
+    lingua_portuguesa: 1.5, lingua_inglesa: 1, matematica: 1.5, atualidades_mercado_financeiro: 1,
+    matematica_financeira: 1.5, conhecimentos_bancarios: 1.5, informatica: 1.5, vendas_negociacao: 1.5,
+  } as Partial<Record<Disciplina, number>>,
+  // 7.2.4: elimina abaixo de 50% no total, em Básicos ou em Específicos, ou com zero numa disciplina
+  corteObjetivas: 0.5,
+  // 7.3: dissertativo-argumentativo, 100 pontos, elimina abaixo de 70; nota zero só nos casos do 7.3.5
+  // (a regra de 25 a 30 linhas vem do caderno da prova; decisão do dono: zero abaixo de 25)
   redacao: { tipo: "dissertativo-argumentativo", pontos: 100, minimo: 70 },
-  pesos: null as Record<string, number> | null, // por bloco, quando o edital confirmar
-  duracaoMin: null as number | null,
+  duracaoMin: 300, // 8.1: objetivas + redação em 5 horas
   // praticável no treino, mas fora dos simulados e com prioridade baixa
   foraDoEdital: ["probabilidade_estatistica"] as Disciplina[],
 };
@@ -65,6 +73,8 @@ export function sortearDisciplinaMista(disponiveis: Disciplina[], anterior?: Dis
 // ---------- mistura de dificuldade ----------
 export interface Mistura { facil: number; media: number; dificil: number; estimativa: boolean; base: number }
 export const MISTURA_PADRAO = { facil: 0.2, media: 0.5, dificil: 0.3 };
+// simulado fiel: 20% fácil, 50% média, 30% difícil (decisão do dono, 18/10/2026); o treino segue o rating
+export const MISTURA_SIMULADO: Mistura = { ...MISTURA_PADRAO, estimativa: false, base: 0 };
 export const faixaDe = (dificuldade: number): "facil" | "media" | "dificil" => (dificuldade <= 2 ? "facil" : dificuldade === 3 ? "media" : "dificil");
 
 // distribuição das oficiais quando houver ao menos 30 com dificuldade; senão, a estimativa padrão
@@ -91,10 +101,21 @@ export function resumoPorBloco(porDisciplina: { disciplina: Disciplina; total: n
   return linhas.filter((l) => l.total);
 }
 
-// nota ponderada pelos pesos dos blocos (só quando o edital confirmar os pesos)
-export function notaPonderada(blocos: { bloco: string; total: number; acertos: number }[]): number | null {
-  const pesos = ESTRUTURA_PROVA.pesos;
-  if (!pesos) return null;
-  const soma = blocos.reduce((s, b) => s + (pesos[b.bloco] ?? 0) * b.total, 0);
-  return soma ? blocos.reduce((s, b) => s + (pesos[b.bloco] ?? 0) * b.acertos, 0) / soma : null;
+// Pontuação como a banca conta (valor de cada questão do edital) e os cortes do 7.2.4. Em simulado
+// menor que 70 questões, os cortes valem sobre o que caiu (aproveitamento proporcional).
+export function pontuacaoProva(porDisciplina: { disciplina: Disciplina; total: number; acertos: number }[]) {
+  const valor = (d: Disciplina) => ESTRUTURA_PROVA.valorQuestao[d] ?? 0;
+  const soma = (ds: typeof porDisciplina, campo: "total" | "acertos") => ds.reduce((s, d) => s + valor(d.disciplina) * d[campo], 0);
+  const blocos = ESTRUTURA_PROVA.blocos.map((b) => {
+    const ds = porDisciplina.filter((d) => d.disciplina in b.cotas);
+    return { bloco: b.nome, pontos: soma(ds, "acertos"), maximo: soma(ds, "total") };
+  });
+  const pontos = blocos.reduce((s, b) => s + b.pontos, 0);
+  const maximo = blocos.reduce((s, b) => s + b.maximo, 0);
+  const corte = ESTRUTURA_PROVA.corteObjetivas;
+  const motivos: string[] = [];
+  if (maximo && pontos / maximo < corte) motivos.push(`menos de ${corte * 100}% no total`);
+  for (const b of blocos) if (b.maximo && b.pontos / b.maximo < corte) motivos.push(`menos de ${corte * 100}% em ${b.bloco}`);
+  for (const d of porDisciplina) if (valor(d.disciplina) && d.total && !d.acertos) motivos.push(`zero em uma disciplina`);
+  return { pontos, maximo, aproveitamento: maximo ? pontos / maximo : 0, blocos, eliminado: [...new Set(motivos)] };
 }

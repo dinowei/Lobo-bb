@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  ESTRUTURA_PROVA, COTAS_PROVA, cotasDaProva, sortearDisciplinaMista, dividirProporcional, cotasPorFaixa, misturaDasOficiais, resumoPorBloco, notaPonderada, pesoDoTopico,
+  ESTRUTURA_PROVA, COTAS_PROVA, cotasDaProva, sortearDisciplinaMista, dividirProporcional, cotasPorFaixa, misturaDasOficiais, resumoPorBloco, pontuacaoProva, pesoDoTopico,
 } from "./estruturaProva.js";
 import type { Disciplina } from "./tipos.js";
 
@@ -52,7 +52,24 @@ test("resultado por bloco e nota ponderada sem pesos confirmados", () => {
     { disciplina: "informatica", total: 15, acertos: 9 },
   ]);
   assert.deepEqual(b.map((x) => [x.bloco, x.acertos, x.total]), [["Conhecimentos Básicos", 8, 10], ["Conhecimentos Específicos", 9, 15]]);
-  assert.equal(notaPonderada(b), null);
+});
+
+test("pontuação do edital: 100 pontos na prova cheia e cortes do 7.2.4", () => {
+  const cheia = Object.entries(COTAS_PROVA).map(([d, c]) => ({ disciplina: d as Disciplina, total: c!, acertos: c! }));
+  const r = pontuacaoProva(cheia);
+  assert.equal(r.maximo, 100);
+  assert.deepEqual(r.blocos.map((b) => b.maximo), [32.5, 67.5]);
+  assert.deepEqual(r.eliminado, []);
+  // inglês e atualidades valem 1,0; o resto 1,5
+  const parcial = pontuacaoProva([
+    { disciplina: "lingua_portuguesa", total: 10, acertos: 3 },
+    { disciplina: "lingua_inglesa", total: 5, acertos: 0 },
+    { disciplina: "informatica", total: 15, acertos: 12 },
+  ]);
+  assert.equal(parcial.pontos, 3 * 1.5 + 12 * 1.5);
+  assert.ok(parcial.eliminado.includes("menos de 50% em Conhecimentos Básicos"));
+  assert.ok(parcial.eliminado.includes("zero em uma disciplina"));
+  assert.ok(!parcial.eliminado.some((m) => m.includes("Específicos")));
 });
 
 test("treino misturado: nunca repete a anterior, segue o peso da prova e ignora fora do edital", () => {

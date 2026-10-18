@@ -7,6 +7,11 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ## PRIORIDADE ALTA — Gerador e auditor da mesma família (Nemotron)
 
+> **Decisão provisória do dono (18/10/2026):** gerador `gpt-oss-20b` → Lightning → Muse; o auditor segue
+> a regra de família (gerador OpenAI → Super/Ultra). Aplicado com `npm run bb -- corrente provisoria`.
+> Reavaliar quando o benchmark terminar de madrugada; o texto abaixo continua valendo para a escolha
+> definitiva.
+
 - **O que é:** a regra nova diz que o auditor nunca é da família de quem gerou (e o juiz de Português nunca
   é da família do escritor). Hoje o gerador é o Lightning e o auditor é o Super: os dois são Nemotron (NVIDIA).
 - **O que já está pronto:** catálogo (`data/modelos.json`), correntes por função com 3 opções, a regra de
@@ -81,7 +86,7 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   `npx tsx scripts/limpar-figura-no-texto.ts --gravar` corrige.
 - **Recomendação:** rodar com `--gravar` (só remove o trecho entre o primeiro e o último "|").
 
-## 10. Lighthouse (Etapa 9) — baixa
+## 10. Lighthouse (Etapa 9) — RESOLVIDO 18/10/2026: aprovado como devDependency
 
 - **O que é:** a Etapa 9 pede nota ≥ 90 no Lighthouse (celular). A ferramenta não está instalada, e
   eu não instalei pacote novo sem você saber.
@@ -116,7 +121,16 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   e só caiu na citação); (b) deixar as aulas só para tópicos com fonte curta. Não há decisão sua
   agora; anoto aqui para você saber por que o cartão de aula ainda não aparece no servidor.
 
-## 8. Regra de linhas da redação (média)
+## 8. Regra de linhas da redação — RESOLVIDO 18/10/2026
+
+> **Decisão do dono:** mantém nota zero abaixo de 25 linhas e desconsidera o que passar de 30.
+> **Conferido no edital** (nº 01 – 2022/001, Cesgranrio, cópia em `provas/`): o item 7.3.5 dá nota zero
+> só a quem foge ao tipo dissertativo-argumentativo, foge ao tema, escreve sem prosa articulada, se
+> identifica ou escreve a lápis. **O edital não fala de número de linhas**; os "25 a 30 linhas" estão
+> só na capa do caderno. O app segue a decisão do dono (mais rígido que o edital, de propósito) e passou
+> a dar zero também nos casos a–c do 7.3.5, na correção.
+
+Histórico:
 
 - **O que está confirmado:** as provas BB 2021 e 2023 (capa, instrução da redação) dizem "O texto
   deverá ter de 25 a 30 linhas".
@@ -128,7 +142,7 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 - **Como mudar:** `shared/redacaoLinhas.ts` (`LINHAS_REDACAO`). Se o edital disser "penalidade
   proporcional" em vez de zero, eu troco a regra.
 
-## 7. "Nota estimada por IA" na tela de Redação (baixa)
+## 7. Aviso da redação — RESOLVIDO 18/10/2026: "Nota estimada (correção automática; pode variar da banca)"
 
 - **O que é:** a regra 17 do CLAUDE.md manda sinalizar que a nota da redação é estimativa da IA; o
   ADENDO-BANCO-GRANDE diz que o aluno não vê menção a IA nem a modelos.
@@ -137,7 +151,11 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   não como garantia." (sinaliza a estimativa sem dizer IA).
 - **Recomendação:** (b). Basta dizer "troque o aviso da redação".
 
-## 6. Mistura de dificuldade dos simulados (baixa)
+## 6. Mistura de dificuldade dos simulados — RESOLVIDO 18/10/2026: 20% fácil, 50% média, 30% difícil (treino segue o rating)
+
+> Também conferido no edital: cotas, valor de cada questão (1,5; Inglês e Atualidades 1,0; total 100),
+> cortes de 50% (total, Básicos, Específicos, zero numa disciplina) e duração de 5 h. O resultado do
+> simulado mostra os pontos como a banca conta e se a nota eliminaria.
 
 - **O que é:** o simulado segue a mistura de dificuldade das 130 oficiais: hoje **72% fáceis, 27%
   médias, 2% difíceis**. Essa dificuldade das oficiais foi estimada na hora de explicar cada questão,

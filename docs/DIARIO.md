@@ -267,4 +267,16 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - (3) `3907098`: "Desfazer" por 5 s ao contestar e ao zerar o progresso; próxima questão pré-carregada (12 ms para trocar no demo); alvo de toque de 44 px em tela de toque.
 - Contraste: laranja `#ff5b1f` sobre `#121212` ≈ 6:1 (passa AA), então nada de cor mudou.
 
-RETOMAR AQUI: esperar `aulas --n 3` e `cartoes --n 3` (logs em scratchpad `aulas3.log` e `cartoes1.log`) e registrar o resultado (mostrar uma aula aprovada, se houver). Depois, Etapa 9: testes ponta a ponta dos fluxos (login, responder, revisão, simulado completo, redação, contestar, offline/online) com os jobs de IA parados; prints de todas as telas (1440 e 390) em docs/telas/; Lighthouse. Depois: rodadas reais de 3 por assunto da Etapa 7 e, por último, ADENDO-BINHO-VOZ.
+## 18/10/2026 — Aulas e cartões (3ª rodada) e decisões do dono
+
+- **Aulas:** 1 de 3 aprovada, a primeira no servidor: "Novos modelos de negócio e marketplaces financeiros", escrita pelo gpt-oss e aprovada pelo Super, com citações literais da Res. de correspondentes. As outras duas caíram por citação parafraseada abaixo de 60% de cobertura.
+- **Cartões:** 0 de 3 lotes (trecho não literal; trecho com mais de 240 caracteres). Ganharam a mesma âncora das aulas (`3a1c72e`).
+- **Decisões do dono:**
+  1. Corrente: gpt-oss-20b primeiro no gerador, aplicada.
+  2. Redação: mantém zero abaixo de 25 linhas e desconsidera além de 30. Conferido no **Edital nº 01 – 2022/001** (Cesgranrio, `provas/bb-2022-001-edital.pdf`): o 7.3.5 não fala de linhas. Os casos a–c foram para a correção.
+  3. Lighthouse aprovado como devDependency.
+  4. Aviso "Nota estimada (correção automática; pode variar da banca)".
+  5. Simulado 20/50/30.
+- **Do edital também:** as cotas batem; valor por questão; cortes do 7.2.4; 5 h de prova. O simulado agora mostra "pontos como a banca conta" e se a nota eliminaria (`pontuacaoProva`, com teste).
+
+RETOMAR AQUI (antigo): esperar `aulas --n 3` e `cartoes --n 3` (logs em scratchpad `aulas3.log` e `cartoes1.log`) e registrar o resultado (mostrar uma aula aprovada, se houver). Depois, Etapa 9: testes ponta a ponta dos fluxos (login, responder, revisão, simulado completo, redação, contestar, offline/online) com os jobs de IA parados; prints de todas as telas (1440 e 390) em docs/telas/; Lighthouse. Depois: rodadas reais de 3 por assunto da Etapa 7 e, por último, ADENDO-BINHO-VOZ.
