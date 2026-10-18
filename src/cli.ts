@@ -20,7 +20,7 @@ import {
   type MetaFonte,
 } from "./ingestao.js";
 import { gerarQuestao, reabastecerEstoque } from "./pipeline.js";
-import { Topic, Source, User, Sessao } from "./models.js";
+import { Topic, Source, User, Sessao, Question, Relatorio } from "./models.js";
 import { randomBytes } from "node:crypto";
 import { createInterface } from "node:readline";
 import { hashSenha, migrarProgresso, donoAntigoId, criarConvite } from "./auth.js";
@@ -47,9 +47,11 @@ import { naFila } from "./fila.js";
 import { extrairFigurasOficiais } from "./figuras.js";
 import { indexarQuestoes, calibrar } from "./similaridade.js";
 import { carregarCatalogo, correntesLegado } from "./catalogo.js";
-import { aprovarCorrentes, desfazerCorrentes } from "./corrente.js";
+import { aprovarCorrentes, desfazerCorrentes, correnteAtiva } from "./corrente.js";
 import { sondarModelos, verificarModelos } from "./sondagem.js";
 import { planejarNoite, rodarFila } from "./noturno.js";
+import { planejarPregeracoes } from "./outroJeito.js";
+import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
 import { telemetriaPendente } from "./telemetria.js";
@@ -235,11 +237,18 @@ async function main() {
           if (+ate <= Date.now()) ate.setDate(ate.getDate() + 1);
         }
         return await naFila(rotulo, async () => {
-          const lote = `noite ${new Date().toISOString().slice(0, 10)}`;
+          const inicio = new Date();
+          const lote = `noite ${inicio.toISOString().slice(0, 10)}`;
+          // ordem da noite (adendo): questões até a meta → explicações alternativas → aulas → temas
           const n = await planejarNoite(lote, { max });
-          console.log(`Plano: ${n} questão(ões) para gerar (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
-          const r = await rodarFila({ ate, max: max !== undefined ? max + 1 : undefined });
-          console.log(`\n${r.rodadas} tarefa(s): ${r.concluidas} concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa, ${r.esgotadas} esgotada(s)${r.orfas ? `, ${r.orfas} recuperada(s) de processo que caiu` : ""}`);
+          const extras = await planejarPregeracoes(lote);
+          console.log(`Plano: ${n} questão(ões) e ${extras} explicação(ões) alternativa(s) (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
+          const r = await rodarFila({ ate, max: max !== undefined ? max + extras + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
+          console.log(`\n${r.rodadas} tarefa(s): ${r.aprovadas} questão(ões) aprovada(s), ${r.concluidas} concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa, ${r.esgotadas} esgotada(s)${r.orfas ? `, ${r.orfas} recuperada(s) de processo que caiu` : ""}`);
+          const noite = await relatorioDaNoite(inicio);
+          const aprovadas = await Question.countDocuments({ status: "aprovada" });
+          await Relatorio.create({ lote, inicio, fim: new Date(), resumo: r, noite, progresso: { aprovadas, meta: META_BANCO } });
+          console.log(`Banco: ${aprovadas} de ${META_BANCO} aprovadas (meta)`);
         });
       }
 

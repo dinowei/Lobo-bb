@@ -376,3 +376,23 @@ Responda APENAS com JSON:
 export function explicadorUser(q: QuestaoParaResolver & { gabarito: string }, fontes: string[]) {
   return `FONTES:\n${blocoFontes(fontes)}\n\nQUESTÃO OFICIAL:\n${blocoQuestao(q)}\n\nGABARITO OFICIAL: ${q.gabarito}`;
 }
+
+// ============================================================
+// 6. "ME EXPLICA DE OUTRO JEITO" — gerada de noite (adendo, item 4) e conferida por outra família
+// ============================================================
+export const OutroJeitoZ = z.object({ explicacao: z.string().min(80) });
+export const OUTRO_JEITO_SYSTEM = `Você é um professor de cursinho para o concurso do Banco do Brasil. O aluno leu a explicação da questão e não entendeu.
+Escreva UMA explicação nova, por outro caminho: um exemplo do dia a dia de banco, uma analogia ou o raciocínio passo a passo, em português do Brasil, direto e informal, com 80 a 180 palavras.
+Regras: o gabarito informado é a verdade e não se discute; não contradiga as explicações já salvas; não invente número, artigo de lei nem dado que não esteja na questão ou nas explicações; não repita a explicação salva com outras palavras.
+Responda APENAS com JSON: {"explicacao":"..."}`;
+export function outroJeitoUser(q: QuestaoParaResolver & { gabarito: string; explicacaoGeral?: string | null; explicacaoCorreta?: string | null }) {
+  return `QUESTÃO:\n${blocoQuestao(q)}\n\nGABARITO: ${q.gabarito}\n\nEXPLICAÇÃO JÁ SALVA DA CORRETA:\n${q.explicacaoCorreta ?? "(nenhuma)"}\n\nEXPLICAÇÃO GERAL JÁ SALVA:\n${q.explicacaoGeral ?? "(nenhuma)"}`;
+}
+
+export const ConferenciaOutroJeitoZ = z.object({ ok: z.boolean(), problemas: z.array(z.string()) });
+export const CONFERE_OUTRO_JEITO_SYSTEM = `Você confere uma explicação alternativa de uma questão de concurso antes de um aluno lê-la.
+Diga ok=false se ela: contradiz o gabarito ou as explicações salvas; tem erro de conteúdo, de conta ou de português; inventa número, norma ou dado; ou só repete a explicação salva.
+Responda APENAS com JSON: {"ok": true|false, "problemas": ["..."]}`;
+export function confereOutroJeitoUser(q: QuestaoParaResolver & { gabarito: string; explicacaoGeral?: string | null; explicacaoCorreta?: string | null }, alternativa: string) {
+  return `${outroJeitoUser(q)}\n\nEXPLICAÇÃO ALTERNATIVA A CONFERIR:\n${alternativa}`;
+}

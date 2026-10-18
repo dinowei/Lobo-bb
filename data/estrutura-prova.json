@@ -1,0 +1,19 @@
+{
+  "_aviso": "Cota de cada disciplina na prova de Escriturário (Agente Comercial), lida das provas oficiais BB 2021 e BB 2023 já no banco (disciplina tirada da capa por código). A meta do banco (adendo do banco grande) é dividida por essa cota e, dentro da disciplina, igual entre os tópicos. 'esperamLiberacao': tópicos que só entram na conta depois que a fonte for liberada pelo dono (Vendas por doutrina espera o glossário).",
+  "totalQuestoes": 70,
+  "metaBanco": 1200,
+  "cotas": {
+    "lingua_portuguesa": 10,
+    "lingua_inglesa": 5,
+    "matematica": 5,
+    "atualidades_mercado_financeiro": 5,
+    "matematica_financeira": 5,
+    "conhecimentos_bancarios": 10,
+    "informatica": 15,
+    "vendas_negociacao": 15,
+    "probabilidade_estatistica": 0
+  },
+  "esperamLiberacao": {
+    "Glossário de Vendas": ["Técnicas de vendas", "Marketing de relacionamento e fidelização", "Segmentação de mercado e gestão de carteira", "Técnicas de negociação"]
+  }
+}

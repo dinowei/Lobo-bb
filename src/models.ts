@@ -215,6 +215,8 @@ const QuestionSchema = new Schema(
     embedding: { type: [Number], select: false, default: undefined },
     impressao: { type: String, index: true },
     cenario: { perfil: String, situacao: String, _id: false },
+    // "me explica de outro jeito": gerada de noite, conferida por modelo de outra família
+    explicacaoAlternativa: { texto: String, modelo: String, conferidaPor: String, em: Date, _id: false },
 
     // estatística agregada (taxa de acerto geral = termômetro de dificuldade real)
     stats: {
@@ -337,7 +339,8 @@ export const Config = model("Config", ConfigSchema, "config");
 export const STATUS_TAREFA = ["pendente", "rodando", "aguardando", "concluida", "descartada", "esgotada"] as const;
 const TarefaSchema = new Schema(
   {
-    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark"], required: true },
+    // aula e tema: ganchos prontos, ativados na Fase B (8.5 e 8.4)
+    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark", "explicar_outro_jeito", "aula", "tema"], required: true },
     params: Schema.Types.Mixed, // gerar: { topicId, assunto, tipo? }
     status: { type: String, enum: STATUS_TAREFA, default: "pendente", index: true },
     tentativas: { type: Number, default: 0 }, // falhas de infraestrutura até agora
@@ -370,6 +373,21 @@ const BenchmarkRespostaSchema = new Schema({
 });
 BenchmarkRespostaSchema.index({ rodada: 1, modelo: 1, questionId: 1, item: 1 });
 export const BenchmarkResposta = model("BenchmarkResposta", BenchmarkRespostaSchema, "benchmark_respostas");
+
+// ------------------------------------------------------------
+// 12b. RELATÓRIO DA NOITE (adendo, item 5): aprovadas, tentativas, descartes por motivo,
+// aprovadas por hora, modelo que mais atendeu e progresso até a meta do banco
+// ------------------------------------------------------------
+const RelatorioSchema = new Schema({
+  lote: { type: String, required: true },
+  inicio: { type: Date, required: true },
+  fim: { type: Date, required: true },
+  resumo: Schema.Types.Mixed, // ResumoNoite (tarefas)
+  noite: Schema.Types.Mixed, // RelatorioNoiteDTO (gerações desde o início)
+  progresso: { aprovadas: Number, meta: Number, _id: false },
+});
+RelatorioSchema.index({ fim: -1 });
+export const Relatorio = model("Relatorio", RelatorioSchema, "relatorios");
 
 // ------------------------------------------------------------
 // 13. LOGIN (PLANO-MESTRE 5.7) — usuário, sessão (só o hash do token) e convite de uso único.

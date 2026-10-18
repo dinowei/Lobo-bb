@@ -51,7 +51,7 @@ import {
 import { normalizar, hashTexto } from "./extrair.js";
 import { ehDisciplinaDeCalculo, verificarConta, numerosDoTexto } from "./verificacao.js";
 import { sortearVariacao, type Variacao } from "./variacao.js";
-import { filtrarRepeticao, detalheSimilaridade, impressaoEstrutural } from "./similaridade.js";
+import { filtrarRepeticao, detalheSimilaridade, impressaoEstrutural, pior, comparaveis, textoComparavel } from "./similaridade.js";
 import { carregarCenarios, sortearCenario, descreverCenario, N_PROIBIDOS, type Cenario } from "./cenarios.js";
 
 // ------------------------------------------------------------
@@ -126,6 +126,13 @@ const umaLinha = (e: unknown) => String(e instanceof Error ? e.message : e).repl
 // Falha de modelo: "aguardando_modelo" (nenhum elegível agora, a questão espera), "provedor_falhou"
 // (429, 5xx, timeout: infraestrutura) ou o motivo de qualidade de cada etapa
 export const MOTIVOS_INFRA = ["aguardando_modelo", "provedor_falhou", "auditor_falhou", "erro_inesperado"];
+// Refaz o filtro contra o banco de agora (sem nova chamada de embedding): no noturno, outro
+// trabalhador pode ter salvo uma parecida enquanto esta era auditada
+async function repetidaAgora(enunciado: string, correta: string, embedding: number[] | null, topicId: Types.ObjectId, disciplina: string): Promise<Resultado | null> {
+  const v = pior(textoComparavel(enunciado, correta), embedding, await comparaveis(topicId, disciplina));
+  return v.classe === "nova" ? null : { ok: false, motivo: v.classe, detalhes: [`antes de salvar: ${detalheSimilaridade(v)}`] };
+}
+
 const motivoDaFalha = (e: unknown, padrao: string) => (e instanceof SemModeloDisponivel ? "aguardando_modelo" : ehFalhaDeInfra(e) ? "provedor_falhou" : padrao);
 
 // confere se o enunciado trouxe cada dado fixado pelo código, sem alterar número
@@ -140,10 +147,16 @@ function dadosFaltando(enunciado: string, dados: string[]): string[] {
 }
 
 // Nenhuma falha (rede, banco, IA) derruba o lote: vira um Resultado com o motivo
-type EstadoGeracao = { variacao?: Variacao; tipo?: string; cenario?: Cenario | null; evitar: Cenario[] };
+type EstadoGeracao = { variacao?: Variacao; tipo?: string; cenario?: Cenario | null; evitar: Cenario[]; preferirGerador?: string; noturno?: boolean };
 
-export async function gerarQuestao(topicId: string, dificuldade = 3, opcoes: { tipo?: string } = {}): Promise<Resultado> {
-  const estado: EstadoGeracao = { tipo: opcoes.tipo, evitar: [] };
+// noturno: a noite tem os próprios tetos (GERACAO_MAX_TENTATIVAS_NOITE e META_APROVADAS_NOITE), não o diário
+// preferirGerador: cada trabalhador do noturno começa por um gerador diferente da corrente
+export async function gerarQuestao(
+  topicId: string,
+  dificuldade = 3,
+  opcoes: { tipo?: string; preferirGerador?: string; noturno?: boolean } = {}
+): Promise<Resultado> {
+  const estado: EstadoGeracao = { tipo: opcoes.tipo, evitar: [], preferirGerador: opcoes.preferirGerador, noturno: opcoes.noturno };
   const r = await tentarGerar(topicId, dificuldade, estado);
   if (r.ok || r.motivo !== "parecida") return r;
   // "parecida" com outra do banco: descarta e pede outro cenário, uma vez só
@@ -160,7 +173,7 @@ export async function geracoesHoje() {
 export const tetoDiario = () => Number(process.env.GERACAO_MAX_DIA) || 60;
 
 async function tentarGerar(topicId: string, dificuldade: number, estado: EstadoGeracao): Promise<Resultado> {
-  if ((await geracoesHoje()) >= tetoDiario())
+  if (!estado.noturno && (await geracoesHoje()) >= tetoDiario())
     return { ok: false, motivo: "teto_diario", detalhes: [`já foram ${tetoDiario()} gerações hoje (GERACAO_MAX_DIA)`] };
   const inicio = Date.now();
   let r: Resultado;
@@ -274,7 +287,7 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
   let q: QuestaoGerada;
   let geradoPor: { modelo: string; familia: string };
   try {
-    const g = await chatJSONFuncao("gerador", GERADOR_SYSTEM, userGerador, 0.8, 4000);
+    const g = await chatJSONFuncao("gerador", GERADOR_SYSTEM, userGerador, 0.8, 4000, { preferir: estado.preferirGerador });
     geradoPor = { modelo: g.modelo, familia: g.familia };
     if (g.json && typeof g.json === "object" && "erro" in g.json) return { ok: false, motivo: "fonte_insuficiente" };
     // zod falhou → o mesmo modelo recebe a resposta + o erro e devolve só o JSON corrigido
@@ -386,6 +399,10 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
     return { ok: false, motivo: motivoDaFalha(e, "auditor_falhou"), detalhes: [umaLinha(e)] };
   }
   const aprovada = rev.veredito === "aprovada";
+  if (aprovada) {
+    const de = await repetidaAgora(q.enunciado, corretas[0].texto, sim.embedding, topic._id, topic.disciplina);
+    if (de) return de;
+  }
 
   // 6. Salva (rejeitadas também, para você analisar onde o gerador erra)
   const doc = await Question.create({
@@ -610,6 +627,10 @@ async function gerarCraseConstruida(
     return { ok: false, motivo: motivoDaFalha(e, "auditor_falhou"), detalhes: [umaLinha(e), ...vereditos] };
   }
   const aprovada = rev.veredito === "aprovada";
+  if (aprovada) {
+    const de = await repetidaAgora(q.enunciado, q.alternativas.find((a) => a.correta)!.texto, sim.embedding, topic._id, topic.disciplina);
+    if (de) return de;
+  }
 
   const doc = await Question.create({
     topicId: topic._id,

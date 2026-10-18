@@ -185,7 +185,10 @@ function CartaoBanco({ banco }: { banco: BancoDTO }) {
           </span>
         )}
         <div className="rodape">
-          <span className="sub">{banco.estaNoite ? "Questões novas para você" : "Inéditas primeiro no treino"}</span>
+          <span className="sub">
+            {banco.estaNoite ? "Questões novas para você" : "Inéditas primeiro no treino"}
+            {banco.repetidasNoite ? ` · ${banco.repetidasNoite} descartada${banco.repetidasNoite === 1 ? "" : "s"} por repetição` : ""}
+          </span>
           {banco.estaNoite > 0 && <span className="tag verde"><i />+{banco.estaNoite} esta noite</span>}
         </div>
       </button>

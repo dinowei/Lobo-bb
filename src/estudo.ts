@@ -39,6 +39,9 @@ import { gerarQuestao } from "./pipeline.js";
 import { seFilaLivre } from "./fila.js";
 import { alertasAdminAgora } from "./adminTelas.js";
 import { usuarioAtualId, usuarioAtual } from "./auth.js";
+import { Geracao } from "./models.js";
+import { MOTIVOS_REPETICAO } from "./similaridade.js";
+import { inicioDaNoite } from "../shared/motor.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
@@ -178,8 +181,11 @@ async function registrar(
 // Geração sob demanda: estoque baixo num tópico → a IA gera em segundo plano
 // ------------------------------------------------------------
 const gerando = new Set<string>();
+// De dia o app só usa o que está pronto (PLANO-MESTRE 5.1): o banco cresce no noturno.
+// GERACAO_DE_DIA=1 religa a geração sob demanda (útil só enquanto o noturno não roda).
+const geraDeDia = () => process.env.GERACAO_DE_DIA === "1";
 function reabastecerEmSegundoPlano(topicId: string, quantas = 3) {
-  if (gerando.has(topicId) || !process.env.GERADOR_API_KEY) return;
+  if (!geraDeDia() || gerando.has(topicId) || !process.env.GERADOR_API_KEY) return;
   gerando.add(topicId);
   (async () => {
     try {
@@ -233,6 +239,7 @@ export const apiServidor: Omit<Api, "modo"> = {
       }),
       new Set(brutas.map((t) => t.questaoId))
     );
+    banco.repetidasNoite = await Geracao.countDocuments({ em: { $gte: inicioDaNoite() }, motivo: { $in: MOTIVOS_REPETICAO } });
     return { ...painel, banco, alertasAdmin };
   },
 
@@ -274,7 +281,9 @@ export const apiServidor: Omit<Api, "modo"> = {
         questao: null,
         modo: "treino",
         aviso: process.env.GERADOR_API_KEY
-          ? "O lobo está preparando questões deste tópico. Tente de novo em um ou dois minutos."
+          ? geraDeDia()
+            ? "O lobo está preparando questões deste tópico. Tente de novo em um ou dois minutos."
+            : "Este tópico ainda não tem questões prontas. O lobo prepara mais toda noite; por hoje, escolha outro."
           : 'Ainda não há questões aprovadas aqui. Ingira uma prova ou rode "npm run bb -- gerar --assunto ...".',
       };
     }
@@ -300,7 +309,7 @@ export const apiServidor: Omit<Api, "modo"> = {
     return {
       questao: paraDTO(q, topicos),
       modo: "treino",
-      aviso: naoVistas ? undefined : "Você já viu todas as questões deste tópico; o lobo está preparando novas. Por ora, repetindo uma.",
+      aviso: naoVistas ? undefined : "Você já viu todas as questões deste tópico; chegam novas esta noite. Por ora, repetindo uma.",
     };
   },
 

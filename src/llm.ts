@@ -83,6 +83,34 @@ export async function comRetry<T>(rotulo: string, fn: () => Promise<T>, maxNovas
 // Modelo com erro permanente sai das correntes até o processo reiniciar
 export const desativados = new Set<string>();
 
+// ------------------------------------------------------------
+// Limite global de pedidos por minuto (balde de fichas): todos os trabalhadores do noturno
+// dividem NVIDIA_RPM_MAX (padrão 30). Cada pedido HTTP gasta 1 ficha; o balde enche aos poucos.
+// ------------------------------------------------------------
+export class Balde {
+  private fichas: number;
+  private ultimo: number;
+  constructor(readonly porMinuto: number, private relogio: () => number = Date.now) {
+    this.fichas = porMinuto;
+    this.ultimo = relogio();
+  }
+  // quanto esperar (ms) pela próxima ficha; 0 = pegou agora
+  tentar(): number {
+    const agora = this.relogio();
+    this.fichas = Math.min(this.porMinuto, this.fichas + ((agora - this.ultimo) * this.porMinuto) / 60_000);
+    this.ultimo = agora;
+    if (this.fichas >= 1) {
+      this.fichas -= 1;
+      return 0;
+    }
+    return Math.ceil(((1 - this.fichas) * 60_000) / this.porMinuto);
+  }
+  async pegar() {
+    for (let espera = this.tentar(); espera > 0; espera = this.tentar()) await new Promise((ok) => setTimeout(ok, espera));
+  }
+}
+const balde = new Balde(Number(process.env.NVIDIA_RPM_MAX) || 30);
+
 export const gerador = () => cliente("GERADOR");
 export const auditor = () => cliente("AUDITOR");
 export const escritorPT = () => cliente("ESCRITOR_PT");
@@ -161,6 +189,7 @@ async function chamar(
     comRetry(
       model,
       async () => {
+        await balde.pegar();
         const t0 = Date.now();
         try {
           const r = await client.chat.completions.create({
@@ -319,6 +348,7 @@ export async function embedLote(textos: string[], tipo: "query" | "passage"): Pr
     const extra: Record<string, unknown> = process.env.EMBED_INPUT_TYPE === "1" ? { input_type: tipo, truncate: "END" } : {};
     if (Number(process.env.EMBED_DIMENSOES)) extra.dimensions = Number(process.env.EMBED_DIMENSOES); // ex.: 1024 (modelos que aceitam)
     const r = await comRetry("embeddings", async () => {
+      await balde.pegar();
       const t0 = Date.now();
       try {
         const resp = await cliente("EMBED").embeddings.create({

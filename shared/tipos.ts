@@ -218,6 +218,7 @@ export interface BancoDTO {
   total: number;
   ineditas: number;
   estaNoite: number;
+  repetidasNoite?: number; // descartadas por serem parecidas demais com outra (só no servidor)
   porDisciplina: { disciplina: Disciplina; total: number; ineditas: number }[];
 }
 

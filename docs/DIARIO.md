@@ -102,6 +102,18 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - Conferido rodando em produção local (porta 3401): CSP/HSTS/nosniff presentes, JS com gzip, cache certo, rotas do site e API ok. Corrigido: o build do site quebrava ao incluir os testes de `shared/` (exclude no `web/tsconfig.json`).
 - A imagem Docker não foi construída aqui: o Docker Desktop estava desligado (não liguei programa do sistema). O Render constrói no primeiro deploy.
 
+## 18/10/2026 — Etapa 6: noturno com banco grande (código; teste real espera a fila)
+
+- Meta de 1.200 aprovadas (oficiais contam) pela cota de cada disciplina na prova (`data/estrutura-prova.json`, lida das provas 2021 e 2023: LP 10, LI 5, MAT 5, ATU 5, MF 5, CB 10, INF 15, VN 15) e, dentro dela, igual entre os tópicos. Depois da meta, o tópico só ganha questão se o aluno com menos inéditas cair abaixo de 20% da meta, ou se alguém dominou o tópico (dificuldade 4–5). Prioridade: estudado nos últimos 7 dias > peso na prova > tamanho da falta. Vendas por doutrina fica fora até o glossário ser liberado.
+- Tetos da noite separados do diário: `GERACAO_MAX_TENTATIVAS_NOITE` (200) e `META_APROVADAS_NOITE` (100), o que vier primeiro.
+- Paralelo dentro de UM job: até 3 trabalhadores, cada um começa por um gerador diferente da corrente (o auditor sai pela regra de família), trava por tópico, balde de fichas global (`NVIDIA_RPM_MAX`=30, junto com o Retry-After), filtro de similaridade refeito antes de salvar (sem nova chamada de embedding).
+- Pré-geração: "me explica de outro jeito" para cada aprovada que não tem (tutor escreve, auditor de outra família confere contra gabarito e explicações salvas); ganchos de aula (8.5) e tema (8.4) prontos no tipo de tarefa.
+- Relatório de cada noite na coleção `relatorios`; cartão do painel com "descartadas por repetição".
+- De dia não gera mais (`GERACAO_DE_DIA=0`): tópico sem questão pronta avisa que chegam de noite.
+- Testes: 54/54 (plano pela meta, trava por tópico, balde de fichas, parecida salva por outro trabalhador).
+- Agendamento: cron do Render às 01h00 de Brasília (`render.yaml`, `TZ=America/Sao_Paulo`), não às 03h00 do plano: com a meta de 100 aprovadas por noite, a janela 01h–05h30 rende mais.
+- Corrente provisória confirmada em uso: na Etapa 2.3, Lightning deu timeout 2× e o gpt-oss-20b assumiu.
+
 RETOMAR AQUI: em segundo plano rodam a Etapa 2.3 (10 geradas com fonte) e depois o benchmark (auditor até 60, juiz, escritor), logs em scratchpad `etapa23.log` e `bench.log`. Quando acabar: aprovação da 2.3 no DIARIO, proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 5 (nuvem sem publicar).
 
 **LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.

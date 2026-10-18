@@ -88,10 +88,12 @@ export async function chatJSONFuncao(
   user: string,
   temperature: number,
   maxTokens: number,
-  opcoes: { pensar?: boolean; excluirFamilias?: string[]; excluirModelos?: string[] } = {}
+  opcoes: { pensar?: boolean; excluirFamilias?: string[]; excluirModelos?: string[]; preferir?: string } = {}
 ): Promise<Atendimento> {
   const { modo, correntes } = await correnteAtiva();
-  const corrente = correntes[funcao];
+  // "preferir": começa por este modelo da corrente (trabalhadores do noturno espalham a carga)
+  const base = correntes[funcao];
+  const corrente = opcoes.preferir && base.includes(opcoes.preferir) ? [opcoes.preferir, ...base.filter((m) => m !== opcoes.preferir)] : base;
   // no legado a regra de família ainda não vale (Lightning e Super são Nemotron): decisão pendente do dono
   const excluirFamilias = modo === "legado" ? [] : opcoes.excluirFamilias ?? [];
   const fora = foraAgora();

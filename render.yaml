@@ -15,6 +15,8 @@ envVarGroups:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: TZ # o "--ate 05:30" do noturno é no horário de Brasília
+        value: America/Sao_Paulo
       - key: GERADOR_BASE_URL
         value: https://integrate.api.nvidia.com/v1
       - key: AUDITOR_BASE_URL
@@ -59,8 +61,20 @@ envVarGroups:
         sync: false
       - key: GERACAO_MAX_DIA
         value: "60"
-      - key: GERACAO_MAX_NOITE
-        value: "20"
+      - key: GERACAO_DE_DIA
+        value: "0"
+      - key: GERACAO_MAX_TENTATIVAS_NOITE
+        value: "200"
+      - key: META_APROVADAS_NOITE
+        value: "100"
+      - key: EXPLICACOES_NOITE
+        value: "40"
+      - key: META_BANCO
+        value: "1200"
+      - key: NOTURNO_TRABALHADORES
+        value: "3"
+      - key: NVIDIA_RPM_MAX
+        value: "30"
 
 services:
   - type: web
