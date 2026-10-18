@@ -166,7 +166,7 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - Causa do comportamento legado: `correnteAtiva()` guardava o resultado por 60 s em cache local. A aprovação feita pela CLI/painel grava no Mongo, mas não invalida o cache de outro processo; um job iniciado nesse intervalo continuava usando Lightning sozinho durante toda a chamada longa. Erros de leitura do Mongo também eram convertidos silenciosamente em configuração ausente.
 - Correção: ler a configuração aprovada a cada chamada e propagar falha de leitura, sem degradar para o legado. O log agora identifica o modelo/família que atendeu e a reserva, incluindo a família excluída ao escolher auditor.
 - Teste direcionado: 11/11 em `src/corrente.test.ts`, incluindo atualização entre chamadas no mesmo processo e erro de leitura sem fallback silencioso. Typecheck concluído.
-- Geração real de Juros compostos solicitada para provar Lightning → gpt-oss-20b → auditor Super; aguarda a liberação da fila global, ocupada pelo benchmark `auditor`.
+- Geração real de Juros compostos aprovada: `nvidia/nemotron-3.5-lightning-30b-a3b` falhou duas vezes por timeout, `openai/gpt-oss-20b` assumiu e a questão foi aprovada; o auditor `nvidia/nemotron-3-super-120b-a12b` atendeu duas vezes, explicitamente fora da família OpenAI. Questão `6ad4f8566d4a59052747bac3`, em 314 s.
 
 ## 18/10/2026 — Etapa 9 (acabamento): carrossel de matérias do painel
 
@@ -180,4 +180,12 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - Servidor e demo usam o mesmo motor. O Painel mostra o resumo geral e alertas por disciplina; Conquistas mostra a tabela completa com taxas e amostras.
 - Testes direcionados: 6/6 em `shared/aprendizado.test.ts`. Typecheck concluído.
 
-RETOMAR AQUI: concluir a geração real que espera pela fila do benchmark; depois começar a Etapa 8.4 (redação com correção por IA).
+## 18/10/2026 — Etapa 8.4: redação (implementação em validação)
+
+- Modelo de temas e redações, geração de tema por comando/sob demanda, rubrica de quatro critérios, citações literais verificadas, duas avaliações e terceira com mediana quando a diferença passa de 15 pontos.
+- Tela Redação no servidor e no demo: tema, textos motivadores, limite de linhas configurável, cronômetro, rascunho local, correção, trechos marcados, histórico e conquistas. O noturno pré-gera a meta de 40 temas.
+- Ajuste do adendo: correções de redação com falha de infraestrutura permanecem na fila persistente, com intervalo crescente, até a IA voltar.
+- `npm run typecheck` passou; `npx tsx --test src/corrente.test.ts src/noturno.test.ts` passou 18/18; tela demo conferida no navegador.
+- Validação real da redação em andamento: tema solicitado pelo app; concluir submissão de texto sintético e conferir a correção persistida.
+
+RETOMAR AQUI: concluir o E2E real da Etapa 8.4 (tema, envio de redação sintética, correção e histórico). Depois implementar a Etapa 8.5. A prova real da corrente já foi registrada acima.
