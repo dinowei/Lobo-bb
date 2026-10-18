@@ -11,6 +11,9 @@ Leia junto com o DIARIO (RETOMAR AQUI). NÃO muda a ordem do PROMPT-RETOMADA: ca
 ## B. Etapa 6 (noturno)
 5. Aplicar docs/ADENDO-BANCO-GRANDE.md (meta 1.200 aprovadas, teto de tentativas x aprovadas, 3 trabalhadores com trava por tópico, token bucket, pré-geração, relatório da noite).
 
+5b. Aplicar docs/ADENDO-FONTES-ATUAIS.md: cada explicação mostra a fonte da prova (origem) E a
+    fonte oficial atual; o que mudou desde a prova fica destacado. Sem reescrever explicações.
+
 ## C. Etapa 9 (acabamento)
 6. Bateria e2e completa só com os jobs de IA parados.
 7. Carrossel: o Codex JÁ implementou (validado em 360 e 1440 px). Só CONFERIR contra esta lista e corrigir o que faltar: arrastar no celular (scroll-snap), setas ‹ › no computador, esmaecido na borda + bolinhas, teclado ← →, clique abre Praticar da matéria, ordem por prioridade (peso × fraqueza), barra de domínio em cada cartão, reduced-motion, 360–1440 px. Estilo atual (regra 8).

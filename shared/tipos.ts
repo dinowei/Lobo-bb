@@ -151,6 +151,21 @@ export interface AlternativaCorrigida {
   pegadinha?: string;
 }
 
+// Admin: fontes atuais (confirmadas/mudou/pendentes, mudanças esperando OK e normas a ingerir)
+export interface AdminFontesAtuaisDTO {
+  porDisciplina: Record<string, Record<string, number>>;
+  mudancas: { id: string; questao: string; antes: string; hoje: string; fonte: string; respostaMudaria: boolean }[];
+  faltaIngerir: { topico: string; disciplina: string; questoes: number }[];
+}
+
+// Bloco "Fontes" embaixo da explicação (ADENDO-FONTES-ATUAIS): de onde veio e se ainda vale hoje
+export interface FontesQuestaoDTO {
+  origem?: { ref: string; questao?: string };
+  atual?: { ref: string; trecho: string; conferidoEm?: string };
+  mudou?: { antes: string; hoje: string; trecho: string; ref: string };
+  emConferencia: boolean; // base atual ainda sendo conferida
+}
+
 export interface CorrecaoDTO {
   acertou: boolean;
   gabarito: Letra;
@@ -158,6 +173,7 @@ export interface CorrecaoDTO {
   explicacaoGeral: string;
   dicaDeProva?: string;
   fontes: { titulo: string; trecho?: string }[];
+  referencias?: FontesQuestaoDTO;
   traicoeira: boolean; // a IA errou essa às cegas
   xpGanho: number;
   proximaRevisaoDias: number;

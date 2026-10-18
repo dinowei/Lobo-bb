@@ -219,6 +219,32 @@ const QuestionSchema = new Schema(
     explicacaoAlternativa: { texto: String, modelo: String, conferidaPor: String, em: Date, _id: false },
 
     // estatística agregada (taxa de acerto geral = termômetro de dificuldade real)
+    // ADENDO-FONTES-ATUAIS: camada de fontes ACRESCENTADA (nada da questão é reescrito; "fontes" acima fica)
+    referencias: [
+      {
+        papel: { type: String, enum: ["origem", "atual"], required: true },
+        tipo: { type: String, enum: ["prova", "norma"], required: true },
+        ref: { type: String, required: true }, // "BB 2021 — Escriturário Agente Comercial" | título da norma
+        questao: String, // "Q19" (origem)
+        sourceId: { type: Schema.Types.ObjectId, ref: "Source" },
+        trecho: String, // literal da fonte ingerida (atual)
+        url: String,
+        conferidoEm: Date,
+        _id: false,
+      },
+    ],
+    situacaoFonte: { type: String, enum: ["confirmada", "mudou", "pendente", "nao_se_aplica"], index: true },
+    oQueMudou: {
+      antes: String,
+      hoje: String,
+      trechoHoje: String,
+      fonteHoje: String,
+      sourceId: { type: Schema.Types.ObjectId, ref: "Source" },
+      respostaMudaria: Boolean, // a resposta da questão deixaria de ser a mesma hoje
+      aprovadoEm: Date, // só aparece para o aluno depois do OK do dono (aba Pendências)
+      _id: false,
+    },
+
     // rating Elo (shared/rating.ts): começa pela dificuldade rotulada e se ajusta com as respostas
     rating: Number,
     ratingN: { type: Number, default: 0 },
@@ -472,7 +498,7 @@ export const STATUS_TAREFA = ["pendente", "rodando", "aguardando", "concluida", 
 const TarefaSchema = new Schema(
   {
     // aula e tema: ganchos prontos, ativados na Fase B (8.5 e 8.4)
-    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark", "explicar_outro_jeito", "aula", "tema", "corrigir_redacao", "cartoes"], required: true },
+    tipo: { type: String, enum: ["gerar", "verificar_modelos", "benchmark", "explicar_outro_jeito", "aula", "tema", "corrigir_redacao", "cartoes", "fonte_atual"], required: true },
     params: Schema.Types.Mixed, // gerar: { topicId, assunto, tipo? }
     status: { type: String, enum: STATUS_TAREFA, default: "pendente", index: true },
     tentativas: { type: Number, default: 0 }, // falhas de infraestrutura até agora

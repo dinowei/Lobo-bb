@@ -51,6 +51,7 @@ import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVis
 import { aulaDoTopico } from "./aulas.js";
 import { explicarSobDemanda } from "./outroJeito.js";
 import { avaliarCartao, filaCartoes } from "./cartoes.js";
+import { fontesDaQuestao } from "./fontesAtuais.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
@@ -101,6 +102,9 @@ type QuestaoDoc = {
   fontes?: { sourceId?: Types.ObjectId | null; trecho?: string | null }[];
   auditoria?: { respostaCega?: string | null } | null;
   notaNorma?: string | null;
+  referencias?: { papel: string; ref: string; questao?: string | null; trecho?: string | null; conferidoEm?: Date | null }[] | null;
+  situacaoFonte?: string | null;
+  oQueMudou?: { antes?: string | null; hoje?: string | null; trechoHoje?: string | null; fonteHoje?: string | null; aprovadoEm?: Date | null } | null;
   figuras?: { tipo: string; posicao?: string | null; legenda?: string | null; dados?: unknown; imagem?: string | null; status?: string | null }[] | null;
 };
 
@@ -163,6 +167,7 @@ async function correcaoDe(q: QuestaoDoc, resposta: Letra | null, xpGanho: number
     traicoeira: q.origem === "oficial" && !!q.auditoria?.respostaCega && q.auditoria.respostaCega !== q.gabarito,
     xpGanho,
     proximaRevisaoDias: dias,
+    referencias: fontesDaQuestao(q),
   };
 }
 

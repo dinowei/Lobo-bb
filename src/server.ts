@@ -11,6 +11,7 @@ import compression from "compression";
 import { listarFiguras, decidirFigura, contextoDaFigura, amostrasDeFiguras, type AcaoFigura } from "./admin.js";
 import { painelIA, painelFila, painelBenchmark, pendencias, lerDoc, DOCS_LIBERADOS } from "./adminTelas.js";
 import { aprovarCorrentes, desfazerCorrentes } from "./corrente.js";
+import { aprovarMudancas, relatorioFontesAtuais } from "./fontesAtuais.js";
 import { tentarDeNovoAgora } from "./noturno.js";
 import { FUNCOES, type Correntes } from "./catalogo.js";
 import { autenticar } from "./auth.js";
@@ -217,6 +218,16 @@ app.post(
 );
 app.post("/api/admin/correntes/desfazer", rota(async (_req, res) => res.json(await desfazerCorrentes())));
 app.get("/api/admin/pendencias", rota(async (_req, res) => res.json(await pendencias())));
+// ADENDO-FONTES-ATUAIS: relatório e aprovação (em lote) das mudanças de norma antes de irem ao aluno
+app.get("/api/admin/fontes-atuais", rota(async (_req, res) => res.json(await relatorioFontesAtuais())));
+app.post(
+  "/api/admin/fontes-atuais/aprovar",
+  rota(async (req, res) => {
+    const ids = Array.isArray(req.body?.ids) ? (req.body.ids as unknown[]).filter((x): x is string => typeof x === "string") : [];
+    if (!ids.length) return res.status(400).json({ erro: "Envie { ids: [...] }." });
+    res.json({ aprovadas: await aprovarMudancas(ids) });
+  })
+);
 app.get(
   "/api/admin/doc",
   rota(async (req, res) => {

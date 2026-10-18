@@ -485,6 +485,58 @@ function PorDisciplina({ linhas, disciplinas }: { linhas: BenchmarkLinhaDTO[]; d
   );
 }
 
+// ---------- Fontes atuais: "mudou desde a prova" só chega ao aluno com o seu OK ----------
+function MudancasDeNorma() {
+  const { avisar } = useApp();
+  const { dados, recarregar } = useDados(adminTelas.fontesAtuais);
+  const [marcadas, setMarcadas] = useState<Set<string>>(new Set());
+  if (!dados) return null;
+  const total = (s: Record<string, number>) => Object.values(s).reduce((a, b) => a + b, 0);
+  const aprovar = async (ids: string[]) => {
+    const r = await adminTelas.aprovarMudancas(ids);
+    avisar(`${r.aprovadas} mudança(s) liberada(s) para o aluno`);
+    setMarcadas(new Set());
+    recarregar();
+  };
+  return (
+    <section className="secao pendencia" aria-labelledby="titulo-fontes-atuais">
+      <div className="linha-titulo">
+        <h2 id="titulo-fontes-atuais">Fontes atuais das questões</h2>
+        {dados.mudancas.length > 0 && <span className="selo laranja">{dados.mudancas.length} esperando seu OK</span>}
+      </div>
+      <p className="suave" style={{ marginTop: 0 }}>
+        {Object.entries(dados.porDisciplina).map(([d, s]) => `${d}: ${total(s)} (${Object.entries(s).map(([k, v]) => `${k} ${v}`).join(", ")})`).join(" · ") || "Nenhuma questão conferida ainda (npm run bb -- fontes-atuais migrar)."}
+      </p>
+      {dados.mudancas.length > 0 && (
+        <>
+          <ul className="lista-mudancas">
+            {dados.mudancas.map((m) => (
+              <li key={m.id}>
+                <label>
+                  <input type="checkbox" checked={marcadas.has(m.id)} onChange={(e) => setMarcadas((s) => { const n = new Set(s); if (e.target.checked) n.add(m.id); else n.delete(m.id); return n; })} />
+                  <span>
+                    <b>{m.questao}</b> · {m.fonte}{m.respostaMudaria && <span className="selo alerta" style={{ marginLeft: 6 }}>resposta mudaria → sai do treino</span>}
+                    <br />Na época: {m.antes}<br />Hoje: {m.hoje}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <div className="acoes">
+            <button className="botao-laranja" disabled={!marcadas.size} onClick={() => aprovar([...marcadas])}>Aprovar marcadas ({marcadas.size})</button>
+            <button className="botao-linha" onClick={() => aprovar(dados.mudancas.map((m) => m.id))}>Aprovar todas</button>
+          </div>
+        </>
+      )}
+      {dados.faltaIngerir.length > 0 && (
+        <p className="suave" style={{ marginBottom: 0 }}>
+          Normas a ingerir (tópicos com questões sem base atual): {dados.faltaIngerir.slice(0, 8).map((t) => `${t.topico} (${t.questoes})`).join(", ")}.
+        </p>
+      )}
+    </section>
+  );
+}
+
 // ---------- Pendências ----------
 const ATALHOS = [
   { rotulo: "Figuras", destino: "#figuras" },
@@ -528,6 +580,7 @@ function AbaPendencias({ irPara }: { irPara: (a: Aba) => void }) {
               {doc.erro ? <p className="suave">{doc.erro}</p> : doc.markdown === undefined ? <div className="esqueleto" style={{ height: 160 }} aria-busy="true" /> : <Markdown texto={doc.markdown} />}
             </div>
           )}
+          <MudancasDeNorma />
           {!dados.length ? (
             <div className="vazio"><img src={MASCOTE} alt="" /><div><b>Nada esperando você.</b><p>Quando algo precisar da sua decisão, aparece aqui.</p></div></div>
           ) : (

@@ -832,6 +832,11 @@ export async function revogarFonte(alvo: string) {
     { status: "desatualizada" }
   );
   const k = await Cartao.updateMany({ sourceId: fonte._id, status: "aprovado" }, { status: "desatualizado" });
+  // ADENDO-FONTES-ATUAIS: questões cuja base atual era essa fonte voltam para a conferência
+  await Question.updateMany(
+    { $or: [{ "referencias.sourceId": fonte._id }, { "oQueMudou.sourceId": fonte._id }], situacaoFonte: { $in: ["confirmada", "mudou"] } },
+    { $set: { situacaoFonte: "pendente" } }
+  );
   console.log(
     `✔ "${fonte.titulo}" revogada · ${c.modifiedCount} trechos fora da busca · ${q.modifiedCount} questões geradas e ${k.modifiedCount} cartões tirados de circulação`
   );

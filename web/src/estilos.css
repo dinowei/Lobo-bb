@@ -829,6 +829,18 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .nivel-estimado { display: grid; gap: 5px; margin-top: 6px; max-width: 320px; font-size: 12px; }
 .nivel-estimado .barra { height: 4px; }
 
+/* Admin: mudanças de norma esperando OK */
+.lista-mudancas { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 10px; font-size: 13px; }
+.lista-mudancas label { display: flex; gap: 10px; align-items: flex-start; }
+.lista-mudancas input { margin-top: 3px; accent-color: var(--laranja); }
+
+/* bloco "Fontes" embaixo da explicação (ADENDO-FONTES-ATUAIS) */
+.fontes-questao { display: grid; gap: 6px; margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--painel); border: 1px solid var(--linha); font-size: 13px; }
+.fontes-questao b { color: var(--texto); }
+.fontes-questao .mudou { color: var(--amarelo); }
+.fontes-questao details { color: var(--suave); }
+.fontes-questao .discreto { color: var(--suave); }
+
 /* Raio-X (diagnóstico) */
 .convite-raiox { display: flex; gap: 12px; align-items: center; border-color: var(--laranja); }
 .convite-raiox img { width: 46px; flex: none; }

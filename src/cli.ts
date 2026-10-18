@@ -54,6 +54,7 @@ import { planejarPregeracoes } from "./outroJeito.js";
 import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { gerarAulas, planejarAulas } from "./aulas.js";
 import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
+import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, relatorioFontesAtuais } from "./fontesAtuais.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -80,6 +81,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   aulas [--assunto "<parte do nome>"] [--n 3]   prepara aulas curtas aprovadas por tópico
   cartoes [--assunto "<parte do nome>"] [--n 3] prepara cartões (normas com fonte e vocabulário de Inglês)
+  fontes-atuais migrar|conferir [--n 5]|relatorio  fonte da prova + fonte atual de cada questão (adendo)
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
@@ -248,6 +250,23 @@ async function main() {
         return;
       }
 
+      case "fontes-atuais": {
+        // ADENDO-FONTES-ATUAIS: migrar (sem IA) · conferir [--n 5] (fila de IA) · relatorio
+        if (args[0] === "migrar") return console.log(`✔ ${await migrarReferencias()} questão(ões) ganharam a camada de fontes (nada foi apagado).`);
+        if (args[0] === "relatorio") {
+          const r = await relatorioFontesAtuais();
+          for (const [d, s] of Object.entries(r.porDisciplina)) console.log(`${d}: ${Object.entries(s).map(([k, v]) => `${k} ${v}`).join(" · ")}`);
+          if (r.mudancas.length) console.log(`\n${r.mudancas.length} mudança(s) esperando seu OK (Admin → Pendências).`);
+          if (r.faltaIngerir.length) console.log(`\nNormas a ingerir (tópicos com questões sem base atual):\n${r.faltaIngerir.slice(0, 15).map((t) => `  ${t.questoes} · ${t.topico} (${t.disciplina})`).join("\n")}`);
+          return;
+        }
+        if (args[0] !== "conferir") throw new Error('Use "fontes-atuais migrar", "fontes-atuais conferir [--n 5]" ou "fontes-atuais relatorio".');
+        return await naFila(rotulo, async () => {
+          const r = await conferirFontesAgora(o.n ? Number(o.n) : 5);
+          console.log(`Fontes atuais: ${r.concluidas} conferida(s), ${r.descartadas} sem base atual ou com erro, ${r.aguardando} aguardando.`);
+        });
+      }
+
       case "cartoes": {
         return await naFila(rotulo, async () => {
           const r = await gerarCartoesAgora({ assunto: o.assunto, n: o.n ? Number(o.n) : 3 });
@@ -295,9 +314,10 @@ async function main() {
           const extras = await planejarPregeracoes(lote);
           const aulas = await planejarAulas(lote);
           const cartoes = await planejarCartoes(lote);
+          const fontesAtuais = await planejarFontesAtuais(lote);
           const temas = await planejarTemasRedacao(lote);
-          console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s), ${aulas} aula(s), ${cartoes} lote(s) de cartões e ${temas} tema(s) de redação (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
-          const r = await rodarFila({ ate, max: max !== undefined ? max + extras + aulas + cartoes + temas + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
+          console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s), ${aulas} aula(s), ${cartoes} lote(s) de cartões, ${fontesAtuais} conferência(s) de fonte atual e ${temas} tema(s) de redação (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
+          const r = await rodarFila({ ate, max: max !== undefined ? max + extras + aulas + cartoes + fontesAtuais + temas + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
           console.log(`\n${r.rodadas} tarefa(s): ${r.aprovadas} questão(ões) aprovada(s), ${r.concluidas} concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa, ${r.esgotadas} esgotada(s)${r.orfas ? `, ${r.orfas} recuperada(s) de processo que caiu` : ""}`);
           const noite = await relatorioDaNoite(inicio);
           const aprovadas = await Question.countDocuments({ status: "aprovada" });

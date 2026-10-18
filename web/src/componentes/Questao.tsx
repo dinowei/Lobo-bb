@@ -99,9 +99,35 @@ export function Licao({ c }: { c: CorrecaoDTO }) {
     <div className="licao">
       <h3>O conceito por trás</h3>
       <p>{c.explicacaoGeral}</p>
-      {c.fontes.length > 0 && (
-        <div className="fontes">Fonte: {c.fontes.map((f) => f.titulo).join(" · ")}</div>
+      {c.referencias ? (
+        <FontesDaQuestao f={c.referencias} />
+      ) : (
+        c.fontes.length > 0 && <div className="fontes">Fonte: {c.fontes.map((f) => f.titulo).join(" · ")}</div>
       )}
+    </div>
+  );
+}
+
+// De onde veio a questão e se o que ela cobra continua valendo hoje (ADENDO-FONTES-ATUAIS)
+function FontesDaQuestao({ f }: { f: NonNullable<CorrecaoDTO["referencias"]> }) {
+  if (!f.origem && !f.atual && !f.mudou && !f.emConferencia) return null;
+  const data = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("pt-BR") : "");
+  return (
+    <div className="fontes-questao" aria-label="Fontes">
+      {f.origem && <div>📄 <b>Da prova:</b> {f.origem.ref}{f.origem.questao ? ` (${f.origem.questao})` : ""}</div>}
+      {f.atual && (
+        <div>
+          ✅ <b>Base atual:</b> {f.atual.ref}.{f.atual.conferidoEm ? ` Conferido em ${data(f.atual.conferidoEm)}.` : ""}
+          <details><summary>ver trecho</summary>“{f.atual.trecho}”</details>
+        </div>
+      )}
+      {f.mudou && (
+        <div className="mudou">
+          ⚠️ <b>Mudou desde a prova:</b> na época valia {f.mudou.antes}. Hoje vale {f.mudou.hoje} ({f.mudou.ref}).
+          <details><summary>ver trecho atual</summary>“{f.mudou.trecho}”</details>
+        </div>
+      )}
+      {f.emConferencia && !f.mudou && <div className="discreto">⏳ Base atual em conferência</div>}
     </div>
   );
 }

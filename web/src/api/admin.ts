@@ -1,6 +1,7 @@
 // API de conferência do dono (só no modo servidor): tela Figuras
 import type {
   AdminBenchmarkDTO,
+  AdminFontesAtuaisDTO,
   AdminFilaDTO,
   AdminIADTO,
   AmostraFiguraDTO,
@@ -35,6 +36,8 @@ export const adminTelas = {
     req<{ ok: boolean; avisos: string[] }>("/correntes/aprovar", { method: "POST", body: JSON.stringify({ correntes }) }),
   desfazerCorrentes: () => req<{ modo: string }>("/correntes/desfazer", { method: "POST" }),
   pendencias: () => req<PendenciaDTO[]>("/pendencias"),
+  fontesAtuais: () => req<AdminFontesAtuaisDTO>("/fontes-atuais"),
+  aprovarMudancas: (ids: string[]) => req<{ aprovadas: number }>("/fontes-atuais/aprovar", { method: "POST", body: JSON.stringify({ ids }) }),
   doc: (nome: string) => req<{ nome: string; markdown: string }>(`/doc?nome=${encodeURIComponent(nome)}`),
 };
 
