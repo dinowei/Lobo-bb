@@ -433,11 +433,12 @@ export function aulaUser(
 // ---------- Fonte atual da questão (ADENDO-FONTES-ATUAIS) ----------
 export const ConfereFonteAtualZ = z.object({
   situacao: z.enum(["confirmada", "mudou", "pendente"]),
-  indice: z.number().int().min(1).optional(), // trecho [N] usado
-  trecho: z.string().optional(), // cópia LITERAL do trecho [N]
-  antes: z.string().optional(), // mudou: o que valia na época da prova
-  hoje: z.string().optional(), // mudou: o que vale hoje
-  respostaMudaria: z.boolean().optional(), // mudou: a resposta certa da questão seria outra hoje
+  // 0 ou null = "não usei trecho" (o modelo manda assim no pendente); a checagem literal decide o resto
+  indice: z.number().int().nullish().transform((n) => (n && n > 0 ? n : undefined)), // trecho [N] usado
+  trecho: z.string().nullish().transform((s) => s ?? undefined), // cópia LITERAL do trecho [N]
+  antes: z.string().nullish().transform((s) => s ?? undefined), // mudou: o que valia na época da prova
+  hoje: z.string().nullish().transform((s) => s ?? undefined), // mudou: o que vale hoje
+  respostaMudaria: z.boolean().nullish().transform((b) => b ?? undefined), // mudou: a resposta certa seria outra hoje
 });
 export const CONFERE_FONTE_ATUAL_SYSTEM = `Você confere se uma questão de concurso continua valendo HOJE, comparando-a com trechos de normas e leis VIGENTES.
 Você recebe a questão, o gabarito, a explicação e trechos numerados [N] das fontes oficiais atuais.
