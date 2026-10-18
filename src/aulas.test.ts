@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AulaZ } from "./prompts.js";
-import { contarPalavrasMarkdown, normalizarFontes, validarAulaGerada } from "./aulas.js";
+import { ancorarCitacao, desembrulhar, contarPalavrasMarkdown, normalizarFontes, validarAulaGerada } from "./aulas.js";
 
 const trecho = "O Banco Central define regras e supervisiona as instituições financeiras autorizadas.";
 const fonte = { indice: 1, sourceId: "0123456789abcdef01234567", titulo: "Norma oficial", texto: trecho };
@@ -53,6 +53,21 @@ test("normalizarFontes tira as não citadas e repetidas e limita a 8, sem mexer 
   // a não citada que reprovava antes agora sai, e a aula passa
   const semUso = normalizarFontes(montar(`Regra [1]. ${"Explicação conceitual suficiente para esta aula. ".repeat(3)}`, [{ indice: 1, trecho }, { indice: 2, trecho }]));
   assert.equal(validarAulaGerada(semUso, "matematica", [fonte]), undefined);
+});
+
+test("citação parafraseada vira a frase literal da fonte; sem frase parecida, fica como veio", () => {
+  const fonteLonga = "Art. 1º Esta lei dispõe sobre o sistema. O Banco Central define regras e supervisiona as instituições financeiras autorizadas. Outras disposições.";
+  const ancorada = ancorarCitacao("O Banco Central estabelece regras e supervisiona instituições financeiras autorizadas", fonteLonga);
+  assert.equal(ancorada, "O Banco Central define regras e supervisiona as instituições financeiras autorizadas.");
+  assert.ok(fonteLonga.includes(ancorada));
+  assert.equal(ancorarCitacao("Texto que não tem nada a ver com a norma citada aqui", fonteLonga), "Texto que não tem nada a ver com a norma citada aqui");
+  assert.equal(ancorarCitacao("supervisiona as instituições", fonteLonga), "supervisiona as instituições"); // já literal
+});
+
+test("desembrulha {aula: {...}} e deixa o resto como está", () => {
+  assert.deepEqual(desembrulhar({ aula: { conteudo: "x" } }), { conteudo: "x" });
+  assert.deepEqual(desembrulhar({ conteudo: "x" }), { conteudo: "x" });
+  assert.deepEqual(desembrulhar({ a: 1, b: { conteudo: "x" } }), { a: 1, b: { conteudo: "x" } });
 });
 
 test("reprova fonte listada sem citação no conteúdo e citação extensa", () => {

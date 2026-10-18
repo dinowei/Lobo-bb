@@ -46,6 +46,34 @@ export function normalizarFontes(aula: Gerada): Gerada {
   return { ...aula, fontes };
 }
 
+// Citação parafraseada: troca pela frase da fonte com mais palavras em comum (≥ 60% das palavras da
+// citação), cortada em 120 caracteres numa palavra. A citação final é sempre texto literal da fonte; se
+// nenhuma frase bate, fica como veio e a validação recusa.
+const palavras = (s: string) => new Set(normalizar(s).toLowerCase().match(/[\p{L}\p{N}]{3,}/gu) ?? []);
+export function ancorarCitacao(trecho: string, textoFonte: string): string {
+  if (normalizar(textoFonte).includes(normalizar(trecho))) return trecho;
+  const alvo = palavras(trecho);
+  if (!alvo.size) return trecho;
+  let melhor = { frase: "", cobertura: 0 };
+  for (const frase of textoFonte.split(/(?<=[.;:!?])\s+|\n+/)) {
+    const p = palavras(frase);
+    const comuns = [...alvo].filter((w) => p.has(w)).length;
+    if (comuns / alvo.size > melhor.cobertura) melhor = { frase: frase.trim(), cobertura: comuns / alvo.size };
+  }
+  if (melhor.cobertura < 0.6 || melhor.frase.length < 20) return trecho;
+  if (melhor.frase.length <= 120) return melhor.frase;
+  const corte = melhor.frase.slice(0, 120);
+  const espaco = corte.lastIndexOf(" ");
+  return (espaco >= 40 ? corte.slice(0, espaco) : corte).trim();
+}
+
+export function desembrulhar(json: unknown): unknown {
+  if (!json || typeof json !== "object" || Array.isArray(json) || "conteudo" in json) return json;
+  const valores = Object.values(json as Record<string, unknown>);
+  const dentro = valores.find((v) => v && typeof v === "object" && !Array.isArray(v) && "conteudo" in (v as object));
+  return valores.length === 1 && dentro ? dentro : json;
+}
+
 export function validarAulaGerada(aula: Gerada, disciplina: string, fontes: FonteEntrada[]) {
   if (contarPalavrasMarkdown(aula.conteudo) > 400) return "A aula passou do limite de 400 palavras.";
   const porIndice = new Map(fontes.map((f) => [f.indice, f]));
@@ -117,6 +145,8 @@ async function gerarAula(topicId: string, preferir?: string) {
   );
   try {
     let escritor = await chatJSONFuncao("tutor", AULA_SYSTEM, entrada, 0.3, 3200, { preferir });
+    // JSON embrulhado numa chave só ({"aula": {...}}): desembrulha por código antes de pedir reparo
+    escritor = { ...escritor, json: desembrulhar(escritor.json) };
     // JSON fora do formato (campo faltando): uma rodada de reparo com o mesmo modelo
     const primeira = AulaZ.safeParse(escritor.json);
     if (!primeira.success) {
@@ -125,13 +155,19 @@ async function gerarAula(topicId: string, preferir?: string) {
       const pedido = `${entrada}\n\nSUA RESPOSTA ANTERIOR NÃO SEGUIU O FORMATO (campos com problema: ${faltas}).\n${JSON.stringify(escritor.json).slice(0, 4000)}\n\nReescreva o JSON COMPLETO, com todos os campos do formato pedido.`;
       escritor = await chatJSONFuncao("tutor", AULA_SYSTEM, pedido, 0.1, 3200, { preferir: escritor.modelo });
     }
-    let aula: Gerada = normalizarFontes(AulaZ.parse(escritor.json));
+    // ancora citação parafraseada na frase literal da fonte, depois limpa e limita as fontes
+    const preparar = (json: unknown): Gerada => {
+      const bruta = AulaZ.parse(json);
+      const texto = new Map(fontes.map((f) => [f.indice, f.texto]));
+      return normalizarFontes({ ...bruta, fontes: bruta.fontes.map((f) => ({ ...f, trecho: texto.has(f.indice) ? ancorarCitacao(f.trecho, texto.get(f.indice)!) : f.trecho })) });
+    };
+    let aula: Gerada = preparar(escritor.json);
     let erro = validarAulaGerada(aula, topic.disciplina, fontes);
     if (erro) {
       console.log(`↻ Reparando aula de "${topic.assunto}": ${erro}`);
       const correcao = `${entrada}\n\nAULA QUE PRECISA DE CORREÇÃO:\n${JSON.stringify(aula)}\n\nERRO DETERMINÍSTICO: ${erro}\n\nReescreva o JSON completo. Para cada fonte, copie uma sequência literal contínua de 20 a 120 caracteres diretamente dos trechos originais acima; preserve acentos e pontuação. Não invente nem parafraseie citações.`;
       escritor = await chatJSONFuncao("tutor", AULA_SYSTEM, correcao, 0.1, 3200, { preferir: escritor.modelo });
-      aula = normalizarFontes(AulaZ.parse(escritor.json));
+      aula = preparar(escritor.json);
       erro = validarAulaGerada(aula, topic.disciplina, fontes);
     }
     if (erro) {
