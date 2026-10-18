@@ -10,6 +10,7 @@ import {
   criarIndice,
   semearTopicos,
   ingerirFonte,
+  reclassificarFonte,
   ingerirProva,
   explicarOficiais,
   anularOficial,
@@ -19,7 +20,8 @@ import {
   type MetaFonte,
 } from "./ingestao.js";
 import { gerarQuestao, reabastecerEstoque } from "./pipeline.js";
-import { Topic } from "./models.js";
+import { Topic, Source } from "./models.js";
+import { join } from "node:path";
 import { listarModelos } from "./llm.js";
 import { naFila } from "./fila.js";
 import { extrairFigurasOficiais } from "./figuras.js";
@@ -28,9 +30,9 @@ import { carregarCatalogo } from "./catalogo.js";
 import { sondarModelos, verificarModelos } from "./sondagem.js";
 import { planejarNoite, rodarFila } from "./noturno.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
-import { baixarFontes } from "./baixar.js";
+import { baixarFontes, type Registro } from "./baixar.js";
 import { telemetriaPendente } from "./telemetria.js";
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 
 const AJUDA = `
 BB Estudos — comandos (npm run bb -- <comando>)
@@ -51,6 +53,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
+  ingerir-fontes [id ...]       ingere o que o baixar-fontes gravou (pula a que já existe)
   baixar-fontes [id ...]        baixa as leis e normas de data/fontes-oficiais.json (só sites oficiais) para fontes/
   verificar-modelos             1 chamada curta por modelo do catálogo (a verificação semanal)
   benchmark auditor|juiz|escritor|relatorio [--max N]   compara os modelos grátis (docs/BENCHMARK-MODELOS.md)
@@ -219,6 +222,29 @@ async function main() {
         // Etapa 2.1: só sites oficiais (planalto.gov.br, bcb.gov.br, in.gov.br); grava em fontes/ (fora do Git)
         const r = await baixarFontes(args);
         return console.log(`\n${r.length} fonte(s) em fontes/LEIAME.json`);
+      }
+
+      case "ingerir-fontes": {
+        // Etapa 2.2: ingere o que o baixar-fontes gravou (fontes/LEIAME.json); fonte com o mesmo título é pulada
+        const manifesto = JSON.parse(await readFile("fontes/LEIAME.json", "utf8")) as { fontes: Registro[] };
+        return await naFila(rotulo, async () => {
+          for (const f of manifesto.fontes.filter((x) => !args.length || args.includes(x.id))) {
+            if (await Source.exists({ titulo: f.titulo })) {
+              const n = await reclassificarFonte(f.titulo, f.disciplina);
+              console.log(`↷ ${f.id}: já ingerida${n ? ` (${n} trecho(s) sem tópico foram para o mais próximo da disciplina)` : ""}`);
+              continue;
+            }
+            console.log(`\n## ${f.id}`);
+            await ingerirFonte(join("fontes", f.arquivo), {
+              tipo: f.tipo,
+              titulo: f.titulo,
+              disciplina: f.disciplina,
+              orgao: f.orgao,
+              ano: f.ano,
+              url: f.url,
+            });
+          }
+        });
       }
 
       case "benchmark": {

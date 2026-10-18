@@ -188,6 +188,20 @@ export type MetaFonte = {
   disciplina?: string; // restringe a classificação a uma disciplina (recomendado)
 };
 
+// Trechos sem tópico de uma fonte (ingerida antes do "forcar") vão para o tópico mais próximo da
+// disciplina, usando o embedding já salvo (sem chamar IA)
+export async function reclassificarFonte(titulo: string, disciplina: string) {
+  const fonte = await Source.findOne({ titulo }).select("_id").lean();
+  if (!fonte) return 0;
+  const topicos = await topicosComVetor(disciplina);
+  const chunks = await Chunk.find({ sourceId: fonte._id, topicIds: { $size: 0 } }).select("+embedding").lean();
+  if (!chunks.length) return 0;
+  await Chunk.bulkWrite(
+    chunks.map((c) => ({ updateOne: { filter: { _id: c._id }, update: { $set: { topicIds: classificar(c.embedding as number[], topicos, { forcar: true }) } } } }))
+  );
+  return chunks.length;
+}
+
 export async function ingerirFonte(caminho: string, meta: MetaFonte) {
   if (meta.disciplina && !ehDisciplina(meta.disciplina))
     throw new Error(`--disciplina inválida. Use: ${DISCIPLINAS.join(", ")}`);
@@ -225,7 +239,9 @@ export async function ingerirFonte(caminho: string, meta: MetaFonte) {
     pagina: t.pagina,
     texto: t.texto,
     embedding: vetores[i],
-    topicIds: classificar(vetores[i], topicos),
+    // com a disciplina declarada, todo trecho vai para o tópico mais próximo dela: a similaridade
+    // tópico (consulta curta) × artigo de lei fica abaixo de EMBED_MIN_SIM e o trecho sumiria da busca
+    topicIds: classificar(vetores[i], topicos, { forcar: !!meta.disciplina }),
     revogada: false,
   }));
   await Chunk.insertMany(docs);

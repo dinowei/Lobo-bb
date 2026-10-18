@@ -144,7 +144,9 @@ export async function baixarFontes(apenas: string[] = [], pasta = "fontes"): Pro
   const lista = z.object({ fontes: z.array(FonteZ) }).parse(JSON.parse(await readFile("data/fontes-oficiais.json", "utf8"))).fontes;
   const manifesto = join(pasta, "LEIAME.json");
   const anteriores: Registro[] = await readFile(manifesto, "utf8").then((t) => JSON.parse(t).fontes as Registro[]).catch(() => []);
-  const registros = new Map(anteriores.map((r) => [r.id, r]));
+  // só o que ainda está na lista (fonte trocada ou pendente sai do manifesto e não é ingerida)
+  const ativos = new Set(lista.filter((f) => !f.pendente).map((f) => f.id));
+  const registros = new Map(anteriores.filter((r) => ativos.has(r.id)).map((r) => [r.id, r]));
   for (const f of lista.filter((x) => !apenas.length || apenas.includes(x.id))) {
     if (f.pendente) {
       console.log(`⏸ ${f.id}: pendente (${f.pendente})`);
