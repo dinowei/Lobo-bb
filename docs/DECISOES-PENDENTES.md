@@ -21,10 +21,23 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ## 1. Revisar o glossário de Vendas (Etapa 2.4)
 
-- **O que é:** `docs/fontes-vendas/glossario.md`, escrito a partir das 28 questões oficiais.
+- **O que é:** `docs/fontes-vendas/glossario.md` (pronto em 18/10/2026): 25 verbetes tirados das 27 oficiais
+  de Vendas vigentes (2021 e 2023), cada um citando as questões que o sustentam.
 - **Por que precisa de você:** é fonte doutrinária escrita por IA (regra A6 e regra 3 do
-  `CLAUDE.md`). Vendas por doutrina só gera depois do seu OK.
-- **Como fazer:** ler o glossário; se estiver bom, `npm run bb -- liberar-fonte "Glossário de Vendas"`.
+  `CLAUDE.md`). Ele **não está no banco**: Vendas por doutrina só gera depois do seu OK.
+- **Como fazer:** ler o glossário (Admin → Pendências → "Glossário de Vendas"); se estiver bom,
+  `npm run bb -- liberar-fonte "Glossário de Vendas"` (é esse comando que ingere).
+
+## 1b. Três normas do BCB sem texto atualizado (média)
+
+- **O que é:** Res. BCB 1/2020 (Pix), Circular 3.978/2020 (lavagem de dinheiro) e Res. CMN 3.919/2010
+  (tarifas). Estão vigentes, mas foram alteradas várias vezes; o DOU só tem o texto original e o texto
+  consolidado só existe no site do BCB, que recusou as requisições em 17/10/2026 (inclusive no navegador).
+- **Por que precisa de você:** treinar com o texto de 2020 do Pix ensinaria regra velha.
+- **Como fazer:** num navegador onde o site do BCB abra, em "Busca de normas", baixe o PDF do texto
+  atualizado de cada uma e grave em `fontes/res-bcb-1-2020/`, `fontes/circ-bcb-3978-2020/` e
+  `fontes/res-cmn-3919-2010/`; depois `npm run bb -- fonte <arquivo.pdf> --tipo norma_bacen_cmn --titulo "<título>" --disciplina conhecimentos_bancarios`.
+  Ou rode `npm run bb -- baixar-fontes` outro dia (se o BCB voltar a responder, eu adapto o download).
 
 ## 2. Conta de administrador (Etapa 4)
 

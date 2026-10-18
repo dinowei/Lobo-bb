@@ -53,6 +53,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
+  liberar-fonte "Glossário de Vendas"   seu OK: ingere a fonte doutrinária escrita por IA (antes não gera)
   ingerir-fontes [id ...]       ingere o que o baixar-fontes gravou (pula a que já existe)
   baixar-fontes [id ...]        baixa as leis e normas de data/fontes-oficiais.json (só sites oficiais) para fontes/
   verificar-modelos             1 chamada curta por modelo do catálogo (a verificação semanal)
@@ -222,6 +223,16 @@ async function main() {
         // Etapa 2.1: só sites oficiais (planalto.gov.br, bcb.gov.br, in.gov.br); grava em fontes/ (fora do Git)
         const r = await baixarFontes(args);
         return console.log(`\n${r.length} fonte(s) em fontes/LEIAME.json`);
+      }
+
+      case "liberar-fonte": {
+        // Fonte doutrinária escrita por IA só entra depois do OK do dono (regra 3): este comando É o OK
+        const docs: Record<string, { arquivo: string; titulo: string; disciplina: string }> = {
+          "glossário de vendas": { arquivo: "docs/fontes-vendas/glossario.md", titulo: "Glossário de Vendas (doutrina, revisado pelo dono)", disciplina: "vendas_negociacao" },
+        };
+        const d = docs[exigir(args[0], "o nome da fonte").toLowerCase()];
+        if (!d) throw new Error(`Fonte desconhecida. Opções: ${Object.keys(docs).join(", ")}`);
+        return await naFila(rotulo, () => ingerirFonte(d.arquivo, { tipo: "material_proprio", titulo: d.titulo, disciplina: d.disciplina, ano: new Date().getFullYear() }));
       }
 
       case "ingerir-fontes": {
