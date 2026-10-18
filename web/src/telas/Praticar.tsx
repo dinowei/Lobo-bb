@@ -103,7 +103,11 @@ export function Praticar() {
     setAba(vista ? "questoes" : "aula");
     setCarregandoAula(true);
     api.aula(topicoIdAula)
-      .then((r) => { if (ativo) setAula(r); })
+      .then((r) => {
+        if (!ativo) return;
+        setAula(r);
+        if (!r) setAba("questoes"); // sem aula aprovada: direto para as questões
+      })
       .catch(() => { if (ativo) setAula(null); })
       .finally(() => { if (ativo) setCarregandoAula(false); });
     return () => { ativo = false; };
