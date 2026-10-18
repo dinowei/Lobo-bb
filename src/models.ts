@@ -414,6 +414,22 @@ const AulaSchema = new Schema(
 );
 export const Aula = model("Aula", AulaSchema, "aulas");
 
+// Áudio do Binho (ADENDO-BINHO-VOZ): MP3 comprimido, ligado ao hash do texto FALADO + voz
+// (texto mudou → hash muda → regera). Explicações e aulas são pré-geradas de noite.
+const AudioSchema = new Schema(
+  {
+    hash: { type: String, required: true },
+    voz: { type: String, required: true },
+    mime: { type: String, default: "audio/mpeg" },
+    dados: { type: Buffer, required: true },
+    bytes: Number,
+    segundos: Number,
+  },
+  { timestamps: true }
+);
+AudioSchema.index({ hash: 1, voz: 1 }, { unique: true });
+export const Audio = model("Audio", AudioSchema, "audios");
+
 // Rating Elo do aluno por disciplina (8.7)
 const RatingAlunoSchema = new Schema(
   {
