@@ -21,6 +21,10 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 - `src/ingestao.ts` + `src/cli.ts`: comandos `npm run bb -- <comando>`
 - `src/estudo.ts`: implementação da interface `Api` (shared/tipos.ts) no servidor
 - `src/aulas.ts` e `src/outroJeito.ts`: aulas curtas por tópico auditadas e tutor alternativo com pré-geração, cache e cota diária
+- `src/cartoes.ts`: cartões de normas (trecho literal) e vocabulário de Inglês, auditados, com revisão espaçada própria
+- `src/rating.ts` + `shared/rating.ts`: Elo de questão e aluno (`rating-migrar`, `calibragem`)
+- `shared/`: `estruturaProva.ts` (cotas da prova, mistura), `aprendizado.ts` (motivo do erro, calibragem da confiança, horas líquidas), `diagnostico.ts` (Raio-X), `plano.ts` (plano até a prova), `redacaoLinhas.ts` (linhas da folha, 25 a 30)
+- `src/corrente.ts` + `data/modelos.json`: corrente de modelos grátis por função (regra de família); `src/noturno.ts`: fila persistente da noite
 - `src/server.ts`: rotas `/api/*` e serve `web/dist`
 - `web/src/api/demo.ts`: a mesma `Api` rodando no navegador (localStorage + `web/src/demo/questoes.ts`)
 - `web/src/api/http.ts`: `Api` via fetch; o site cai no demo se `/api/saude` não responder
@@ -63,8 +67,12 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 - Atlas e NVIDIA conectados e testados: gerador `nemotron-3.5-lightning` (pensamento limitado por `GERADOR_RACIOCINIO`), auditor `nemotron-3-super` com reserva `nemotron-3-ultra`, escritor de Português `glm-5.3-flash`, embeddings `nemotron-3-embed-1b` (2048 dim).
 - Provas oficiais ingeridas: BB 2023 e BB 2021 (Agente Comercial). A ingestão lê gabarito e disciplinas (capa) por código, extrai com a IA sem "pensar", busca uma a uma as questões que faltarem, copia o texto de apoio e confere cada campo literalmente contra o PDF (`TextoPdf` em `src/extrair.ts`): palavra trocada é corrigida pelo PDF; o que não bate fica de fora. Prova incompleta não é salva.
 - Questões que dependem de figura: `status: "precisa_imagem"` (fora do treino), listadas em `docs/PENDENTES-FIGURA.md`. Anulação pela banca: `npm run bb -- anular --prova "<parte do nome>" --numero <n>`.
-- Ainda falta ingerir as leis e normas (etapa C, item 4 do `docs/INTEGRACAO.md`).
+- Leis e normas ingeridas de sites oficiais (`baixar-fontes`, `ingerir-fontes`); 3 normas do BCB pendentes (DECISOES-PENDENTES).
+- Corrente provisória ativa (gerador Lightning → gpt-oss-20b → Muse Glimmer); escolha definitiva espera o dono (benchmark).
+- Fase B completa no código (8.1 a 8.9): simulado fiel, diagnóstico do erro, calibragem, redação (25 a 30 linhas por código), aulas e tutor, cartões, treino misturado, horas líquidas, Elo, Raio-X, plano até a prova. Aulas: 0 aprovadas nas rodadas reais até agora (DECISOES nº 9).
+- Etapa 9: error boundary, offline com fila, PWA, atalhos, Desfazer, prints em `docs/telas/`, bateria `npx tsx scripts/e2e-fluxos.ts` (servidores `bb-demo` e `bb-web` do launch.json) e `scripts/e2e-login.ts`.
+- Primeira noite real: 12 aprovadas em 16 tarefas; banco em 166 de 1.200.
 - Figuras por construção (`src/construcaoFiguras.ts`): fórmula em planilha, sistema linear em tabela, série de depósitos e taxa de abandono, na proporção de `data/figuras-meta.json`. Amostras sem IA em Figuras → "Geradas (amostra)"; prints com `npx tsx scripts/prints.ts`.
-- Por construção: Juros compostos, Descontos e Crase. Os demais tópicos de cálculo ainda usam geração livre + verificação mathjs.
+- Por construção: Juros compostos, Descontos, Amortização, Taxas, Combinatória, Probabilidade (`src/construcaoMais.ts`), Crase, Concordância, Regência e Pontuação (`src/regrasPT.ts`). Rodadas reais de 3 por assunto ainda pendentes.
 - `npm run bb -- gerar --assunto "<tópico>" --n 3 [--tipo "<tipo>"]` força um tipo de `data/variacoes.json` (ex.: `--tipo "crase (por construção)"`).
 - Próximos passos: `docs/ROADMAP.md`.
