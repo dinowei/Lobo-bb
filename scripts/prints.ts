@@ -1,8 +1,9 @@
 // Prints automáticos das telas (desktop 1440 e celular 390), com o Edge instalado no Windows.
 // uso: npx tsx scripts/prints.ts <pasta> <nome=hash> [<nome=hash> ...]
 //   ex.: npx tsx scripts/prints.ts docs/telas painel=painel praticar=praticar "q1=praticar?q=6ad1..."
-// Variáveis: PRINTS_URL (padrão http://localhost:5173), PRINTS_ESPERAR (seletor que precisa aparecer)
-import { mkdirSync } from "node:fs";
+// Variáveis: PRINTS_URL (padrão http://localhost:5173), PRINTS_ESPERAR (seletor que precisa aparecer),
+//   PRINTS_ESTADO (JSON { chave: valor } gravado no localStorage antes de abrir: progresso do demo)
+import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "playwright-core";
 
@@ -30,6 +31,10 @@ try {
       colorScheme: "dark",
       locale: "pt-BR",
     });
+    if (process.env.PRINTS_ESTADO) {
+      const estado = JSON.parse(readFileSync(process.env.PRINTS_ESTADO, "utf8")) as Record<string, string>;
+      await ctx.addInitScript((e) => { for (const [k, v] of Object.entries(e)) if (localStorage.getItem(k) === null) localStorage.setItem(k, v); }, estado);
+    }
     const pagina = await ctx.newPage();
     for (const alvo of alvos) {
       const [nome, hash] = alvo.includes("=") ? [alvo.slice(0, alvo.indexOf("=")), alvo.slice(alvo.indexOf("=") + 1)] : [alvo, alvo];
