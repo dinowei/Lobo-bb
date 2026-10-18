@@ -9,7 +9,11 @@
     "empréstimo pessoal",
     "financiamento imobiliário ou de veículo",
     "desconto de duplicata por uma empresa (PJ)",
-    "antecipação de recebíveis de um lojista"
+    "antecipação de recebíveis de um lojista",
+    "formação de equipes na agência",
+    "sorteio de brindes entre clientes",
+    "senhas e códigos de acesso de clientes",
+    "pesquisa com clientes da agência"
   ],
   "tipos": {
     "Juros compostos": {
@@ -79,9 +83,23 @@
     "Regência verbal e nominal e crase": {
       "crase (por construção)": "todos",
       "regência de verbos frequentes": "todos"
+    },
+    "Análise combinatória": {
+      "arranjo (a ordem importa)": ["formação de equipes na agência", "cliente pessoa jurídica negociando com o gerente"],
+      "combinação (a ordem não importa)": ["formação de equipes na agência", "sorteio de brindes entre clientes"],
+      "permutação com repetição (anagramas)": ["senhas e códigos de acesso de clientes", "formação de equipes na agência"],
+      "princípio fundamental da contagem (senhas)": ["senhas e códigos de acesso de clientes"]
+    },
+    "Probabilidade": {
+      "probabilidade condicional em tabela de clientes": ["pesquisa com clientes da agência", "sorteio de brindes entre clientes"],
+      "eventos independentes": ["pesquisa com clientes da agência", "sorteio de brindes entre clientes", "senhas e códigos de acesso de clientes"],
+      "distribuição binomial": ["pesquisa com clientes da agência", "sorteio de brindes entre clientes"]
     }
   },
   "duasEtapas": {
+    "Sistemas de amortização": ["parcela no SAC", "prestação na Tabela Price (com fator dado)", "comparar SAC e Price"],
+    "Taxas de juros": ["taxa efetiva a partir da nominal", "taxa real a partir da aparente e da inflação"],
+    "Probabilidade": ["probabilidade condicional em tabela de clientes", "distribuição binomial"],
     "Juros compostos": ["calcular a taxa", "calcular o prazo", "comparar duas opções de aplicação ou pagamento", "aplicação e reaplicação do montante", "série de depósitos em tabela (com figura)"],
     "Descontos": ["valor atual de um título", "desconto racional simples", "taxa efetiva de um desconto comercial"]
   }

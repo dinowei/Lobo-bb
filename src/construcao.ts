@@ -8,8 +8,10 @@
 // ============================================================
 import type { Letra, PosicaoFigura, TabelaDados, PlanilhaDados } from "../shared/tipos.js";
 import { CATALOGO_FIGURAS } from "./construcaoFiguras.js";
+import { CATALOGO_MAIS } from "./construcaoMais.js";
+import { sortear, r2, brl, num4, pct, taxaTxt, base, fatorChave, fatorTxt, fator, prazoErrado, arredondouFator, type Distrator } from "./construcaoUtil.js";
 
-export type Distrator = { valor: number; erro: string };
+export type { Distrator };
 
 // Figura de questão gerada: DADO desenhado por código no site (nunca imagem de IA).
 // O número que aparece na figura e o da resposta saem do MESMO dado.
@@ -38,26 +40,7 @@ export type Montada = Construida & {
   alternativas: { letra: Letra; texto: string; correta: boolean; erro: string | null }[];
 };
 
-// ---------- utilidades ----------
-const sortear = <T>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)];
-const r2 = (x: number) => Math.round(x * 100) / 100;
-const r4 = (x: number) => Math.round(x * 10000) / 10000;
-const brl = (x: number) => `R$ ${x.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const num4 = (x: number) => x.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
-const pct = (x: number) => `${x.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
-const taxaTxt = (i: number) => `${(i * 100).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}%`;
-const base = (i: number) => String(r4(1 + i)); // 1.04
-const fatorChave = (i: number, n: number) => `${base(i)}^${n}`; // "1.04^8"
-const fatorTxt = (i: number, n: number, f: number) => `${base(i).replace(".", ",")}^${n} = ${num4(f)}`; // "1,04^8 = 1,3686"
-const fator = (i: number, n: number) => r4((1 + i) ** n);
-// erro clássico "prazo errado", para os dois lados (n ± 1, n ± 2)
-const prazoErrado = (n: number, valor: (k: number) => number): Distrator[] =>
-  [n - 2, n - 1, n + 1, n + 2].filter((k) => k > 0).map((k) => ({ valor: valor(k), erro: `usou n = ${k} em vez de ${n}` }));
-// erro clássico "arredondamento antecipado" do fator, para baixo e para cima
-const arredondouFator = (F: number, valor: (f: number) => number): Distrator[] => [
-  { valor: valor(Math.floor(F * 100) / 100), erro: `arredondou o fator antes da hora: ${num4(F)} → ${(Math.floor(F * 100) / 100).toLocaleString("pt-BR")}` },
-  { valor: valor(Math.ceil(F * 100) / 100), erro: `arredondou o fator para cima antes da hora: ${num4(F)} → ${(Math.ceil(F * 100) / 100).toLocaleString("pt-BR")}` },
-];
+// ---------- utilidades: src/construcaoUtil.ts ----------
 
 export function formatar(valor: number, unidade: Construida["unidade"], rotulos?: string[]): string {
   if (unidade === "reais") return brl(valor);
@@ -376,6 +359,7 @@ function descTaxaEfetiva(): Construida {
 type Template = (gabarito: Letra) => Construida; // recebe a letra sorteada (rótulos: a certa cai nela)
 const CATALOGO: Record<string, { porTipo: Record<string, Template> }> = {
   ...CATALOGO_FIGURAS,
+  ...CATALOGO_MAIS,
   "Juros compostos": {
     porTipo: {
       "calcular o montante": jcMontante,

@@ -14,8 +14,12 @@ const ASSUNTOS: [string, string][] = [
   ["Planilhas eletrônicas", "informatica"],
   ["Funções e equações de 1º e 2º grau", "matematica"],
   ["Técnicas de vendas", "vendas_negociacao"],
+  ["Sistemas de amortização", "matematica_financeira"],
+  ["Taxas de juros", "matematica_financeira"],
+  ["Análise combinatória", "probabilidade_estatistica"],
+  ["Probabilidade", "probabilidade_estatistica"],
 ];
-const N = 200; // por tipo (5 letras × 40)
+const N = 1000; // por tipo (5 letras × 200), mínimo do PLANO-MESTRE 5.2
 
 for (const [assunto, disciplina] of ASSUNTOS) {
   for (const tipo of tiposConstruidos(assunto)) {

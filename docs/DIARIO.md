@@ -114,6 +114,14 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - Agendamento: cron do Render às 01h00 de Brasília (`render.yaml`, `TZ=America/Sao_Paulo`), não às 03h00 do plano: com a meta de 100 aprovadas por noite, a janela 01h–05h30 rende mais.
 - Corrente provisória confirmada em uso: na Etapa 2.3, Lightning deu timeout 2× e o gpt-oss-20b assumiu.
 
+## 18/10/2026 — Etapa 7 (parte por código): Amortização, Taxas, Combinatória, Probabilidade
+
+- `src/construcaoMais.ts` (utilidades em `src/construcaoUtil.ts`): 16 templates novos com números e distratores de erros clássicos. Amortização: parcela, juros e saldo no SAC, prestação Price com fator dado, SAC × Price. Taxas: efetiva da nominal, equivalentes, proporcionais, real × aparente. Combinatória: arranjo, combinação, anagramas, senhas. Probabilidade: condicional em tabela, independentes, binomial.
+- Tabela de compatibilidade: tipos de Combinatória e Probabilidade e 4 contextos novos (equipes, sorteio de brindes, senhas, pesquisa com clientes); duas etapas marcadas.
+- Testes: **1.000 montagens por tipo** (33 tipos), todas conferidas por mathjs; 70/70 no total. Primeira rodada: 7 tipos não montavam para toda letra (faltavam distratores de um lado); acrescentei erros clássicos (ex.: "dividiu o produto por 2", "deixou qualquer letra em qualquer posição").
+- Um commit para os quatro assuntos (o plano pede um por assunto): estão no mesmo arquivo e foram testados juntos.
+- Rodadas reais de 3 por assunto: esperam a fila (benchmark rodando). Português por construção (Concordância, Regência, Pontuação) vem a seguir.
+
 RETOMAR AQUI: em segundo plano rodam a Etapa 2.3 (10 geradas com fonte) e depois o benchmark (auditor até 60, juiz, escritor), logs em scratchpad `etapa23.log` e `bench.log`. Quando acabar: aprovação da 2.3 no DIARIO, proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 5 (nuvem sem publicar).
 
 **LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.
