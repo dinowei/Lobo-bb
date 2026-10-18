@@ -266,6 +266,8 @@ export interface PainelDTO {
   nivel: Nivel;
   sequenciaDias: number;
   respondeuHoje: number;
+  hojePorDisciplina: { disciplina: Disciplina; n: number }[]; // treino e revisão de hoje (plano: o que foi cumprido)
+  revisoesFeitasHoje: number;
   semana: { respondidas: number; acertos: number };
   revisoesHoje: number;
   revisoesPorDia: { dia: string; total: number }[]; // próximos 7 dias

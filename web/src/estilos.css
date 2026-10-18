@@ -803,6 +803,21 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .convite-raiox > span { display: grid; gap: 4px; }
 .lista-raiox { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 15px; }
 
+/* Plano até a prova */
+.plano-semanas { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.plano-semanas h2 { display: flex; align-items: center; }
+.plano-dias { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.plano-dias > li { display: grid; grid-template-columns: 84px 1fr; gap: 8px; font-size: 13px; }
+.plano-dias > li.hoje > b { color: var(--laranja); }
+.plano-dias ul, .plano-hoje { margin: 0; padding-left: 16px; display: grid; gap: 3px; }
+.plano-hoje { font-size: 12.5px; color: var(--suave); text-align: left; }
+.cumprido { color: var(--certo); }
+@media (max-width: 480px) { .plano-dias > li { grid-template-columns: 1fr; gap: 2px; } }
+
+/* Ajustes: dias da semana do plano */
+.dias-semana { display: flex; flex-wrap: wrap; gap: 6px; border: 0; padding: 0; margin: 0; }
+.dias-semana legend { width: 100%; margin-bottom: 6px; font-size: 13px; }
+
 /* tela Cartões */
 .cartao-estudo { max-width: 680px; }
 .cartao-face { display: flex; flex-direction: column; gap: 14px; width: 100%; min-height: 220px; padding: 26px; text-align: left; color: var(--texto); background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio-g); transition: border-color .15s; }

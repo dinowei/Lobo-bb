@@ -5,6 +5,9 @@ import { useApp } from "../estado";
 import { CartaoCalibragem } from "../componentes/Calibragem";
 import { dificuldadeDoRating } from "../../../shared/rating";
 import { diagnosticoPendente } from "../../../shared/diagnostico";
+import { NOME_FASE, planoDeHoje } from "../../../shared/plano";
+import { hojeLocal, usePlano } from "../usePlano";
+import { textoItem } from "./Plano";
 import { Ilustracao } from "../componentes/Ilustracoes";
 import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
 import { COR_DISC, CURTO, MASCOTE, SIGLA, diasAte, pct } from "../util";
@@ -27,7 +30,9 @@ export function Painel() {
   }, [painel]);
 
   const [foco, setFoco] = useState<number>(0);
+  const plano = usePlano(1);
   if (!painel) return <div className="carregando">Carregando painel…</div>;
+  const deHoje = plano ? planoDeHoje(plano, hojeLocal()) : null;
 
   // banco recém-criado: ainda sem tópicos (npm run bb -- topicos)
   const disc = recomendadas.length ? recomendadas[((foco % recomendadas.length) + recomendadas.length) % recomendadas.length] : undefined;
@@ -44,6 +49,7 @@ export function Painel() {
               <p className="ola">
                 Salve, {ajustes.nome || "concurseiro"}!
                 {faltam !== null && faltam >= 0 && <> · faltam <b className="num">{faltam}</b> dias para a prova</>}
+                {plano?.totalSemanas && <> · <button className="link" onClick={() => ir("plano")}>semana <b className="num">{plano.semanaAtual}</b> de <b className="num">{plano.totalSemanas}</b></button></>}
               </p>
               <h1>
                 {n > 0 ? (
@@ -105,6 +111,18 @@ export function Painel() {
         </div>
 
         <div className="grupo-dia">Hoje</div>
+        {deHoje && deHoje.itens.length > 0 && (
+          <button className="evento" onClick={() => ir("plano")}>
+            <strong>Plano de hoje</strong>
+            <ul className="plano-hoje">
+              {deHoje.itens.map((i, k) => {
+                const feito = i.tipo === "questoes" ? (painel.hojePorDisciplina?.find((x) => x.disciplina === i.disciplina)?.n ?? 0) : null;
+                return <li key={k} className={feito !== null && i.tipo === "questoes" && feito >= i.questoes ? "cumprido" : ""}>{textoItem(i)}{feito !== null && i.tipo === "questoes" ? ` · ${Math.min(feito, i.questoes)}/${i.questoes}` : ""}</li>;
+              })}
+            </ul>
+            <div className="rodape"><span className="sub">{plano?.totalSemanas ? NOME_FASE[plano.fase] : "Ciclo de estudos"}</span><span className="tag"><i />Plano</span></div>
+          </button>
+        )}
         {diagnosticoPendente(painel.diagnosticos?.[painel.diagnosticos.length - 1]?.data) && (
           <button className="evento convite-raiox" onClick={() => ir("diagnostico")}>
             <img src={MASCOTE} alt="" />

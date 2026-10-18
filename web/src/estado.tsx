@@ -6,8 +6,8 @@ import { apiHttp, servidorDisponivel } from "./api/http";
 import { conta, EVENTO_SESSAO, type UsuarioDTO } from "./api/conta";
 import { Entrar } from "./telas/Entrar";
 
-export type Tela = "painel" | "praticar" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin";
-export const TELAS: Tela[] = ["painel", "praticar", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin"];
+export type Tela = "painel" | "plano" | "praticar" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin";
+export const TELAS: Tela[] = ["painel", "plano", "praticar", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin"];
 export interface FiltroPratica {
   topicoId?: string;
   disciplina?: Disciplina;
@@ -25,8 +25,14 @@ export interface Ajustes {
   linhaDeCorte: number; // % para "nota de corte batida"
   linhasRedacaoMax: number; // limite de linhas do treino (edital pode mudar)
   cicloFoco: CicloFoco; // 25/5, 50/10 ou desligado
+  horasPorDia: number; // plano até a prova (8.9)
+  diasSemana: number[]; // 0 = domingo … 6 = sábado
+  inicioPlano: string; // quando a data da prova foi definida (Semana X de Y)
 }
-const AJUSTES_PADRAO: Ajustes = { nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70, linhasRedacaoMax: 30, cicloFoco: "25/5" };
+const AJUSTES_PADRAO: Ajustes = {
+  nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70, linhasRedacaoMax: 30, cicloFoco: "25/5",
+  horasPorDia: 2, diasSemana: [1, 2, 3, 4, 5, 6], inicioPlano: "",
+};
 const CHAVE_AJUSTES = "lobo-ajustes";
 function lerAjustes(): Ajustes {
   try {

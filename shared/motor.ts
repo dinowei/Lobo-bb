@@ -260,6 +260,12 @@ export function calcularPainel(input: {
     nivel: nivelDe(xp),
     sequenciaDias,
     respondeuHoje: tents.filter((t) => diaDe(t.data) === hoje).length,
+    hojePorDisciplina: [...tents.filter((t) => diaDe(t.data) === hoje && t.modo !== "simulado").reduce((m, t) => {
+      const d = disciplinaDo.get(t.topicoId);
+      if (d) m.set(d, (m.get(d) ?? 0) + 1);
+      return m;
+    }, new Map<Disciplina, number>())].map(([disciplina, n]) => ({ disciplina, n })),
+    revisoesFeitasHoje: tents.filter((t) => diaDe(t.data) === hoje && t.modo === "revisao").length,
     semana: { respondidas: daSemana.length, acertos: daSemana.filter((t) => t.acertou).length },
     revisoesHoje: revisoesPorDia[0].total,
     revisoesPorDia,

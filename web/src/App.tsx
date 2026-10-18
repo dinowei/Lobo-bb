@@ -2,13 +2,14 @@ import { useMemo, useRef, useState } from "react";
 import { useApp, type Tela } from "./estado";
 import { MASCOTE, pct } from "./util";
 import {
-  IAlvo, IBalao, ICalendario, ICartoes, ICasa, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
+  IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
 } from "./componentes/Icones";
 import { Painel } from "./telas/Painel";
 import { Praticar } from "./telas/Praticar";
 import { Revisoes } from "./telas/Revisoes";
 import { Cartoes } from "./telas/Cartoes";
 import { Diagnostico } from "./telas/Diagnostico";
+import { Plano } from "./telas/Plano";
 import { Simulados } from "./telas/Simulados";
 import { Redacao } from "./telas/Redacao";
 import { Erros } from "./telas/Erros";
@@ -19,6 +20,7 @@ import { Admin } from "./telas/Admin";
 
 const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa }[] = [
   { tela: "painel", rotulo: "Painel", Icone: ICasa },
+  { tela: "plano", rotulo: "Plano", Icone: IBandeira },
   { tela: "praticar", rotulo: "Praticar", Icone: IBalao },
   { tela: "revisoes", rotulo: "Revisões", Icone: ICalendario },
   { tela: "cartoes", rotulo: "Cartões", Icone: ICartoes },
@@ -90,6 +92,7 @@ export function App() {
           {tela === "praticar" && <Praticar />}
           {tela === "revisoes" && <Revisoes />}
           {tela === "cartoes" && <Cartoes />}
+          {tela === "plano" && <Plano />}
           {tela === "diagnostico" && <Diagnostico />}
           {tela === "simulados" && <Simulados />}
           {tela === "redacao" && <Redacao />}

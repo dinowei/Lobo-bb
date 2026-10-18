@@ -114,6 +114,10 @@ export function AjustesTela() {
             duracaoProvaMin: Math.max(0, Math.min(600, Math.round(form.duracaoProvaMin || 0))),
             linhaDeCorte: Math.max(1, Math.min(100, Math.round(form.linhaDeCorte || 70))),
             linhasRedacaoMax: Math.max(5, Math.min(60, Math.round(form.linhasRedacaoMax || 30))),
+            horasPorDia: Math.max(0.5, Math.min(12, form.horasPorDia || 2)),
+            diasSemana: form.diasSemana.length ? form.diasSemana : [1, 2, 3, 4, 5],
+            // o plano começa quando a data da prova muda (para "Semana X de Y")
+            inicioPlano: form.dataProva && form.dataProva !== ajustes.dataProva ? new Date().toLocaleDateString("sv-SE") : form.dataProva ? ajustes.inicioPlano || new Date().toLocaleDateString("sv-SE") : "",
           });
           avisar("Ajustes salvos");
         }}
@@ -130,6 +134,24 @@ export function AjustesTela() {
           Data da prova (deixe vazio enquanto o edital não sai)
           <input id="prova" type="date" value={form.dataProva} onChange={(e) => setForm({ ...form, dataProva: e.target.value })} />
         </label>
+        <label htmlFor="horas">
+          Horas de estudo por dia (o plano distribui esse tempo)
+          <input id="horas" type="number" min={0.5} max={12} step={0.5} value={form.horasPorDia} onChange={(e) => setForm({ ...form, horasPorDia: Number(e.target.value) })} />
+        </label>
+        <fieldset className="dias-semana">
+          <legend>Dias da semana em que você estuda</legend>
+          {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].map((nome, d) => (
+            <button
+              key={d}
+              type="button"
+              className="chip"
+              aria-pressed={form.diasSemana.includes(d)}
+              onClick={() => setForm({ ...form, diasSemana: form.diasSemana.includes(d) ? form.diasSemana.filter((x) => x !== d) : [...form.diasSemana, d].sort() })}
+            >
+              {nome}
+            </button>
+          ))}
+        </fieldset>
         <label htmlFor="duracao">
           Duração da prova completa, em minutos (vazio = só cronômetro, sem tempo acabando)
           <input id="duracao" type="number" min={0} max={600} value={form.duracaoProvaMin || ""} onChange={(e) => setForm({ ...form, duracaoProvaMin: Number(e.target.value) })} />
