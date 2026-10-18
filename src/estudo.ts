@@ -42,6 +42,7 @@ import { usuarioAtualId, usuarioAtual } from "./auth.js";
 import { Geracao } from "./models.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
 import { inicioDaNoite } from "../shared/motor.js";
+import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, type Mistura } from "../shared/estruturaProva.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
@@ -58,13 +59,23 @@ async function mapaTopicos() {
   return new Map(ts.map((t) => [String(t._id), t]));
 }
 
+// mistura de dificuldade das oficiais (≥ 30 com dificuldade) ou a estimativa padrão
+async function misturaOficial(): Promise<Mistura> {
+  const difs = await Question.find({ origem: "oficial", status: "aprovada", dificuldade: { $exists: true } }).select("dificuldade").lean();
+  return misturaDasOficiais(difs.map((q) => q.dificuldade ?? 3));
+}
+
+// peso no treino: o do edital (questoesNaProva) ou a cota da disciplina na prova ÷ tópicos dela
 async function listarTopicos(): Promise<TopicoDTO[]> {
-  return [...(await mapaTopicos()).values()].map((t) => ({
+  const ts = [...(await mapaTopicos()).values()];
+  const porDisc = new Map<string, number>();
+  for (const t of ts) porDisc.set(t.disciplina, (porDisc.get(t.disciplina) ?? 0) + 1);
+  return ts.map((t) => ({
     id: String(t._id),
     disciplina: t.disciplina as Disciplina,
     assunto: t.assunto,
     subtopicos: t.subtopicos ?? [],
-    peso: t.questoesNaProva ?? null,
+    peso: pesoDoTopico(t.disciplina as Disciplina, porDisc.get(t.disciplina) ?? 1, t.questoesNaProva),
   }));
 }
 
@@ -292,10 +303,11 @@ export const apiServidor: Omit<Api, "modo"> = {
       { $group: { _id: "$topicId", n: { $sum: 1 }, a: { $sum: { $cond: ["$acertou", 1, 0] } } } },
     ]);
     const stats = new Map(desempenho.map((d) => [String(d._id), d]));
+    const pesoPorTopico = new Map((await listarTopicos()).map((t) => [t.id, t.peso]));
     const elegiveis = candidatos.filter((t) => comQuestao.has(String(t._id)));
     const escolhido = sortearPonderado(elegiveis, (t) => {
       const s = stats.get(String(t._id));
-      return prioridade(t.questoesNaProva ?? null, s?.n ?? 0, s?.a ?? 0);
+      return prioridade(pesoPorTopico.get(String(t._id)) ?? null, s?.n ?? 0, s?.a ?? 0);
     })!;
 
     // 3. questão ainda não respondida desse tópico
@@ -320,17 +332,38 @@ export const apiServidor: Omit<Api, "modo"> = {
     return correcaoDe(q, r.resposta, xp, dias);
   },
 
+  async misturaSimulado() {
+    return misturaOficial();
+  },
+
+  // Simulado fiel: cotas da prova real por disciplina e, dentro delas, a mistura de dificuldade
   async simulado(n) {
     const topicos = await listarTopicos();
     const comQuestao = new Set((await Question.distinct("topicId", { status: "aprovada" })).map(String));
     const validos = topicos.filter((t) => comQuestao.has(t.id));
     const cotas = cotasPorDisciplina(n, validos);
+    const mistura = await misturaOficial();
     const mapa = await mapaTopicos();
     const escolhidas: QuestaoDoc[] = [];
+    const FAIXAS = { facil: [1, 2], media: [3], dificil: [4, 5] } as const;
     for (const [disc, k] of cotas) {
       if (!k) continue;
       const ids = validos.filter((t) => t.disciplina === disc).map((t) => oid(t.id));
-      escolhidas.push(...(await Question.aggregate<QuestaoDoc>([{ $match: { topicId: { $in: ids }, status: "aprovada" } }, { $sample: { size: k } }])));
+      const daDisc: QuestaoDoc[] = [];
+      for (const [faixa, q] of cotasPorFaixa(k, mistura)) {
+        if (!q) continue;
+        daDisc.push(...(await Question.aggregate<QuestaoDoc>([
+          { $match: { topicId: { $in: ids }, status: "aprovada", dificuldade: { $in: [...FAIXAS[faixa]] } } },
+          { $sample: { size: q } },
+        ])));
+      }
+      // faltou numa faixa: completa com qualquer dificuldade da mesma disciplina
+      if (daDisc.length < k)
+        daDisc.push(...(await Question.aggregate<QuestaoDoc>([
+          { $match: { topicId: { $in: ids }, status: "aprovada", _id: { $nin: daDisc.map((q) => q._id) } } },
+          { $sample: { size: k - daDisc.length } },
+        ])));
+      escolhidas.push(...daDisc);
     }
     if (escolhidas.length < n) {
       const extra = await Question.aggregate<QuestaoDoc>([

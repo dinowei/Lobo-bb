@@ -27,10 +27,12 @@ import {
   type EstadoRevisao,
 } from "../../../shared/motor";
 import { QUESTOES_DEMO, type QuestaoDemo } from "../demo/questoes";
+import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe } from "../../../shared/estruturaProva";
 
 const CHAVE = "lobo-demo-v1";
 const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
+// peso no treino: o do edital ou a cota da disciplina na prova ÷ tópicos dela (igual ao servidor)
 export const TOPICOS: TopicoDTO[] = Object.entries(
   (topicosJson as { disciplinas: Record<string, { assunto: string; subtopicos?: string[]; questoesNaProva?: number | null }[]> }).disciplinas
 )
@@ -41,7 +43,7 @@ export const TOPICOS: TopicoDTO[] = Object.entries(
       disciplina: d as Disciplina,
       assunto: t.assunto,
       subtopicos: t.subtopicos ?? [],
-      peso: t.questoesNaProva ?? null,
+      peso: pesoDoTopico(d as Disciplina, lista.length, t.questoesNaProva),
     }))
   );
 const topicoDe = (q: QuestaoDemo) => `${q.disciplina}:${slug(q.assunto)}`;
@@ -193,15 +195,22 @@ export const apiDemo: Api = {
     return espera(correcao(q, r.resposta, xp, dias));
   },
 
+  // sem oficiais no demo: mistura estimada (20/50/30), igual à regra do servidor
+  misturaSimulado: () => espera(misturaDasOficiais([])),
+
   async simulado(n) {
     const e = ler();
     const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id));
     const comQuestao = TOPICOS.filter((t) => ativas.some((q) => topicoDe(q) === t.id));
     const cotas = cotasPorDisciplina(Math.min(n, ativas.length), comQuestao);
+    const mistura = misturaDasOficiais([]);
     const escolhidas: QuestaoDemo[] = [];
     for (const [d, k] of cotas) {
       const daDisc = ativas.filter((q) => q.disciplina === d).sort(() => Math.random() - 0.5);
-      escolhidas.push(...daDisc.slice(0, k));
+      const pegas: QuestaoDemo[] = [];
+      for (const [faixa, q] of cotasPorFaixa(k, mistura)) pegas.push(...daDisc.filter((x) => faixaDe(x.dificuldade) === faixa).slice(0, q));
+      pegas.push(...daDisc.filter((x) => !pegas.includes(x)).slice(0, k - pegas.length));
+      escolhidas.push(...pegas);
     }
     const resto = ativas.filter((q) => !escolhidas.includes(q)).sort(() => Math.random() - 0.5);
     while (escolhidas.length < Math.min(n, ativas.length) && resto.length) escolhidas.push(resto.pop()!);

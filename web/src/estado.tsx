@@ -19,8 +19,10 @@ export interface Ajustes {
   nome: string;
   metaDiaria: number;
   dataProva: string; // "" = sem data
+  duracaoProvaMin: number; // 0 = sem contagem regressiva (só cronômetro), até o edital dizer
+  linhaDeCorte: number; // % para "nota de corte batida"
 }
-const AJUSTES_PADRAO: Ajustes = { nome: "Dinei", metaDiaria: 20, dataProva: "" };
+const AJUSTES_PADRAO: Ajustes = { nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70 };
 const CHAVE_AJUSTES = "lobo-ajustes";
 function lerAjustes(): Ajustes {
   try {

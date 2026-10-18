@@ -17,6 +17,7 @@ import {
   type TopicoDTO,
   type TopicoProgresso,
 } from "./tipos.js";
+import { cotasDaProva } from "./estruturaProva.js";
 
 export const FUSO = "America/Sao_Paulo";
 const DIA_MS = 86_400_000;
@@ -115,7 +116,12 @@ export function sortearPonderado<T>(itens: T[], peso: (t: T) => number): T | und
 }
 
 // Quantas questões de cada disciplina num simulado de n questões (proporcional ao edital)
+// Cotas do simulado: na proporção da prova real (shared/estruturaProva.ts), entre as disciplinas
+// que têm questão; fora do edital não entra. Só sem nenhuma disciplina da prova cai no peso dos tópicos.
 export function cotasPorDisciplina(n: number, topicos: TopicoDTO[]): Map<Disciplina, number> {
+  const disponiveis = new Set(topicos.map((t) => t.disciplina));
+  const daProva = cotasDaProva(n, disponiveis);
+  if ([...daProva.values()].some((v) => v > 0)) return daProva;
   const pesos = new Map<Disciplina, number>();
   for (const t of topicos) pesos.set(t.disciplina, (pesos.get(t.disciplina) ?? 0) + (t.peso ?? PESO_PADRAO));
   const soma = [...pesos.values()].reduce((a, b) => a + b, 0) || 1;

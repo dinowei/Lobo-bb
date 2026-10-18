@@ -5,30 +5,49 @@ import { useApp } from "../estado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { IEsq, IDir, ISeta } from "../componentes/Icones";
 import { MASCOTE, pct } from "../util";
+import { COTAS_PROVA, ESTRUTURA_PROVA, resumoPorBloco, notaPonderada, type Mistura } from "../../../shared/estruturaProva";
 
+// prova completa = exatamente as cotas do edital (soma dos blocos)
+const N_PROVA = Object.values(COTAS_PROVA).reduce((s, c) => s + (c ?? 0), 0);
 const TAMANHOS = [
   { n: 10, rotulo: "Relâmpago", tempo: "~30 min" },
   { n: 20, rotulo: "Semanal", tempo: "~1 h" },
   { n: 40, rotulo: "Puxado", tempo: "~2 h" },
-  { n: 70, rotulo: "Prova completa", tempo: "~3 h 30" },
+  { n: N_PROVA, rotulo: "Prova completa", tempo: "cotas do edital" },
 ];
+const COMPOSICAO = ESTRUTURA_PROVA.blocos
+  .map((b) => `${b.nome}: ${Object.entries(b.cotas).map(([d, c]) => `${c} ${NOME_DISCIPLINA[d as keyof typeof NOME_DISCIPLINA]}`).join(", ")}`)
+  .join(" · ");
 const fmt = (s: number) => `${Math.floor(s / 3600) ? `${Math.floor(s / 3600)}h ` : ""}${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 export function Simulados() {
-  const { api, painel, recarregar, avisar } = useApp();
+  const { api, painel, recarregar, avisar, ajustes } = useApp();
   const [questoes, setQuestoes] = useState<QuestaoDTO[] | null>(null);
   const [respostas, setRespostas] = useState<Record<string, Letra>>({});
   const [atual, setAtual] = useState(0);
   const [resultado, setResultado] = useState<ResultadoSimuladoDTO | null>(null);
   const [seg, setSeg] = useState(0);
+  const [limiteSeg, setLimiteSeg] = useState(0); // 0 = sem contagem regressiva
   const [confirmarFim, setConfirmarFim] = useState(false);
+  const [mistura, setMistura] = useState<Mistura | null>(null);
   const inicio = useRef(0);
+  const entregando = useRef(false);
+  const corte = (ajustes.linhaDeCorte || 70) / 100;
+
+  useEffect(() => {
+    api.misturaSimulado().then(setMistura).catch(() => setMistura(null));
+  }, [api]);
 
   useEffect(() => {
     if (!questoes || resultado) return;
     const t = setInterval(() => setSeg(Math.round((Date.now() - inicio.current) / 1000)), 1000);
     return () => clearInterval(t);
   }, [questoes, resultado]);
+
+  // tempo acabou: entrega sozinho, como na prova
+  useEffect(() => {
+    if (limiteSeg && questoes && !resultado && seg >= limiteSeg) finalizar();
+  }, [seg, limiteSeg, questoes, resultado]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function comecar(n: number) {
     const qs = await api.simulado(n);
@@ -37,23 +56,36 @@ export function Simulados() {
     setRespostas({});
     setAtual(0);
     setResultado(null);
+    // duração da prova vale para a completa; os menores ganham o tempo proporcional
+    setLimiteSeg(ajustes.duracaoProvaMin > 0 ? Math.round((ajustes.duracaoProvaMin * 60 * qs.length) / N_PROVA) : 0);
+    entregando.current = false;
     inicio.current = Date.now();
     setSeg(0);
   }
 
   async function finalizar() {
-    if (!questoes) return;
-    const porQuestao = Math.round(seg / Math.max(1, questoes.length));
-    const r = await api.corrigirSimulado(questoes.map((q) => ({ questaoId: q.id, resposta: respostas[q.id] ?? null, tempoSeg: porQuestao })));
-    setResultado(r);
-    setConfirmarFim(false);
-    avisar(<><b>+{r.xpGanho} XP</b> no simulado</>);
-    recarregar();
+    if (!questoes || entregando.current) return;
+    entregando.current = true;
+    const usado = limiteSeg ? Math.min(seg, limiteSeg) : seg;
+    const porQuestao = Math.round(usado / Math.max(1, questoes.length));
+    try {
+      const r = await api.corrigirSimulado(questoes.map((q) => ({ questaoId: q.id, resposta: respostas[q.id] ?? null, tempoSeg: porQuestao })));
+      setResultado(r);
+      setConfirmarFim(false);
+      if (limiteSeg && seg >= limiteSeg) avisar("Tempo esgotado. Simulado entregue.");
+      avisar(<><b>+{r.xpGanho} XP</b> no simulado</>);
+      recarregar();
+    } catch (e) {
+      entregando.current = false;
+      avisar(e instanceof Error ? e.message : "Não deu para entregar agora. Tente de novo.");
+    }
   }
 
   // ---------- resultado ----------
   if (resultado && questoes) {
     const nota = resultado.acertos / Math.max(1, resultado.total);
+    const blocos = resumoPorBloco(resultado.porDisciplina);
+    const ponderada = notaPonderada(blocos);
     return (
       <div className="pagina">
         <div className="pagina-cabeca">
@@ -70,8 +102,26 @@ export function Simulados() {
               <span className="num" style={{ color: "var(--suave)" }}>{resultado.acertos} de {resultado.total} certas</span>
             </div>
             <p style={{ color: "var(--suave)", margin: "10px 0 0" }}>
-              {nota >= 0.7 ? "Nota de corte batida. O lobo aprova." : "Abaixo de 70%. Use o caderno de erros antes do próximo."}
+              {nota >= corte ? "Linha de corte batida. O lobo aprova." : `Abaixo de ${pct(corte)}. Use o caderno de erros antes do próximo.`}
             </p>
+            <p className="num" style={{ color: "var(--suave)", margin: "6px 0 0", fontSize: 13 }}>
+              {ponderada === null ? "Nota ponderada: pesos dos blocos ainda não confirmados pelo edital." : `Nota ponderada pelos blocos: ${pct(ponderada)}`}
+            </p>
+          </div>
+          <div className="secao rolagem">
+            <h2>Por bloco</h2>
+            <table className="tabela">
+              <thead><tr><th>Bloco</th><th>Acertos</th><th style={{ width: "35%" }}>%</th></tr></thead>
+              <tbody>
+                {blocos.map((b) => (
+                  <tr key={b.bloco}>
+                    <td>{b.bloco}</td>
+                    <td className="num">{b.acertos}/{b.total}</td>
+                    <td><div className="barra"><i style={{ width: pct(b.acertos / b.total) }} /></div></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
           <div className="secao rolagem">
             <h2>Por disciplina</h2>
@@ -133,7 +183,11 @@ export function Simulados() {
         </section>
         <aside className="pratica-lateral">
           <div className="mini-stats">
-            <div><b className="num">{fmt(seg)}</b><span>tempo</span></div>
+            {limiteSeg ? (
+              <div><b className="num" style={limiteSeg - seg <= 300 ? { color: "var(--laranja)" } : undefined}>{fmt(Math.max(0, limiteSeg - seg))}</b><span>restam</span></div>
+            ) : (
+              <div><b className="num">{fmt(seg)}</b><span>tempo</span></div>
+            )}
             <div><b className="num">{respondidas}/{questoes.length}</b><span>respondidas</span></div>
           </div>
           <div className="grade-nav" aria-label="Ir para a questão">
@@ -167,9 +221,16 @@ export function Simulados() {
       <div className="pagina-cabeca">
         <div>
           <h1>Simulados</h1>
-          <p>As questões são sorteadas no peso de cada disciplina no edital. Sem correção até entregar, como na prova.</p>
+          <p>As questões saem na proporção de cada disciplina na prova. Sem correção até entregar, como na prova.</p>
         </div>
       </div>
+      <p className="num" style={{ color: "var(--suave)", margin: "0 0 6px", fontSize: 13 }}>Prova completa: {COMPOSICAO}</p>
+      <p className="num" style={{ color: "var(--suave)", margin: "0 0 16px", fontSize: 13 }}>
+        {mistura
+          ? `Dificuldade: ${pct(mistura.facil)} fáceis, ${pct(mistura.media)} médias, ${pct(mistura.dificil)} difíceis${mistura.estimativa ? " (estimativa, até termos provas oficiais suficientes)" : ` (como nas ${mistura.base} questões oficiais, pela dificuldade estimada de cada uma)`}.`
+          : ""}
+        {ajustes.duracaoProvaMin > 0 ? ` Tempo: ${ajustes.duracaoProvaMin} min na completa, proporcional nos menores; acabou, entrega.` : " Sem tempo limite (defina a duração em Ajustes)."}
+      </p>
       <div className="opcoes-tamanho" style={{ marginBottom: 22 }}>
         {TAMANHOS.map((t) => (
           <button key={t.n} className="opcao" onClick={() => comecar(t.n)}>

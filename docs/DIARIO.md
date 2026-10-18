@@ -131,6 +131,15 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - Testes: 87/87 (cada regra tem um exemplo que passa na própria trava; 1.000 montagens por área; correção do erro sai da forma errada; vírgula a mais e concordância facultativa barradas).
 - Rodadas reais de 3 por área: esperam a fila.
 
-RETOMAR AQUI: em segundo plano rodam a Etapa 2.3 (10 geradas com fonte) e depois o benchmark (auditor até 60, juiz, escritor), logs em scratchpad `etapa23.log` e `bench.log`. Quando acabar: aprovação da 2.3 no DIARIO, proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 5 (nuvem sem publicar).
+## 18/10/2026 — Etapa 8.1: simulado fiel
+
+- `shared/estruturaProva.ts` (servidor e demo): dois blocos lidos das provas BB 2021/2023 — Básicos (LP 10, Inglês 5, Matemática 5, Atualidades 5) e Específicos (MF 5, Bancários 10, Informática 15, Vendas 15) = 70. Pesos por bloco e duração: `null` até o edital. Probabilidade e Estatística fica fora dos simulados e com peso baixo no treino.
+- Cotas por maiores restos: a prova completa sai **exatamente** nas cotas; simulados menores na mesma proporção, entre as disciplinas que têm questão.
+- Peso do tópico no treino: o do edital ou cota da disciplina ÷ tópicos dela.
+- Mistura de dificuldade: a das oficiais quando há ≥ 30 com dificuldade, senão 20/50/30 (estimativa, avisada na tela). Hoje sai das 130 oficiais: **72% fáceis, 27% médias, 2% difíceis** — a dificuldade das oficiais é estimada pelo explicador, e parece baixa demais (anotado em DECISOES-PENDENTES).
+- Tela: contagem regressiva quando há duração em Ajustes (proporcional nos menores; zerou, entrega sozinho), senão cronômetro; resultado por bloco; nota ponderada só com pesos confirmados; linha de corte configurável (padrão 70%).
+- Testes: 94/94 (7 novos: 70 exatas nas cotas, soma n em qualquer tamanho, só disponíveis, faixas somam k, por bloco). Conferido no navegador (tela e início do simulado; não entreguei para não gravar tentativas no seu progresso).
+
+RETOMAR AQUI: em segundo plano rodam a Etapa 2.3 (10 geradas com fonte) e depois o benchmark (auditor até 60, juiz, escritor), logs em scratchpad `etapa23.log` e `bench.log`. Quando acabar: aprovação da 2.3 no DIARIO, proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 8.2 (diagnóstico do erro).
 
 **LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.

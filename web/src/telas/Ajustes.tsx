@@ -108,7 +108,12 @@ export function AjustesTela() {
         className="formulario"
         onSubmit={(e) => {
           e.preventDefault();
-          salvarAjustes({ ...form, metaDiaria: Math.max(1, Math.min(300, form.metaDiaria || 20)) });
+          salvarAjustes({
+            ...form,
+            metaDiaria: Math.max(1, Math.min(300, form.metaDiaria || 20)),
+            duracaoProvaMin: Math.max(0, Math.min(600, Math.round(form.duracaoProvaMin || 0))),
+            linhaDeCorte: Math.max(1, Math.min(100, Math.round(form.linhaDeCorte || 70))),
+          });
           avisar("Ajustes salvos");
         }}
       >
@@ -123,6 +128,14 @@ export function AjustesTela() {
         <label htmlFor="prova">
           Data da prova (deixe vazio enquanto o edital não sai)
           <input id="prova" type="date" value={form.dataProva} onChange={(e) => setForm({ ...form, dataProva: e.target.value })} />
+        </label>
+        <label htmlFor="duracao">
+          Duração da prova completa, em minutos (vazio = só cronômetro, sem tempo acabando)
+          <input id="duracao" type="number" min={0} max={600} value={form.duracaoProvaMin || ""} onChange={(e) => setForm({ ...form, duracaoProvaMin: Number(e.target.value) })} />
+        </label>
+        <label htmlFor="corte">
+          Linha de corte nos simulados (%)
+          <input id="corte" type="number" min={1} max={100} value={form.linhaDeCorte} onChange={(e) => setForm({ ...form, linhaDeCorte: Number(e.target.value) })} />
         </label>
         <div><button className="botao-laranja" type="submit">Salvar</button></div>
       </form>

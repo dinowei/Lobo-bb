@@ -357,6 +357,8 @@ export interface Api {
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;
   simulado(n: number): Promise<QuestaoDTO[]>;
   corrigirSimulado(r: { questaoId: string; resposta: Letra | null; tempoSeg: number }[]): Promise<ResultadoSimuladoDTO>;
+  // mistura de dificuldade do simulado: a das oficiais (≥ 30 com dificuldade) ou a estimativa 20/50/30
+  misturaSimulado(): Promise<{ facil: number; media: number; dificil: number; estimativa: boolean; base: number }>;
   erros(): Promise<ErroDTO[]>;
   contestar(questaoId: string, motivo: MotivoContestacao, comentario?: string): Promise<void>;
 }

@@ -81,6 +81,18 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   `npx tsx scripts/limpar-figura-no-texto.ts --gravar` corrige.
 - **Recomendação:** rodar com `--gravar` (só remove o trecho entre o primeiro e o último "|").
 
+## 6. Mistura de dificuldade dos simulados (baixa)
+
+- **O que é:** o simulado segue a mistura de dificuldade das 130 oficiais: hoje **72% fáceis, 27%
+  médias, 2% difíceis**. Essa dificuldade das oficiais foi estimada na hora de explicar cada questão,
+  não veio da banca, e parece baixa para a prova do BB.
+- **Opções:** (a) manter como está; (b) usar a estimativa 20% fáceis / 50% médias / 30% difíceis
+  até o edital ou até você recalibrar; (c) reavaliar a dificuldade das oficiais com o auditor.
+- **Recomendação:** (b), que deixa o simulado mais puxado que a prova em vez de mais fácil. Basta
+  dizer "use a mistura padrão".
+- **Também espera o edital:** pesos dos blocos e duração da prova (Ajustes → Duração já liga a
+  contagem regressiva; sem pesos, o resultado diz "pesos não confirmados").
+
 ---
 
 Resolvido: **baixar leis e normas** — autorizado por você em 17/10/2026, só de sites oficiais

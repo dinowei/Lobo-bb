@@ -98,6 +98,7 @@ app.get(
   "/api/simulado",
   rota(async (req, res) => res.json(await apiServidor.simulado(Math.min(120, Math.max(1, Number(req.query.n) || 20)))))
 );
+app.get("/api/simulado/mistura", rota(async (_req, res) => res.json(await apiServidor.misturaSimulado())));
 
 app.post(
   "/api/simulado/corrigir",

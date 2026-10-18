@@ -35,6 +35,7 @@ export const apiHttp: Api = {
   responder: (r) => post("/responder", r),
   simulado: (n) => req(`/simulado?n=${n}`),
   corrigirSimulado: (respostas) => post("/simulado/corrigir", { respostas }),
+  misturaSimulado: () => req("/simulado/mistura"),
   erros: () => req("/erros"),
   contestar: (questaoId, motivo, comentario) => post("/contestar", { questaoId, motivo, comentario }),
 };

@@ -25,7 +25,7 @@
 2. **Tela de revisão das traiçoeiras, contestadas e pendentes de figura**: lista para aprovar, corrigir ou descartar sem mexer no banco na mão (seção 5.8 do plano).
 3. **Corrente de modelos grátis** (Etapa 1.5 do `PROMPT-RETOMADA`): catálogo, reservas por função, auditor de outra família, benchmark.
 4. **Construção em outras matérias**: Amortização, Probabilidade, Concordância, Regência, Pontuação.
-5. **Pesos do edital**: preencher `questoesNaProva` (o simulado e a prioridade já usam esse peso).
+5. **Pesos do edital**: conferir as cotas em `shared/estruturaProva.ts` (hoje das provas 2021/2023) e preencher `pesos` e `duracaoMin`; `questoesNaProva` por tópico continua tendo prioridade no treino. Simulado fiel (cotas exatas, mistura de dificuldade, contagem regressiva, resultado por bloco) feito na Etapa 8.1.
 6. **Estoque automático / geração noturna**: um job diário (`npm run bb -- estoque`) num servidor ou numa tarefa agendada.
 7. **PWA**: manifest + ícone para instalar no celular e cache das próximas 20 questões para estudar offline.
 8. **Deploy**: hospedar API + site (Render, Railway ou VPS) com login simples, porque hoje a API não tem autenticação.
