@@ -38,9 +38,10 @@ import type {
 import { gerarQuestao } from "./pipeline.js";
 import { seFilaLivre } from "./fila.js";
 import { alertasAdminAgora } from "./adminTelas.js";
+import { usuarioAtualId, usuarioAtual } from "./auth.js";
 
-// App pessoal: um aluno só. Para multiusuário, troque por autenticação.
-export const ALUNO = () => new Types.ObjectId(process.env.ALUNO_ID || "000000000000000000000001");
+// quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
+export const ALUNO = usuarioAtualId;
 const oid = (s: string) => {
   if (!/^[0-9a-f]{24}$/i.test(s)) throw new Error(`id inválido: ${s}`);
   return new Types.ObjectId(s);
@@ -212,7 +213,7 @@ export const apiServidor: Omit<Api, "modo"> = {
       ReviewState.find({ userId }).select("proximaRevisao").lean(),
       Question.find({ status: "aprovada" }).select("_id topicId origem createdAt").lean(),
       // só o admin vê (com o login da Etapa 4, só vai para o papel admin)
-      alertasAdminAgora().catch(() => [] as string[]),
+      usuarioAtual()?.papel === "aluno" ? ([] as string[]) : alertasAdminAgora().catch(() => [] as string[]),
     ]);
     const brutas: TentativaBruta[] = tentativas.map((t) => ({
       questaoId: String(t.questionId),

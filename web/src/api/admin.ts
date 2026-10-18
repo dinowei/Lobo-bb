@@ -8,6 +8,7 @@ import type {
   QuestaoComFigurasDTO,
   RegiaoPdf,
 } from "../../../shared/tipos";
+import { EVENTO_SESSAO } from "./conta";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -17,8 +18,9 @@ async function req<T>(caminho: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
   if (!r.ok) {
-    const corpo = await r.json().catch(() => ({}));
-    throw new Error((corpo as { erro?: string }).erro ?? `Erro ${r.status}`);
+    const corpo = (await r.json().catch(() => ({}))) as { erro?: string; codigo?: string };
+    if (r.status === 401 && corpo.codigo === "sessao_expirada") window.dispatchEvent(new Event(EVENTO_SESSAO));
+    throw new Error(corpo.erro ?? `Erro ${r.status}`);
   }
   return r.json();
 }

@@ -1,9 +1,97 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useApp } from "../estado";
 import { zerarDemo } from "../api/demo";
+import { conta, ErroCampo } from "../api/conta";
+import { CampoSenha } from "./Entrar";
+import { forcaSenha, NOTA_MINIMA } from "../../../shared/senha";
+
+// Minha conta: nome, senha e sair de todos os aparelhos (só com login)
+function MinhaConta() {
+  const { usuario, atualizarUsuario, avisar, sair } = useApp();
+  const [nome, setNome] = useState(usuario?.nome ?? "");
+  const [atual, setAtual] = useState("");
+  const [nova, setNova] = useState("");
+  const [erros, setErros] = useState<{ nome?: string; atual?: string; nova?: string }>({});
+  const [ocupado, setOcupado] = useState<"nome" | "senha" | "todos" | null>(null);
+  const [confirmarTodos, setConfirmarTodos] = useState(false);
+  if (!usuario) return null;
+
+  const salvarNome = async (e: FormEvent) => {
+    e.preventDefault();
+    setOcupado("nome");
+    try {
+      const r = await conta.mudarNome(nome);
+      atualizarUsuario({ ...usuario, nome: r.nome });
+      setErros({});
+      avisar("Nome atualizado");
+    } catch (err) {
+      setErros({ nome: (err as Error).message });
+    } finally {
+      setOcupado(null);
+    }
+  };
+  const trocarSenha = async (e: FormEvent) => {
+    e.preventDefault();
+    if (forcaSenha(nova).nota < NOTA_MINIMA) return setErros({ nova: forcaSenha(nova).dica ?? "Senha fraca demais." });
+    setOcupado("senha");
+    try {
+      await conta.mudarSenha(atual, nova);
+      setAtual("");
+      setNova("");
+      setErros({});
+      avisar("Senha trocada");
+    } catch (err) {
+      const c = err instanceof ErroCampo ? err.campo : undefined;
+      setErros({ [c === "atual" ? "atual" : "nova"]: (err as Error).message });
+    } finally {
+      setOcupado(null);
+    }
+  };
+  const sairDeTodos = async () => {
+    setOcupado("todos");
+    try {
+      await conta.sairDeTodos();
+    } finally {
+      await sair();
+    }
+  };
+
+  return (
+    <div className="secao" style={{ marginTop: 16, maxWidth: 620 }}>
+      <h2>Minha conta</h2>
+      <p style={{ marginTop: 0, color: "var(--suave)" }}>{usuario.email}{usuario.papel === "admin" ? " · administrador" : ""}</p>
+      <form className="formulario" onSubmit={salvarNome}>
+        <label htmlFor="conta-nome">
+          Nome
+          <input id="conta-nome" autoComplete="name" value={nome} onChange={(e) => setNome(e.target.value)} aria-invalid={!!erros.nome} aria-describedby={erros.nome ? "conta-nome-msg" : undefined} />
+        </label>
+        {erros.nome && <span id="conta-nome-msg" className="msg-erro" role="alert">{erros.nome}</span>}
+        <div><button className="botao-linha" disabled={ocupado === "nome" || nome.trim() === usuario.nome}>{ocupado === "nome" ? "Salvando…" : "Salvar nome"}</button></div>
+      </form>
+      <form className="formulario" onSubmit={trocarSenha} style={{ marginTop: 18 }}>
+        <input type="text" name="username" autoComplete="username" value={usuario.email} readOnly hidden />
+        <CampoSenha rotulo="Senha atual" id="conta-atual" valor={atual} mudar={setAtual} erro={erros.atual} nova={false} />
+        <CampoSenha rotulo="Nova senha" id="conta-nova" valor={nova} mudar={setNova} erro={erros.nova} nova />
+        <div><button className="botao-linha" disabled={ocupado === "senha" || !atual || !nova}>{ocupado === "senha" ? "Trocando…" : "Trocar senha"}</button></div>
+      </form>
+      <div className="acoes">
+        <button className="botao-linha" onClick={() => sair()}>Sair</button>
+        {confirmarTodos ? (
+          <>
+            <span>Sair de todos os aparelhos, inclusive este?</span>
+            <button className="botao-laranja" disabled={ocupado === "todos"} onClick={sairDeTodos}>Sim, sair de todos</button>
+            <button className="botao-linha" onClick={() => setConfirmarTodos(false)}>Cancelar</button>
+          </>
+        ) : (
+          <button className="botao-linha" onClick={() => setConfirmarTodos(true)}>Sair de todos os aparelhos</button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function AjustesTela() {
-  const { ajustes, salvarAjustes, api, recarregar, avisar, ir } = useApp();
+  const { ajustes, salvarAjustes, api, recarregar, avisar, ir, usuario, ehAdmin } = useApp();
   const [form, setForm] = useState(ajustes);
   const [confirmarZerar, setConfirmarZerar] = useState(false);
 
@@ -75,7 +163,9 @@ export function AjustesTela() {
         )}
       </div>
 
-      {api.modo === "servidor" && (
+      {usuario && <MinhaConta />}
+
+      {ehAdmin && (
         <div className="secao" style={{ marginTop: 16, maxWidth: 620 }}>
           <h2>Conferência</h2>
           <p style={{ marginTop: 0, color: "var(--suave)" }}>

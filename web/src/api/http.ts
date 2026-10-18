@@ -2,6 +2,7 @@
 // API do MODO SERVIDOR — conversa com o Express (src/server.ts)
 // ============================================================
 import type { Api } from "../../../shared/tipos";
+import { EVENTO_SESSAO } from "./conta";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
@@ -11,8 +12,9 @@ async function req<T>(caminho: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
   if (!r.ok) {
-    const corpo = await r.json().catch(() => ({}));
-    throw new Error((corpo as { erro?: string }).erro ?? `Erro ${r.status} em ${caminho}`);
+    const corpo = (await r.json().catch(() => ({}))) as { erro?: string; codigo?: string };
+    if (r.status === 401 && corpo.codigo === "sessao_expirada") window.dispatchEvent(new Event(EVENTO_SESSAO));
+    throw new Error(corpo.erro ?? `Erro ${r.status} em ${caminho}`);
   }
   return r.status === 204 ? (undefined as T) : r.json();
 }
@@ -38,15 +40,20 @@ export const apiHttp: Api = {
 };
 
 // O servidor está de pé? (no site publicado sem backend, cai no modo demo)
+// Espera até 5 s e tenta 2 vezes: rede lenta ou servidor ocupado não pode jogar o site no modo demo
 export async function servidorDisponivel(): Promise<boolean> {
   if (import.meta.env.MODE === "demo") return false;
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 1500);
-    const r = await fetch(`${BASE}/api/saude`, { signal: ctrl.signal });
-    clearTimeout(t);
-    return r.ok && (await r.json()).ok === true;
-  } catch {
-    return false;
+  for (let tentativa = 0; tentativa < 2; tentativa++) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 5000);
+      const r = await fetch(`${BASE}/api/saude`, { signal: ctrl.signal });
+      clearTimeout(t);
+      if (r.ok) return (await r.json()).ok === true;
+      if (r.status === 404) return false; // site estático sem API: modo demo
+    } catch {
+      /* sem resposta: tenta mais uma vez */
+    }
   }
+  return false;
 }

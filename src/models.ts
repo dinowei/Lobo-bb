@@ -371,4 +371,41 @@ const BenchmarkRespostaSchema = new Schema({
 BenchmarkRespostaSchema.index({ rodada: 1, modelo: 1, questionId: 1, item: 1 });
 export const BenchmarkResposta = model("BenchmarkResposta", BenchmarkRespostaSchema, "benchmark_respostas");
 
+// ------------------------------------------------------------
+// 13. LOGIN (PLANO-MESTRE 5.7) — usuário, sessão (só o hash do token) e convite de uso único.
+// Enquanto não existe usuário, o app segue no modo dono único (ALUNO_ID), sem tela de login.
+// ------------------------------------------------------------
+const UserSchema = new Schema(
+  {
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    nome: { type: String, required: true, trim: true },
+    senhaHash: { type: String, required: true, select: false },
+    papel: { type: String, enum: ["admin", "aluno"], default: "aluno" },
+    plano: { type: String, default: "gratuito" }, // só o campo, para o futuro
+    ultimoLogin: Date,
+    criadoEm: { type: Date, default: Date.now },
+  }
+);
+export const User = model("User", UserSchema);
+
+const SessaoSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+  tokenHash: { type: String, required: true, unique: true },
+  expiraEm: { type: Date, required: true },
+  criadaEm: { type: Date, default: Date.now },
+  ultimoUso: { type: Date, default: Date.now },
+});
+SessaoSchema.index({ expiraEm: 1 }, { expireAfterSeconds: 0 });
+export const Sessao = model("Sessao", SessaoSchema, "sessoes");
+
+const ConviteSchema = new Schema({
+  codigo: { type: String, required: true, unique: true },
+  criadoPor: { type: Schema.Types.ObjectId, ref: "User" },
+  expiraEm: { type: Date, required: true },
+  usadoEm: Date,
+  usadoPor: { type: Schema.Types.ObjectId, ref: "User" },
+  criadoEm: { type: Date, default: Date.now },
+});
+export const Convite = model("Convite", ConviteSchema, "convites");
+
 export type ObjectId = Types.ObjectId;

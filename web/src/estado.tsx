@@ -3,6 +3,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import type { Api, Disciplina, PainelDTO } from "../../shared/tipos";
 import { apiDemo } from "./api/demo";
 import { apiHttp, servidorDisponivel } from "./api/http";
+import { conta, EVENTO_SESSAO, type UsuarioDTO } from "./api/conta";
+import { Entrar } from "./telas/Entrar";
 
 export type Tela = "painel" | "praticar" | "revisoes" | "simulados" | "erros" | "conquistas" | "ajustes" | "figuras" | "admin";
 export const TELAS: Tela[] = ["painel", "praticar", "revisoes", "simulados", "erros", "conquistas", "ajustes", "figuras", "admin"];
@@ -43,6 +45,11 @@ interface Ctx {
   toasts: Toast[];
   subiuNivel: { numero: number; titulo: string } | null;
   fecharNivel: () => void;
+  // login (modo servidor com contas): null = modo dono único ou demo
+  usuario: UsuarioDTO | null;
+  ehAdmin: boolean;
+  sair: () => Promise<void>;
+  atualizarUsuario: (u: UsuarioDTO) => void;
 }
 const Contexto = createContext<Ctx | null>(null);
 export const useApp = () => {
@@ -78,12 +85,52 @@ export function Provedor({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
   }, []);
 
+  // login: "verificando" até saber se o servidor pede conta; "pedir" mostra a tela Entrar
+  const [usuario, setUsuario] = useState<UsuarioDTO | null>(null);
+  const [login, setLogin] = useState<"verificando" | "livre" | "pedir" | "dentro">("verificando");
+
   useEffect(() => {
-    servidorDisponivel().then((ok) => setApi(ok ? apiHttp : apiDemo));
+    servidorDisponivel().then(async (ok) => {
+      if (!ok) {
+        setLogin("livre");
+        return setApi(apiDemo);
+      }
+      try {
+        const eu = await conta.eu();
+        setUsuario(eu.usuario);
+        setLogin(!eu.login ? "livre" : eu.usuario ? "dentro" : "pedir");
+      } catch {
+        setLogin("livre");
+      }
+      setApi(apiHttp);
+    });
+  }, []);
+
+  // sessão que acabou no meio do uso: pede login e, depois, continua na mesma tela
+  useEffect(() => {
+    const f = () => {
+      setUsuario(null);
+      setLogin("pedir");
+    };
+    window.addEventListener(EVENTO_SESSAO, f);
+    return () => window.removeEventListener(EVENTO_SESSAO, f);
+  }, []);
+
+  const entrou = useCallback((u: UsuarioDTO) => {
+    setUsuario(u);
+    setLogin("dentro");
+    anterior.current = null; // outro usuário: não comparar conquistas com as de quem saiu
+  }, []);
+
+  const sair = useCallback(async () => {
+    await conta.sair().catch(() => undefined);
+    setUsuario(null);
+    setPainel(null);
+    setLogin("pedir");
   }, []);
 
   const recarregar = useCallback(async () => {
-    if (!api) return null;
+    if (!api || login === "pedir" || login === "verificando") return null;
     const p = await api.painel();
     const antes = anterior.current;
     if (antes) {
@@ -96,7 +143,7 @@ export function Provedor({ children }: { children: ReactNode }) {
     anterior.current = p;
     setPainel(p);
     return p;
-  }, [api, avisar]);
+  }, [api, avisar, login]);
 
   useEffect(() => {
     recarregar();
@@ -132,10 +179,17 @@ export function Provedor({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  if (!api) return <div className="carregando">Carregando…</div>;
+  if (!api || login === "verificando") return <div className="carregando">Carregando…</div>;
+  if (login === "pedir") return <Entrar aoEntrar={entrou} />;
+  // até existir conta, o único usuário do modo servidor é o dono
+  const ehAdmin = api.modo === "servidor" && (login === "livre" || usuario?.papel === "admin");
   return (
     <Contexto.Provider
-      value={{ api, painel, recarregar, tela, filtro, ir, ajustes, salvarAjustes, avisar, toasts, subiuNivel, fecharNivel: () => setSubiuNivel(null) }}
+      value={{
+        api, painel, recarregar, tela, filtro, ir, ajustes, salvarAjustes, avisar, toasts, subiuNivel,
+        fecharNivel: () => setSubiuNivel(null),
+        usuario, ehAdmin, sair, atualizarUsuario: setUsuario,
+      }}
     >
       {children}
     </Contexto.Provider>

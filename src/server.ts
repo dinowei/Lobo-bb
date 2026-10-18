@@ -11,6 +11,8 @@ import { painelIA, painelFila, painelBenchmark, pendencias, lerDoc, DOCS_LIBERAD
 import { aprovarCorrentes, desfazerCorrentes } from "./corrente.js";
 import { tentarDeNovoAgora } from "./noturno.js";
 import { FUNCOES, type Correntes } from "./catalogo.js";
+import { autenticar } from "./auth.js";
+import { registrarRotasDeLogin } from "./rotasLogin.js";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -18,7 +20,11 @@ import { apiServidor } from "./estudo.js";
 import { DISCIPLINAS, LETRAS, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao } from "../shared/tipos.js";
 
 const app = express();
+app.set("trust proxy", 1); // atrás do proxy do provedor: IP real no limite de tentativas e cookie Secure
 app.use(express.json({ limit: "1mb" }));
+// quem está usando (sessão) e quem pode o quê; sem usuário cadastrado, modo dono único
+app.use(autenticar());
+registrarRotasDeLogin(app);
 
 type Handler = (req: Request, res: Response) => Promise<unknown>;
 const rota = (fn: Handler) => (req: Request, res: Response, next: NextFunction) => fn(req, res).catch(next);

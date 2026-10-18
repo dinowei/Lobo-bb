@@ -25,9 +25,8 @@ const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa }[] = [
 ];
 
 export function App() {
-  const { tela, ir, painel, api, toasts, subiuNivel, fecharNivel } = useApp();
-  // até o login (Etapa 4) o único usuário do modo servidor é o dono; aluno nunca vê a tela Admin
-  const ehAdmin = api.modo === "servidor";
+  // aluno nunca vê a tela Admin; sem contas cadastradas, o único usuário do modo servidor é o dono
+  const { tela, ir, painel, api, toasts, subiuNivel, fecharNivel, ehAdmin } = useApp();
 
   return (
     <div className="app">
@@ -89,8 +88,8 @@ export function App() {
           {tela === "erros" && <Erros />}
           {tela === "conquistas" && <Conquistas />}
           {tela === "ajustes" && <AjustesTela />}
-          {tela === "figuras" && <Figuras />}
-          {tela === "admin" && <Admin />}
+          {tela === "figuras" && (ehAdmin ? <Figuras /> : <Painel />)}
+          {tela === "admin" && (ehAdmin ? <Admin /> : <Painel />)}
         </main>
       </div>
 

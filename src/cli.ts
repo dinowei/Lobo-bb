@@ -20,7 +20,27 @@ import {
   type MetaFonte,
 } from "./ingestao.js";
 import { gerarQuestao, reabastecerEstoque } from "./pipeline.js";
-import { Topic, Source } from "./models.js";
+import { Topic, Source, User, Sessao } from "./models.js";
+import { randomBytes } from "node:crypto";
+import { createInterface } from "node:readline";
+import { hashSenha, migrarProgresso, donoAntigoId, criarConvite } from "./auth.js";
+import { forcaSenha, NOTA_MINIMA, emailValido, normalizarEmail } from "../shared/senha.js";
+
+// pergunta no terminal; com "oculto", não ecoa o que é digitado (senha)
+function perguntar(texto: string, oculto = false): Promise<string> {
+  return new Promise((ok) => {
+    const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+    if (oculto) {
+      const escrever = (rl as unknown as { _writeToOutput: (s: string) => void })._writeToOutput;
+      (rl as unknown as { _writeToOutput: (s: string) => void })._writeToOutput = (s: string) => escrever.call(rl, s.startsWith(texto) ? texto : "");
+    }
+    rl.question(texto, (r) => {
+      rl.close();
+      if (oculto) process.stdout.write("\n");
+      ok(r);
+    });
+  });
+}
 import { join } from "node:path";
 import { listarModelos } from "./llm.js";
 import { naFila } from "./fila.js";
@@ -53,6 +73,9 @@ BB Estudos — comandos (npm run bb -- <comando>)
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
+  criar-admin <email>           sua conta de administrador (pede a senha) e leva seu progresso para ela
+  convite [--max 7]             código de cadastro de uso único (validade em dias)
+  senha <email>                 senha provisória para quem esqueceu
   liberar-fonte "Glossário de Vendas"   seu OK: ingere a fonte doutrinária escrita por IA (antes não gera)
   ingerir-fontes [id ...]       ingere o que o baixar-fontes gravou (pula a que já existe)
   baixar-fontes [id ...]        baixa as leis e normas de data/fontes-oficiais.json (só sites oficiais) para fontes/
@@ -223,6 +246,42 @@ async function main() {
         // Etapa 2.1: só sites oficiais (planalto.gov.br, bcb.gov.br, in.gov.br); grava em fontes/ (fora do Git)
         const r = await baixarFontes(args);
         return console.log(`\n${r.length} fonte(s) em fontes/LEIAME.json`);
+      }
+
+      case "criar-admin": {
+        // a conta do dono: pede a senha no terminal (sem mostrar), cria o admin e leva o progresso
+        // do modo dono único (ALUNO_ID) para ela. A partir daí o site pede login.
+        const email = normalizarEmail(exigir(args[0], "o seu e-mail"));
+        if (!emailValido(email)) throw new Error("Esse e-mail não parece certo.");
+        if (await User.exists({ email })) throw new Error("Já existe conta com esse e-mail.");
+        const nome = (await perguntar("Seu nome (como o app vai te chamar): ")).trim() || "Dono";
+        const senha = await perguntar("Senha (não aparece enquanto digita): ", true);
+        const f = forcaSenha(senha);
+        if (f.nota < NOTA_MINIMA) throw new Error(`Senha fraca: ${f.dica ?? f.rotulo}`);
+        if ((await perguntar("Repita a senha: ", true)) !== senha) throw new Error("As senhas não conferem.");
+        const u = await User.create({ nome, email, senhaHash: await hashSenha(senha), papel: "admin" });
+        const migrado = await migrarProgresso(donoAntigoId(), u._id);
+        console.log(`✔ Conta de administrador criada para ${email}.`);
+        console.log(`  Progresso levado para ela: ${Object.entries(migrado).map(([k, n]) => `${k} ${n}`).join(", ")}.`);
+        return console.log("  O site agora pede login. Convide amigos com: npm run bb -- convite");
+      }
+
+      case "convite": {
+        const admin = await User.findOne({ papel: "admin" }).select("_id").lean();
+        const c = await criarConvite(admin?._id, o.max ? Number(o.max) : 7);
+        return console.log(`Convite: ${c.codigo} (uso único, vale até ${c.expiraEm.toLocaleDateString("pt-BR")})`);
+      }
+
+      case "senha": {
+        // esqueci a senha (sem serviço de e-mail): senha provisória para o dono repassar
+        const email = normalizarEmail(exigir(args[0], "o e-mail da conta"));
+        const u = await User.findOne({ email });
+        if (!u) throw new Error("Não existe conta com esse e-mail.");
+        const provisoria = `${randomBytes(6).toString("base64url")}-${randomBytes(3).toString("hex")}`;
+        u.senhaHash = await hashSenha(provisoria);
+        await u.save();
+        await Sessao.deleteMany({ userId: u._id });
+        return console.log(`Senha provisória de ${email}: ${provisoria}\n(passe para a pessoa; ela troca em Ajustes → Minha conta)`);
       }
 
       case "liberar-fonte": {

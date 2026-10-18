@@ -74,6 +74,21 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - Vigência conferida: 4.935 (art. 8º revogado pela Res. Conjunta 17/2025) e 4.753 (art. 12 revogado pela 4.949) saem sem esses artigos; 4.656 trocada pela 5.050/2022; 4.949, 4.860 e 4.893 alteradas por 5.117/2024, 5.182/2024 e 5.274/2025 (entram junto). **Pendentes** (só há texto consolidado no BCB): Res. BCB 1/2020 (Pix, alterada até 2026), Circular 3.978 (alterada em 30/09/2026), Res. CMN 3.919/2010.
 - Correção na ingestão: texto riscado do Planalto (revogado) não entra mais; entidades HTML decodificadas.
 
-RETOMAR AQUI: (1) rodar `npm run bb -- baixar-fontes` de novo (lista já corrigida; conferir as 24); (2) criar `ingerir-fontes` (itera o LEIAME.json chamando `ingerirFonte`, pela fila) e registrar no DIARIO os trechos por norma; (3) o benchmark do auditor (`--max 150`) estava rodando em segundo plano: ver `docs/BENCHMARK-MODELOS.md`, rodar juiz e escritor, escrever a proposta (data/proposta-correntes.json + DECISOES-PENDENTES); (4) prints do R3 em docs/telas/admin; (5) Etapa 2.3 em diante.
+## 18/10/2026 — Etapa 2.2 e 2.4: normas no banco e glossário de Vendas
+
+- `baixar-fontes` de novo: 24 fontes (12 leis do Planalto, 12 atos do CMN/BCB pelo DOU) + 3 pendentes (Pix, Circular 3.978, Res. 3.919: só há texto atualizado no site do BCB; em DECISOES-PENDENTES).
+- `ingerir-fontes`: 1.006 trechos. Problema: a maioria ficava **sem tópico** (similaridade tópico × artigo abaixo de 0,3) e sumiria da busca. Solução: com a disciplina declarada, o trecho vai para o tópico mais próximo dela; as já ingeridas foram reclassificadas pelo embedding salvo. Todo tópico de Bancários, Atualidades e Vendas tem trecho (de 3 a 179). Res. 4.656 revogada no banco (troca pela 5.050).
+- Glossário de Vendas: 25 verbetes das 27 oficiais vigentes, cada um citando as questões. Não está no banco: `liberar-fonte "Glossário de Vendas"` é o seu OK.
+- Prints do Admin em `docs/telas/admin/`.
+
+## 18/10/2026 — Etapa 4: login
+
+- Contas (`User`), sessão em cookie httpOnly/SameSite=Lax (Secure em produção) com só o hash do token no banco, 1 dia ou 30 dias com "lembrar de mim", senha com scrypt (node:crypto, sem dependência nativa; o plano dizia bcrypt), cadastro só com convite de uso único (7 dias), 10 tentativas por IP a cada 15 min, mesma mensagem para e-mail inexistente e senha errada, rotas de admin só para o papel admin (403).
+- **O login só liga quando existe a primeira conta**: sem conta, o site segue no modo dono único (você não fica trancado do lado de fora). `criar-admin` cria a sua e leva o progresso (tentativas, revisões, contestações) para ela; `convite`; `senha` (provisória).
+- Tela Entrar/Criar conta no estilo do site: mostrar/ocultar senha, aviso de Caps Lock, força da senha (mesma regra no servidor, `shared/senha.ts`), erro no campo certo com foco nele, Enter envia, foco inicial, autocomplete certo, convite conferido enquanto digita. Sessão que acaba no meio volta ao login e depois à mesma tela. Minha conta (Ajustes): nome, senha, sair, sair de todos os aparelhos.
+- Testes: 6 de login (inclui "dois usuários não enxergam o progresso um do outro" e a migração) + `scripts/e2e-login.ts` (7 fluxos no Edge, rotas de login simuladas: nenhuma conta real criada). Prints em `docs/telas/login/`.
+- Etapa 2.3 rodando: Lightning dando timeout (4 × 180 s por questão); a corrente de hoje não tem gerador reserva.
+
+RETOMAR AQUI: em segundo plano rodam a Etapa 2.3 (10 geradas com fonte) e depois o benchmark (auditor até 60, juiz, escritor), logs em scratchpad `etapa23.log` e `bench.log`. Quando acabar: aprovação da 2.3 no DIARIO, proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 5 (nuvem sem publicar).
 
 **LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.

@@ -41,10 +41,12 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ## 2. Conta de administrador (Etapa 4)
 
-- **O que é:** criar a sua conta real de login.
+- **O que é:** criar a sua conta real de login. O login está pronto (Etapa 4), mas **só liga quando
+  existe a primeira conta**: até lá o site funciona como sempre, sem pedir senha.
 - **Por que precisa de você:** o modo autônomo não cria conta com seus dados nem escolhe sua senha.
-- **Como fazer:** `npm run bb -- criar-admin <seu-email>` (pede a senha no terminal e migra
-  todo o seu progresso atual para essa conta).
+- **Como fazer:** `npm run bb -- criar-admin <seu-email>` (pede nome e senha no terminal, sem mostrar a
+  senha, e leva todo o seu progresso atual para essa conta). Depois, `npm run bb -- convite` gera um código
+  de uso único para cada amigo; `npm run bb -- senha <email>` dá uma senha provisória a quem esquecer.
 
 ## 3. Classificar os 20 pares da calibragem de similaridade (média)
 
