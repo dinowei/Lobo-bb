@@ -17,7 +17,7 @@ const CONFIANCAS: { v: Confianca; rotulo: string }[] = [
 ];
 
 export function Praticar() {
-  const { api, filtro, ir, recarregar, painel, avisar, ajustes } = useApp();
+  const { api, filtro, ir, recarregar, painel, avisar, ajustes, desfazivel } = useApp();
   const [q, setQ] = useState<QuestaoDTO | null>(null);
   const [modo, setModo] = useState<"treino" | "revisao">("treino");
   const [aviso, setAviso] = useState<string>();
@@ -50,6 +50,7 @@ export function Praticar() {
   const [verAtalhos, setVerAtalhos] = useState(false);
   const filtroUsado = useRef(filtro);
   const ultimaDisciplina = useRef<Disciplina | undefined>(undefined); // treino misturado não repete a anterior
+  const preBusca = useRef<Promise<Awaited<ReturnType<typeof api.proxima>> | null> | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -60,9 +61,12 @@ export function Praticar() {
     setAcaoMotivo(null);
     // "questaoId" (refazer um erro) vale só para a primeira questão
     const f = filtroUsado.current;
+    // a próxima já veio enquanto você lia a correção (pré-carregada); questão específica não usa
+    const pre = f.questaoId ? null : preBusca.current;
+    preBusca.current = null;
     let r: Awaited<ReturnType<typeof api.proxima>>;
     try {
-      r = await api.proxima(f.misto ? { ...f, anterior: ultimaDisciplina.current } : f);
+      r = (pre && (await pre)) || (await api.proxima(f.misto ? { ...f, anterior: ultimaDisciplina.current } : f));
     } catch {
       // sem rede ou servidor fora: mensagem humana, e "Tentar de novo" pelo botão da tela vazia
       setQ(null);
@@ -159,6 +163,14 @@ export function Praticar() {
     }, 1000);
     return () => clearInterval(t);
   }, [ciclo, correcao, emPausa, focoBase, avisar]);
+
+  // pré-carrega a próxima assim que a correção chega (responder → próxima sem espera)
+  useEffect(() => {
+    if (!correcao) return;
+    const f = filtroUsado.current;
+    preBusca.current = api.proxima(f.misto ? { ...f, questaoId: undefined, anterior: ultimaDisciplina.current } : { ...f, questaoId: undefined }).catch(() => null);
+  }, [correcao, api]);
+  useEffect(() => { preBusca.current = null; }, [filtro]);
 
   // confundi: a próxima é a questão que compara os dois conceitos
   const proxima = useCallback(() => {
@@ -406,9 +418,12 @@ export function Praticar() {
                 {contestando && (
                   <Contestar
                     onEnviar={async (motivo, comentario) => {
-                      await api.contestar(q.id, motivo, comentario);
                       setContestando(false);
-                      avisar("Questão contestada e tirada de circulação. Obrigado!");
+                      const id = q.id;
+                      desfazivel("Questão contestada: sai de circulação em 5 s.", async () => {
+                        await api.contestar(id, motivo, comentario);
+                        avisar("Questão tirada de circulação. Obrigado!");
+                      });
                     }}
                   />
                 )}

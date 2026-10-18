@@ -54,6 +54,7 @@ interface Ctx {
   ajustes: Ajustes;
   salvarAjustes: (a: Ajustes) => void;
   avisar: (texto: ReactNode) => void;
+  desfazivel: (texto: string, acao: () => void | Promise<void>, ms?: number) => void;
   toasts: Toast[];
   subiuNivel: { numero: number; titulo: string } | null;
   fecharNivel: () => void;
@@ -97,6 +98,19 @@ export function Provedor({ children }: { children: ReactNode }) {
     setToasts((t) => [...t, { id, texto }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);
   }, []);
+
+  // ação destrutiva com "Desfazer" por 5 s: só executa se ninguém desfizer
+  const desfazivel = useCallback((texto: string, acao: () => void | Promise<void>, ms = 5000) => {
+    const id = ++seqToast.current;
+    let cancelado = false;
+    const tirar = () => setToasts((t) => t.filter((x) => x.id !== id));
+    const desfazer = () => { cancelado = true; tirar(); };
+    setToasts((t) => [...t, { id, texto: <>{texto} <button className="link desfazer" onClick={desfazer}>Desfazer</button></> }]);
+    setTimeout(() => {
+      tirar();
+      if (!cancelado) void Promise.resolve(acao()).catch((e) => avisar(e instanceof Error ? e.message : "Não deu para concluir. Tente de novo."));
+    }, ms);
+  }, [avisar]);
 
   // login: "verificando" até saber se o servidor pede conta; "pedir" mostra a tela Entrar
   const [usuario, setUsuario] = useState<UsuarioDTO | null>(null);
@@ -217,7 +231,7 @@ export function Provedor({ children }: { children: ReactNode }) {
   return (
     <Contexto.Provider
       value={{
-        api, painel, recarregar, tela, filtro, ir, guardarSaida, ajustes, salvarAjustes, avisar, toasts, subiuNivel,
+        api, painel, recarregar, tela, filtro, ir, guardarSaida, ajustes, salvarAjustes, avisar, desfazivel, toasts, subiuNivel,
         fecharNivel: () => setSubiuNivel(null),
         usuario, ehAdmin, sair, atualizarUsuario: setUsuario,
       }}

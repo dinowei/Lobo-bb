@@ -683,6 +683,12 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   animation: sobe .3s ease;
 }
 .toast b { color: var(--laranja-forte); }
+.toast .desfazer { font-weight: 700; color: var(--laranja-forte); min-height: 32px; }
+/* alvo de toque ≥ 44 px no celular */
+@media (pointer: coarse) {
+  .chip, .botao-laranja, .botao-linha, .botao-escuro, .link, .grade-nav button { min-height: 44px; }
+  .grade-nav button { min-width: 44px; }
+}
 @keyframes sobe { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
 .modal-fundo { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 16px; background: rgba(0,0,0,.6); }
 .modal {

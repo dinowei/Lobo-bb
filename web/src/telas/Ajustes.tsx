@@ -91,7 +91,7 @@ function MinhaConta() {
 }
 
 export function AjustesTela() {
-  const { ajustes, salvarAjustes, api, recarregar, avisar, ir, usuario, ehAdmin } = useApp();
+  const { ajustes, salvarAjustes, api, recarregar, avisar, desfazivel, ir, usuario, ehAdmin } = useApp();
   const [form, setForm] = useState(ajustes);
   const [confirmarZerar, setConfirmarZerar] = useState(false);
 
@@ -189,11 +189,13 @@ export function AjustesTela() {
                 <span>Apagar todo o progresso do demo?</span>
                 <button
                   className="botao-laranja"
-                  onClick={async () => {
-                    zerarDemo();
+                  onClick={() => {
                     setConfirmarZerar(false);
-                    await recarregar();
-                    avisar("Progresso do demo zerado");
+                    desfazivel("O progresso do demo será apagado em 5 s.", async () => {
+                      zerarDemo();
+                      await recarregar();
+                      avisar("Progresso do demo zerado");
+                    });
                   }}
                 >
                   Apagar
