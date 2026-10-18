@@ -728,6 +728,18 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .banco-disciplinas i { width: 7px; height: 7px; border-radius: 50%; }
 .banco-disciplinas b { color: var(--texto); font-weight: 600; }
 
+/* cartão "Por que você erra" (agenda do painel) e escolha do motivo na prática */
+.cartao-motivos { cursor: default; gap: 8px; }
+.linha-motivo { display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 8px; font-size: 12px; }
+.linha-motivo .sigla { color: var(--suave); font-weight: 600; }
+.linha-motivo .pilha { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: var(--cartao-2); }
+.linha-motivo .pilha i { display: block; height: 100%; }
+.legenda-motivos { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--suave); margin-top: 2px; }
+.legenda-motivos > span { display: inline-flex; align-items: center; gap: 4px; }
+.legenda-motivos i { width: 7px; height: 7px; border-radius: 50%; }
+.motivo-erro { margin: 14px 0 4px; }
+.motivo-erro .confianca { margin: 0; flex-wrap: wrap; }
+
 /* ---------- Admin (só o dono): IA, Fila, Benchmark, Pendências ---------- */
 .abas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
 .abas .chip[aria-selected="true"] { border-color: var(--laranja); color: var(--texto); background: rgba(255,91,31,.1); }

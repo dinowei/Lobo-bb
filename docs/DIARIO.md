@@ -140,6 +140,23 @@ Uma entrada por item: data/hora, o que fez, números, problemas e solução.
 - Tela: contagem regressiva quando há duração em Ajustes (proporcional nos menores; zerou, entrega sozinho), senão cronômetro; resultado por bloco; nota ponderada só com pesos confirmados; linha de corte configurável (padrão 70%).
 - Testes: 94/94 (7 novos: 70 exatas nas cotas, soma n em qualquer tamanho, só disponíveis, faixas somam k, por bloco). Conferido no navegador (tela e início do simulado; não entreguei para não gravar tentativas no seu progresso).
 
-RETOMAR AQUI: em segundo plano rodam a Etapa 2.3 (10 geradas com fonte) e depois o benchmark (auditor até 60, juiz, escritor), logs em scratchpad `etapa23.log` e `bench.log`. Quando acabar: aprovação da 2.3 no DIARIO, proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 8.2 (diagnóstico do erro).
+## 18/10/2026 — Etapa 2.3: 10 geradas com fonte (Bancários e Atualidades)
+
+- **3 de 10 aprovadas** (Drex, concorrência bancária, risco socioambiental e climático).
+- 5 caíram por **timeout do provedor** (~750 s cada; as primeiras rodaram antes da corrente provisória entrar), 1 por `trecho_fonte_inventado` (Open Finance/consentimento) e 1 reprovada na revisão (o auditor pegou que a questão misturou a Res. 4.893 com a 4.935 — a trava funcionou).
+- Leitura: o gargalo é a disponibilidade do gerador, não a qualidade. A corrente definitiva (benchmark rodando) é o que resolve.
+
+## 18/10/2026 — Etapa 8.2: diagnóstico do tipo de erro
+
+- Depois de errar (fora do simulado), 1 toque opcional: Não sabia · Confundi com outra coisa · Li errado/desatenção · Chutei. Fica na tentativa (`motivoErro`).
+- Ações (regras em `shared/aprendizado.ts`, servidor e demo):
+  - **não sabia**: o tópico sobe na fila por 14 dias (+50% por erro, teto no dobro) e aparece o atalho "Treinar só este tópico". A aula curta entra na 8.5.
+  - **confundi**: a próxima é uma questão do mesmo tópico e do mesmo tipo (`variacao.tipo`, que nas por construção é a mesma regra), inédita primeiro.
+  - **desatenção**: a questão volta na revisão com tempo-alvo de 2:30 até ser acertada, e a tela mostra o que decidia (palavras da certa que faltam na marcada; se as palavras são as mesmas em outra ordem, onde a ordem muda).
+  - **chutei**: a revisão é antecipada para daqui a 10 minutos.
+- Painel: cartão "Por que você erra", com barras de motivos por disciplina.
+- Testes: 98/98 (+ palavras decisivas, janela do "não sabia", agregação). Conferido no modo demo (porta 5180, configuração `bb-demo` no launch.json), sem tocar no seu progresso real: desatenção, confundi sem par e o cartão do painel.
+
+RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor), log em scratchpad `bench.log`. Quando acabar: proposta de corrente (data/proposta-correntes.json + DECISOES-PENDENTES), print novo da aba Benchmark, Etapa 3 (10 Informática + 10 Vendas por norma). Código: Etapa 8.3 (calibragem da confiança).
 
 **LER E APLICAR `docs/ADENDO-BANCO-GRANDE.md`** (pedido do dono em 17/10/2026) ao chegar em: **Etapa 6 (noturno)**, **R3 (telas)** e **Fase B (8.4 e 8.5)**. Até lá, seguir a PROMPT-RETOMADA na ordem.

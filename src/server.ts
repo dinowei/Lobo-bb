@@ -19,7 +19,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { apiServidor } from "./estudo.js";
-import { DISCIPLINAS, LETRAS, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao } from "../shared/tipos.js";
+import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro } from "../shared/tipos.js";
 
 const app = express();
 app.set("trust proxy", 1); // atrás do proxy do provedor: IP real no limite de tentativas e cookie Secure
@@ -91,6 +91,15 @@ app.post(
         modo: (["treino", "revisao", "simulado"].includes(modo) ? modo : "treino") as Modo,
       })
     );
+  })
+);
+
+app.post(
+  "/api/motivo-erro",
+  rota(async (req, res) => {
+    const { questaoId, motivo } = req.body ?? {};
+    if (!texto(questaoId) || !(MOTIVOS_ERRO as readonly unknown[]).includes(motivo)) return res.status(400).json({ erro: "Envie questaoId e um motivo válido." });
+    res.json(await apiServidor.motivoErro(questaoId, motivo as MotivoErro));
   })
 );
 

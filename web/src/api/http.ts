@@ -33,6 +33,7 @@ export const apiHttp: Api = {
     return req(`/proxima?${p}`);
   },
   responder: (r) => post("/responder", r),
+  motivoErro: (questaoId, motivo) => post("/motivo-erro", { questaoId, motivo }),
   simulado: (n) => req(`/simulado?n=${n}`),
   corrigirSimulado: (respostas) => post("/simulado/corrigir", { respostas }),
   misturaSimulado: () => req("/simulado/mistura"),

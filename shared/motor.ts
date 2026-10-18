@@ -18,6 +18,7 @@ import {
   type TopicoProgresso,
 } from "./tipos.js";
 import { cotasDaProva } from "./estruturaProva.js";
+import { motivosPorDisciplina } from "./aprendizado.js";
 
 export const FUSO = "America/Sao_Paulo";
 const DIA_MS = 86_400_000;
@@ -261,6 +262,7 @@ export function calcularPainel(input: {
     conquistas,
     simulados,
     totalRespondidas: tents.length,
+    motivosErro: motivosPorDisciplina(tents, new Map(input.topicos.map((t) => [t.id, t.disciplina]))),
   };
 }
 

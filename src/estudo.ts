@@ -43,6 +43,8 @@ import { Geracao } from "./models.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
 import { inicioDaNoite } from "../shared/motor.js";
 import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, type Mistura } from "../shared/estruturaProva.js";
+import { fatorNaoSabia, palavrasDecisivas, JANELA_NAO_SABIA_DIAS, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../shared/aprendizado.js";
+import type { AcaoMotivoDTO, MotivoErro } from "../shared/tipos.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
@@ -90,6 +92,7 @@ type QuestaoDoc = {
   alternativas: { letra: string; texto: string; correta: boolean; explicacao?: string | null; pegadinha?: string | null }[];
   gabarito: string;
   dificuldade?: number | null;
+  variacao?: { tipo?: string | null } | null;
   explicacaoGeral?: string | null;
   dicaDeProva?: string | null;
   fontes?: { sourceId?: Types.ObjectId | null; trecho?: string | null }[];
@@ -182,7 +185,10 @@ async function registrar(
   const novo = agendar(atual ?? ESTADO_INICIAL, notaSM2(acertou, confianca));
   await ReviewState.updateOne(
     { userId, questionId: q._id },
-    { $set: { ...novo, proximaRevisao: new Date(Date.now() + novo.intervaloDias * 86_400_000) } },
+    {
+      $set: { ...novo, proximaRevisao: new Date(Date.now() + novo.intervaloDias * 86_400_000) },
+      ...(acertou ? { $unset: { comTempo: 1 } } : {}), // acertou: sai do treino com tempo
+    },
     { upsert: true }
   );
   return { acertou, xp, dias: novo.intervaloDias };
@@ -226,7 +232,7 @@ export const apiServidor: Omit<Api, "modo"> = {
     const userId = ALUNO();
     const [topicos, tentativas, revisoes, aprovadas, alertasAdmin] = await Promise.all([
       listarTopicos(),
-      Attempt.find({ userId }).select("questionId topicId acertou xp modo simuladoId createdAt").lean(),
+      Attempt.find({ userId }).select("questionId topicId acertou xp modo simuladoId confianca motivoErro createdAt").lean(),
       ReviewState.find({ userId }).select("proximaRevisao").lean(),
       Question.find({ status: "aprovada" }).select("_id topicId origem createdAt").lean(),
       // só o admin vê (com o login da Etapa 4, só vai para o papel admin)
@@ -240,6 +246,8 @@ export const apiServidor: Omit<Api, "modo"> = {
       modo: (t.modo ?? "treino") as Modo,
       simuladoId: t.simuladoId ?? undefined,
       data: (t.createdAt as Date).toISOString(),
+      confianca: (t.confianca ?? undefined) as Confianca | undefined,
+      motivoErro: (t.motivoErro ?? undefined) as MotivoErro | undefined,
     }));
     const painel = calcularPainel({ topicos, tentativas: brutas, revisoes: revisoes.map((r) => (r.proximaRevisao as Date).toISOString()) });
     const disciplinaDo = new Map(topicos.map((t) => [t.id, t.disciplina]));
@@ -273,8 +281,11 @@ export const apiServidor: Omit<Api, "modo"> = {
       if (vencidas.length) {
         const qs = await Question.find({ _id: { $in: vencidas.map((v) => v.questionId) }, status: "aprovada" }).lean<QuestaoDoc[]>();
         const porId = new Map(qs.map((q) => [String(q._id), q]));
-        const primeira = vencidas.map((v) => porId.get(String(v.questionId))).find(Boolean);
-        if (primeira) return { questao: paraDTO(primeira, topicos), modo: "revisao" };
+        const v = vencidas.find((x) => porId.has(String(x.questionId)));
+        if (v) {
+          const dto = paraDTO(porId.get(String(v.questionId))!, topicos);
+          return { questao: v.comTempo ? { ...dto, tempoAlvoSeg: TEMPO_ALVO_SEG } : dto, modo: "revisao" };
+        }
       }
       if (f.revisao) return { questao: null, modo: "revisao", aviso: "Nenhuma revisão vencida agora. Volte amanhã ou pratique um tópico novo." };
     }
@@ -304,10 +315,16 @@ export const apiServidor: Omit<Api, "modo"> = {
     ]);
     const stats = new Map(desempenho.map((d) => [String(d._id), d]));
     const pesoPorTopico = new Map((await listarTopicos()).map((t) => [t.id, t.peso]));
+    // "não sabia" recente sobe o tópico na fila (diagnóstico do erro)
+    const naoSabia = await Attempt.aggregate<{ _id: Types.ObjectId; n: number }>([
+      { $match: { userId, motivoErro: "nao_sabia", createdAt: { $gte: new Date(Date.now() - JANELA_NAO_SABIA_DIAS * 86_400_000) } } },
+      { $group: { _id: "$topicId", n: { $sum: 1 } } },
+    ]);
+    const naoSabiaPor = new Map(naoSabia.map((d) => [String(d._id), d.n]));
     const elegiveis = candidatos.filter((t) => comQuestao.has(String(t._id)));
     const escolhido = sortearPonderado(elegiveis, (t) => {
       const s = stats.get(String(t._id));
-      return prioridade(pesoPorTopico.get(String(t._id)) ?? null, s?.n ?? 0, s?.a ?? 0);
+      return prioridade(pesoPorTopico.get(String(t._id)) ?? null, s?.n ?? 0, s?.a ?? 0) * fatorNaoSabia(naoSabiaPor.get(String(t._id)) ?? 0);
     })!;
 
     // 3. questão ainda não respondida desse tópico
@@ -330,6 +347,50 @@ export const apiServidor: Omit<Api, "modo"> = {
     if (!q) throw new Error("Questão não encontrada");
     const { xp, dias } = await registrar(q, r.resposta, r.confianca, r.modo, r.tempoSeg);
     return correcaoDe(q, r.resposta, xp, dias);
+  },
+
+  // Diagnóstico do erro: grava o motivo no último erro dessa questão e aplica a ação
+  async motivoErro(questaoId, motivo): Promise<AcaoMotivoDTO> {
+    const userId = ALUNO();
+    const qid = oid(questaoId);
+    const tentativa = await Attempt.findOneAndUpdate(
+      { userId, questionId: qid, acertou: false, modo: { $ne: "simulado" } },
+      { $set: { motivoErro: motivo } },
+      { sort: { createdAt: -1 }, new: true }
+    ).lean();
+    if (!tentativa) throw new Error("Não achei um erro recente nessa questão.");
+    const q = await Question.findById(qid).lean<QuestaoDoc>();
+    if (!q) throw new Error("Questão não encontrada");
+    const acao: AcaoMotivoDTO = { motivo, mensagem: MENSAGEM_MOTIVO[motivo], topicoId: String(q.topicId) };
+
+    if (motivo === "chutei") {
+      await ReviewState.updateOne({ userId, questionId: qid }, { $set: { proximaRevisao: new Date(Date.now() + REVISAO_CHUTE_MIN * 60_000) } });
+      acao.revisaoEmMin = REVISAO_CHUTE_MIN;
+    } else if (motivo === "desatencao") {
+      await ReviewState.updateOne({ userId, questionId: qid }, { $set: { comTempo: true } });
+      const certa = q.alternativas.find((a) => a.letra === q.gabarito)?.texto ?? "";
+      const marcada = q.alternativas.find((a) => a.letra === tentativa.resposta)?.texto ?? "";
+      acao.palavrasChave = palavrasDecisivas(certa, marcada);
+    } else if (motivo === "confundi") {
+      // mesma regra/tipo no mesmo tópico (por construção) ou outra do tópico; inédita primeiro
+      const vistas = await Attempt.distinct("questionId", { userId, topicId: q.topicId });
+      const base = { topicId: q.topicId, status: "aprovada", _id: { $ne: qid } };
+      const tipo = q.variacao?.tipo;
+      const tentativas = [
+        ...(tipo ? [{ ...base, "variacao.tipo": tipo, _id: { $nin: [qid, ...vistas] } }, { ...base, "variacao.tipo": tipo }] : []),
+        { ...base, _id: { $nin: [qid, ...vistas] } },
+        base,
+      ];
+      for (const filtro of tentativas) {
+        const [par] = await Question.aggregate<{ _id: Types.ObjectId }>([{ $match: filtro }, { $sample: { size: 1 } }, { $project: { _id: 1 } }]);
+        if (par) {
+          acao.proximaQuestaoId = String(par._id);
+          break;
+        }
+      }
+      if (!acao.proximaQuestaoId) acao.mensagem = "Anotado. Ainda não há outra questão desse tópico para comparar; ela volta na revisão.";
+    }
+    return acao;
   },
 
   async misturaSimulado() {

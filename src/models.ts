@@ -8,7 +8,7 @@ export const INDICE_VETORIAL = () => process.env.VECTOR_INDEX || "chunks_vector"
 // ------------------------------------------------------------
 // 1. TÓPICOS — o mapa do edital. Tudo gira em torno disso.
 // ------------------------------------------------------------
-import { DISCIPLINAS, LETRAS, type Disciplina, type Letra } from "../shared/tipos.js";
+import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Disciplina, type Letra } from "../shared/tipos.js";
 export { DISCIPLINAS, LETRAS, type Disciplina, type Letra };
 
 // Matérias normativas: só geram questão nova com fonte primária por trás.
@@ -246,6 +246,7 @@ const AttemptSchema = new Schema(
     modo: { type: String, enum: ["treino", "revisao", "simulado"], default: "treino" },
     xp: { type: Number, default: 0 }, // calculado em shared/motor.ts no momento da resposta
     simuladoId: String,
+    motivoErro: { type: String, enum: MOTIVOS_ERRO }, // informado pelo aluno depois do erro
   },
   { timestamps: true }
 );
@@ -263,6 +264,7 @@ const ReviewStateSchema = new Schema(
     intervaloDias: { type: Number, default: 0 },
     repeticoes: { type: Number, default: 0 },
     proximaRevisao: { type: Date, required: true, index: true },
+    comTempo: Boolean, // errou por desatenção: revisão com tempo-alvo até acertar
   },
   { timestamps: true }
 );

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Confianca, CorrecaoDTO, Letra, MotivoContestacao, QuestaoDTO } from "../../../shared/tipos";
-import { LETRAS, NOME_DISCIPLINA } from "../../../shared/tipos";
+import type { AcaoMotivoDTO, Confianca, CorrecaoDTO, Letra, MotivoContestacao, MotivoErro, QuestaoDTO } from "../../../shared/tipos";
+import { LETRAS, MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { ISeta } from "../componentes/Icones";
@@ -24,6 +24,8 @@ export function Praticar() {
   const [enviando, setEnviando] = useState(false);
   const [sessao, setSessao] = useState({ total: 0, acertos: 0, xp: 0 });
   const [contestando, setContestando] = useState(false);
+  const [acaoMotivo, setAcaoMotivo] = useState<AcaoMotivoDTO | null>(null);
+  const [restante, setRestante] = useState<number | null>(null); // revisão com tempo (desatenção)
   const inicio = useRef(Date.now());
   const filtroUsado = useRef(filtro);
 
@@ -33,6 +35,7 @@ export function Praticar() {
     setConfianca(null);
     setCorrecao(null);
     setContestando(false);
+    setAcaoMotivo(null);
     // "questaoId" (refazer um erro) vale só para a primeira questão
     const f = filtroUsado.current;
     const r = await api.proxima(f);
@@ -49,6 +52,32 @@ export function Praticar() {
     setSessao({ total: 0, acertos: 0, xp: 0 });
     carregar();
   }, [filtro, carregar]);
+
+  // contagem do tempo-alvo; não entrega sozinha, só avisa quando estoura
+  useEffect(() => {
+    if (!q?.tempoAlvoSeg || correcao) return setRestante(null);
+    const alvo = q.tempoAlvoSeg;
+    const tique = () => setRestante(alvo - Math.round((Date.now() - inicio.current) / 1000));
+    tique();
+    const t = setInterval(tique, 1000);
+    return () => clearInterval(t);
+  }, [q, correcao]);
+
+  // confundi: a próxima é a questão que compara os dois conceitos
+  const proxima = useCallback(() => {
+    if (acaoMotivo?.proximaQuestaoId) filtroUsado.current = { ...filtroUsado.current, questaoId: acaoMotivo.proximaQuestaoId };
+    carregar();
+  }, [acaoMotivo, carregar]);
+
+  async function informarMotivo(m: MotivoErro) {
+    if (!q) return;
+    try {
+      setAcaoMotivo(await api.motivoErro(q.id, m));
+      recarregar();
+    } catch (e) {
+      avisar(e instanceof Error ? e.message : "Não deu para salvar o motivo.");
+    }
+  }
 
   const confirmar = useCallback(async () => {
     if (!q || !marcada || !confianca || enviando || correcao) return;
@@ -81,13 +110,13 @@ export function Praticar() {
       else if (e.key === "Enter") {
         if (alvo.tagName === "BUTTON") return; // botão focado já trata o Enter
         e.preventDefault();
-        if (correcao) carregar();
+        if (correcao) proxima();
         else confirmar();
       }
     };
     window.addEventListener("keydown", f);
     return () => window.removeEventListener("keydown", f);
-  }, [correcao, confirmar, carregar]);
+  }, [correcao, confirmar, proxima]);
 
   const topico = q && painel?.topicos.find((t) => t.id === q.topicoId);
   const tituloFoco = filtro.revisao
@@ -117,7 +146,16 @@ export function Praticar() {
           </div>
         ) : (
           <>
-            {modo === "revisao" && <div className="selos"><span className="selo">Revisão espaçada: essa questão voltou para fixar</span></div>}
+            {modo === "revisao" && (
+              <div className="selos">
+                <span className="selo">Revisão espaçada: essa questão voltou para fixar</span>
+                {restante !== null && (
+                  <span className={`selo num ${restante < 0 ? "alerta" : ""}`}>
+                    {restante >= 0 ? `Treino com tempo: ${Math.floor(restante / 60)}:${String(restante % 60).padStart(2, "0")}` : "Tempo-alvo estourado: leia com calma, mas sem enrolar"}
+                  </span>
+                )}
+              </div>
+            )}
             <Cabecalho q={q} traicoeira={correcao?.traicoeira} />
 
             {correcao && (
@@ -151,9 +189,38 @@ export function Praticar() {
               </>
             ) : (
               <>
+                {!correcao.acertou && (
+                  <div className="motivo-erro">
+                    {!acaoMotivo ? (
+                      <div className="confianca" role="group" aria-label="Por que você errou?">
+                        <span>Por que errou? (opcional)</span>
+                        {MOTIVOS_ERRO.map((m) => (
+                          <button key={m} className="chip" onClick={() => informarMotivo(m)}>{NOME_MOTIVO[m]}</button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="secao" style={{ padding: 14 }}>
+                        <p style={{ margin: 0 }}>{acaoMotivo.mensagem}</p>
+                        {!!acaoMotivo.palavrasChave?.length && (
+                          <div className="selos" style={{ marginTop: 10, marginBottom: 0, alignItems: "center" }}>
+                            <span className="atalho">O que decidia:</span>
+                            {acaoMotivo.palavrasChave.map((p) => <span key={p} className="selo">{p}</span>)}
+                          </div>
+                        )}
+                        {acaoMotivo.motivo === "nao_sabia" && acaoMotivo.topicoId && filtro.topicoId !== acaoMotivo.topicoId && (
+                          <button className="link" style={{ marginTop: 8 }} onClick={() => ir("praticar", { topicoId: acaoMotivo.topicoId })}>
+                            Treinar só este tópico agora
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <Licao c={correcao} />
                 <div className="acoes">
-                  <button className="botao-laranja" onClick={carregar} autoFocus>Próxima questão <ISeta /></button>
+                  <button className="botao-laranja" onClick={proxima} autoFocus>
+                    {acaoMotivo?.proximaQuestaoId ? "Próxima: comparar os conceitos" : "Próxima questão"} <ISeta />
+                  </button>
                   <button className="botao-linha" onClick={() => setContestando((v) => !v)}>Contestar questão</button>
                   <span className="atalho">Enter: próxima</span>
                 </div>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { PESO_PADRAO } from "../../../shared/motor";
-import { NOME_DISCIPLINA, type BancoDTO, type Disciplina, type TopicoProgresso } from "../../../shared/tipos";
+import { MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO, type BancoDTO, type Disciplina, type MotivoErro, type MotivosDisciplinaDTO, type TopicoProgresso } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { Ilustracao } from "../componentes/Ilustracoes";
 import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
@@ -150,6 +150,7 @@ export function Painel() {
         </button>
 
         {painel.banco && <CartaoBanco banco={painel.banco} />}
+        {painel.motivosErro?.some((d) => d.erros) && <CartaoMotivos linhas={painel.motivosErro} />}
 
         {painel.totalRespondidas === 0 && (
           <div className="vazio" style={{ marginTop: 12 }}>
@@ -192,6 +193,48 @@ function CartaoBanco({ banco }: { banco: BancoDTO }) {
           {banco.estaNoite > 0 && <span className="tag verde"><i />+{banco.estaNoite} esta noite</span>}
         </div>
       </button>
+    </>
+  );
+}
+
+// Por que você erra: barras empilhadas de motivos por disciplina (erros sem motivo ficam de fora da barra)
+const COR_MOTIVO: Record<MotivoErro, string> = {
+  nao_sabia: "var(--laranja)",
+  confundi: "var(--roxo)",
+  desatencao: "var(--amarelo)",
+  chutei: "var(--suave)",
+};
+function CartaoMotivos({ linhas }: { linhas: MotivosDisciplinaDTO[] }) {
+  const comErro = linhas.filter((d) => d.erros);
+  const informados = comErro.reduce((s, d) => s + MOTIVOS_ERRO.reduce((x, m) => x + d.motivos[m], 0), 0);
+  return (
+    <>
+      <div className="grupo-dia">Por que você erra</div>
+      <div className="evento cartao-motivos">
+        {informados === 0 ? (
+          <span className="sub">Depois de errar, toque no motivo. O lobo usa isso para escolher a próxima questão e montar este gráfico.</span>
+        ) : (
+          <>
+            {comErro.map((d) => {
+              const total = MOTIVOS_ERRO.reduce((x, m) => x + d.motivos[m], 0);
+              return (
+                <div key={d.disciplina} className="linha-motivo" title={`${NOME_DISCIPLINA[d.disciplina]}: ${d.erros} erros, ${total} com motivo`}>
+                  <span className="sigla">{SIGLA[d.disciplina]}</span>
+                  <span className="pilha" aria-label={MOTIVOS_ERRO.map((m) => `${NOME_MOTIVO[m]}: ${d.motivos[m]}`).join(", ")}>
+                    {total ? MOTIVOS_ERRO.map((m) => d.motivos[m] ? <i key={m} style={{ width: pct(d.motivos[m] / total), background: COR_MOTIVO[m] }} /> : null) : null}
+                  </span>
+                  <span className="num sub">{total}/{d.erros}</span>
+                </div>
+              );
+            })}
+            <span className="legenda-motivos">
+              {MOTIVOS_ERRO.map((m) => (
+                <span key={m}><i style={{ background: COR_MOTIVO[m] }} />{NOME_MOTIVO[m]}</span>
+              ))}
+            </span>
+          </>
+        )}
+      </div>
     </>
   );
 }

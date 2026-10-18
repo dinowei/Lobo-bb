@@ -32,6 +32,16 @@ export type Letra = (typeof LETRAS)[number];
 export type Confianca = 1 | 2 | 3; // 1 = chutei · 2 = dúvida · 3 = certeza
 export type Modo = "treino" | "revisao" | "simulado";
 
+// Por que errou (1 toque, opcional, depois do erro) — PLANO-MESTRE 5.3
+export const MOTIVOS_ERRO = ["nao_sabia", "confundi", "desatencao", "chutei"] as const;
+export type MotivoErro = (typeof MOTIVOS_ERRO)[number];
+export const NOME_MOTIVO: Record<MotivoErro, string> = {
+  nao_sabia: "Não sabia",
+  confundi: "Confundi com outra coisa",
+  desatencao: "Li errado / desatenção",
+  chutei: "Chutei",
+};
+
 export interface TopicoDTO {
   id: string;
   disciplina: Disciplina;
@@ -129,6 +139,8 @@ export interface QuestaoDTO {
   notaNorma?: string;
   /** figuras conferidas (status ok) */
   figuras?: FiguraDTO[];
+  /** errou por desatenção: volta na revisão com tempo-alvo */
+  tempoAlvoSeg?: number;
 }
 
 export interface AlternativaCorrigida {
@@ -159,6 +171,26 @@ export interface TentativaBruta {
   modo: Modo;
   simuladoId?: string;
   data: string; // ISO
+  confianca?: Confianca; // simulado não pergunta
+  motivoErro?: MotivoErro;
+  resposta?: Letra | null; // modo demo: a letra marcada (o servidor guarda na tentativa)
+}
+
+// Motivos de erro por disciplina (gráfico do painel)
+export interface MotivosDisciplinaDTO {
+  disciplina: Disciplina;
+  erros: number; // todos os erros fora de simulado
+  motivos: Record<MotivoErro, number>;
+}
+
+// O que o app faz com o motivo informado
+export interface AcaoMotivoDTO {
+  motivo: MotivoErro;
+  mensagem: string;
+  topicoId?: string; // não sabia: treinar o tópico
+  proximaQuestaoId?: string; // confundi: questão que compara os conceitos
+  palavrasChave?: string[]; // desatenção: o que decidia a questão
+  revisaoEmMin?: number; // chutei: revisão antecipada
 }
 
 export type StatusTopico = "novo" | "andamento" | "dominado";
@@ -208,6 +240,7 @@ export interface PainelDTO {
   conquistas: Conquista[];
   simulados: { id: string; data: string; total: number; acertos: number }[];
   totalRespondidas: number;
+  motivosErro: MotivosDisciplinaDTO[];
   banco?: BancoDTO; // cartão "Banco de questões"
   alertasAdmin?: string[]; // só o admin vê (modelos, regras); o aluno nunca vê menção a IA
 }
@@ -355,6 +388,8 @@ export interface Api {
     aviso?: string;
   }>;
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;
+  // motivo do último erro nessa questão; devolve a ação (aula/tópico, comparação, palavra-chave, revisão antecipada)
+  motivoErro(questaoId: string, motivo: MotivoErro): Promise<AcaoMotivoDTO>;
   simulado(n: number): Promise<QuestaoDTO[]>;
   corrigirSimulado(r: { questaoId: string; resposta: Letra | null; tempoSeg: number }[]): Promise<ResultadoSimuladoDTO>;
   // mistura de dificuldade do simulado: a das oficiais (≥ 30 com dificuldade) ou a estimativa 20/50/30

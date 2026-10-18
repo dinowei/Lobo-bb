@@ -5,7 +5,9 @@
 import topicosJson from "../../../data/topicos.json";
 import {
   DISCIPLINAS,
+  type AcaoMotivoDTO,
   type Api,
+  type Confianca,
   type CorrecaoDTO,
   type Disciplina,
   type Letra,
@@ -28,6 +30,7 @@ import {
 } from "../../../shared/motor";
 import { QUESTOES_DEMO, type QuestaoDemo } from "../demo/questoes";
 import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe } from "../../../shared/estruturaProva";
+import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../../../shared/aprendizado";
 
 const CHAVE = "lobo-demo-v1";
 const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -51,7 +54,7 @@ const porId = new Map(QUESTOES_DEMO.map((q) => [q.id, q]));
 
 interface Estado {
   tentativas: TentativaBruta[];
-  revisoes: Record<string, EstadoRevisao & { proxima: string }>;
+  revisoes: Record<string, EstadoRevisao & { proxima: string; comTempo?: boolean }>;
   contestadas: string[];
 }
 const vazio = (): Estado => ({ tentativas: [], revisoes: {}, contestadas: [] });
@@ -105,11 +108,13 @@ function correcao(q: QuestaoDemo, resposta: Letra | null, xpGanho: number, dias:
   };
 }
 
-function registrar(e: Estado, q: QuestaoDemo, acertou: boolean, nota: number, xp: number, modo: TentativaBruta["modo"], simuladoId?: string) {
+function registrar(e: Estado, q: QuestaoDemo, acertou: boolean, nota: number, xp: number, modo: TentativaBruta["modo"], simuladoId?: string, confianca?: Confianca) {
   const agora = new Date();
-  e.tentativas.push({ questaoId: q.id, topicoId: topicoDe(q), acertou, xp, modo, simuladoId, data: agora.toISOString() });
+  e.tentativas.push({ questaoId: q.id, topicoId: topicoDe(q), acertou, xp, modo, simuladoId, data: agora.toISOString(), confianca });
   const novo = agendar(e.revisoes[q.id] ?? ESTADO_INICIAL, nota);
-  e.revisoes[q.id] = { ...novo, proxima: new Date(agora.getTime() + novo.intervaloDias * 86_400_000).toISOString() };
+  // acertou: sai do treino com tempo (igual ao servidor)
+  const comTempo = acertou ? undefined : e.revisoes[q.id]?.comTempo;
+  e.revisoes[q.id] = { ...novo, proxima: new Date(agora.getTime() + novo.intervaloDias * 86_400_000).toISOString(), comTempo };
   return novo.intervaloDias;
 }
 
@@ -147,7 +152,10 @@ export const apiDemo: Api = {
       const vencidas = ativas
         .filter((q) => e.revisoes[q.id] && new Date(e.revisoes[q.id].proxima).getTime() <= agora)
         .sort((a, b) => e.revisoes[a.id].proxima.localeCompare(e.revisoes[b.id].proxima));
-      if (vencidas.length) return espera({ questao: paraDTO(vencidas[0]), modo: "revisao" as const });
+      if (vencidas.length) {
+        const dto = paraDTO(vencidas[0]);
+        return espera({ questao: e.revisoes[dto.id].comTempo ? { ...dto, tempoAlvoSeg: TEMPO_ALVO_SEG } : dto, modo: "revisao" as const });
+      }
       if (f.revisao) return espera({ questao: null, modo: "revisao" as const, aviso: "Nenhuma revisão vencida agora. Volte amanhã ou pratique um tópico novo." });
     }
 
@@ -170,10 +178,11 @@ export const apiDemo: Api = {
       return [ts.length, ts.filter((t) => t.acertou).length] as const;
     };
     const topicosPool = [...new Set(pool.map(topicoDe))];
+    const naoSabia = naoSabiaPorTopico(e.tentativas);
     const tid = sortearPonderado(topicosPool, (id) => {
       const tp = TOPICOS.find((t) => t.id === id);
       const [n, a] = stats(id);
-      return prioridade(tp?.peso ?? null, n, a);
+      return prioridade(tp?.peso ?? null, n, a) * fatorNaoSabia(naoSabia.get(id) ?? 0);
     })!;
     const daqui = pool.filter((q) => topicoDe(q) === tid);
     const q = daqui[Math.floor(Math.random() * daqui.length)];
@@ -190,9 +199,38 @@ export const apiDemo: Api = {
     if (!q) throw new Error("Questão não encontrada");
     const acertou = r.resposta === q.gabarito;
     const xp = xpDaTentativa({ acertou, dificuldade: q.dificuldade, confianca: r.confianca, modo: r.modo });
-    const dias = registrar(e, q, acertou, notaSM2(acertou, r.confianca), xp, r.modo);
+    const dias = registrar(e, q, acertou, notaSM2(acertou, r.confianca), xp, r.modo, undefined, r.confianca);
+    e.tentativas[e.tentativas.length - 1].resposta = r.resposta;
     gravar(e);
     return espera(correcao(q, r.resposta, xp, dias));
+  },
+
+  // Diagnóstico do erro (mesma regra do servidor); no demo a resposta marcada sai das tentativas
+  async motivoErro(questaoId, motivo) {
+    const e = ler();
+    const q = porId.get(questaoId);
+    const t = [...e.tentativas].reverse().find((x) => x.questaoId === questaoId && !x.acertou && x.modo !== "simulado");
+    if (!q || !t) throw new Error("Não achei um erro recente nessa questão.");
+    t.motivoErro = motivo;
+    const acao: AcaoMotivoDTO = { motivo, mensagem: MENSAGEM_MOTIVO[motivo], topicoId: topicoDe(q) };
+    const rev = e.revisoes[questaoId];
+    if (motivo === "chutei" && rev) {
+      rev.proxima = new Date(Date.now() + REVISAO_CHUTE_MIN * 60_000).toISOString();
+      acao.revisaoEmMin = REVISAO_CHUTE_MIN;
+    } else if (motivo === "desatencao") {
+      if (rev) rev.comTempo = true;
+      const certa = q.alternativas.find((a) => a.letra === q.gabarito)?.texto ?? "";
+      const marcada = q.alternativas.find((a) => a.letra === t.resposta)?.texto ?? "";
+      acao.palavrasChave = palavrasDecisivas(certa, marcada);
+    } else if (motivo === "confundi") {
+      const vistas = new Set(e.tentativas.map((x) => x.questaoId));
+      const irmas = QUESTOES_DEMO.filter((x) => x.id !== questaoId && topicoDe(x) === topicoDe(q) && !e.contestadas.includes(x.id));
+      const par = irmas.find((x) => !vistas.has(x.id)) ?? irmas[0];
+      if (par) acao.proximaQuestaoId = par.id;
+      else acao.mensagem = "Anotado. Ainda não há outra questão desse tópico para comparar; ela volta na revisão.";
+    }
+    gravar(e);
+    return espera(acao);
   },
 
   // sem oficiais no demo: mistura estimada (20/50/30), igual à regra do servidor
