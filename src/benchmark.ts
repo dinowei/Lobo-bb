@@ -120,13 +120,20 @@ async function medir(fn: () => Promise<{ resposta: string; acertou: boolean }>):
 
 const pausa = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
 
-// 5 falhas do provedor seguidas: o modelo sai desta rodada e volta na próxima (sem perder a amostra)
+// 5 falhas do provedor seguidas: o modelo sai desta rodada e volta na próxima (sem perder a amostra).
+// Cada item é UMA chamada (SEM_RETRY): antes, o retry interno do chamar() repetia cada timeout 3 vezes
+// (~750 s por item), e 2 itens já davam 8 timeouts seguidos sem o contador chegar a 5.
 const INFRA = new Set(["429", "5xx", "timeout"]);
-const MAX_SEGUIDAS = 5;
-function seguidasDepois(seguidas: number, r: Resposta, modelo: string): number {
-  const n = r.falha && INFRA.has(r.falha) ? seguidas + 1 : 0;
-  if (n >= MAX_SEGUIDAS) console.log(`  ⏸ ${modelo}: ${MAX_SEGUIDAS} falhas seguidas do provedor; fica para a próxima rodada`);
-  return n;
+export const MAX_SEGUIDAS = 5;
+const SEM_RETRY = { funcao: "benchmark", novasTentativas: 0 } as const;
+export class PausaPorFalhas {
+  private seguidas = new Map<string, number>();
+  podeRodar = (modelo: string) => (this.seguidas.get(modelo) ?? 0) < MAX_SEGUIDAS;
+  registrar(modelo: string, falha?: string) {
+    const n = falha && INFRA.has(falha) ? (this.seguidas.get(modelo) ?? 0) + 1 : 0;
+    this.seguidas.set(modelo, n);
+    if (n === MAX_SEGUIDAS) console.log(`  ⏸ ${modelo}: ${MAX_SEGUIDAS} falhas seguidas do provedor; fica para a próxima rodada`);
+  }
 }
 
 // Questão por questão, todos os modelos em sequência: rodada parcial (--max) ou provedor instável
@@ -134,23 +141,21 @@ function seguidasDepois(seguidas: number, r: Resposta, modelo: string): number {
 export async function rodarAuditor(modelos = CANDIDATOS.auditor, n = 60, max = Infinity) {
   const amostra = await amostraOficiais(n);
   let feitas = 0;
-  const seguidasDe = new Map<string, number>();
+  const pausa_ = new PausaPorFalhas();
   for (const { q, estrato } of amostra) {
     for (const modelo of modelos) {
       if (feitas >= max) return feitas;
-      let seguidas = seguidasDe.get(modelo) ?? 0;
-      if (seguidas >= MAX_SEGUIDAS) continue;
+      if (!pausa_.podeRodar(modelo)) continue;
       if (await jaFeito(RODADAS.auditor, modelo, { questionId: q._id })) continue;
       const r = await medir(async () => {
-        const json = await chatJSON(auditor(), modelo, AUDITOR_CEGO_SYSTEM, auditorCegoUser(questaoCega(q), []), 0, 2000, { funcao: "benchmark" });
+        const json = await chatJSON(auditor(), modelo, AUDITOR_CEGO_SYSTEM, auditorCegoUser(questaoCega(q), []), 0, 2000, SEM_RETRY);
         const resposta = RespostaCegaZ.parse(json).resposta;
         return { resposta, acertou: resposta === q.gabarito };
       });
       await BenchmarkResposta.create({ rodada: RODADAS.auditor, modelo, questionId: q._id, disciplina: estrato, ...r });
       feitas++;
       console.log(`${r.falha ? `✖ ${r.falha}` : r.acertou ? "✔" : "✗"} ${modelo} · ${estrato} · ${Math.round(r.ms / 1000)}s`);
-      seguidas = seguidasDepois(seguidas, r, modelo);
-      seguidasDe.set(modelo, seguidas);
+      pausa_.registrar(modelo, r.falha);
       await pausa(2000);
     }
   }
@@ -160,23 +165,21 @@ export async function rodarAuditor(modelos = CANDIDATOS.auditor, n = 60, max = I
 export async function rodarJuiz(modelos = CANDIDATOS.juiz, max = Infinity) {
   const casos = [...CASOS_ARMADILHA, ...(await casosDaCrase())];
   let feitas = 0;
-  const seguidasDe = new Map<string, number>();
+  const pausa_ = new PausaPorFalhas();
   for (const c of casos) {
     for (const modelo of modelos) {
       if (feitas >= max) return feitas;
-      let seguidas = seguidasDe.get(modelo) ?? 0;
-      if (seguidas >= MAX_SEGUIDAS) continue;
+      if (!pausa_.podeRodar(modelo)) continue;
       if (await jaFeito(RODADAS.juiz, modelo, { item: c.item })) continue;
       const r = await medir(async () => {
-        const json = await chatJSON(auditor(), modelo, AUDITOR_FRASE_SYSTEM, `FRASE: ${c.frase}`, 0, 600, { funcao: "benchmark" });
+        const json = await chatJSON(auditor(), modelo, AUDITOR_FRASE_SYSTEM, `FRASE: ${c.frase}`, 0, 600, SEM_RETRY);
         const v = VereditoFraseZ.parse(json);
         return { resposta: v.correta ? "correta" : "incorreta", acertou: v.correta === c.correta };
       });
       await BenchmarkResposta.create({ rodada: RODADAS.juiz, modelo, item: c.item, disciplina: c.item.split(":")[0], ...r });
       feitas++;
       console.log(`${r.falha ? `✖ ${r.falha}` : r.acertou ? "✔" : "✗"} ${modelo} · ${c.item} · ${Math.round(r.ms / 1000)}s`);
-      seguidas = seguidasDepois(seguidas, r, modelo);
-      seguidasDe.set(modelo, seguidas);
+      pausa_.registrar(modelo, r.falha);
       await pausa(2000);
     }
   }
@@ -187,19 +190,18 @@ export async function rodarJuiz(modelos = CANDIDATOS.juiz, max = Infinity) {
 export async function rodarEscritor(modelos = CANDIDATOS.escritor, porModelo = 6, max = Infinity) {
   const contextos = carregarVariacoes().contextos;
   let feitas = 0;
-  const seguidasDe = new Map<string, number>();
+  const pausa_ = new PausaPorFalhas();
   for (let k = 0; k < porModelo; k++) {
     for (const modelo of modelos) {
       if (feitas >= max) return feitas;
-      let seguidas = seguidasDe.get(modelo) ?? 0;
-      if (seguidas >= MAX_SEGUIDAS) continue;
+      if (!pausa_.podeRodar(modelo)) continue;
       const item = `montagem:${k}`;
       if (await jaFeito(RODADAS.escritor, modelo, { item })) continue;
       const gabarito = "ABCDE"[k % 5] as Letra;
       const m = construirCrase(gabarito, contextos[k % contextos.length]);
       const user = craseEscritorUser({ contexto: contextos[k % contextos.length], frases: m.frases, frasesRecentes: [] });
       const r = await medir(async () => {
-        const json = await chatJSON(escritorPT(), modelo, CRASE_ESCRITOR_SYSTEM, user, 0.7, 2000, { funcao: "benchmark" });
+        const json = await chatJSON(escritorPT(), modelo, CRASE_ESCRITOR_SYSTEM, user, 0.7, 2000, SEM_RETRY);
         const escrito = await validarOuReparar(FrasesCraseZ, json, { client: escritorPT(), model: modelo, system: CRASE_ESCRITOR_SYSTEM, user });
         const porLetra = new Map(escrito.frases.map((f) => [f.letra, f]));
         const boas = m.frases.filter((f) => {
@@ -211,8 +213,7 @@ export async function rodarEscritor(modelos = CANDIDATOS.escritor, porModelo = 6
       await BenchmarkResposta.create({ rodada: RODADAS.escritor, modelo, item, disciplina: "crase", ...r });
       feitas++;
       console.log(`${r.falha ? `✖ ${r.falha}` : r.acertou ? "✔" : "✗"} ${modelo} · ${item} · ${r.resposta ?? ""} · ${Math.round(r.ms / 1000)}s`);
-      seguidas = seguidasDepois(seguidas, r, modelo);
-      seguidasDe.set(modelo, seguidas);
+      pausa_.registrar(modelo, r.falha);
       await pausa(2000);
     }
   }

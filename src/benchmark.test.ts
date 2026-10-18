@@ -1,7 +1,19 @@
 // Benchmark: estatística, amostra estratificada e prompt às cegas (sem rede e sem banco)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { wilson, estratificar, questaoCega, empatados, type LinhaRelatorio } from "./benchmark.js";
+import { wilson, estratificar, questaoCega, empatados, PausaPorFalhas, MAX_SEGUIDAS, type LinhaRelatorio } from "./benchmark.js";
+
+test("5 falhas seguidas do provedor tiram o modelo da rodada; acerto ou falha de formato zera", () => {
+  const p = new PausaPorFalhas();
+  for (let i = 0; i < MAX_SEGUIDAS - 1; i++) p.registrar("glm", "timeout");
+  assert.equal(p.podeRodar("glm"), true);
+  p.registrar("glm", "formato"); // o modelo respondeu (mal): não é falha do provedor
+  for (let i = 0; i < MAX_SEGUIDAS - 1; i++) p.registrar("glm", i % 2 ? "429" : "5xx");
+  assert.equal(p.podeRodar("glm"), true);
+  p.registrar("glm", "timeout");
+  assert.equal(p.podeRodar("glm"), false); // 5ª seguida: para aqui, não na 8ª
+  assert.equal(p.podeRodar("outro"), true); // por modelo
+});
 import { AUDITOR_CEGO_SYSTEM, auditorCegoUser } from "./prompts.js";
 
 test("Wilson: intervalo honesto com amostra pequena", () => {
