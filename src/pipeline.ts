@@ -542,7 +542,7 @@ async function gerarPorRegras(
     enunciado: m.enunciado,
     alternativas: m.frases.map((f) => {
       const e = porLetra.get(f.letra)!;
-      return { letra: f.letra, texto: e.frase, correta: f.letra === gabarito, ...area.explicar(f.regra, e.trecho) };
+      return { letra: f.letra, texto: e.frase, correta: f.letra === gabarito, ...area.explicar(f.regra, e.trecho, e.frase) };
     }),
     gabarito,
     explicacaoGeral: area.explicacaoGeral(certa),

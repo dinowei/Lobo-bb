@@ -39,7 +39,7 @@ export interface AreaPT {
   juizSystem: string;
   construir: (gabarito: Letra, contexto: string, historico: HistoricoCrase) => MontagemPT;
   conferir: (frase: string, trecho: string, regra: RegraPT) => string | null;
-  explicar: (regra: RegraPT, trecho: string) => { explicacao: string; pegadinha: string | null };
+  explicar: (regra: RegraPT, trecho: string, frase?: string) => { explicacao: string; pegadinha: string | null };
   explicacaoGeral: (certa: RegraPT) => string;
   dica: string;
 }
@@ -72,11 +72,16 @@ function conferirPorRegras(extra: (frase: string, trecho: string, regra: RegraPT
   };
 }
 
-function explicarPorRegras(regra: RegraPT, trecho: string) {
+// A correção vale para a frase INTEIRA quando ela vem: corrigir só o trecho ("lojista foram") parecia
+// chamar "lojista" de sujeito (reprovação real do revisor na Etapa 7)
+function explicarPorRegras(regra: RegraPT, trecho: string, frase?: string) {
   const t = norm(trecho).replace(/[.;:!?]+$/, "");
   const certo = regra.corrigir?.(t);
+  const f = frase ? norm(frase) : "";
+  const fraseCerta = certo && certo !== t && f.includes(t) ? f.replace(t, certo) : null;
+  const correcao = fraseCerta ? ` O certo seria: "${fraseCerta}"` : certo && certo !== t ? ` O certo seria "${certo}".` : "";
   return {
-    explicacao: `${regra.correta ? "Correta" : "Errada"}. Em "${t}": ${regra.explicacao}${certo && certo !== t ? ` O certo seria "${certo}".` : ""}`,
+    explicacao: `${regra.correta ? "Correta" : "Errada"}. Em "${t}": ${regra.explicacao}${correcao}`,
     pegadinha: regra.correta ? null : regra.pegadinha ?? null,
   };
 }
@@ -186,7 +191,7 @@ export const REGRAS_CONCORDANCIA: RegraPT[] = [
   {
     id: "houveram",
     nome: "verbo haver (existir) no plural",
-    explicacao: "Haver no sentido de existir é impessoal e não vai para o plural: o certo é 'houve' (houve reclamações).",
+    explicacao: "Haver no sentido de existir é impessoal e não vai para o plural (por exemplo, 'houve reclamações').",
     correta: false,
     instrucao: "ERRO PROPOSITAL: use 'houveram' ou 'haviam' no sentido de existir + substantivo no plural. Trecho = o verbo + o substantivo (ex.: 'houveram reclamações').",
     trecho: /^(houveram|haviam|haverão)\s+(\p{L}+\s+)?\p{L}+s$/iu,
@@ -197,7 +202,7 @@ export const REGRAS_CONCORDANCIA: RegraPT[] = [
   {
     id: "fazem_tempo",
     nome: "verbo fazer (tempo decorrido) no plural",
-    explicacao: "Fazer indicando tempo decorrido é impessoal e fica no singular: o certo é 'faz dois anos'.",
+    explicacao: "Fazer indicando tempo decorrido é impessoal e fica no singular (por exemplo, 'faz dois anos').",
     correta: false,
     instrucao: "ERRO PROPOSITAL: use 'fazem' ou 'faziam' + quantidade de tempo no plural. Trecho = o verbo + a expressão de tempo (ex.: 'fazem dois anos').",
     trecho: /^(fazem|faziam|farão)\s+\p{L}+\s+(anos|meses|dias|semanas|horas)$/iu,
@@ -208,7 +213,7 @@ export const REGRAS_CONCORDANCIA: RegraPT[] = [
   {
     id: "existe_singular",
     nome: "verbo existir no singular com sujeito no plural",
-    explicacao: "Existir concorda com o sujeito: com sujeito no plural, o certo é 'existem'.",
+    explicacao: "Existir concorda com o sujeito: com sujeito no plural, vai para o plural (por exemplo, 'existem taxas').",
     correta: false,
     instrucao: "ERRO PROPOSITAL: use 'existe' + sujeito no plural logo depois. Trecho = 'existe' + o sujeito (ex.: 'existe várias opções').",
     trecho: /^existe\s+(\p{L}+\s+){0,2}\p{L}+s$/iu,
@@ -240,7 +245,7 @@ export const REGRAS_CONCORDANCIA: RegraPT[] = [
   {
     id: "meia_adverbio",
     nome: "'meio' (advérbio) flexionado como 'meia'",
-    explicacao: "'Meio' com sentido de 'um pouco' é advérbio e não varia: o certo é 'meio preocupada'.",
+    explicacao: "'Meio' com sentido de 'um pouco' é advérbio e não varia (por exemplo, 'meio preocupada').",
     correta: false,
     instrucao: "ERRO PROPOSITAL: use 'meia' com sentido de 'um pouco' antes de adjetivo feminino. Trecho = 'meia' + o adjetivo (ex.: 'meia preocupada').",
     trecho: /^meia\s+\p{L}+as?$/iu,
@@ -369,7 +374,7 @@ export const REGRAS_REGENCIA: RegraPT[] = [
   {
     id: "assistir_sem_a",
     nome: "assistir (ver) sem a preposição 'a'",
-    explicacao: "No sentido de ver, 'assistir' pede a preposição 'a': o certo é 'assistiram ao treinamento'.",
+    explicacao: "No sentido de ver, 'assistir' pede a preposição 'a' (por exemplo, 'assistiram ao treinamento').",
     correta: false,
     instrucao: "ERRO PROPOSITAL: use 'assistir' no sentido de ver + 'o' + treinamento, vídeo, seminário ou jogo (sem a preposição). Trecho = o verbo + 'o' + o substantivo (ex.: 'assistiram o treinamento').",
     trecho: /^assist\p{L}*\s+(o|os)\s+(treinamento|vídeo|seminário|jogo)s?$/iu,
@@ -380,7 +385,7 @@ export const REGRAS_REGENCIA: RegraPT[] = [
   {
     id: "obedecer_sem_a",
     nome: "obedecer sem a preposição 'a'",
-    explicacao: "'Obedecer' pede a preposição 'a': o certo é 'obedece ao regulamento'.",
+    explicacao: "'Obedecer' pede a preposição 'a' (por exemplo, 'obedece ao regulamento').",
     correta: false,
     instrucao: "ERRO PROPOSITAL: use 'obedecer' + 'o' ou 'os' + substantivo masculino, sem a preposição. Trecho = o verbo + 'o/os' + o substantivo (ex.: 'obedece o regulamento').",
     trecho: /^obedec\p{L}*\s+(o|os)\s+\p{L}+$/iu,
@@ -401,7 +406,7 @@ export const REGRAS_REGENCIA: RegraPT[] = [
   {
     id: "implicar_em",
     nome: "implicar (acarretar) com a preposição 'em'",
-    explicacao: "No sentido de acarretar, 'implicar' é transitivo direto: o certo é 'implica cobrança', sem 'em'.",
+    explicacao: "No sentido de acarretar, 'implicar' é transitivo direto, sem 'em' (por exemplo, 'implica cobrança').",
     correta: false,
     instrucao: "ERRO PROPOSITAL: use 'implica em' + o complemento SEM artigo. Trecho = o verbo + 'em' + o complemento (ex.: 'implica em cobrança de multa').",
     trecho: /^implic\p{L}*\s+em\s+\p{L}+(\s+\p{L}+){0,2}$/iu,
@@ -412,7 +417,7 @@ export const REGRAS_REGENCIA: RegraPT[] = [
   {
     id: "chegar_em",
     nome: "chegar com a preposição 'em'",
-    explicacao: "'Chegar' indica destino com a preposição 'a': o certo é 'chegou ao escritório'.",
+    explicacao: "'Chegar' indica destino com a preposição 'a', não 'em' (por exemplo, 'chegou ao escritório').",
     correta: false,
     instrucao: "ERRO PROPOSITAL: use 'chegar' + 'no' + lugar masculino. Trecho = o verbo + 'no' + o lugar (ex.: 'chegou no escritório').",
     trecho: /^cheg\p{L}*\s+(no|nos)\s+\p{L}+$/iu,
@@ -434,7 +439,7 @@ export const REGRAS_REGENCIA: RegraPT[] = [
   {
     id: "aspirar_sem_a",
     nome: "aspirar (desejar) sem a preposição 'a'",
-    explicacao: "No sentido de desejar, 'aspirar' pede 'a': o certo é 'aspira ao cargo'. Sem preposição, significa sorver (aspirar o ar).",
+    explicacao: "No sentido de desejar, 'aspirar' pede 'a' (por exemplo, 'aspira ao cargo'). Sem preposição, significa sorver (aspirar o ar).",
     correta: false,
     instrucao: "ERRO PROPOSITAL: use 'aspirar' no sentido de desejar + 'o' + cargo ou posto. Trecho = o verbo + 'o' + o substantivo (ex.: 'aspira o cargo').",
     trecho: /^aspir\p{L}*\s+o\s+(cargo|posto)$/iu,

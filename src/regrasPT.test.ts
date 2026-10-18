@@ -61,6 +61,21 @@ test("explicação e pegadinha vêm do banco (regra 14)", () => {
   assert.equal(e.pegadinha, r.pegadinha);
 });
 
+test("correção vale para a frase inteira e nunca traz exemplo fixo como se fosse a correção (casos reais da Etapa 7)", () => {
+  // regência: a frase é "chegou no banco"; antes a explicação dizia "o certo é 'chegou ao escritório'"
+  const chegar = AREA_REGENCIA.regras.find((x) => x.id === "chegar_em")!;
+  const frase = "O dono da distribuidora chegou no banco às dez horas para discutir o limite de crédito com o gerente.";
+  const e = AREA_REGENCIA.explicar(chegar, "chegou no banco", frase);
+  assert.ok(e.explicacao.includes('O certo seria: "O dono da distribuidora chegou ao banco às dez horas'));
+  assert.ok(!/o certo é/i.test(e.explicacao));
+  // pontuação: corrigir só o trecho ("lojista foram") parecia chamar "lojista" de sujeito
+  const virgula = AREA_PONTUACAO.regras.find((x) => x.id === "virgula_sujeito_verbo")!;
+  const p = AREA_PONTUACAO.explicar(virgula, "lojista, foram", "As duplicatas negociadas pelo lojista, foram antecipadas com desconto na agência.");
+  assert.ok(p.explicacao.includes('O certo seria: "As duplicatas negociadas pelo lojista foram antecipadas com desconto na agência."'));
+  // nenhuma regra de erro afirma uma correção fixa
+  for (const area of [AREA_CONCORDANCIA, AREA_REGENCIA, AREA_PONTUACAO]) for (const r of area.regras) assert.ok(!/o certo é '/i.test(r.explicacao), `${r.id} ainda tem "o certo é"`);
+});
+
 test("pontuação: vírgula a mais fora do trecho é barrada", () => {
   const r = AREA_PONTUACAO.regras.find((x) => x.id === "virgula_sujeito_verbo")!;
   assert.match(AREA_PONTUACAO.conferir("Hoje, o gerente da agência, aprovou o limite.", "agência, aprovou", r) ?? "", /só pode ter/);

@@ -293,4 +293,19 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
     - 82 a 84 com o ×4 padrão em cima da máquina lenta.
   - Ajustes (outra tela): mesmo padrão.
 
+## 18/10/2026 — Etapa 7: rodadas reais de 3 por assunto
+
+- Corrente nova (gpt-oss-20b primeiro): bem mais rápida, de 37 a 290 s por questão.
+- **12 de 21 aprovadas.** Amortização 3/3, Combinatória 2/3, Concordância 2/3, Pontuação 2/3, Taxas 1/3, Probabilidade 1/3, Regência 1/3.
+- **Barradas pelas travas:**
+  - "← CORRETA" escrito pelo modelo dentro de uma alternativa (`numero_alterado`);
+  - enunciado sem os números da construção;
+  - totais incoerentes nas tabelas de probabilidade (revisão);
+  - gênero trocado no enunciado;
+  - o juiz por frase discordando do banco (2).
+- **Erro real do banco de regras** (o revisor estava certo, regra 14): as explicações das regras de erro traziam um exemplo fixo como se fosse a correção. "O certo é 'chegou ao escritório'" aparecia numa frase que dizia "chegou no banco"; "implica cobrança" aparecia numa frase sobre revisão. Além disso, a correção aplicada só ao trecho ("lojista foram") parecia chamar "lojista" de sujeito.
+  - Corrigido: as 9 explicações viraram exemplos explícitos ("por exemplo, …"), e a correção agora é aplicada à **frase inteira** ("O certo seria: 'As duplicatas negociadas pelo lojista foram antecipadas…'").
+  - Teste com os dois casos reais e garantia de que nenhuma regra de erro diz "o certo é '…'".
+- Máquina sobrecarregada: um `npm run dev` antigo (API + site) tinha ficado órfão depois de o app parar o preview. Encerrado, junto com os previews de teste.
+
 RETOMAR AQUI (antigo): esperar `aulas --n 3` e `cartoes --n 3` (logs em scratchpad `aulas3.log` e `cartoes1.log`) e registrar o resultado (mostrar uma aula aprovada, se houver). Depois, Etapa 9: testes ponta a ponta dos fluxos (login, responder, revisão, simulado completo, redação, contestar, offline/online) com os jobs de IA parados; prints de todas as telas (1440 e 390) em docs/telas/; Lighthouse. Depois: rodadas reais de 3 por assunto da Etapa 7 e, por último, ADENDO-BINHO-VOZ.
