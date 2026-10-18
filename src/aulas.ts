@@ -96,6 +96,14 @@ async function gerarAula(topicId: string, preferir?: string) {
   );
   try {
     let escritor = await chatJSONFuncao("tutor", AULA_SYSTEM, entrada, 0.3, 3200, { preferir });
+    // JSON fora do formato (campo faltando): uma rodada de reparo com o mesmo modelo
+    const primeira = AulaZ.safeParse(escritor.json);
+    if (!primeira.success) {
+      const faltas = primeira.error.issues.map((i) => i.path.join(".") || "(raiz)").join(", ");
+      console.log(`↻ Reparando formato da aula de "${topic.assunto}": ${faltas}`);
+      const pedido = `${entrada}\n\nSUA RESPOSTA ANTERIOR NÃO SEGUIU O FORMATO (campos com problema: ${faltas}).\n${JSON.stringify(escritor.json).slice(0, 4000)}\n\nReescreva o JSON COMPLETO, com todos os campos do formato pedido.`;
+      escritor = await chatJSONFuncao("tutor", AULA_SYSTEM, pedido, 0.1, 3200, { preferir: escritor.modelo });
+    }
     let aula: Gerada = AulaZ.parse(escritor.json);
     let erro = validarAulaGerada(aula, topic.disciplina, fontes);
     if (erro) {
