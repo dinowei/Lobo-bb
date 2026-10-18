@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  ESTRUTURA_PROVA, COTAS_PROVA, cotasDaProva, dividirProporcional, cotasPorFaixa, misturaDasOficiais, resumoPorBloco, notaPonderada, pesoDoTopico,
+  ESTRUTURA_PROVA, COTAS_PROVA, cotasDaProva, sortearDisciplinaMista, dividirProporcional, cotasPorFaixa, misturaDasOficiais, resumoPorBloco, notaPonderada, pesoDoTopico,
 } from "./estruturaProva.js";
 import type { Disciplina } from "./tipos.js";
 
@@ -53,6 +53,24 @@ test("resultado por bloco e nota ponderada sem pesos confirmados", () => {
   ]);
   assert.deepEqual(b.map((x) => [x.bloco, x.acertos, x.total]), [["Conhecimentos Básicos", 8, 10], ["Conhecimentos Específicos", 9, 15]]);
   assert.equal(notaPonderada(b), null);
+});
+
+test("treino misturado: nunca repete a anterior, segue o peso da prova e ignora fora do edital", () => {
+  const disp: Disciplina[] = ["lingua_portuguesa", "informatica", "lingua_inglesa", "probabilidade_estatistica"];
+  const contagem = new Map<string, number>();
+  let anterior: Disciplina | undefined;
+  let seq = 0;
+  const rnd = () => ((seq = (seq * 9301 + 49297) % 233280) / 233280);
+  for (let i = 0; i < 3000; i++) {
+    const d = sortearDisciplinaMista(disp, anterior, rnd)!;
+    assert.notEqual(d, anterior);
+    assert.notEqual(d, "probabilidade_estatistica");
+    contagem.set(d, (contagem.get(d) ?? 0) + 1);
+    anterior = d;
+  }
+  assert.ok((contagem.get("informatica") ?? 0) > (contagem.get("lingua_inglesa") ?? 0)); // 15 × 5
+  assert.equal(sortearDisciplinaMista(["informatica"], "informatica"), "informatica"); // só uma: repete
+  assert.equal(sortearDisciplinaMista(["probabilidade_estatistica"]), undefined);
 });
 
 test("fora do edital tem peso baixo", () => {

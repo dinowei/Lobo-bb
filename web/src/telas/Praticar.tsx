@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AcaoMotivoDTO, AulaDTO, Confianca, CorrecaoDTO, Letra, MotivoContestacao, MotivoErro, QuestaoDTO } from "../../../shared/tipos";
+import type { AcaoMotivoDTO, AulaDTO, Confianca, CorrecaoDTO, Disciplina, Letra, MotivoContestacao, MotivoErro, QuestaoDTO } from "../../../shared/tipos";
 import { LETRAS, MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
@@ -37,6 +37,7 @@ export function Praticar() {
   const [consultandoTutor, setConsultandoTutor] = useState(false);
   const inicio = useRef(Date.now());
   const filtroUsado = useRef(filtro);
+  const ultimaDisciplina = useRef<Disciplina | undefined>(undefined); // treino misturado não repete a anterior
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -47,8 +48,9 @@ export function Praticar() {
     setAcaoMotivo(null);
     // "questaoId" (refazer um erro) vale só para a primeira questão
     const f = filtroUsado.current;
-    const r = await api.proxima(f);
+    const r = await api.proxima(f.misto ? { ...f, anterior: ultimaDisciplina.current } : f);
     if (f.questaoId) filtroUsado.current = { ...f, questaoId: undefined };
+    ultimaDisciplina.current = r.questao?.disciplina;
     setQ(r.questao);
     setModo(r.modo);
     setAviso(r.aviso);
@@ -184,7 +186,9 @@ export function Praticar() {
       ? painel?.topicos.find((t) => t.id === filtro.topicoId)?.assunto ?? "Tópico"
       : filtro.disciplina
         ? NOME_DISCIPLINA[filtro.disciplina]
-        : "Treino inteligente";
+        : filtro.misto
+          ? "Treino misturado"
+          : "Treino inteligente";
 
   return (
     <div className="pratica">
@@ -356,9 +360,15 @@ export function Praticar() {
         <div>
           <div className="atalho" style={{ fontSize: 12, color: "var(--suave)" }}>Foco da sessão</div>
           <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-0.01em" }}>{tituloFoco}</div>
-          {(filtro.topicoId || filtro.disciplina || filtro.revisao) && (
+          {(filtro.topicoId || filtro.disciplina || filtro.revisao || filtro.misto) && (
             <button className="link" onClick={() => ir("praticar")}>Trocar para treino inteligente</button>
           )}
+          {!filtro.misto && (
+            <button className="link" onClick={() => ir("praticar", { misto: true })} title="Uma disciplina diferente a cada questão, no peso da prova">
+              Treino misturado
+            </button>
+          )}
+          {filtro.misto && <div className="atalho" style={{ marginTop: 4 }}>Cada questão de uma disciplina, no peso da prova.</div>}
         </div>
         <div className="mini-stats">
           <div><b className="num">{sessao.acertos}/{sessao.total}</b><span>acertos na sessão</span></div>

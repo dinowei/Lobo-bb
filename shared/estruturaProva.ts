@@ -51,6 +51,17 @@ export function pesoDoTopico(disciplina: Disciplina, topicosNaDisciplina: number
   return (COTAS_PROVA[disciplina] ?? 0) / Math.max(1, topicosNaDisciplina);
 }
 
+// Treino misturado: a cada questão uma disciplina sorteada no peso da prova, nunca a mesma da anterior
+// (intercalar é o que fixa). Fora do edital não entra; se só sobrar uma disciplina, repete.
+export function sortearDisciplinaMista(disponiveis: Disciplina[], anterior?: Disciplina, aleatorio = Math.random): Disciplina | undefined {
+  const daProva = disponiveis.filter((d) => (COTAS_PROVA[d] ?? 0) > 0);
+  const opcoes = daProva.filter((d) => d !== anterior);
+  const pool = opcoes.length ? opcoes : daProva;
+  const soma = pool.reduce((s, d) => s + (COTAS_PROVA[d] ?? 0), 0);
+  let r = aleatorio() * soma;
+  return pool.find((d) => (r -= COTAS_PROVA[d] ?? 0) < 0) ?? pool[pool.length - 1];
+}
+
 // ---------- mistura de dificuldade ----------
 export interface Mistura { facil: number; media: number; dificil: number; estimativa: boolean; base: number }
 export const MISTURA_PADRAO = { facil: 0.2, media: 0.5, dificil: 0.3 };

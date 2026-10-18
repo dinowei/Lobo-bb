@@ -42,7 +42,7 @@ import { usuarioAtualId, usuarioAtual } from "./auth.js";
 import { Geracao } from "./models.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
 import { inicioDaNoite } from "../shared/motor.js";
-import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, type Mistura } from "../shared/estruturaProva.js";
+import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, sortearDisciplinaMista, type Mistura } from "../shared/estruturaProva.js";
 import { fatorNaoSabia, palavrasDecisivas, JANELA_NAO_SABIA_DIAS, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../shared/aprendizado.js";
 import type { AcaoMotivoDTO, MotivoErro } from "../shared/tipos.js";
 import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
@@ -281,6 +281,14 @@ export const apiServidor: Omit<Api, "modo"> = {
     if (f.questaoId) {
       const q = await Question.findById(oid(f.questaoId)).lean<QuestaoDoc>();
       return { questao: q ? paraDTO(q, topicos) : null, modo: "treino" };
+    }
+
+    // treino misturado: sorteia a disciplina desta questão no peso da prova (nunca a da anterior)
+    if (f.misto && !f.topicoId) {
+      const comQuestao = new Set((await Question.distinct("topicId", { status: "aprovada" })).map(String));
+      const disponiveis = [...new Set([...topicos.values()].filter((t) => comQuestao.has(String(t._id))).map((t) => t.disciplina as Disciplina))];
+      const d = sortearDisciplinaMista(disponiveis, f.anterior);
+      if (d) f = { ...f, disciplina: d };
     }
 
     // 1. revisões vencidas

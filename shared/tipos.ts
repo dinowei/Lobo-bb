@@ -454,7 +454,8 @@ export interface Api {
   modo: "demo" | "servidor";
   topicos(): Promise<TopicoDTO[]>;
   painel(): Promise<PainelDTO>;
-  proxima(f: { topicoId?: string; disciplina?: Disciplina; questaoId?: string; revisao?: boolean }): Promise<{
+  // misto: intercala disciplinas no peso da prova; anterior = disciplina da última questão
+  proxima(f: { topicoId?: string; disciplina?: Disciplina; questaoId?: string; revisao?: boolean; misto?: boolean; anterior?: Disciplina }): Promise<{
     questao: QuestaoDTO | null;
     modo: "treino" | "revisao";
     aviso?: string;

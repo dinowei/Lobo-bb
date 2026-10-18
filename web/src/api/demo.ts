@@ -32,7 +32,7 @@ import {
   type EstadoRevisao,
 } from "../../../shared/motor";
 import { QUESTOES_DEMO, type QuestaoDemo } from "../demo/questoes";
-import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe } from "../../../shared/estruturaProva";
+import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, sortearDisciplinaMista } from "../../../shared/estruturaProva";
 import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../../../shared/aprendizado";
 
 const CHAVE = "lobo-demo-v1";
@@ -188,6 +188,12 @@ export const apiDemo: Api = {
     if (f.questaoId) {
       const q = porId.get(f.questaoId);
       return espera({ questao: q ? paraDTO(q) : null, modo: "treino" as const });
+    }
+
+    // treino misturado (mesma regra do servidor)
+    if (f.misto && !f.topicoId) {
+      const d = sortearDisciplinaMista([...new Set(ativas.map((q) => q.disciplina))], f.anterior);
+      if (d) f = { ...f, disciplina: d };
     }
 
     // 1. revisões vencidas (no modo geral ou quando pedidas)

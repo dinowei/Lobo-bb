@@ -13,6 +13,7 @@ export interface FiltroPratica {
   disciplina?: Disciplina;
   questaoId?: string;
   revisao?: boolean;
+  misto?: boolean; // treino misturado (8.6)
 }
 
 export interface Ajustes {

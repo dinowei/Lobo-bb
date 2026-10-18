@@ -81,13 +81,17 @@ app.post(
 app.get(
   "/api/proxima",
   rota(async (req, res) => {
+    const ehDisciplina = (v?: string): v is Disciplina => !!v && (DISCIPLINAS as readonly string[]).includes(v);
     const disciplina = texto(req.query.disciplina);
+    const anterior = texto(req.query.anterior);
     res.json(
       await apiServidor.proxima({
         topicoId: texto(req.query.topicoId),
         questaoId: texto(req.query.questaoId),
-        disciplina: disciplina && (DISCIPLINAS as readonly string[]).includes(disciplina) ? (disciplina as Disciplina) : undefined,
+        disciplina: ehDisciplina(disciplina) ? disciplina : undefined,
         revisao: req.query.revisao === "1",
+        misto: req.query.misto === "1",
+        anterior: ehDisciplina(anterior) ? anterior : undefined,
       })
     );
   })
