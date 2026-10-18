@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 import { PESO_PADRAO } from "../../../shared/motor";
 import { MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO, type BancoDTO, type Disciplina, type MotivoErro, type MotivosDisciplinaDTO, type TopicoProgresso } from "../../../shared/tipos";
 import { useApp } from "../estado";
@@ -17,7 +17,9 @@ export function Painel() {
       .map((d) => {
         const peso = painel.topicos.filter((t) => t.disciplina === d.disciplina).reduce((s, t) => s + (t.peso ?? PESO_PADRAO), 0);
         const taxa = d.tentativas ? (d.acertos + 1) / (d.tentativas + 2) : 0.5;
-        return { ...d, score: peso * (1 - taxa) };
+        const topicos = painel.topicos.filter((t) => t.disciplina === d.disciplina);
+        const dominio = topicos.length ? topicos.reduce((s, t) => s + t.dominio, 0) / topicos.length : 0;
+        return { ...d, score: peso * (1 - taxa), dominio };
       })
       .sort((a, b) => b.score - a.score);
   }, [painel]);
@@ -53,20 +55,7 @@ export function Painel() {
               {n > 0 ? "Continuar estudando" : "Começar agora"} <ISeta />
             </button>
           </div>
-          <div className="hero-cartoes">
-            {recomendadas.slice(0, 3).map((d, i) => (
-              <button
-                key={d.disciplina}
-                className={`cartao-disc${i === 1 ? " laranja" : ""}`}
-                onClick={() => ir("praticar", { disciplina: d.disciplina })}
-                aria-label={`Praticar ${d.nome}`}
-              >
-                <span className="n">{String(i + 1).padStart(2, "0")}</span>
-                <strong style={{ whiteSpace: "pre-line" }}>{CURTO[d.disciplina]}</strong>
-                <Ilustracao disciplina={d.disciplina} />
-              </button>
-            ))}
-          </div>
+          <CarrosselDisciplinas disciplinas={recomendadas} onPraticar={(disciplina) => ir("praticar", { disciplina })} />
         </div>
       </section>
 
@@ -162,6 +151,128 @@ export function Painel() {
           </div>
         )}
       </aside>
+    </div>
+  );
+}
+
+type DisciplinaHero = { disciplina: Disciplina; nome: string; dominio: number };
+
+function CarrosselDisciplinas({ disciplinas, onPraticar }: { disciplinas: DisciplinaHero[]; onPraticar: (disciplina: Disciplina) => void }) {
+  const trilho = useRef<HTMLDivElement>(null);
+  const ponteiro = useRef({ ativo: false, x: 0, scroll: 0, moveu: false, capturado: false });
+  const [posicao, setPosicao] = useState(0);
+  const [temAntes, setTemAntes] = useState(false);
+  const [temDepois, setTemDepois] = useState(false);
+  const [arrastando, setArrastando] = useState(false);
+
+  const atualizar = useCallback(() => {
+    const el = trilho.current;
+    if (!el) return;
+    setTemAntes(el.scrollLeft > 2);
+    setTemDepois(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+    const primeiroVisivel = [...el.querySelectorAll<HTMLElement>(".cartao-disc")]
+      .findIndex((item) => item.offsetLeft + item.offsetWidth > el.scrollLeft + 4);
+    setPosicao(Math.max(0, primeiroVisivel));
+  }, []);
+
+  useEffect(() => {
+    atualizar();
+    const el = trilho.current;
+    if (!el) return;
+    const observer = new ResizeObserver(atualizar);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [atualizar, disciplinas.length]);
+
+  const comportamento = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+  const mover = (sentido: -1 | 1) => {
+    const el = trilho.current;
+    if (el) el.scrollBy({ left: sentido * Math.max(180, el.clientWidth * 0.78), behavior: comportamento() });
+  };
+  const irPara = (indice: number) => {
+    const el = trilho.current;
+    const item = el?.querySelectorAll<HTMLElement>(".cartao-disc")[indice];
+    if (el && item) el.scrollTo({ left: item.offsetLeft, behavior: comportamento() });
+  };
+
+  function iniciarArrasto(e: PointerEvent<HTMLDivElement>) {
+    if (e.pointerType !== "mouse" || e.button !== 0) return;
+    ponteiro.current = { ativo: true, x: e.clientX, scroll: e.currentTarget.scrollLeft, moveu: false, capturado: false };
+    setArrastando(false);
+  }
+  function arrastar(e: PointerEvent<HTMLDivElement>) {
+    if (!ponteiro.current.ativo) return;
+    const delta = e.clientX - ponteiro.current.x;
+    if (Math.abs(delta) > 5) {
+      ponteiro.current.moveu = true;
+      setArrastando(true);
+      if (!ponteiro.current.capturado) {
+        e.currentTarget.setPointerCapture(e.pointerId);
+        ponteiro.current.capturado = true;
+      }
+    }
+    e.currentTarget.scrollLeft = ponteiro.current.scroll - delta;
+  }
+  function terminarArrasto(e: PointerEvent<HTMLDivElement>) {
+    if (!ponteiro.current.ativo) return;
+    ponteiro.current.ativo = false;
+    if (ponteiro.current.capturado && e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    ponteiro.current.capturado = false;
+    setArrastando(false);
+  }
+  function roda(e: WheelEvent<HTMLDivElement>) {
+    const el = e.currentTarget;
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || el.scrollWidth <= el.clientWidth) return;
+    el.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }
+
+  return (
+    <div className={`carrossel-materias${temAntes ? " tem-antes" : ""}${temDepois ? " tem-depois" : ""}`}>
+      <button className="carrossel-seta esquerda" onClick={() => mover(-1)} disabled={!temAntes} aria-label="Disciplinas anteriores">‹</button>
+      <div
+        className={`hero-cartoes${arrastando ? " arrastando" : ""}`}
+        ref={trilho}
+        role="region"
+        aria-label="Disciplinas prioritárias para o treino"
+        tabIndex={0}
+        onScroll={atualizar}
+        onWheel={roda}
+        onPointerDown={iniciarArrasto}
+        onPointerMove={arrastar}
+        onPointerUp={terminarArrasto}
+        onPointerCancel={terminarArrasto}
+        onClickCapture={(e) => {
+          if (ponteiro.current.moveu) {
+            e.preventDefault();
+            e.stopPropagation();
+            ponteiro.current.moveu = false;
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+          e.preventDefault();
+          mover(e.key === "ArrowRight" ? 1 : -1);
+        }}
+      >
+        {disciplinas.map((d, i) => (
+          <button
+            key={d.disciplina}
+            className={`cartao-disc${i === 1 ? " laranja" : ""}`}
+            onClick={() => onPraticar(d.disciplina)}
+            aria-label={`Praticar ${d.nome}. Prioridade ${i + 1} de ${disciplinas.length}. Domínio ${pct(d.dominio)}`}
+          >
+            <span className="n">{String(i + 1).padStart(2, "0")}</span>
+            <strong style={{ whiteSpace: "pre-line" }}>{CURTO[d.disciplina]}</strong>
+            <span className="dominio-cartao"><span>Domínio</span><b className="num">{pct(d.dominio)}</b><i><u style={{ width: pct(d.dominio) }} /></i></span>
+            <Ilustracao disciplina={d.disciplina} />
+          </button>
+        ))}
+      </div>
+      <button className="carrossel-seta direita" onClick={() => mover(1)} disabled={!temDepois} aria-label="Próximas disciplinas">›</button>
+      <div className="carrossel-pontos" aria-label={`Posição ${Math.min(posicao + 1, disciplinas.length)} de ${disciplinas.length}`}>
+        {disciplinas.map((d, i) => <button key={d.disciplina} className={i === posicao ? "ativo" : ""} onClick={() => irPara(i)} aria-label={`Ir para ${d.nome}`} aria-current={i === posicao ? "true" : undefined} />)}
+      </div>
     </div>
   );
 }
