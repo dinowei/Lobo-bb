@@ -421,6 +421,7 @@ export const apiDemo: Api = {
           disciplina: q.disciplina,
           assunto: q.assunto,
           enunciado: q.enunciado,
+          explicacao: q.explicacaoGeral,
           vezesErrada: ts.filter((t) => !t.acertou).length,
           ultimaData: ts[ts.length - 1].data,
         };

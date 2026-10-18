@@ -419,6 +419,7 @@ export interface ErroDTO {
   disciplina: Disciplina;
   assunto: string;
   enunciado: string;
+  explicacao?: string; // "Estudar ouvindo" lê esta explicação
   vezesErrada: number;
   ultimaData: string;
 }

@@ -834,6 +834,9 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .botao-ouvir:hover, .botao-ouvir[aria-pressed="true"] { border-color: var(--laranja); }
 @media (pointer: coarse) { .botao-ouvir { min-height: 44px; } }
 
+.estudar-ouvindo { margin-bottom: 14px; }
+.linha-erro.tocando { border-color: var(--laranja); }
+
 /* Admin: mudanças de norma esperando OK */
 .lista-mudancas { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 10px; font-size: 13px; }
 .lista-mudancas label { display: flex; gap: 10px; align-items: flex-start; }

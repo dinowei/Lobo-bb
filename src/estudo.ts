@@ -536,7 +536,7 @@ export const apiServidor: Omit<Api, "modo"> = {
     ]);
     const mapa = await mapaTopicos();
     const qs = new Map(
-      (await Question.find({ _id: { $in: grupos.map((g) => g._id) } }).select("enunciado topicId").lean()).map((q) => [String(q._id), q])
+      (await Question.find({ _id: { $in: grupos.map((g) => g._id) } }).select("enunciado topicId explicacaoGeral").lean()).map((q) => [String(q._id), q])
     );
     return grupos
       .filter((g) => qs.has(String(g._id)))
@@ -548,6 +548,7 @@ export const apiServidor: Omit<Api, "modo"> = {
           disciplina: (t?.disciplina ?? "conhecimentos_bancarios") as Disciplina,
           assunto: t?.assunto ?? "",
           enunciado: q.enunciado,
+          explicacao: q.explicacaoGeral ?? undefined,
           vezesErrada: g.erradas,
           ultimaData: g.data.toISOString(),
         };

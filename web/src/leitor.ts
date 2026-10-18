@@ -50,6 +50,27 @@ function vozDoNavegador(texto: string, velocidade: number, fim: () => void) {
   });
 }
 
+// "Estudar ouvindo": toca a lista em sequência; anterior/próxima pelos botões do sistema (Media Session,
+// funciona com a tela bloqueada quando o navegador deixa). Devolve uma função para encerrar.
+export function tocarLista(itens: { id: string; texto: string; titulo: string }[], opts: { velocidade?: number; servidor?: boolean; voz?: string; aoMudar?: (i: number) => void } = {}) {
+  let i = 0;
+  let encerrada = false;
+  const ms = "mediaSession" in navigator ? navigator.mediaSession : null;
+  const pular = (delta: number) => { i = Math.max(0, Math.min(itens.length - 1, i + delta)) - 1; parar(); };
+  ms?.setActionHandler("nexttrack", () => pular(1));
+  ms?.setActionHandler("previoustrack", () => pular(-1));
+  ms?.setActionHandler("pause", () => pausarOuContinuar());
+  ms?.setActionHandler("play", () => pausarOuContinuar());
+  (async () => {
+    for (; i < itens.length && !encerrada; i++) {
+      opts.aoMudar?.(i);
+      await tocar(`lista-${itens[i].id}`, itens[i].texto, { ...opts, titulo: `${i + 1}/${itens.length} · ${itens[i].titulo}` });
+    }
+    if (!encerrada) opts.aoMudar?.(-1);
+  })();
+  return () => { encerrada = true; parar(); opts.aoMudar?.(-1); };
+}
+
 // Toca um texto; o mesmo id de novo para/pausa. Retorna quando termina (para a playlist).
 export function tocar(id: string, texto: string, opts: { velocidade?: number; servidor?: boolean; naHora?: boolean; titulo?: string; voz?: string } = {}): Promise<void> {
   if (atual?.id === id) { pausarOuContinuar(); return Promise.resolve(); }
