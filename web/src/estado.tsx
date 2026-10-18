@@ -51,6 +51,7 @@ interface Ctx {
   tela: Tela;
   filtro: FiltroPratica;
   ir: (t: Tela, filtro?: FiltroPratica) => void;
+  guardarSaida: (mensagem: string | null) => void; // pede confirmação para sair (simulado, Raio-X, redação)
   ajustes: Ajustes;
   salvarAjustes: (a: Ajustes) => void;
   avisar: (texto: ReactNode) => void;
@@ -86,6 +87,7 @@ export function Provedor({ children }: { children: ReactNode }) {
   const [tela, setTela] = useState<Tela>(telaDoHash);
   const [filtro, setFiltro] = useState<FiltroPratica>(filtroDoHash);
   const [ajustes, setAjustes] = useState<Ajustes>(lerAjustes);
+  const guarda = useRef<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [subiuNivel, setSubiuNivel] = useState<Ctx["subiuNivel"]>(null);
   const anterior = useRef<PainelDTO | null>(null);
@@ -172,6 +174,9 @@ export function Provedor({ children }: { children: ReactNode }) {
   }, []);
 
   const ir = useCallback((t: Tela, f: FiltroPratica = {}) => {
+    // no meio de simulado, Raio-X ou redação: confirma antes de sair (o rascunho da redação fica salvo)
+    if (guarda.current && !window.confirm(guarda.current)) return;
+    guarda.current = null;
     setFiltro(f);
     setTela(t);
     try {
@@ -180,6 +185,19 @@ export function Provedor({ children }: { children: ReactNode }) {
       /* ambiente sem history */
     }
     window.scrollTo({ top: 0 });
+  }, []);
+
+  const guardarSaida = useCallback((mensagem: string | null) => {
+    guarda.current = mensagem;
+  }, []);
+  useEffect(() => {
+    const f = (e: BeforeUnloadEvent) => {
+      if (!guarda.current) return;
+      e.preventDefault();
+      e.returnValue = guarda.current;
+    };
+    window.addEventListener("beforeunload", f);
+    return () => window.removeEventListener("beforeunload", f);
   }, []);
 
   const salvarAjustes = useCallback((a: Ajustes) => {
@@ -198,7 +216,7 @@ export function Provedor({ children }: { children: ReactNode }) {
   return (
     <Contexto.Provider
       value={{
-        api, painel, recarregar, tela, filtro, ir, ajustes, salvarAjustes, avisar, toasts, subiuNivel,
+        api, painel, recarregar, tela, filtro, ir, guardarSaida, ajustes, salvarAjustes, avisar, toasts, subiuNivel,
         fecharNivel: () => setSubiuNivel(null),
         usuario, ehAdmin, sair, atualizarUsuario: setUsuario,
       }}

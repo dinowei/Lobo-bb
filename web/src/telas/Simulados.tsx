@@ -5,6 +5,7 @@ import { useApp } from "../estado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { IEsq, IDir, ISeta } from "../componentes/Icones";
 import { MASCOTE, pct } from "../util";
+import { RelogioAtivo } from "../relogio";
 import { COTAS_PROVA, ESTRUTURA_PROVA, resumoPorBloco, notaPonderada, type Mistura } from "../../../shared/estruturaProva";
 
 // prova completa = exatamente as cotas do edital (soma dos blocos)
@@ -21,7 +22,7 @@ const COMPOSICAO = ESTRUTURA_PROVA.blocos
 const fmt = (s: number) => `${Math.floor(s / 3600) ? `${Math.floor(s / 3600)}h ` : ""}${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 export function Simulados() {
-  const { api, painel, recarregar, avisar, ajustes } = useApp();
+  const { api, painel, recarregar, avisar, ajustes, guardarSaida } = useApp();
   const [questoes, setQuestoes] = useState<QuestaoDTO[] | null>(null);
   const [respostas, setRespostas] = useState<Record<string, Letra>>({});
   const [atual, setAtual] = useState(0);
@@ -30,7 +31,10 @@ export function Simulados() {
   const [limiteSeg, setLimiteSeg] = useState(0); // 0 = sem contagem regressiva
   const [confirmarFim, setConfirmarFim] = useState(false);
   const [mistura, setMistura] = useState<Mistura | null>(null);
-  const inicio = useRef(0);
+  // cronômetro só anda com a aba visível (horas líquidas honestas)
+  const relogio = useRef<RelogioAtivo>(null as unknown as RelogioAtivo);
+  if (!relogio.current) relogio.current = new RelogioAtivo();
+  useEffect(() => () => relogio.current.desligar(), []);
   const entregando = useRef(false);
   const corte = (ajustes.linhaDeCorte || 70) / 100;
 
@@ -38,9 +42,19 @@ export function Simulados() {
     api.misturaSimulado().then(setMistura).catch(() => setMistura(null));
   }, [api]);
 
+  // no meio do simulado: confirma antes de sair; título da aba com a questão
+  const rodando = !!questoes?.length && !resultado;
+  useEffect(() => {
+    guardarSaida(rodando ? "Sair do simulado? As respostas marcadas até aqui se perdem." : null);
+    return () => guardarSaida(null);
+  }, [rodando, guardarSaida]);
+  useEffect(() => {
+    if (rodando) document.title = `Questão ${atual + 1}/${questoes!.length} · Simulado · Lobo`;
+  }, [rodando, atual, questoes]);
+
   useEffect(() => {
     if (!questoes || resultado) return;
-    const t = setInterval(() => setSeg(Math.round((Date.now() - inicio.current) / 1000)), 1000);
+    const t = setInterval(() => setSeg(relogio.current.segundos()), 1000);
     return () => clearInterval(t);
   }, [questoes, resultado]);
 
@@ -59,7 +73,7 @@ export function Simulados() {
     // duração da prova vale para a completa; os menores ganham o tempo proporcional
     setLimiteSeg(ajustes.duracaoProvaMin > 0 ? Math.round((ajustes.duracaoProvaMin * 60 * qs.length) / N_PROVA) : 0);
     entregando.current = false;
-    inicio.current = Date.now();
+    relogio.current.zerar();
     setSeg(0);
   }
 

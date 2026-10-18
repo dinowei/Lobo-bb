@@ -54,7 +54,7 @@ function Resultado({ r }: { r: RedacaoDTO }) {
 }
 
 export function Redacao() {
-  const { api, ajustes, avisar, recarregar } = useApp();
+  const { api, ajustes, avisar, recarregar, guardarSaida } = useApp();
   const [temas, setTemas] = useState<TemaRedacaoDTO[]>([]);
   const [historico, setHistorico] = useState<RedacaoDTO[]>([]);
   const [temaId, setTemaId] = useState("");
@@ -64,6 +64,12 @@ export function Redacao() {
   const [carregando, setCarregando] = useState(true);
   const [pedindoTema, setPedindoTema] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  // escrevendo e ainda não enviou: confirma antes de sair (o rascunho fica salvo neste navegador)
+  const escrevendo = !!texto.trim() && !atual;
+  useEffect(() => {
+    guardarSaida(escrevendo ? "Sair da redação? O rascunho fica salvo neste navegador." : null);
+    return () => guardarSaida(null);
+  }, [escrevendo, guardarSaida]);
   const [erro, setErro] = useState("");
   const iniciouEm = useRef(Date.now());
   const tema = useMemo(() => temas.find((t) => t.id === temaId), [temas, temaId]);

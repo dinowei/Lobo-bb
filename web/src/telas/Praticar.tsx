@@ -3,6 +3,7 @@ import type { AcaoMotivoDTO, AulaDTO, Confianca, CorrecaoDTO, Disciplina, Letra,
 import { LETRAS, MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { RelogioAtivo } from "../relogio";
+import { RespostaGuardada } from "../api/http";
 import { CICLOS_FOCO, TEMPO_MAX_QUESTAO_SEG } from "../../../shared/aprendizado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { Markdown } from "../componentes/Markdown";
@@ -46,6 +47,7 @@ export function Praticar() {
   const [focoBase, setFocoBase] = useState(0); // onde começou o ciclo atual
   const [focoAgora, setFocoAgora] = useState(0);
   const [emPausa, setEmPausa] = useState(false);
+  const [verAtalhos, setVerAtalhos] = useState(false);
   const filtroUsado = useRef(filtro);
   const ultimaDisciplina = useRef<Disciplina | undefined>(undefined); // treino misturado não repete a anterior
 
@@ -58,7 +60,16 @@ export function Praticar() {
     setAcaoMotivo(null);
     // "questaoId" (refazer um erro) vale só para a primeira questão
     const f = filtroUsado.current;
-    const r = await api.proxima(f.misto ? { ...f, anterior: ultimaDisciplina.current } : f);
+    let r: Awaited<ReturnType<typeof api.proxima>>;
+    try {
+      r = await api.proxima(f.misto ? { ...f, anterior: ultimaDisciplina.current } : f);
+    } catch {
+      // sem rede ou servidor fora: mensagem humana, e "Tentar de novo" pelo botão da tela vazia
+      setQ(null);
+      setAviso(navigator.onLine ? "Não deu para buscar a próxima questão. Tente de novo em instantes." : "Sem conexão agora. Assim que a internet voltar, é só tentar de novo.");
+      setCarregando(false);
+      return;
+    }
     if (f.questaoId) filtroUsado.current = { ...f, questaoId: undefined };
     ultimaDisciplina.current = r.questao?.disciplina;
     setQ(r.questao);
@@ -181,10 +192,14 @@ export function Praticar() {
       setSessao((s) => ({ total: s.total + 1, acertos: s.acertos + (c.acertou ? 1 : 0), xp: s.xp + c.xpGanho }));
       avisar(<><b>+{c.xpGanho} XP</b> {c.acertou ? "acertou" : "por tentar"}</>);
       recarregar();
+    } catch (e) {
+      // offline: a resposta ficou na fila (http.ts) e vai sozinha quando a rede voltar
+      avisar(e instanceof Error ? e.message : "Não deu para enviar a resposta. Tente de novo.");
+      if (e instanceof RespostaGuardada) carregar();
     } finally {
       setEnviando(false);
     }
-  }, [q, marcada, confianca, enviando, correcao, api, modo, avisar, recarregar]);
+  }, [q, marcada, confianca, enviando, correcao, api, modo, avisar, recarregar, carregar]);
 
   // atalhos: A–E marca, 1–3 confiança, Enter confirma/avança
   useEffect(() => {
@@ -199,11 +214,18 @@ export function Praticar() {
         e.preventDefault();
         if (correcao) proxima();
         else confirmar();
-      }
+      } else if (correcao && (e.key === "ArrowRight" || k === "N")) proxima();
+      else if (e.key === "?") setVerAtalhos((v) => !v);
+      else if (e.key === "Escape") setVerAtalhos(false);
     };
     window.addEventListener("keydown", f);
     return () => window.removeEventListener("keydown", f);
   }, [correcao, confirmar, proxima]);
+
+  // título da aba com a questão da sessão
+  useEffect(() => {
+    if (q) document.title = `Questão ${sessao.total + (correcao ? 0 : 1)} · ${q.assunto} · Lobo`;
+  }, [q, correcao, sessao.total]);
 
   const topico = q && painel?.topicos.find((t) => t.id === q.topicoId);
   const tituloFoco = filtro.revisao
@@ -218,6 +240,21 @@ export function Praticar() {
 
   return (
     <div className="pratica">
+      {verAtalhos && (
+        <div className="modal-fundo" role="dialog" aria-modal="true" aria-labelledby="titulo-atalhos" onClick={() => setVerAtalhos(false)}>
+          <div className="modal atalhos-lista" onClick={(e) => e.stopPropagation()}>
+            <h2 id="titulo-atalhos">Atalhos do teclado</h2>
+            <dl>
+              <dt>A a E</dt><dd>marca a alternativa</dd>
+              <dt>1, 2, 3</dt><dd>chutei, na dúvida, tenho certeza</dd>
+              <dt>Enter</dt><dd>confirma a resposta</dd>
+              <dt>Enter, → ou N</dt><dd>próxima questão (depois de corrigir)</dd>
+              <dt>?</dt><dd>abre e fecha esta lista</dd>
+            </dl>
+            <button className="botao-escuro" onClick={() => setVerAtalhos(false)} autoFocus>Fechar</button>
+          </div>
+        </div>
+      )}
       <section className="pratica-principal" aria-live="polite">
         {carregando ? (
           <div className="carregando">Buscando a próxima questão…</div>
@@ -230,6 +267,7 @@ export function Praticar() {
                 <p>{aviso ?? "Tente outro tópico."}</p>
                 <div className="acoes">
                   <button className="botao-laranja" onClick={() => ir("praticar")}>Treino inteligente <ISeta /></button>
+                  <button className="botao-linha" onClick={carregar}>Tentar de novo</button>
                   <button className="botao-linha" onClick={() => ir("painel")}>Voltar ao painel</button>
                 </div>
               </div>
@@ -316,7 +354,7 @@ export function Praticar() {
                     Confirmar resposta <ISeta />
                   </button>
                   <button className="botao-linha" onClick={carregar}>Pular</button>
-                  <span className="atalho">Atalhos: A–E marca · 1–3 confiança · Enter confirma</span>
+                  <span className="atalho">Atalhos: A–E marca · 1–3 confiança · Enter confirma · ? lista</span>
                 </div>
               </>
             ) : (
@@ -363,7 +401,7 @@ export function Praticar() {
                     {acaoMotivo?.proximaQuestaoId ? "Próxima: comparar os conceitos" : "Próxima questão"} <ISeta />
                   </button>
                   <button className="botao-linha" onClick={() => setContestando((v) => !v)}>Contestar questão</button>
-                  <span className="atalho">Enter: próxima</span>
+                  <span className="atalho">Enter, → ou N: próxima</span>
                 </div>
                 {contestando && (
                   <Contestar

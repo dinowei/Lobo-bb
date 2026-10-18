@@ -20,6 +20,40 @@ async function req<T>(caminho: string, init?: RequestInit): Promise<T> {
 }
 const post = <T,>(caminho: string, corpo: unknown) => req<T>(caminho, { method: "POST", body: JSON.stringify(corpo) });
 
+// ---------- respostas offline: ficam na fila e vão sozinhas quando a conexão volta ----------
+const CHAVE_FILA = "lobo-fila-offline";
+export class RespostaGuardada extends Error {
+  constructor() { super("Sem conexão: resposta guardada. Ela é enviada sozinha quando a internet voltar."); }
+}
+const semRede = (e: unknown) => !navigator.onLine || e instanceof TypeError; // fetch sem rede dá TypeError
+const lerFila = (): unknown[] => { try { return JSON.parse(localStorage.getItem(CHAVE_FILA) ?? "[]"); } catch { return []; } };
+const gravarFila = (f: unknown[]) => { try { localStorage.setItem(CHAVE_FILA, JSON.stringify(f)); } catch { /* sem armazenamento: perde só a fila */ } };
+export const respostasNaFila = () => lerFila().length;
+let enviando = false;
+export async function enviarFilaOffline() {
+  if (enviando || !navigator.onLine) return;
+  enviando = true;
+  try {
+    let fila = lerFila();
+    while (fila.length) {
+      try {
+        await post("/responder", fila[0]);
+      } catch (e) {
+        if (semRede(e)) break; // caiu de novo: tenta na próxima volta da rede
+        // erro do servidor (questão removida etc.): descarta para não travar a fila
+      }
+      fila = lerFila().slice(1);
+      gravarFila(fila);
+    }
+  } finally {
+    enviando = false;
+  }
+}
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => void enviarFilaOffline());
+  setTimeout(() => void enviarFilaOffline(), 3000);
+}
+
 export const apiHttp: Api = {
   modo: "servidor",
   topicos: () => req("/topicos"),
@@ -34,7 +68,15 @@ export const apiHttp: Api = {
     if (f.anterior) p.set("anterior", f.anterior);
     return req(`/proxima?${p}`);
   },
-  responder: (r) => post("/responder", r),
+  responder: async (r) => {
+    try {
+      return await post("/responder", r);
+    } catch (e) {
+      if (!semRede(e)) throw e;
+      gravarFila([...lerFila(), r]);
+      throw new RespostaGuardada();
+    }
+  },
   aula: (topicoId) => req(`/aula/${encodeURIComponent(topicoId)}`),
   explicarMais: (questaoId, duvida) => post("/explicar-mais", { questaoId, duvida }),
   motivoErro: (questaoId, motivo) => post("/motivo-erro", { questaoId, motivo }),

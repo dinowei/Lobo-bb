@@ -1,22 +1,43 @@
-import { useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useApp, type Tela } from "./estado";
 import { MASCOTE, pct } from "./util";
 import {
   IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
 } from "./componentes/Icones";
+import { ErroTela, Esqueleto } from "./componentes/ErroTela";
 import { Painel } from "./telas/Painel";
-import { Praticar } from "./telas/Praticar";
-import { Revisoes } from "./telas/Revisoes";
-import { Cartoes } from "./telas/Cartoes";
-import { Diagnostico } from "./telas/Diagnostico";
-import { Plano } from "./telas/Plano";
-import { Simulados } from "./telas/Simulados";
-import { Redacao } from "./telas/Redacao";
-import { Erros } from "./telas/Erros";
-import { Conquistas } from "./telas/Conquistas";
-import { AjustesTela } from "./telas/Ajustes";
-import { Figuras } from "./telas/Figuras";
-import { Admin } from "./telas/Admin";
+
+// cada tela num pedaço próprio do bundle (o painel vem junto: é a primeira que aparece)
+const carregar = <K extends string>(imp: () => Promise<Record<K, ComponentType>>, nome: K) => lazy(() => imp().then((m) => ({ default: m[nome] })));
+const Praticar = carregar(() => import("./telas/Praticar"), "Praticar");
+const Revisoes = carregar(() => import("./telas/Revisoes"), "Revisoes");
+const Cartoes = carregar(() => import("./telas/Cartoes"), "Cartoes");
+const Diagnostico = carregar(() => import("./telas/Diagnostico"), "Diagnostico");
+const Plano = carregar(() => import("./telas/Plano"), "Plano");
+const Simulados = carregar(() => import("./telas/Simulados"), "Simulados");
+const Redacao = carregar(() => import("./telas/Redacao"), "Redacao");
+const Erros = carregar(() => import("./telas/Erros"), "Erros");
+const Conquistas = carregar(() => import("./telas/Conquistas"), "Conquistas");
+const AjustesTela = carregar(() => import("./telas/Ajustes"), "AjustesTela");
+const Figuras = carregar(() => import("./telas/Figuras"), "Figuras");
+const Admin = carregar(() => import("./telas/Admin"), "Admin");
+
+const TITULO: Record<Tela, string> = {
+  painel: "Painel", plano: "Plano", praticar: "Praticar", revisoes: "Revisões", cartoes: "Cartões", simulados: "Simulados",
+  diagnostico: "Raio-X", erros: "Caderno de erros", redacao: "Redação", conquistas: "Conquistas", ajustes: "Ajustes", figuras: "Figuras", admin: "Admin",
+};
+
+function useOnline() {
+  const [online, setOnline] = useState(() => navigator.onLine);
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
+  return online;
+}
 
 const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa }[] = [
   { tela: "painel", rotulo: "Painel", Icone: ICasa },
@@ -34,9 +55,15 @@ const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa }[] = [
 export function App() {
   // aluno nunca vê a tela Admin; sem contas cadastradas, o único usuário do modo servidor é o dono
   const { tela, ir, painel, api, toasts, subiuNivel, fecharNivel, ehAdmin } = useApp();
+  const online = useOnline();
+  const [menuMais, setMenuMais] = useState(false);
+  // título da aba por tela (Praticar e Simulados detalham a questão)
+  useEffect(() => { document.title = `${TITULO[tela]} · Lobo`; }, [tela]);
+  useEffect(() => setMenuMais(false), [tela]);
 
   return (
     <div className="app">
+      <a href="#conteudo" className="pular">Pular para o conteúdo</a>
       <aside className="lateral">
         <div className="marca">lobo</div>
         <nav className="nav" aria-label="Principal">
@@ -87,20 +114,30 @@ export function App() {
           </div>
         </header>
 
-        <main className="conteudo">
-          {tela === "painel" && <Painel />}
-          {tela === "praticar" && <Praticar />}
-          {tela === "revisoes" && <Revisoes />}
-          {tela === "cartoes" && <Cartoes />}
-          {tela === "plano" && <Plano />}
-          {tela === "diagnostico" && <Diagnostico />}
-          {tela === "simulados" && <Simulados />}
-          {tela === "redacao" && <Redacao />}
-          {tela === "erros" && <Erros />}
-          {tela === "conquistas" && <Conquistas />}
-          {tela === "ajustes" && <AjustesTela />}
-          {tela === "figuras" && (ehAdmin ? <Figuras /> : <Painel />)}
-          {tela === "admin" && (ehAdmin ? <Admin /> : <Painel />)}
+        {!online && (
+          <div className="faixa-offline" role="status">
+            Você está offline. Suas respostas ficam guardadas e são enviadas sozinhas quando a conexão voltar.
+          </div>
+        )}
+
+        <main className="conteudo" id="conteudo" tabIndex={-1}>
+          <ErroTela chave={tela}>
+            <Suspense fallback={<Esqueleto />}>
+              {tela === "painel" && <Painel />}
+              {tela === "praticar" && <Praticar />}
+              {tela === "revisoes" && <Revisoes />}
+              {tela === "cartoes" && <Cartoes />}
+              {tela === "plano" && <Plano />}
+              {tela === "diagnostico" && <Diagnostico />}
+              {tela === "simulados" && <Simulados />}
+              {tela === "redacao" && <Redacao />}
+              {tela === "erros" && <Erros />}
+              {tela === "conquistas" && <Conquistas />}
+              {tela === "ajustes" && <AjustesTela />}
+              {tela === "figuras" && (ehAdmin ? <Figuras /> : <Painel />)}
+              {tela === "admin" && (ehAdmin ? <Admin /> : <Painel />)}
+            </Suspense>
+          </ErroTela>
         </main>
       </div>
 
@@ -111,11 +148,29 @@ export function App() {
             {rotulo}
           </button>
         ))}
-        <button aria-current={["erros", "conquistas", "ajustes"].includes(tela) ? "page" : undefined} onClick={() => ir("conquistas")}>
+        <button aria-current={NAV.slice(4).some((n) => n.tela === tela) || tela === "admin" ? "page" : undefined} aria-expanded={menuMais} aria-controls="menu-mais" onClick={() => setMenuMais((v) => !v)}>
           <IMais tam={20} />
           Mais
         </button>
       </nav>
+      {menuMais && (
+        <div className="menu-mais-fundo" onClick={() => setMenuMais(false)}>
+          <nav id="menu-mais" className="menu-mais" aria-label="Mais telas" onClick={(e) => e.stopPropagation()}>
+            {NAV.slice(4).map(({ tela: t, rotulo, Icone }) => (
+              <button key={t} aria-current={tela === t ? "page" : undefined} onClick={() => ir(t)}>
+                <Icone tam={20} />
+                {rotulo}
+              </button>
+            ))}
+            {ehAdmin && (
+              <button aria-current={tela === "admin" ? "page" : undefined} onClick={() => ir("admin")}>
+                <IEscudo tam={20} />
+                Admin
+              </button>
+            )}
+          </nav>
+        </div>
+      )}
 
       <div className="toast-pilha" aria-live="polite">
         {toasts.map((t) => (<div key={t.id} className="toast">{t.texto}</div>))}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NOME_DISCIPLINA, type Letra, type QuestaoDTO, type ResultadoSimuladoDTO } from "../../../shared/tipos";
 import { DIAS_PARA_REFAZER, QUESTOES_DIAGNOSTICO, diagnosticoPendente, fortesEFocos } from "../../../shared/diagnostico";
 import { useApp } from "../estado";
@@ -8,12 +8,20 @@ import { MASCOTE, pct } from "../util";
 
 // Raio-X: 30 questões médias na proporção da prova, sem correção até o fim e sem tempo
 export function Diagnostico() {
-  const { api, painel, recarregar, ir, avisar } = useApp();
+  const { api, painel, recarregar, ir, avisar, guardarSaida } = useApp();
   const [questoes, setQuestoes] = useState<QuestaoDTO[] | null>(null);
   const [respostas, setRespostas] = useState<Record<string, Letra>>({});
   const [atual, setAtual] = useState(0);
   const [resultado, setResultado] = useState<ResultadoSimuladoDTO | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const rodando = !!questoes?.length && !resultado;
+  useEffect(() => {
+    guardarSaida(rodando ? "Sair do Raio-X? As respostas marcadas até aqui se perdem." : null);
+    return () => guardarSaida(null);
+  }, [rodando, guardarSaida]);
+  useEffect(() => {
+    if (rodando) document.title = `Questão ${atual + 1}/${questoes!.length} · Raio-X · Lobo`;
+  }, [rodando, atual, questoes]);
   const historico = painel?.diagnosticos ?? [];
   const ultimo = historico[historico.length - 1];
 

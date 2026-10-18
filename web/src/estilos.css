@@ -738,7 +738,30 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   }
   .nav-inferior button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; font-size: 10.5px; color: var(--suave); border-radius: 10px; }
   .nav-inferior button[aria-current="page"] { color: var(--laranja); }
+  .nav-inferior button { min-height: 48px; }
+  .menu-mais-fundo { position: fixed; inset: 0; z-index: 29; background: rgba(0, 0, 0, 0.45); }
+  .menu-mais {
+    position: absolute; left: 8px; right: 8px; bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px;
+    background: var(--painel); border: 1px solid var(--linha); border-radius: var(--raio-g);
+  }
+  .menu-mais button { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 64px; justify-content: center; font-size: 12px; color: var(--suave); border-radius: 12px; }
+  .menu-mais button[aria-current="page"] { color: var(--laranja); background: var(--cartao); }
 }
+
+/* acessibilidade e estados gerais (Etapa 9) */
+.pular { position: absolute; left: 12px; top: -60px; z-index: 50; padding: 10px 14px; border-radius: 10px; background: var(--laranja); color: var(--tinta); font-weight: 600; }
+.pular:focus { top: 12px; }
+.conteudo:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--laranja); outline-offset: 2px; }
+.atalhos-lista dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 12px 0 16px; text-align: left; }
+.atalhos-lista dt { font-weight: 700; }
+.atalhos-lista dd { margin: 0; }
+.faixa-offline { margin: 0 0 12px; padding: 8px 14px; border-radius: 10px; font-size: 13px; color: var(--texto); background: var(--marrom); border: 1px solid var(--marrom-2); }
+.esqueleto { display: grid; gap: 12px; }
+.esqueleto i { display: block; height: 16px; border-radius: 10px; background: linear-gradient(90deg, var(--cartao) 0%, var(--cartao-2) 50%, var(--cartao) 100%); background-size: 200% 100%; animation: brilho 1.4s ease-in-out infinite; }
+@keyframes brilho { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .esqueleto i { animation: none; } }
 
 /* ---------- Entrar / Criar conta ---------- */
 .tela-entrar { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: radial-gradient(circle at 20% 0%, rgba(255,91,31,.14), transparent 45%), var(--bg); }
