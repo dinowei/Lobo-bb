@@ -423,6 +423,28 @@ export interface RedacaoDTO {
   criadoEm: string;
 }
 
+export interface AulaFonteDTO {
+  titulo: string;
+  trecho: string;
+}
+export interface AulaDTO {
+  topicoId: string;
+  assunto: string;
+  conteudo: string; // Markdown sem HTML cru
+  pontosChave: string[];
+  comoABancaCobra: string;
+  pegadinhasComuns: string[];
+  exemplos: string[];
+  fontes: AulaFonteDTO[];
+}
+export interface ExplicacaoMaisDTO {
+  explicacao?: string;
+  origem?: "pregerada" | "cache" | "nova";
+  restantesHoje?: number;
+  requerServidor?: boolean;
+  mensagem?: string;
+}
+
 export type MotivoContestacao = "gabarito_errado" | "duas_corretas" | "desatualizada" | "ambigua" | "explicacao_ruim";
 
 // A mesma interface serve para o modo demo (navegador) e para o servidor de verdade
@@ -436,6 +458,8 @@ export interface Api {
     aviso?: string;
   }>;
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;
+  aula(topicoId: string): Promise<AulaDTO | null>;
+  explicarMais(questaoId: string, duvida?: string): Promise<ExplicacaoMaisDTO>;
   // motivo do último erro nessa questão; devolve a ação (aula/tópico, comparação, palavra-chave, revisão antecipada)
   motivoErro(questaoId: string, motivo: MotivoErro): Promise<AcaoMotivoDTO>;
   simulado(n: number): Promise<QuestaoDTO[]>;

@@ -20,7 +20,7 @@ import {
   type MetaFonte,
 } from "./ingestao.js";
 import { gerarQuestao, reabastecerEstoque } from "./pipeline.js";
-import { Topic, Source, User, Sessao, Question, Relatorio } from "./models.js";
+import { Topic, Source, User, Sessao, Question, Relatorio, Aula, Tarefa } from "./models.js";
 import { randomBytes } from "node:crypto";
 import { createInterface } from "node:readline";
 import { hashSenha, migrarProgresso, donoAntigoId, criarConvite } from "./auth.js";
@@ -52,6 +52,7 @@ import { sondarModelos, verificarModelos } from "./sondagem.js";
 import { planejarNoite, rodarFila } from "./noturno.js";
 import { planejarPregeracoes } from "./outroJeito.js";
 import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
+import { gerarAulas, planejarAulas } from "./aulas.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
@@ -75,6 +76,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   recuperar <prova.pdf> --gabarito <txt> --nome "<nome exato>" --numero <n>   traz uma oficial que ficou de fora
   figuras-oficiais [config.json]  extrai as figuras das provas (data/figuras-oficiais.json) para conferência
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
+  aulas [--assunto "<parte do nome>"] [--n 3]   prepara aulas curtas aprovadas por tópico
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
   temas [--n 10]                prepara temas inéditos para redação
@@ -227,6 +229,17 @@ async function main() {
         });
       }
 
+      case "aulas": {
+        return await naFila(rotulo, async () => {
+          const r = await gerarAulas({ assunto: o.assunto, n: o.n ? Number(o.n) : 3 });
+          console.log(`Aulas: ${r.concluidas} tarefa(s) concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa.`);
+          const tarefa = await Tarefa.findOne({ tipo: "aula", status: "concluida" }).sort({ updatedAt: -1 }).lean();
+          const amostra = tarefa?.resultadoId ? await Aula.findOne({ _id: tarefa.resultadoId, status: "aprovada" }).lean() : null;
+          const topico = amostra ? await Topic.findById(amostra.topicId).select("assunto").lean() : null;
+          if (amostra && topico) console.log(`\nAmostra aprovada — ${topico.assunto}:\n\n${amostra.conteudo}`);
+        });
+      }
+
       case "estoque":
         return await naFila(rotulo, () => reabastecerEstoque(o.min ? Number(o.min) : 30));
 
@@ -252,9 +265,10 @@ async function main() {
           // ordem da noite (adendo): questões até a meta → explicações alternativas → aulas → temas
           const n = await planejarNoite(lote, { max });
           const extras = await planejarPregeracoes(lote);
+          const aulas = await planejarAulas(lote);
           const temas = await planejarTemasRedacao(lote);
-          console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s) e ${temas} tema(s) de redação (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
-          const r = await rodarFila({ ate, max: max !== undefined ? max + extras + temas + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
+          console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s), ${aulas} aula(s) e ${temas} tema(s) de redação (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
+          const r = await rodarFila({ ate, max: max !== undefined ? max + extras + aulas + temas + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
           console.log(`\n${r.rodadas} tarefa(s): ${r.aprovadas} questão(ões) aprovada(s), ${r.concluidas} concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa, ${r.esgotadas} esgotada(s)${r.orfas ? `, ${r.orfas} recuperada(s) de processo que caiu` : ""}`);
           const noite = await relatorioDaNoite(inicio);
           const aprovadas = await Question.countDocuments({ status: "aprovada" });

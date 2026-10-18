@@ -7,6 +7,7 @@ import {
   DISCIPLINAS,
   type AcaoMotivoDTO,
   type Api,
+  type AulaDTO,
   type Confianca,
   type CorrecaoDTO,
   type Disciplina,
@@ -53,6 +54,38 @@ export const TOPICOS: TopicoDTO[] = Object.entries(
   );
 const topicoDe = (q: QuestaoDemo) => `${q.disciplina}:${slug(q.assunto)}`;
 const porId = new Map(QUESTOES_DEMO.map((q) => [q.id, q]));
+
+const AULAS_DEMO: Record<string, AulaDTO> = Object.fromEntries(
+  [
+    {
+      assunto: "Juros compostos",
+      conteudo: "## A ideia central\nNos juros compostos, cada período rende sobre o saldo acumulado. Os juros de hoje também passam a render nos períodos seguintes: é o chamado efeito de juros sobre juros.\n\nA fórmula é **M = C × (1 + i)ⁿ**. `C` é o capital inicial, `i` é a taxa por período em forma decimal, `n` é o número de períodos e `M` é o montante final. Para achar apenas os juros, calcule **J = M − C**.\n\nConfira se taxa e prazo estão na mesma unidade. Uma taxa mensal pede o prazo em meses; uma taxa anual pede o prazo em anos.",
+      pontosChave: ["A taxa e o prazo precisam usar a mesma unidade.", "O montante inclui o capital e os juros acumulados.", "Juros compostos aplicam a taxa sobre o saldo de cada período."],
+      comoABancaCobra: "A banca costuma pedir montante ou juros após vários períodos e mistura taxa com prazo em unidades diferentes.",
+      pegadinhasComuns: ["Usar a fórmula de juros simples em uma capitalização composta.", "Esquecer que a taxa de 5% entra como 0,05.", "Subtrair o capital quando a questão pede o montante."],
+      exemplos: ["R$ 1.000 a 10% por período durante 2 períodos: M = 1.000 × 1,1² = R$ 1.210; os juros são R$ 210."],
+    },
+    {
+      assunto: "Regência verbal e nominal e crase",
+      conteudo: "## Regência e crase\nRegência mostra qual preposição completa o sentido de um verbo ou nome. Quem **assiste a** uma palestra presencia algo; quem **obedece a** uma regra se submete a ela. Alguns verbos mudam de sentido conforme a preposição.\n\nA crase marca, em geral, a união da preposição **a** com o artigo feminino **a**. Troque o termo feminino por um masculino: se aparecer **ao**, há forte indicação de crase no feminino (vou **à** agência / vou **ao** banco).\n\nNão use crase antes de palavra masculina, verbo ou pronome pessoal. Em locuções femininas como **à noite** e **às vezes**, ela costuma aparecer.",
+      pontosChave: ["Identifique a preposição exigida pelo verbo ou nome.", "Crase é a fusão da preposição a com o artigo a.", "O teste do masculino ajuda: a / à costuma corresponder a o / ao."],
+      comoABancaCobra: "A questão apresenta uma frase e pergunta se a preposição ou o acento grave está de acordo com o contexto.",
+      pegadinhasComuns: ["Colocar crase apenas porque a palavra seguinte é feminina.", "Esquecer a preposição pedida pelo verbo.", "Confundir a crase obrigatória com casos facultativos."],
+      exemplos: ["Vou à agência: quem vai, vai a algum lugar; agência admite o artigo a. No masculino, vou ao banco."],
+    },
+    {
+      assunto: "Concordância verbal e nominal",
+      conteudo: "## Concordância\nNa concordância verbal, o verbo acompanha o núcleo do sujeito em pessoa e número. Na frase **A lista de clientes chegou**, o núcleo é *lista*, no singular; *clientes* está dentro de uma expressão que completa o nome.\n\nNa concordância nominal, artigos, pronomes, numerais e adjetivos se ajustam ao substantivo a que se referem: **as propostas aprovadas**. Quando há mais de um núcleo ou uma expressão partitiva, localize primeiro o termo que comanda a concordância e observe o contexto.\n\nUma boa revisão é perguntar: *quem praticou a ação?* Depois, retire termos intercalados e confira o núcleo sem se deixar levar pelo substantivo mais próximo.",
+      pontosChave: ["O verbo concorda com o núcleo do sujeito.", "Termos entre sujeito e verbo não mudam o núcleo.", "Adjetivos e determinantes acompanham o substantivo a que se ligam."],
+      comoABancaCobra: "A banca altera uma forma verbal ou nominal em frases longas e pede a opção que preserva a norma-padrão.",
+      pegadinhasComuns: ["Fazer o verbo concordar com o termo mais próximo, que é complemento.", "Confundir sujeito simples com expressão partitiva.", "Deixar adjetivo no singular quando se refere a substantivo plural."],
+      exemplos: ["A relação de documentos chegou: o núcleo do sujeito é relação, por isso o verbo fica no singular."],
+    },
+  ].flatMap((aula) => {
+    const topico = TOPICOS.find((t) => t.assunto === aula.assunto);
+    return topico ? [[topico.id, { topicoId: topico.id, ...aula, fontes: [] } satisfies AulaDTO]] : [];
+  })
+);
 
 interface Estado {
   tentativas: TentativaBruta[];
@@ -215,6 +248,13 @@ export const apiDemo: Api = {
     e.tentativas[e.tentativas.length - 1].resposta = r.resposta;
     gravar(e);
     return espera(correcao(q, r.resposta, xp, dias));
+  },
+
+  aula(topicoId) {
+    return espera(AULAS_DEMO[topicoId] ?? null);
+  },
+  explicarMais() {
+    return espera({ requerServidor: true, mensagem: "O tutor precisa do servidor. No demo, use a explicação da questão." });
   },
 
   // Diagnóstico do erro (mesma regra do servidor); no demo a resposta marcada sai das tentativas

@@ -46,6 +46,8 @@ import { pesoDoTopico, misturaDasOficiais, cotasPorFaixa, faixaDe, type Mistura 
 import { fatorNaoSabia, palavrasDecisivas, JANELA_NAO_SABIA_DIAS, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../shared/aprendizado.js";
 import type { AcaoMotivoDTO, MotivoErro } from "../shared/tipos.js";
 import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
+import { aulaDoTopico } from "./aulas.js";
+import { explicarSobDemanda } from "./outroJeito.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
@@ -228,6 +230,8 @@ function reabastecerEmSegundoPlano(topicId: string, quantas = 3) {
 // ------------------------------------------------------------
 export const apiServidor: Omit<Api, "modo"> = {
   topicos: listarTopicos,
+  aula: aulaDoTopico,
+  explicarMais: (questaoId, duvida) => explicarSobDemanda(questaoId, String(ALUNO()), duvida),
 
   async painel() {
     const userId = ALUNO();

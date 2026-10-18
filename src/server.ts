@@ -60,6 +60,23 @@ app.get("/api/saude", (_req, res) => {
 
 app.get("/api/topicos", rota(async (_req, res) => res.json(await apiServidor.topicos())));
 app.get("/api/painel", rota(async (_req, res) => res.json(await apiServidor.painel())));
+app.get(
+  "/api/aula/:topicoId",
+  rota(async (req, res) => {
+    const topicoId = String(req.params.topicoId);
+    if (!Types.ObjectId.isValid(topicoId)) return res.status(400).json({ erro: "Tópico inválido." });
+    res.json(await apiServidor.aula(topicoId));
+  })
+);
+app.post(
+  "/api/explicar-mais",
+  rota(async (req, res) => {
+    const { questaoId, duvida } = req.body ?? {};
+    if (!texto(questaoId) || !Types.ObjectId.isValid(questaoId) || (duvida !== undefined && (typeof duvida !== "string" || duvida.length > 500)))
+      return res.status(400).json({ erro: "Envie questaoId válido e uma dúvida de até 500 caracteres." });
+    res.json(await apiServidor.explicarMais(questaoId, typeof duvida === "string" ? duvida : undefined));
+  })
+);
 
 app.get(
   "/api/proxima",

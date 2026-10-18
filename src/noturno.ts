@@ -280,7 +280,8 @@ export async function rodarFila(opcoes: { ate?: Date; max?: number; trabalhadore
       const chave = ({ concluida: "concluidas", descartada: "descartadas", aguardando: "aguardando", esgotada: "esgotadas" } as const)[d.status];
       resumo[chave]++;
       if (t.tipo === "gerar" && d.status === "concluida") resumo.aprovadas++;
-      console.log(`[${k + 1}] ${d.status === "concluida" ? "✔" : d.status === "aguardando" ? "↻" : "✖"} ${t.tipo} ${(t.params as { assunto?: string } | undefined)?.assunto ?? ""} → ${d.status}${"motivo" in d && d.motivo ? ` (${d.motivo})` : ""}`);
+      const detalhe = r.detalhes ? ` — ${r.detalhes.replace(/\s+/g, " ").slice(0, 320)}` : "";
+      console.log(`[${k + 1}] ${d.status === "concluida" ? "✔" : d.status === "aguardando" ? "↻" : "✖"} ${t.tipo} ${(t.params as { assunto?: string } | undefined)?.assunto ?? ""} → ${d.status}${"motivo" in d && d.motivo ? ` (${d.motivo})` : ""}${detalhe}`);
     }
   };
   await Promise.all(Array.from({ length: n }, (_, k) => trabalhador(k)));

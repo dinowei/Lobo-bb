@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AcaoMotivoDTO, Confianca, CorrecaoDTO, Letra, MotivoContestacao, MotivoErro, QuestaoDTO } from "../../../shared/tipos";
+import type { AcaoMotivoDTO, AulaDTO, Confianca, CorrecaoDTO, Letra, MotivoContestacao, MotivoErro, QuestaoDTO } from "../../../shared/tipos";
 import { LETRAS, MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
+import { Markdown } from "../componentes/Markdown";
 import { ISeta } from "../componentes/Icones";
 import { MASCOTE, pct } from "../util";
 
@@ -26,6 +27,14 @@ export function Praticar() {
   const [contestando, setContestando] = useState(false);
   const [acaoMotivo, setAcaoMotivo] = useState<AcaoMotivoDTO | null>(null);
   const [restante, setRestante] = useState<number | null>(null); // revisão com tempo (desatenção)
+  const [aba, setAba] = useState<"aula" | "questoes">("questoes");
+  const [aula, setAula] = useState<AulaDTO | null>(null);
+  const [carregandoAula, setCarregandoAula] = useState(false);
+  const [duvidaTutor, setDuvidaTutor] = useState("");
+  const [respostaTutor, setRespostaTutor] = useState("");
+  const [origemTutor, setOrigemTutor] = useState("");
+  const [restantesTutor, setRestantesTutor] = useState<number | undefined>();
+  const [consultandoTutor, setConsultandoTutor] = useState(false);
   const inicio = useRef(Date.now());
   const filtroUsado = useRef(filtro);
 
@@ -52,6 +61,56 @@ export function Praticar() {
     setSessao({ total: 0, acertos: 0, xp: 0 });
     carregar();
   }, [filtro, carregar]);
+
+  const topicoIdAula = q?.topicoId ?? filtro.topicoId;
+  useEffect(() => {
+    if (!topicoIdAula) {
+      setAula(null);
+      return;
+    }
+    let ativo = true;
+    const chaveVista = `lobo-aula-vista:${topicoIdAula}`;
+    let vista = false;
+    try { vista = localStorage.getItem(chaveVista) === "1"; } catch { /* armazenamento opcional */ }
+    setAba(vista ? "questoes" : "aula");
+    setCarregandoAula(true);
+    api.aula(topicoIdAula)
+      .then((r) => { if (ativo) setAula(r); })
+      .catch(() => { if (ativo) setAula(null); })
+      .finally(() => { if (ativo) setCarregandoAula(false); });
+    return () => { ativo = false; };
+  }, [api, topicoIdAula]);
+
+  useEffect(() => {
+    setDuvidaTutor("");
+    setRespostaTutor("");
+    setOrigemTutor("");
+    setRestantesTutor(undefined);
+  }, [q?.id]);
+
+  function abrirQuestoes() {
+    if (q?.topicoId) {
+      try { localStorage.setItem(`lobo-aula-vista:${q.topicoId}`, "1"); } catch { /* armazenamento opcional */ }
+    }
+    setAba("questoes");
+  }
+
+  async function pedirOutraExplicacao() {
+    if (!q || consultandoTutor) return;
+    setConsultandoTutor(true);
+    setRespostaTutor("");
+    setOrigemTutor("");
+    try {
+      const r = await api.explicarMais(q.id, duvidaTutor.trim() || undefined);
+      setRespostaTutor(r.explicacao ?? r.mensagem ?? "Não consegui buscar uma explicação agora.");
+      setOrigemTutor(r.origem === "pregerada" ? "Explicação preparada para esta questão." : r.origem === "cache" ? "Resposta salva da mesma dúvida." : "Nova resposta conferida.");
+      setRestantesTutor(r.restantesHoje);
+    } catch (e) {
+      setRespostaTutor(e instanceof Error ? e.message : "Não deu para buscar outra explicação agora.");
+    } finally {
+      setConsultandoTutor(false);
+    }
+  }
 
   // contagem do tempo-alvo; não entrega sozinha, só avisa quando estoura
   useEffect(() => {
@@ -133,17 +192,32 @@ export function Praticar() {
         {carregando ? (
           <div className="carregando">Buscando a próxima questão…</div>
         ) : !q ? (
-          <div className="vazio">
-            <img src={MASCOTE} alt="" />
-            <div>
-              <strong>{filtro.revisao ? "Revisões em dia" : "Sem questões aqui por enquanto"}</strong>
-              <p>{aviso ?? "Tente outro tópico."}</p>
-              <div className="acoes">
-                <button className="botao-laranja" onClick={() => ir("praticar")}>Treino inteligente <ISeta /></button>
-                <button className="botao-linha" onClick={() => ir("painel")}>Voltar ao painel</button>
+          <>
+            <div className="vazio">
+              <img src={MASCOTE} alt="" />
+              <div>
+                <strong>{filtro.revisao ? "Revisões em dia" : "Sem questões aqui por enquanto"}</strong>
+                <p>{aviso ?? "Tente outro tópico."}</p>
+                <div className="acoes">
+                  <button className="botao-laranja" onClick={() => ir("praticar")}>Treino inteligente <ISeta /></button>
+                  <button className="botao-linha" onClick={() => ir("painel")}>Voltar ao painel</button>
+                </div>
               </div>
             </div>
-          </div>
+            {filtro.topicoId && (
+              <>
+                <div className="pratica-abas" role="tablist" aria-label="Conteúdo do tópico">
+                  <button role="tab" aria-selected={aba === "aula"} className={aba === "aula" ? "ativa" : ""} onClick={() => setAba("aula")}>Aula</button>
+                  <button role="tab" aria-selected={aba === "questoes"} className={aba === "questoes" ? "ativa" : ""} onClick={() => setAba("questoes")}>Questões</button>
+                </div>
+                {aba === "aula" && (
+                  <article className="aula-topico" role="tabpanel" aria-label={`Aula: ${aula?.assunto ?? "tópico"}`}>
+                    {carregandoAula ? <p>Carregando a aula…</p> : aula ? <><h2>{aula.assunto}</h2><Markdown texto={aula.conteudo} /></> : <p>A aula ainda não foi aprovada. Você pode voltar quando o material entrar na fila de preparação.</p>}
+                  </article>
+                )}
+              </>
+            )}
+          </>
         ) : (
           <>
             {modo === "revisao" && (
@@ -157,6 +231,34 @@ export function Praticar() {
               </div>
             )}
             <Cabecalho q={q} traicoeira={correcao?.traicoeira} />
+
+            <div className="pratica-abas" role="tablist" aria-label="Conteúdo do tópico">
+              <button role="tab" aria-selected={aba === "aula"} className={aba === "aula" ? "ativa" : ""} onClick={() => setAba("aula")}>Aula</button>
+              <button role="tab" aria-selected={aba === "questoes"} className={aba === "questoes" ? "ativa" : ""} onClick={abrirQuestoes}>Questões</button>
+            </div>
+
+            {aba === "aula" ? (
+              <article className="aula-topico" role="tabpanel" aria-label={`Aula: ${aula?.assunto ?? q.assunto}`}>
+                {carregandoAula ? <p>Carregando a aula…</p> : aula ? (
+                  <>
+                    <h2>{aula.assunto}</h2>
+                    <Markdown texto={aula.conteudo} />
+                    <section><h3>Pontos-chave</h3><ul>{aula.pontosChave.map((p) => <li key={p}>{p}</li>)}</ul></section>
+                    <section><h3>Como a banca cobra</h3><p>{aula.comoABancaCobra}</p></section>
+                    <section><h3>Pegadinhas comuns</h3><ul>{aula.pegadinhasComuns.map((p) => <li key={p}>{p}</li>)}</ul></section>
+                    <section><h3>Exemplo</h3><ul>{aula.exemplos.map((p) => <li key={p}>{p}</li>)}</ul></section>
+                    {!!aula.fontes.length && <details><summary>Fontes usadas</summary><ul>{aula.fontes.map((f, i) => <li key={`${f.titulo}-${i}`}><b>{f.titulo}:</b> {f.trecho}</li>)}</ul></details>}
+                    <button className="botao-laranja" onClick={abrirQuestoes}>Já sei, ir para as questões <ISeta /></button>
+                  </>
+                ) : (
+                  <>
+                    <h2>Aula deste tópico</h2>
+                    <p>A aula ainda não foi aprovada. Você pode praticar enquanto ela entra na fila de preparação.</p>
+                    <button className="botao-laranja" onClick={abrirQuestoes}>Ir para as questões <ISeta /></button>
+                  </>
+                )}
+              </article>
+            ) : <>
 
             {correcao && (
               <div className={`resultado-faixa ${correcao.acertou ? "ok" : "nok"}`}>
@@ -217,6 +319,15 @@ export function Praticar() {
                   </div>
                 )}
                 <Licao c={correcao} />
+                <div className="tutor-outro-jeito">
+                  <label htmlFor="duvida-tutor">Me explica de outro jeito</label>
+                  <textarea id="duvida-tutor" rows={2} maxLength={500} value={duvidaTutor} onChange={(e) => setDuvidaTutor(e.target.value)} placeholder="Se quiser, diga qual parte ficou confusa (opcional)." />
+                  <button className="botao-linha" onClick={pedirOutraExplicacao} disabled={consultandoTutor}>
+                    {consultandoTutor ? "Buscando uma explicação…" : "Me explica de outro jeito"}
+                  </button>
+                  {origemTutor && <small>{origemTutor}{restantesTutor !== undefined ? ` · ${restantesTutor} pedido(s) novo(s) restante(s) hoje` : ""}</small>}
+                  {respostaTutor && <p className="resposta-tutor" aria-live="polite">{respostaTutor}</p>}
+                </div>
                 <div className="acoes">
                   <button className="botao-laranja" onClick={proxima} autoFocus>
                     {acaoMotivo?.proximaQuestaoId ? "Próxima: comparar os conceitos" : "Próxima questão"} <ISeta />
@@ -236,6 +347,7 @@ export function Praticar() {
               </>
             )}
             {aviso && <p className="atalho" style={{ marginTop: 16, maxWidth: "70ch" }}>{aviso}</p>}
+            </>}
           </>
         )}
       </section>

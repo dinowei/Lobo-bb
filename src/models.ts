@@ -366,8 +366,53 @@ const RedacaoSchema = new Schema(
 RedacaoSchema.index({ userId: 1, createdAt: -1 });
 export const Redacao = model("Redacao", RedacaoSchema, "redacoes");
 
+// 11. Aulas curtas por tópico: só conteúdo aprovado aparece para o aluno.
+const AulaSchema = new Schema(
+  {
+    topicId: { type: Schema.Types.ObjectId, ref: "Topic", required: true, unique: true, index: true },
+    status: { type: String, enum: ["rascunho", "aprovada", "reprovada"], default: "rascunho", index: true },
+    conteudo: { type: String, required: true },
+    pontosChave: { type: [String], default: [] },
+    comoABancaCobra: { type: String, required: true },
+    pegadinhasComuns: { type: [String], default: [] },
+    exemplos: { type: [String], default: [] },
+    fontes: [{ sourceId: { type: Schema.Types.ObjectId, ref: "Source", required: true }, titulo: String, trecho: String, _id: false }],
+    geradaPor: String,
+    auditoria: { modelo: String, veredito: { type: String, enum: ["aprovada", "reprovada"] }, problemas: [String], em: Date, _id: false },
+    erro: String,
+  },
+  { timestamps: true }
+);
+export const Aula = model("Aula", AulaSchema, "aulas");
+
+// Respostas do tutor pedidas durante o treino, em cache por aluno/questão/dúvida.
+const ExplicacaoTutorSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    questionId: { type: Schema.Types.ObjectId, ref: "Question", required: true },
+    duvidaHash: { type: String, required: true },
+    explicacao: { type: String, required: true },
+    modelo: String,
+  },
+  { timestamps: true }
+);
+ExplicacaoTutorSchema.index({ userId: 1, questionId: 1, duvidaHash: 1 }, { unique: true });
+export const ExplicacaoTutor = model("ExplicacaoTutor", ExplicacaoTutorSchema, "explicacoes_tutor");
+
+// Contador atômico por aluno e dia: cache-hit e explicação pré-gerada não consomem cota.
+const TutorUsoSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    dia: { type: String, required: true },
+    quantidade: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+TutorUsoSchema.index({ userId: 1, dia: 1 }, { unique: true });
+export const TutorUso = model("TutorUso", TutorUsoSchema, "tutor_usos");
+
 // ------------------------------------------------------------
-// 11. TAREFAS — fila persistida do noturno: sobrevive a reinício; falha de infraestrutura
+// 12. TAREFAS — fila persistida do noturno: sobrevive a reinício; falha de infraestrutura
 // volta para a fila com espera crescente; descarte só por qualidade, com motivo.
 // ------------------------------------------------------------
 export const STATUS_TAREFA = ["pendente", "rodando", "aguardando", "concluida", "descartada", "esgotada"] as const;
