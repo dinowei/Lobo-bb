@@ -216,4 +216,31 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
   - aula 2 (Drex) reprovada pelo auditor Super, de outra família: "mais de 400 palavras" (o código já confere o campo `conteudo`; o auditor contou a aula inteira) e menção à Lei 14.478 sem apoio nos trechos (reprovação correta).
 - Ajustes (`dda51ef`): uma rodada de reparo de formato; auditor sem critério de extensão (já conferida por código); proibição explícita de citar número de lei, resolução ou circular ausente dos trechos.
 
-RETOMAR AQUI: S3 — esperar a 3ª aula da 1ª rodada; depois a 2ª (e última) rodada real de 3 aulas com os ajustes (meta ≥ 2 aprovadas); conferir cartão de aula, tutor e "Já sei" no demo e no real. Depois S4.1 (noite curta real, META_APROVADAS_NOITE=10) e S5 (8.6 em diante). Etapa 7: código de todos os assuntos feito (DIARIO acima); faltam só as rodadas reais de 3.
+- 2ª rodada (última pelo S3): 0/3 de novo. Duas por citação parafraseada e uma por lista com mais de 7 itens. O formato já foi reparado sozinho nas três. Depois dela: citação parafraseada passa a ser ancorada na frase literal da fonte (≥ 60% das palavras), JSON embrulhado é desembrulhado e listas longas são cortadas por código (`4e00646`, `14474f9`). Registrado em DECISOES-PENDENTES nº 9; a prova real seguinte é a noite curta.
+- Tela conferida no demo: cartão de aula (Juros compostos), "Já sei, ir para as questões" (grava `lobo-aula-vista:<tópico>` e abre a aba Questões) e "Me explica de outro jeito" (no demo avisa que precisa do servidor; o rótulo "Nova resposta conferida" aparecia sem resposta e foi corrigido). No real, o cartão só aparece com aula aprovada, e ainda não há nenhuma.
+
+## 18/10/2026 — Fase B 8.6 a 8.9 (código, servidor e demo)
+
+- **8.6** (3 commits):
+  - Cartões: normas com trecho literal, número do verso dentro do trecho; vocabulário de Inglês dos textos das provas. Auditor de outra família, revisão espaçada própria (errou → 10 min), 20 novos por dia, noturno `CARTOES_NOITE`, comando `cartoes`. Fonte revogada tira os cartões de circulação (regra 6).
+  - Treino misturado: disciplina sorteada no peso da prova, nunca a mesma da anterior.
+  - Horas líquidas: relógio só com a aba visível, teto de 10 min por questão, ciclo 25/5 ou 50/10 e gráfico semanal no painel.
+- **8.7** Elo (`shared/rating.ts`):
+  - K 32/16; chute certo vale meio acerto.
+  - Dificuldade exibida pelo rating com 5+ respostas.
+  - O treino escolhe perto do seu rating + 50.
+  - O painel mostra o nível estimado por disciplina.
+  - `rating-migrar` (rodou: o banco real ainda não tem tentativas) e `calibragem`.
+- **8.8** Raio-X:
+  - 30 questões médias na proporção da prova, sem correção até o fim e sem tempo.
+  - Define o nível inicial por disciplina e mostra 3 fortes e 3 focos.
+  - Evolução entre Raio-X e convite no painel a cada 30 dias; conquista "Raio-X feito".
+  - Feito um Raio-X no demo. Achado e corrigido: simulado e Raio-X completavam vagas com Probabilidade e Estatística (fora do edital).
+- **8.9** Plano até a prova (`shared/plano.ts`):
+  - Ciclo sem data; Base → Aprofundamento → Reta final com data.
+  - Tempo por cota × fraqueza × rating.
+  - Ajustes de horas por dia e dias da semana; "Plano de hoje" com o que foi cumprido e "semana X de Y"; tela Plano.
+  - Recalculado do estado atual, então atrasar só redistribui.
+- Testes: 136/136. Typecheck do servidor e do web ok.
+
+RETOMAR AQUI: a noite curta real (S4.1: META_APROVADAS_NOITE=10, 3 aulas, 3 lotes de cartões, 5 explicações, 3 temas; log em scratchpad `noite.log`) está rodando. Quando acabar: relatório da noite no DIARIO (aprovadas, aulas e cartões, motivos de descarte) e mostrar uma aula aprovada se houver. Depois: rodadas reais de 3 por assunto da Etapa 7, Etapa 9 (auditoria tela por tela + bateria e2e com os jobs de IA parados) e, por último, ADENDO-BINHO-VOZ.
