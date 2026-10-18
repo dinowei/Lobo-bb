@@ -308,4 +308,15 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
   - Teste com os dois casos reais e garantia de que nenhuma regra de erro diz "o certo é '…'".
 - Máquina sobrecarregada: um `npm run dev` antigo (API + site) tinha ficado órfão depois de o app parar o preview. Encerrado, junto com os previews de teste.
 
+## 18/10/2026 — Etapa 9: bateria e2e completa com os jobs de IA parados (POST-IT C.6)
+
+- Servidores: `bb-estudos` (API + site, para o login), `bb-demo` e `bb-web`. Nenhum job de IA rodando.
+- `scripts/e2e-fluxos.ts`: **6/6** (responder, revisão, simulado completo, contestar com e sem Desfazer, offline/online, redação).
+  - Na 1ª passada, "responder" deu timeout de 30 s porque o Vite recém-ligado ainda compilava nesta máquina lenta (os casos seguintes, com o servidor aquecido, passaram).
+  - Na 2ª passada: 6/6.
+- `scripts/e2e-login.ts`: **7/7** (foco no e-mail, erros, mostrar senha, senha errada, criar conta com convite, entrar, sessão expirada).
+- Carrossel conferido contra o POST-IT C.7: snap e arraste, setas, esmaecido, bolinhas (agora com 24 px de toque), teclado, clique abre Praticar, ordem por prioridade, barra de domínio, reduced-motion.
+
+RETOMAR AQUI: ADENDO-FONTES-ATUAIS (POST-IT 5b), em andamento. Já há campos novos em `models.ts` (`referencias`, `situacaoFonte`, `oQueMudou`) e o tipo `FontesQuestaoDTO`, sem commit. Depois, ADENDO-BINHO-VOZ.
+
 RETOMAR AQUI (antigo): esperar `aulas --n 3` e `cartoes --n 3` (logs em scratchpad `aulas3.log` e `cartoes1.log`) e registrar o resultado (mostrar uma aula aprovada, se houver). Depois, Etapa 9: testes ponta a ponta dos fluxos (login, responder, revisão, simulado completo, redação, contestar, offline/online) com os jobs de IA parados; prints de todas as telas (1440 e 390) em docs/telas/; Lighthouse. Depois: rodadas reais de 3 por assunto da Etapa 7 e, por último, ADENDO-BINHO-VOZ.
