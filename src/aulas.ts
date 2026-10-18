@@ -25,6 +25,19 @@ export function contarPalavrasMarkdown(texto: string) {
   return limpo.match(/[\p{L}\p{N}]+(?:[’'-][\p{L}\p{N}]+)*/gu)?.length ?? 0;
 }
 
+// Fonte listada e não citada no texto (ou repetida) sai por código; ficam no máximo 8. Não muda nenhuma
+// citação: o que sobra ainda passa pela conferência literal em validarAulaGerada.
+export const MAX_FONTES_AULA = 8;
+export function normalizarFontes(aula: Gerada): Gerada {
+  const citados = new Set([...aula.conteudo.matchAll(/\[(\d+)\]/g)].map((m) => Number(m[1])));
+  const vistos = new Set<string>();
+  const fontes = aula.fontes
+    .filter((f) => citados.has(f.indice))
+    .filter((f) => !vistos.has(`${f.indice}|${f.trecho}`) && vistos.add(`${f.indice}|${f.trecho}`))
+    .slice(0, MAX_FONTES_AULA);
+  return { ...aula, fontes };
+}
+
 export function validarAulaGerada(aula: Gerada, disciplina: string, fontes: FonteEntrada[]) {
   if (contarPalavrasMarkdown(aula.conteudo) > 400) return "A aula passou do limite de 400 palavras.";
   const porIndice = new Map(fontes.map((f) => [f.indice, f]));
@@ -104,13 +117,13 @@ async function gerarAula(topicId: string, preferir?: string) {
       const pedido = `${entrada}\n\nSUA RESPOSTA ANTERIOR NÃO SEGUIU O FORMATO (campos com problema: ${faltas}).\n${JSON.stringify(escritor.json).slice(0, 4000)}\n\nReescreva o JSON COMPLETO, com todos os campos do formato pedido.`;
       escritor = await chatJSONFuncao("tutor", AULA_SYSTEM, pedido, 0.1, 3200, { preferir: escritor.modelo });
     }
-    let aula: Gerada = AulaZ.parse(escritor.json);
+    let aula: Gerada = normalizarFontes(AulaZ.parse(escritor.json));
     let erro = validarAulaGerada(aula, topic.disciplina, fontes);
     if (erro) {
       console.log(`↻ Reparando aula de "${topic.assunto}": ${erro}`);
       const correcao = `${entrada}\n\nAULA QUE PRECISA DE CORREÇÃO:\n${JSON.stringify(aula)}\n\nERRO DETERMINÍSTICO: ${erro}\n\nReescreva o JSON completo. Para cada fonte, copie uma sequência literal contínua de 20 a 120 caracteres diretamente dos trechos originais acima; preserve acentos e pontuação. Não invente nem parafraseie citações.`;
       escritor = await chatJSONFuncao("tutor", AULA_SYSTEM, correcao, 0.1, 3200, { preferir: escritor.modelo });
-      aula = AulaZ.parse(escritor.json);
+      aula = normalizarFontes(AulaZ.parse(escritor.json));
       erro = validarAulaGerada(aula, topic.disciplina, fontes);
     }
     if (erro) {

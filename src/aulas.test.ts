@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AulaZ } from "./prompts.js";
-import { contarPalavrasMarkdown, validarAulaGerada } from "./aulas.js";
+import { contarPalavrasMarkdown, normalizarFontes, validarAulaGerada } from "./aulas.js";
 
 const trecho = "O Banco Central define regras e supervisiona as instituições financeiras autorizadas.";
 const fonte = { indice: 1, sourceId: "0123456789abcdef01234567", titulo: "Norma oficial", texto: trecho };
@@ -37,6 +37,18 @@ test("reprova índice de fonte inexistente e trecho que não aparece na fonte", 
 
   const semTrechoLiteral = montar(`A regra consta no material [1]. ${"Contexto conceitual complementar para a aula. ".repeat(3)}`, [{ indice: 1, trecho: "Trecho inventado que não consta no documento original." }]);
   assert.match(validarAulaGerada(semTrechoLiteral, "matematica", [fonte]) ?? "", /não existe literalmente/);
+});
+
+test("normalizarFontes tira as não citadas e repetidas e limita a 8, sem mexer na citação", () => {
+  const conteudo = `Regra A [1] e regra B [3]. ${"Contexto conceitual complementar para a aula. ".repeat(3)}`;
+  const muitas = Array.from({ length: 14 }, (_, i) => ({ indice: (i % 4) + 1, trecho: `${trecho} ${i < 2 ? "" : i}`.trim() }));
+  const n = normalizarFontes(montar(conteudo, [{ indice: 1, trecho }, { indice: 1, trecho }, ...muitas]));
+  assert.ok(n.fontes.every((f) => f.indice === 1 || f.indice === 3));
+  assert.ok(n.fontes.length <= 8);
+  assert.equal(n.fontes.filter((f) => f.indice === 1 && f.trecho === trecho).length, 1);
+  // a não citada que reprovava antes agora sai, e a aula passa
+  const semUso = normalizarFontes(montar(`Regra [1]. ${"Explicação conceitual suficiente para esta aula. ".repeat(3)}`, [{ indice: 1, trecho }, { indice: 2, trecho }]));
+  assert.equal(validarAulaGerada(semUso, "matematica", [fonte]), undefined);
 });
 
 test("reprova fonte listada sem citação no conteúdo e citação extensa", () => {

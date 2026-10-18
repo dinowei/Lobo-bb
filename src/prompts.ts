@@ -407,7 +407,8 @@ export const AulaZ = z.object({
   comoABancaCobra: z.string().min(30),
   pegadinhasComuns: z.array(z.string().min(8)).min(2).max(6),
   exemplos: z.array(z.string().min(12)).min(1).max(4),
-  fontes: z.array(z.object({ indice: z.number().int().min(1), trecho: z.string().min(20) })).max(8),
+  // até 16 aceitas na leitura; o código fica só com as citadas no conteúdo, no máximo 8 (normalizarFontes)
+  fontes: z.array(z.object({ indice: z.number().int().min(1), trecho: z.string().min(20) })).max(16),
 });
 
 export const AULA_SYSTEM = `Você é um professor de cursinho do Banco do Brasil. Escreva uma aula curta, objetiva e correta para o tópico informado.
