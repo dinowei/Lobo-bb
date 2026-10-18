@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { fatorNaoSabia, motivosPorDisciplina, naoSabiaPorTopico, palavrasDecisivas } from "./aprendizado.js";
+import { calibragem, fatorNaoSabia, motivosPorDisciplina, naoSabiaPorTopico, palavrasDecisivas } from "./aprendizado.js";
 import type { Disciplina, TentativaBruta } from "./tipos.js";
 
 const t = (p: Partial<TentativaBruta>): TentativaBruta => ({ questaoId: "q", topicoId: "t1", acertou: false, xp: 0, modo: "treino", data: new Date().toISOString(), ...p });
@@ -26,6 +26,35 @@ test("não sabia conta só na janela recente", () => {
   const velho = new Date(Date.now() - 30 * 86_400_000).toISOString();
   const m = naoSabiaPorTopico([t({ motivoErro: "nao_sabia" }), t({ motivoErro: "nao_sabia", data: velho }), t({ motivoErro: "chutei" })]);
   assert.equal(m.get("t1"), 1);
+});
+
+test("calibragem: taxa por confiança, geral e por disciplina, sem simulado", () => {
+  const disc = new Map<string, Disciplina>([["t1", "informatica"], ["t2", "lingua_portuguesa"]]);
+  const r = calibragem(
+    [
+      t({ confianca: 3, acertou: true }),
+      t({ confianca: 3, acertou: false }),
+      t({ confianca: 1, acertou: false }),
+      t({ topicoId: "t2", confianca: 2, acertou: true }),
+      t({ confianca: 3, acertou: false, modo: "simulado" }),
+      t({}), // sem confiança (dado antigo)
+    ],
+    disc
+  );
+  assert.equal(r[0].disciplina, null);
+  assert.deepEqual(r[0].certeza, { n: 2, acertos: 1 });
+  assert.deepEqual(r[0].chute, { n: 1, acertos: 0 });
+  assert.deepEqual(r[0].duvida, { n: 1, acertos: 1 });
+  assert.deepEqual(r.map((c) => c.disciplina), [null, "lingua_portuguesa", "informatica"]);
+  assert.equal(r[0].ilusao, false); // amostra pequena não alerta
+});
+
+test("ilusão de domínio: certeza abaixo de 85% com 10+ respostas", () => {
+  const disc = new Map<string, Disciplina>([["t1", "informatica"]]);
+  const certezas = (acertos: number, n: number) => Array.from({ length: n }, (_, i) => t({ confianca: 3, acertou: i < acertos }));
+  assert.equal(calibragem(certezas(8, 10), disc)[1].ilusao, true); // 80%
+  assert.equal(calibragem(certezas(9, 10), disc)[1].ilusao, false); // 90%
+  assert.equal(calibragem(certezas(5, 9), disc)[1].ilusao, false); // só 9 respostas
 });
 
 test("motivos por disciplina: só erros fora de simulado", () => {

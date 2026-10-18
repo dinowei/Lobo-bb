@@ -174,4 +174,10 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - Clique no cartão abre Praticar daquela disciplina. Ordenar por prioridade do treino (peso na prova × fraqueza), incluir barra fina de domínio (%) e respeitar `prefers-reduced-motion`.
 - Verificar visualmente em 360 px e 1440 px.
 
-RETOMAR AQUI: concluir a geração real já na fila; em seguida continuar a Etapa 8.3 (calibragem da confiança).
+## 18/10/2026 — Etapa 8.3: calibragem da confiança
+
+- `shared/aprendizado.ts` calcula acertos em certeza, dúvida e chute no geral e por disciplina, exclui simulados e sinaliza ilusão de domínio quando a certeza fica abaixo de 85% com pelo menos 10 respostas.
+- Servidor e demo usam o mesmo motor. O Painel mostra o resumo geral e alertas por disciplina; Conquistas mostra a tabela completa com taxas e amostras.
+- Testes direcionados: 6/6 em `shared/aprendizado.test.ts`. Typecheck concluído.
+
+RETOMAR AQUI: concluir a geração real que espera pela fila do benchmark; depois começar a Etapa 8.4 (redação com correção por IA).

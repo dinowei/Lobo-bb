@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { PESO_PADRAO } from "../../../shared/motor";
 import { MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO, type BancoDTO, type Disciplina, type MotivoErro, type MotivosDisciplinaDTO, type TopicoProgresso } from "../../../shared/tipos";
 import { useApp } from "../estado";
+import { CartaoCalibragem } from "../componentes/Calibragem";
 import { Ilustracao } from "../componentes/Ilustracoes";
 import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
 import { COR_DISC, CURTO, MASCOTE, SIGLA, diasAte, pct } from "../util";
@@ -151,6 +152,7 @@ export function Painel() {
 
         {painel.banco && <CartaoBanco banco={painel.banco} />}
         {painel.motivosErro?.some((d) => d.erros) && <CartaoMotivos linhas={painel.motivosErro} />}
+        {painel.calibragem && <CartaoCalibragem linhas={painel.calibragem} />}
 
         {painel.totalRespondidas === 0 && (
           <div className="vazio" style={{ marginTop: 12 }}>

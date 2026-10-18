@@ -183,6 +183,16 @@ export interface MotivosDisciplinaDTO {
   motivos: Record<MotivoErro, number>;
 }
 
+// Calibragem da confiança (PLANO-MESTRE 5.4): quanto você acerta em cada nível de confiança
+export interface FaixaConfianca { n: number; acertos: number }
+export interface CalibragemDTO {
+  disciplina: Disciplina | null; // null = geral
+  certeza: FaixaConfianca;
+  duvida: FaixaConfianca;
+  chute: FaixaConfianca;
+  ilusao: boolean; // certeza acerta menos de 85% (com amostra mínima)
+}
+
 // O que o app faz com o motivo informado
 export interface AcaoMotivoDTO {
   motivo: MotivoErro;
@@ -241,6 +251,7 @@ export interface PainelDTO {
   simulados: { id: string; data: string; total: number; acertos: number }[];
   totalRespondidas: number;
   motivosErro: MotivosDisciplinaDTO[];
+  calibragem: CalibragemDTO[]; // primeiro o geral, depois por disciplina
   banco?: BancoDTO; // cartão "Banco de questões"
   alertasAdmin?: string[]; // só o admin vê (modelos, regras); o aluno nunca vê menção a IA
 }

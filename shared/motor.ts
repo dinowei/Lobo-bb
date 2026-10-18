@@ -18,7 +18,7 @@ import {
   type TopicoProgresso,
 } from "./tipos.js";
 import { cotasDaProva } from "./estruturaProva.js";
-import { motivosPorDisciplina } from "./aprendizado.js";
+import { calibragem, motivosPorDisciplina } from "./aprendizado.js";
 
 export const FUSO = "America/Sao_Paulo";
 const DIA_MS = 86_400_000;
@@ -223,6 +223,7 @@ export function calcularPainel(input: {
   const melhorDisciplina = Math.max(0, ...disciplinas.map((d) => d.progresso));
   const melhorSimulado = Math.max(0, ...simulados.filter((s) => s.total >= 10).map((s) => s.acertos / s.total));
   const revisoesFeitas = tents.filter((t) => t.modo === "revisao").length;
+  const disciplinaDo = new Map(input.topicos.map((t) => [t.id, t.disciplina]));
 
   const meta = (id: string, titulo: string, descricao: string, valor: number, alvo: number): Conquista => ({
     id,
@@ -262,7 +263,8 @@ export function calcularPainel(input: {
     conquistas,
     simulados,
     totalRespondidas: tents.length,
-    motivosErro: motivosPorDisciplina(tents, new Map(input.topicos.map((t) => [t.id, t.disciplina]))),
+    motivosErro: motivosPorDisciplina(tents, disciplinaDo),
+    calibragem: calibragem(tents, disciplinaDo),
   };
 }
 

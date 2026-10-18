@@ -1,6 +1,7 @@
 import { useApp } from "../estado";
 import { IMedalha, ISeta } from "../componentes/Icones";
 import { MASCOTE, pct } from "../util";
+import { TabelaCalibragem } from "../componentes/Calibragem";
 
 export function Conquistas() {
   const { painel, ir } = useApp();
@@ -44,6 +45,8 @@ export function Conquistas() {
           </div>
         ))}
       </div>
+
+      <TabelaCalibragem linhas={painel.calibragem ?? []} />
 
       <div className="secao" style={{ marginTop: 18 }}>
         <h2>Como o XP funciona</h2>

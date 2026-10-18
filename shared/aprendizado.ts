@@ -1,5 +1,5 @@
 // Diagnóstico do erro (PLANO-MESTRE 5.3) — funções puras usadas pelo servidor e pelo modo demo
-import { DISCIPLINAS, MOTIVOS_ERRO, type Disciplina, type MotivoErro, type MotivosDisciplinaDTO, type TentativaBruta } from "./tipos.js";
+import { DISCIPLINAS, MOTIVOS_ERRO, type CalibragemDTO, type Disciplina, type MotivoErro, type MotivosDisciplinaDTO, type TentativaBruta } from "./tipos.js";
 
 export const REVISAO_CHUTE_MIN = 10; // chutei → a questão volta ainda nesta sessão
 export const TEMPO_ALVO_SEG = 150; // desatenção → revisão com tempo (≈ ritmo da prova)
@@ -58,6 +58,40 @@ export function motivosPorDisciplina(tents: TentativaBruta[], disciplinaDo: Map<
     porDisc.set(d, linha);
   }
   return DISCIPLINAS.flatMap((d) => (porDisc.has(d) ? [porDisc.get(d)!] : []));
+}
+
+// ---------- Calibragem da confiança (PLANO-MESTRE 5.4) ----------
+export const CERTEZA_MINIMA = 0.85; // certeza abaixo disso = ilusão de domínio
+export const AMOSTRA_ILUSAO = 10; // só alerta com pelo menos 10 respostas "certeza" na disciplina
+export const CHUTE_ESPERADO = 0.2; // 1 em 5 alternativas
+
+export function calibragem(tents: TentativaBruta[], disciplinaDo: Map<string, Disciplina>): CalibragemDTO[] {
+  const nova = (disciplina: Disciplina | null): CalibragemDTO => ({
+    disciplina,
+    certeza: { n: 0, acertos: 0 },
+    duvida: { n: 0, acertos: 0 },
+    chute: { n: 0, acertos: 0 },
+    ilusao: false,
+  });
+  const geral = nova(null);
+  const porDisc = new Map<Disciplina, CalibragemDTO>();
+  for (const t of tents) {
+    if (!t.confianca || t.modo === "simulado") continue;
+    const faixa = t.confianca === 3 ? "certeza" : t.confianca === 2 ? "duvida" : "chute";
+    const d = disciplinaDo.get(t.topicoId);
+    const alvos = [geral];
+    if (d) {
+      if (!porDisc.has(d)) porDisc.set(d, nova(d));
+      alvos.push(porDisc.get(d)!);
+    }
+    for (const c of alvos) {
+      c[faixa].n++;
+      if (t.acertou) c[faixa].acertos++;
+    }
+  }
+  const linhas = [geral, ...DISCIPLINAS.flatMap((d) => (porDisc.has(d) ? [porDisc.get(d)!] : []))];
+  for (const c of linhas) c.ilusao = c.certeza.n >= AMOSTRA_ILUSAO && c.certeza.acertos / c.certeza.n < CERTEZA_MINIMA;
+  return linhas;
 }
 
 export const MENSAGEM_MOTIVO: Record<MotivoErro, string> = {

@@ -737,6 +737,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .legenda-motivos { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11px; color: var(--suave); margin-top: 2px; }
 .legenda-motivos > span { display: inline-flex; align-items: center; gap: 4px; }
 .legenda-motivos i { width: 7px; height: 7px; border-radius: 50%; }
+.aviso-ilusao { font-size: 12px; color: var(--errado); }
 .motivo-erro { margin: 14px 0 4px; }
 .motivo-erro .confianca { margin: 0; flex-wrap: wrap; }
 
