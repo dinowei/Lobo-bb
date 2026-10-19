@@ -553,3 +553,12 @@ RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows 
 - Verificação direta: elegibilidade para o simulado fiel (`status: aprovada`) = não; consulta histórica por ID funciona e retorna a nota. A tela exibe o selo “Norma atualizada” e o aviso “essa questão saiu do treino”. Nenhuma alteração adicional foi necessária.
 
 RETOMAR AQUI: item 1c — classificar os dois tópicos doutrinários de Vendas como `nao_se_aplica`, preservando exceções para questões com SAC, suitability ou CDC já presentes no banco.
+
+## 19/10/2026 — Decisão 1c: tópicos doutrinários de Vendas
+
+- Atendimento e Segmentação ficaram `nao_se_aplica` para fonte atual; a classificação não muda `status` nem tira questões do treino.
+- Exceção confirmada: Q57 da BB 2023 (Segmentação) cita o CDC e ficou `confirmada`, ligada ao trecho literal do art. 6º, III, da Lei 8.078/1990.
+- Q58 da BB 2023 menciona SAC apenas como canal na explicação, sem citar o Decreto 11.034; conforme o critério decidido, ficou `nao_se_aplica`. Não foi localizada questão que citasse suitability/Resolução CVM 30 nesses dois tópicos. A Q68 da BB 2021 segue histórica pela revogação da Res. CMN 4.539/2016.
+- No total das 15 questões pendentes desses tópicos: 14 `nao_se_aplica`, 1 `confirmada` (CDC). As questões continuam com seus status de treino anteriores.
+
+RETOMAR AQUI: item 1d — propor em DECISOES as normas oficiais para as 17 questões pendentes de Bancários, com cobertura individual e projeção de espaço no Atlas; não baixar nem ingerir antes do OK do dono.
