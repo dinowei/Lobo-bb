@@ -5,12 +5,26 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ---
 
-## PRIORIDADE ALTA — Gerador e auditor da mesma família (Nemotron)
+## Corrente de modelos — RESOLVIDO 18/10/2026: corrente definitiva (benchmark do auditor, 60 amostras)
 
-> **Decisão provisória do dono (18/10/2026):** gerador `gpt-oss-20b` → Lightning → Muse; o auditor segue
-> a regra de família (gerador OpenAI → Super/Ultra). Aplicado com `npm run bb -- corrente provisoria`.
-> Reavaliar quando o benchmark terminar de madrugada; o texto abaixo continua valendo para a escolha
-> definitiva.
+> **Decisão do dono**, ativa com `npm run bb -- corrente definitiva` (`CORRENTE_DEFINITIVA` em `src/catalogo.ts`;
+> `corrente desfazer` volta à anterior). A regra de família continua valendo.
+>
+> | Função | Corrente |
+> |---|---|
+> | Gerador | gpt-oss-20b → muse-glimmer-30b → lightning (último) |
+> | Auditor | muse-glimmer-30b → nemotron-3-super → nemotron-3-ultra |
+> | Escritor PT | glm-5.3-flash → gpt-oss-20b → muse-glimmer-30b (DeepSeek saiu) |
+> | Juiz PT | nemotron-3-super → nemotron-3-ultra |
+> | Tutor | gpt-oss-20b → muse-glimmer-30b → lightning (último) |
+> | Redação | nemotron-3-super → nemotron-3-ultra → muse-glimmer-30b |
+>
+> - Step 5 Preview continua fora (preview).
+> - **Descanso por taxa:** o modelo com menos de 20% de sucesso em 24 h (com 5+ chamadas) fica 1 h fora da corrente. Depois disso, só as chamadas novas contam. Se toda a corrente estiver descansando, tenta assim mesmo.
+>
+> O texto abaixo é o histórico da decisão.
+
+### (histórico) Gerador e auditor da mesma família (Nemotron)
 
 - **O que é:** a regra nova diz que o auditor nunca é da família de quem gerou (e o juiz de Português nunca
   é da família do escritor). Hoje o gerador é o Lightning e o auditor é o Super: os dois são Nemotron (NVIDIA).
@@ -23,6 +37,29 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   A proposta com evidência, riscos e plano de reversão entra aqui quando o benchmark terminar.
 - **Como aprovar:** tela Benchmark → "Aprovar corrente" (com confirmação e "Desfazer"), ou
   `CORRENTE_ATIVA=1` + `CORRENTE_<FUNÇÃO>` no `.env`.
+
+## 12. Fontes atuais de Vendas e Negociação e de Segurança da informação (média) — PROPOSTA para aprovar
+
+- **Feito (decisão do dono, 18/10/2026):** Informática é conceito técnico → "não se aplica". A exceção é tópico com lei aplicável (Segurança da informação / proteção de dados). Vale para as novas e para as 26 que estavam pendentes (`fontes-atuais migrar`).
+- **Situação hoje** (`npm run bb -- fontes-atuais relatorio`):
+  - Vendas: 29 pendentes e 1 confirmada.
+  - Segurança da informação: 12 pendentes.
+- **Já ingeridas** (oficiais, Vendas): CDC (Lei 8.078, texto compilado, já com a Lei 14.181/2021 do superendividamento), Estatuto da Pessoa com Deficiência (Lei 13.146), Res. CMN 4.949/2021 + 5.117/2024 (relacionamento com clientes) e Res. CMN 4.860/2020 + 5.182/2024 (ouvidoria).
+- **Proposta, por tópico.** Só planalto.gov.br e DOU (in.gov.br); nada foi baixado.
+
+| Tópico (pendentes) | Já temos | Proposta nova (fonte oficial) |
+|---|---|---|
+| Atendimento, satisfação e experiência do cliente (8) | Res. CMN 4.949, 4.860, CDC, Lei 13.146 | **Decreto nº 11.034/2022** (SAC; planalto) · **Lei nº 10.048/2000** (atendimento prioritário; planalto) |
+| Ética, conduta e direitos do consumidor (4) | CDC, Res. CMN 4.949 | Res. CMN 3.919/2010 (tarifas; já na lista 1b, falta o texto do BCB) |
+| Marketing de relacionamento e fidelização (6) | — | **LGPD** (Lei 13.709, já ingerida, hoje ligada a Bancários) · **Lei nº 12.414/2011** (Cadastro Positivo; planalto) |
+| Segmentação de mercado e gestão de carteira (7) | Res. CMN 4.949 | **Resolução CVM nº 30/2021** (adequação do produto ao perfil, "suitability"; publicada no DOU) |
+| Técnicas de negociação (3) | — | Nenhuma norma: é doutrina. Proposta: "não se aplica", como Informática (o glossário de Vendas, item 1, cobre o conceito) |
+| Segurança da informação, Informática (12) | — | **LGPD** e **Res. CMN 4.893/2021 + 5.274/2025** (segurança cibernética), as duas já ingeridas: só ligar ao tópico |
+
+- **Como aprovar:** responda quais linhas valem.
+  - "Baixar" acrescenta a norma em `data/fontes-oficiais.json` e roda `baixar-fontes` e `ingerir-fontes`.
+  - "Ligar" põe os trechos da norma já ingerida também no tópico. Isso muda o que o gerador usa nesse tópico, por isso precisa do seu OK.
+  - Depois, `fontes-atuais conferir` confere de novo as pendentes.
 
 ## 1. Revisar o glossário de Vendas (Etapa 2.4)
 

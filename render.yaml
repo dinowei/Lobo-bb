@@ -32,7 +32,7 @@ envVarGroups:
       - key: ESCRITOR_PT_MODEL
         value: z-ai/glm-5.3-flash
       - key: ESCRITOR_PT_MODEL_RESERVA
-        value: deepseek-ai/deepseek-v4.1-flash
+        value: openai/gpt-oss-20b
       - key: EMBED_MODEL
         value: nvidia/nemotron-3-embed-1b
       - key: EMBED_DIM
@@ -94,7 +94,7 @@ services:
     plan: starter
     region: virginia
     schedule: "0 4 * * *" # 01h00 em Brasília (UTC−3)
-    dockerCommand: npx tsx src/cli.ts noturno --ate 05:30
+    dockerCommand: node --import tsx src/cli.ts noturno --ate 05:30
     envVars:
       - fromGroup: lobo-segredos
       - fromGroup: lobo-config

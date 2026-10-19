@@ -68,7 +68,9 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 - Provas oficiais ingeridas: BB 2023 e BB 2021 (Agente Comercial). A ingestão lê gabarito e disciplinas (capa) por código, extrai com a IA sem "pensar", busca uma a uma as questões que faltarem, copia o texto de apoio e confere cada campo literalmente contra o PDF (`TextoPdf` em `src/extrair.ts`): palavra trocada é corrigida pelo PDF; o que não bate fica de fora. Prova incompleta não é salva.
 - Questões que dependem de figura: `status: "precisa_imagem"` (fora do treino), listadas em `docs/PENDENTES-FIGURA.md`. Anulação pela banca: `npm run bb -- anular --prova "<parte do nome>" --numero <n>`.
 - Leis e normas ingeridas de sites oficiais (`baixar-fontes`, `ingerir-fontes`); 3 normas do BCB pendentes (DECISOES-PENDENTES).
-- Corrente provisória ativa (gerador Lightning → gpt-oss-20b → Muse Glimmer); escolha definitiva espera o dono (benchmark).
+- Corrente DEFINITIVA ativa (`corrente definitiva`, `CORRENTE_DEFINITIVA` em `src/catalogo.ts`): gerador/tutor gpt-oss → Muse → Lightning; auditor Muse → Super → Ultra; escritor PT GLM → gpt-oss → Muse; juiz PT Super → Ultra; redação Super → Ultra → Muse. Modelo com < 20% de sucesso em 24 h descansa 1 h.
+- Fontes atuais: Informática "não se aplica" (exceto tópico com lei, como Segurança da informação); normas de Vendas propostas em DECISOES nº 12.
+- Deploy: Render (lobo-binho.onrender.com, deploy manual pelo dono); a imagem roda `node --import tsx` e abre a PORT antes de conectar no banco.
 - Fase B completa no código (8.1 a 8.9): simulado fiel, diagnóstico do erro, calibragem, redação (25 a 30 linhas por código), aulas e tutor, cartões, treino misturado, horas líquidas, Elo, Raio-X, plano até a prova. Aulas: 0 aprovadas nas rodadas reais até agora (DECISOES nº 9).
 - Etapa 9: error boundary, offline com fila, PWA, atalhos, Desfazer, prints em `docs/telas/`, bateria `npx tsx scripts/e2e-fluxos.ts` (servidores `bb-demo` e `bb-web` do launch.json) e `scripts/e2e-login.ts`.
 - Primeira noite real: 12 aprovadas em 16 tarefas; banco em 166 de 1.200.

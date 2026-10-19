@@ -322,12 +322,16 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   res.status(500).json({ erro: err.message });
 });
 
+// Escuta em process.env.PORT LOGO na partida (o Render procura a porta aberta nos primeiros segundos) e só
+// depois conecta no Mongo: até lá /api/saude responde 503 e o resto das consultas espera a conexão.
 async function iniciar() {
   const uri = process.env.MONGODB_URI;
   if (!uri) throw new Error("Faltou MONGODB_URI no .env");
-  await mongoose.connect(uri);
   const porta = Number(process.env.PORT) || 3333;
-  app.listen(porta, () => console.log(`✔ API em http://localhost:${porta}${existsSync(site) ? " (site incluído)" : ""}`));
+  await new Promise<void>((pronto) => app.listen(porta, "0.0.0.0", () => pronto()));
+  console.log(`✔ API ouvindo na porta ${porta}${existsSync(site) ? " (site incluído)" : ""}; conectando ao banco…`);
+  await mongoose.connect(uri);
+  console.log("✔ Banco conectado");
 }
 iniciar().catch((e) => {
   console.error(`✖ ${e instanceof Error ? e.message : e}`);

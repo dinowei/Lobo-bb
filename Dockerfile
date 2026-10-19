@@ -4,7 +4,8 @@ FROM node:22-bookworm-slim AS base
 WORKDIR /app
 ENV NODE_ENV=production
 
-# dependências primeiro (cache de camada); tsx roda o TypeScript direto, então fica instalado
+# dependências primeiro (cache de camada). O tsx é dependência de PRODUÇÃO (roda o TypeScript direto):
+# fica na imagem depois do prune e nada é baixado na partida (antes o "npx tsx" baixava a cada início).
 COPY package.json package-lock.json ./
 COPY web/package.json web/package-lock.json web/
 RUN npm ci --include=dev --no-audit --no-fund \
@@ -12,13 +13,13 @@ RUN npm ci --include=dev --no-audit --no-fund \
 
 COPY . .
 RUN npm --prefix web run build \
- && npm prune --omit=dev --no-audit || true
+ && npm prune --omit=dev --no-audit --no-fund \
+ && rm -rf web/node_modules \
+ && node --import tsx -e "console.log('tsx ok')"
 
-# tsx é dev, mas é quem roda o servidor: reinstala só ele depois do prune
-RUN npm install --no-save --no-audit --no-fund tsx@4
-
+# o Render passa a porta em PORT; o servidor abre a porta antes de conectar no banco
 ENV PORT=3333
 EXPOSE 3333
 USER node
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s CMD node -e "fetch('http://localhost:'+(process.env.PORT||3333)+'/api/saude').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["npx", "tsx", "src/server.ts"]
+CMD ["node", "--import", "tsx", "src/server.ts"]

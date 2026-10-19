@@ -98,6 +98,25 @@ export function elegiveis(
 }
 
 // Validação de correntes propostas: erro impede aprovar; aviso aparece na tela
+// Corrente definitiva do dono (18/10/2026, benchmark do auditor com 60 amostras). Ativada com
+// "npm run bb -- corrente definitiva"; registrada em DECISOES-PENDENTES.
+const M = {
+  gpt: "openai/gpt-oss-20b",
+  muse: "meta/muse-glimmer-30b",
+  lightning: "nvidia/nemotron-3.5-lightning-30b-a3b",
+  super: "nvidia/nemotron-3-super-120b-a12b",
+  ultra: "nvidia/nemotron-3-ultra-550b-a55b",
+  glm: "z-ai/glm-5.3-flash",
+};
+export const CORRENTE_DEFINITIVA: Correntes = {
+  gerador: [M.gpt, M.muse, M.lightning],
+  auditor: [M.muse, M.super, M.ultra],
+  escritor_pt: [M.glm, M.gpt, M.muse],
+  juiz_pt: [M.super, M.ultra],
+  tutor: [M.gpt, M.muse, M.lightning],
+  redacao: [M.super, M.ultra, M.muse],
+};
+
 export function validarCorrentes(c: Correntes, cat: Catalogo = carregarCatalogo()): { erros: string[]; avisos: string[] } {
   const erros: string[] = [];
   const avisos: string[] = [];

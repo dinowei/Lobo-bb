@@ -421,7 +421,32 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
     - conta conservadora: o maior entre dados e disco, mais os índices.
 - Testes e typecheck ok.
 
-RETOMAR AQUI: decisões do dono depois do benchmark (corrente definitiva, descanso de 1 h para modelo com < 20% de sucesso, fontes atuais de Informática e Vendas, item 11, Dockerfile e PORT para o Render).
+## 18/10/2026 — Decisões do dono depois do benchmark do auditor (60 amostras)
+
+- **Corrente definitiva** ativa (`npm run bb -- corrente definitiva`; `CORRENTE_DEFINITIVA` em `src/catalogo.ts`, com teste: válida, sem ferir a regra de família, sem preview nem DeepSeek).
+  - Gerador e tutor: gpt-oss → Muse → Lightning.
+  - Auditor: Muse → Super → Ultra.
+  - Escritor PT: GLM → gpt-oss → Muse.
+  - Juiz PT: Super → Ultra (único aviso: 2 opções).
+  - Redação: Super → Ultra → Muse.
+  - DeepSeek saiu também do `.env.example` e do `render.yaml`.
+- **Descanso por taxa** (`avaliarTaxas` em `src/corrente.ts`, 3 testes):
+  - Com menos de 20% de sucesso em 24 h (5+ chamadas; voz, embed e benchmark não contam), o modelo fica 1 h fora da corrente.
+  - Depois, só as chamadas novas contam (2 bastam).
+  - Corrente inteira descansando: tenta assim mesmo.
+  - A telemetria é relida no máximo a cada 2 min.
+- **Fontes atuais:**
+  - Informática virou "não se aplica", exceto tópico com lei (Segurança da informação / proteção de dados). 26 pendentes reclassificadas; 12 de Segurança da informação continuam pendentes.
+  - Vendas: proposta de normas oficiais por tópico em DECISOES nº 12 (Decreto 11.034/2022 SAC, Lei 10.048/2000, Lei 12.414/2011, Res. CVM 30/2021 e ligar a LGPD já ingerida), sem baixar nada. Técnicas de negociação: proposta "não se aplica".
+- **Item 11** das Pendências já estava resolvido (Lo, Louise, 16 poses).
+- **Render** (lobo-binho.onrender.com):
+  - tsx agora é dependência de produção; a imagem roda `node --import tsx` (nada de `npx`, que baixava o tsx a cada partida). O build confere `tsx ok`.
+  - O noturno do `render.yaml` também.
+  - O servidor abre `process.env.PORT` (0.0.0.0) **antes** de conectar no Mongo: conferido com `node --import tsx src/server.ts` na porta 3401 ("ouvindo" e depois "Banco conectado"; `/api/saude` 200).
+  - O Docker Desktop está desligado aqui: a imagem é construída pelo Render.
+- Testes 158/158; typecheck ok.
+
+RETOMAR AQUI: dono publica o deploy manual no Render depois do push. Pendentes dele: DECISOES nº 12 (normas de Vendas e ligar LGPD/4.893 a Segurança da informação), glossário de Vendas, 3 normas do BCB, conta de admin.
 
 RETOMAR AQUI (antigo): Binho, o que falta: chat por tópico; telemetria de voz na aba IA; Parte 1 quando o dono puser as 5 poses em `web/src/assets/lobos/`. A voz padrão espera a escolha do dono (amostras em `docs/voz/`). Depois: ENTREGA FINAL do PROMPT-VIAGEM (RELATORIO-VIAGEM.md).
 

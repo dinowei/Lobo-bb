@@ -46,7 +46,7 @@ import { listarModelos } from "./llm.js";
 import { naFila } from "./fila.js";
 import { extrairFigurasOficiais } from "./figuras.js";
 import { indexarQuestoes, calibrar } from "./similaridade.js";
-import { carregarCatalogo, correntesLegado } from "./catalogo.js";
+import { carregarCatalogo, CORRENTE_DEFINITIVA } from "./catalogo.js";
 import { aprovarCorrentes, desfazerCorrentes, correnteAtiva } from "./corrente.js";
 import { sondarModelos, verificarModelos } from "./sondagem.js";
 import { planejarNoite, rodarFila } from "./noturno.js";
@@ -54,7 +54,7 @@ import { planejarPregeracoes } from "./outroJeito.js";
 import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { gerarAulas, planejarAulas } from "./aulas.js";
 import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
-import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, relatorioFontesAtuais } from "./fontesAtuais.js";
+import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, reclassificarSemFonte, relatorioFontesAtuais } from "./fontesAtuais.js";
 import { limparAudios, limparCacheDeOutrasVozes, planejarVoz, tetoAudioMB, vozPadrao } from "./voz.js";
 import { perguntarAoBinho } from "./chatBinho.js";
 import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
@@ -294,7 +294,10 @@ async function main() {
 
       case "fontes-atuais": {
         // ADENDO-FONTES-ATUAIS: migrar (sem IA) · conferir [--n 5] (fila de IA) · relatorio
-        if (args[0] === "migrar") return console.log(`✔ ${await migrarReferencias()} questão(ões) ganharam a camada de fontes (nada foi apagado).`);
+        if (args[0] === "migrar") {
+          console.log(`✔ ${await migrarReferencias()} questão(ões) ganharam a camada de fontes (nada foi apagado).`);
+          return console.log(`✔ ${await reclassificarSemFonte()} pendente(s) viraram "não se aplica" (Informática sem lei aplicável e conceitos estáveis).`);
+        }
         if (args[0] === "relatorio") {
           const r = await relatorioFontesAtuais();
           for (const [d, s] of Object.entries(r.porDisciplina)) console.log(`${d}: ${Object.entries(s).map(([k, v]) => `${k} ${v}`).join(" · ")}`);
@@ -380,23 +383,15 @@ async function main() {
       }
 
       case "corrente": {
-        // decisões do dono em 18/10/2026: reserva PROVISÓRIA do gerador antes do benchmark terminar; depois,
-        // gpt-oss-20b em primeiro (o Lightning dava timeout e vira reserva). Reavaliar com o benchmark.
-        // O auditor é recalculado pela regra de família (corrente.ts). "corrente desfazer" volta ao anterior.
+        // CORRENTE DEFINITIVA (decisão do dono em 18/10/2026, depois do benchmark do auditor com 60 amostras).
+        // A regra de família continua: quem confere nunca é da família de quem gerou/escreveu (corrente.ts).
+        // Step 5 Preview fica fora (preview); DeepSeek saiu do escritor. "corrente desfazer" volta à anterior.
         if (args[0] === "desfazer") return console.log(`✔ voltou para: ${(await desfazerCorrentes()).modo}`);
-        if (args[0] !== "provisoria") throw new Error('Use "corrente provisoria" ou "corrente desfazer".');
-        const LIGHTNING = "nvidia/nemotron-3.5-lightning-30b-a3b", GPT = "openai/gpt-oss-20b", MUSE = "meta/muse-glimmer-30b";
-        const SUPER = "nvidia/nemotron-3-super-120b-a12b", ULTRA = "nvidia/nemotron-3-ultra-550b-a55b";
-        const legado = correntesLegado();
-        const r = await aprovarCorrentes({
-          ...legado,
-          gerador: [GPT, LIGHTNING, MUSE],
-          // gerador NVIDIA → Muse (outra família); gerador OpenAI ou Meta → Super, Ultra
-          auditor: [SUPER, ULTRA, MUSE, GPT],
-          tutor: [LIGHTNING, GPT, MUSE],
-        });
+        if (args[0] !== "definitiva") throw new Error('Use "corrente definitiva" ou "corrente desfazer".');
+        const r = await aprovarCorrentes(CORRENTE_DEFINITIVA);
         if (!r.ok) throw new Error(r.erros.join(" · "));
-        console.log("✔ Corrente provisória ativa (gerador gpt-oss-20b → Lightning → Muse).");
+        console.log("✔ Corrente definitiva ativa:");
+        for (const [f, ids] of Object.entries(CORRENTE_DEFINITIVA)) console.log(`  ${f}: ${ids.map((i) => i.split("/")[1]).join(" → ")}`);
         return r.avisos.forEach((a) => console.log(`  aviso: ${a}`));
       }
 

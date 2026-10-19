@@ -20,9 +20,15 @@ const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").rep
 type Situacao = "confirmada" | "mudou" | "pendente" | "nao_se_aplica";
 type FonteConsulta = { indice: number; sourceId: string; titulo: string; texto: string; url?: string; revogada?: boolean };
 
+// Informática é conceito técnico (decisão do dono, 18/10/2026): não se aplica, exceto tópico com lei
+// aplicável (LGPD em Segurança da informação / proteção de dados)
+export const INFORMATICA_COM_LEI = /seguran[çc]a|prote[çc][ãa]o de dados|lgpd|privacidade/i;
+export const semFonteAtual = (disciplina: Disciplina, assunto = "") =>
+  SEM_FONTE_ATUAL.includes(disciplina) || (disciplina === "informatica" && !INFORMATICA_COM_LEI.test(assunto));
+
 // ---------- partes puras (testadas sem banco) ----------
-export function situacaoInicial(disciplina: Disciplina, temTrechoDeFonte: boolean): Situacao {
-  if (SEM_FONTE_ATUAL.includes(disciplina)) return "nao_se_aplica";
+export function situacaoInicial(disciplina: Disciplina, temTrechoDeFonte: boolean, assunto = ""): Situacao {
+  if (semFonteAtual(disciplina, assunto)) return "nao_se_aplica";
   return temTrechoDeFonte ? "confirmada" : "pendente";
 }
 
@@ -68,7 +74,9 @@ export function fontesDaQuestao(q: {
 
 // ---------- migração: acrescenta a camada sem apagar nada ----------
 export async function migrarReferencias() {
-  const disciplinaDo = new Map((await Topic.find().select("disciplina").lean()).map((t) => [String(t._id), t.disciplina as Disciplina]));
+  const topicos = await Topic.find().select("disciplina assunto").lean();
+  const disciplinaDo = new Map(topicos.map((t) => [String(t._id), t.disciplina as Disciplina]));
+  const assuntoDo = new Map(topicos.map((t) => [String(t._id), t.assunto]));
   const qs = await Question.find({ situacaoFonte: { $exists: false } }).select("origem prova numeroOriginal topicId fontes").lean();
   const titulos = new Map((await Source.find({ _id: { $in: qs.flatMap((q) => (q.fontes ?? []).map((f) => f.sourceId)).filter(Boolean) } }).select("titulo url revogada").lean()).map((s) => [String(s._id), s]));
   let n = 0;
@@ -76,7 +84,7 @@ export async function migrarReferencias() {
     const disciplina = disciplinaDo.get(String(q.topicId));
     if (!disciplina) continue;
     const comTrecho = (q.fontes ?? []).filter((f) => f.trecho && f.sourceId && titulos.get(String(f.sourceId)) && !titulos.get(String(f.sourceId))!.revogada);
-    const situacao = situacaoInicial(disciplina, q.origem === "gerada" && comTrecho.length > 0);
+    const situacao = situacaoInicial(disciplina, q.origem === "gerada" && comTrecho.length > 0, assuntoDo.get(String(q.topicId)));
     const referencias = [
       ...(origemDe(q) ? [origemDe(q)!] : []),
       // gerada com trechoFonte: já é fonte ingerida vigente → vira "atual" direto
@@ -93,13 +101,21 @@ export async function migrarReferencias() {
   return n;
 }
 
+// Regra nova de "não se aplica" (Informática, 18/10/2026) vale também para o que já estava pendente.
+// Só muda a situação da camada de fontes; a questão em si não muda.
+export async function reclassificarSemFonte() {
+  const ids = (await Topic.find().select("disciplina assunto").lean()).filter((t) => semFonteAtual(t.disciplina as Disciplina, t.assunto)).map((t) => t._id);
+  const r = await Question.updateMany({ topicId: { $in: ids }, situacaoFonte: "pendente" }, { $set: { situacaoFonte: "nao_se_aplica" } });
+  return r.modifiedCount;
+}
+
 // ---------- conferência (uma tarefa por questão, na fila da noite) ----------
 async function conferirFonteAtual(questionId: string, preferir?: string) {
   if (!Types.ObjectId.isValid(questionId)) return { ok: false, motivo: "questao_inexistente" };
   const q = await Question.findById(questionId).lean();
   if (!q) return { ok: false, motivo: "questao_inexistente" };
-  const topico = await Topic.findById(q.topicId).select("disciplina").lean();
-  if (!topico || SEM_FONTE_ATUAL.includes(topico.disciplina as Disciplina)) {
+  const topico = await Topic.findById(q.topicId).select("disciplina assunto").lean();
+  if (!topico || semFonteAtual(topico.disciplina as Disciplina, topico.assunto)) {
     await Question.updateOne({ _id: q._id }, { $set: { situacaoFonte: "nao_se_aplica" } });
     return { ok: true };
   }
@@ -145,6 +161,7 @@ pregeracoes["fonte_atual"] = (params, preferir) => conferirFonteAtual((params as
 // Noturno: questões aprovadas pendentes (e oficiais nunca conferidas) das disciplinas com norma
 export async function planejarFontesAtuais(lote: string, max = Number(process.env.FONTES_ATUAIS_NOITE) || 20) {
   await migrarReferencias();
+  await reclassificarSemFonte();
   const abertas = new Set((await Tarefa.distinct("params.questionId", { tipo: "fonte_atual", status: { $in: ["pendente", "rodando", "aguardando"] } })).map(String));
   const qs = await Question.find({ situacaoFonte: "pendente", status: { $in: ["aprovada", "desatualizada"] } }).sort({ updatedAt: 1 }).select("_id").limit(max * 3).lean();
   const novas = qs.map((q) => String(q._id)).filter((id) => !abertas.has(id)).slice(0, max);

@@ -12,6 +12,11 @@ test("Português, Matemática, MF, Probabilidade e Inglês não recebem fonte at
   for (const d of ["lingua_portuguesa", "matematica", "matematica_financeira", "probabilidade_estatistica", "lingua_inglesa"] as const) assert.equal(situacaoInicial(d, true), "nao_se_aplica");
   assert.equal(situacaoInicial("conhecimentos_bancarios", true), "confirmada");
   assert.equal(situacaoInicial("conhecimentos_bancarios", false), "pendente");
+  // Informática: conceito técnico, exceto tópico com lei aplicável (LGPD em Segurança da informação)
+  assert.equal(situacaoInicial("informatica", false, "Planilhas"), "nao_se_aplica");
+  assert.equal(situacaoInicial("informatica", false, "Redes e nuvem"), "nao_se_aplica");
+  assert.equal(situacaoInicial("informatica", false, "Segurança da informação"), "pendente");
+  assert.equal(situacaoInicial("informatica", false, "Proteção de dados pessoais (LGPD)"), "pendente");
 });
 
 test("origem: prova e número da questão só nas oficiais", () => {

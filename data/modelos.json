@@ -42,7 +42,7 @@
     {
       "id": "openai/gpt-oss-20b",
       "familia": "openai",
-      "funcoes": ["gerador", "auditor", "tutor"],
+      "funcoes": ["gerador", "auditor", "tutor", "escritor_pt"],
       "gratis": true,
       "preview": false,
       "parametros": ["reasoning_effort"],
@@ -52,7 +52,7 @@
     {
       "id": "meta/muse-glimmer-30b",
       "familia": "meta",
-      "funcoes": ["gerador", "auditor", "tutor"],
+      "funcoes": ["gerador", "auditor", "tutor", "escritor_pt", "redacao"],
       "gratis": true,
       "preview": false,
       "parametros": ["reasoning_effort", "enable_thinking"],
