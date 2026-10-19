@@ -11,7 +11,8 @@ import { CICLOS_FOCO, TEMPO_MAX_QUESTAO_SEG } from "../../../shared/aprendizado"
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { Markdown } from "../componentes/Markdown";
 import { ISeta } from "../componentes/Icones";
-import { MASCOTE, pct } from "../util";
+import { pct } from "../util";
+import { Pose } from "../componentes/Pose";
 
 const CONFIANCAS: { v: Confianca; rotulo: string }[] = [
   { v: 1, rotulo: "Chutei" },
@@ -243,7 +244,7 @@ export function Praticar() {
 
   // título da aba com a questão da sessão
   useEffect(() => {
-    if (q) document.title = `Questão ${sessao.total + (correcao ? 0 : 1)} · ${q.assunto} · Lobo`;
+    if (q) document.title = `Questão ${sessao.total + (correcao ? 0 : 1)} · ${q.assunto} · Lobo Binho`;
   }, [q, correcao, sessao.total]);
 
   const topico = q && painel?.topicos.find((t) => t.id === q.topicoId);
@@ -280,7 +281,7 @@ export function Praticar() {
         ) : !q ? (
           <>
             <div className="vazio">
-              <img src={MASCOTE} alt="" />
+              <Pose nome="pensativo" largura={70} />
               <div>
                 <strong>{filtro.revisao ? "Revisões em dia" : "Sem questões aqui por enquanto"}</strong>
                 <p>{aviso ?? "Tente outro tópico."}</p>
@@ -328,7 +329,10 @@ export function Praticar() {
               <article className="aula-topico" role="tabpanel" aria-label={`Aula: ${aula?.assunto ?? q.assunto}`}>
                 {carregandoAula ? <p>Carregando a aula…</p> : aula ? (
                   <>
-                    <h2>{aula.assunto}</h2>
+                    <div className="aula-cabeca">
+                      <Pose nome="lo-quadro" largura={150} />
+                      <h2>{aula.assunto}</h2>
+                    </div>
                     <Ouvir texto={textoDaAula(aula)} titulo={`Aula: ${aula.assunto}`} rotulo="Ouvir a aula com a Lo" />
                     <Markdown texto={aula.conteudo} />
                     <section><h3>Pontos-chave</h3><ul>{aula.pontosChave.map((p) => <li key={p}>{p}</li>)}</ul></section>
@@ -496,9 +500,12 @@ export function Praticar() {
             </div>
           </div>
         )}
-        <div className="dica-lobo">
-          <img src={MASCOTE} alt="" />
-          <b>Dica do lobo</b>
+        <div className={`dica-lobo${q && aba === "questoes" ? "" : " sem-pose"}`}>
+          {/* uma pose por tela: na aula quem aparece é a Lo no quadro; sem questão, o Binho pensativo do aviso */}
+          {q && aba === "questoes" && (
+            <Pose nome={consultandoTutor ? "pensativo" : correcao ? "apontando" : "notebook"} largura={64} className="adesivo" alt={consultandoTutor ? "O Binho está pensando…" : undefined} />
+          )}
+          <b>Dica do Binho</b>
           <p>
             {correcao?.dicaDeProva ??
               (correcao ? "Leia a explicação de cada alternativa: é ali que mora a pegadinha da próxima." : "Seja sincero na confiança: chute certo vale metade do XP e volta antes para revisão.")}

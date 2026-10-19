@@ -4,7 +4,7 @@ import { useApp } from "../estado";
 import { destinoItem, textoItem } from "../itensPlano";
 import { hojeLocal, usePlano } from "../usePlano";
 import { ISeta } from "../componentes/Icones";
-import { MASCOTE } from "../util";
+import { Pose } from "../componentes/Pose";
 
 const fmtData = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
 
@@ -15,7 +15,7 @@ export function Plano() {
   const plano = usePlano(ajustes.dataProva ? 6 : 4);
   const hoje = hojeLocal();
   if (!painel) return <div className="carregando">Montando seu plano…</div>;
-  if (!plano) return <div className="vazio"><img src={MASCOTE} alt="" /><div><strong>Sem tópicos ainda</strong><p>Carregue os tópicos do edital para o lobo montar o plano.</p></div></div>;
+  if (!plano) return <div className="vazio"><Pose nome="pensativo" largura={70} /><div><strong>Sem tópicos ainda</strong><p>Carregue os tópicos do edital para o Binho montar o plano.</p></div></div>;
   const feitoHoje = (d: Disciplina) => painel.hojePorDisciplina?.find((x) => x.disciplina === d)?.n ?? 0;
 
   return (
@@ -30,7 +30,10 @@ export function Plano() {
             Atrasou? O plano se refaz sozinho com o que falta.
           </p>
         </div>
-        <button className="botao-linha" onClick={() => ir("ajustes")}>Data, horas e dias</button>
+        <div className="cabeca-acoes">
+          <button className="botao-linha" onClick={() => ir("ajustes")}>Data, horas e dias</button>
+          <Pose nome="mesa" largura={90} carregar="eager" className="cabeca-pose" />
+        </div>
       </div>
       <div className="plano-semanas">
         {plano.semanas.map((s) => (

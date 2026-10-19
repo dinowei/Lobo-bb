@@ -15,7 +15,8 @@ import type {
 import { adminTelas } from "../api/admin";
 import { Markdown } from "../componentes/Markdown";
 import { useApp } from "../estado";
-import { MASCOTE, pct } from "../util";
+import { pct } from "../util";
+import { Pose } from "../componentes/Pose";
 
 type Aba = "ia" | "fila" | "benchmark" | "pendencias";
 const ABAS: { id: Aba; rotulo: string }[] = [
@@ -64,7 +65,7 @@ function Estado({ erro, carregando, tentar, children }: { erro: string | null; c
   if (erro)
     return (
       <div className="vazio" role="alert">
-        <img src={MASCOTE} alt="" />
+        <Pose nome="pensativo" largura={70} />
         <div><b>Não deu para carregar.</b><p>{erro}</p><button className="botao-linha" onClick={tentar}>Tentar de novo</button></div>
       </div>
     );
@@ -104,7 +105,7 @@ export function Admin() {
   if (api.modo !== "servidor")
     return (
       <div className="pagina">
-        <div className="vazio"><img src={MASCOTE} alt="" /><div><b>A tela Admin precisa do servidor.</b><p>Rode "npm run dev" na pasta do projeto.</p></div></div>
+        <div className="vazio"><Pose nome="pensativo" largura={70} /><div><b>A tela Admin precisa do servidor.</b><p>Rode "npm run dev" na pasta do projeto.</p></div></div>
       </div>
     );
 
@@ -280,7 +281,7 @@ function AbaFila() {
               ))}
             </div>
             {!dados.tarefas.length ? (
-              <div className="vazio"><img src={MASCOTE} alt="" /><div><b>Fila vazia.</b><p>O noturno cria as tarefas: <code>npm run bb -- noturno</code>.</p></div></div>
+              <div className="vazio"><Pose nome="pensativo" largura={70} /><div><b>Fila vazia.</b><p>O noturno cria as tarefas: <code>npm run bb -- noturno</code>.</p></div></div>
             ) : (
               <ul className="lista-tarefas">
                 {dados.tarefas.filter((t) => filtro === "todas" || t.status === filtro).map((t) => (
@@ -582,7 +583,7 @@ function AbaPendencias({ irPara }: { irPara: (a: Aba) => void }) {
           )}
           <MudancasDeNorma />
           {!dados.length ? (
-            <div className="vazio"><img src={MASCOTE} alt="" /><div><b>Nada esperando você.</b><p>Quando algo precisar da sua decisão, aparece aqui.</p></div></div>
+            <div className="vazio"><Pose nome="pensativo" largura={70} /><div><b>Nada esperando você.</b><p>Quando algo precisar da sua decisão, aparece aqui.</p></div></div>
           ) : (
             dados.map((p: PendenciaDTO) => (
               <article key={p.titulo} className={`secao pendencia ${p.prioridade ?? ""}`}>

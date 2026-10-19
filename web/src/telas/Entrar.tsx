@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { conta, ErroCampo, type UsuarioDTO } from "../api/conta";
 import { forcaSenha, NOTA_MINIMA, emailValido } from "../../../shared/senha";
-import { MASCOTE } from "../util";
+import { Pose } from "../componentes/Pose";
 
 type Modo = "entrar" | "cadastrar";
 type Erros = Partial<Record<"nome" | "email" | "senha" | "convite" | "geral", string>>;
@@ -64,7 +64,7 @@ export function Entrar({ aoEntrar }: { aoEntrar: (u: UsuarioDTO) => void }) {
     <main className="tela-entrar">
       <div className="cartao-entrar">
         <div className="entrar-marca">
-          <img src={MASCOTE} alt="" />
+          <Pose nome="lo-e-binho" largura={120} carregar="eager" />
           <div>
             <span className="marca">lobo</span>
             <p>Estudos para o Banco do Brasil</p>

@@ -97,10 +97,9 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   color: var(--tinta);
 }
 .cartao-nivel .mascote {
-  position: absolute; left: 10px; top: -48px;
-  width: 96px; height: auto;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,.35));
+  position: absolute; left: 14px; top: -58px;
 }
+.cartao-nivel .mascote img { width: 66px; }
 .cartao-nivel h3 {
   margin: 0 0 4px;
   font-size: 23px; line-height: 1.02; font-weight: 700; letter-spacing: -0.035em;
@@ -203,6 +202,10 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 }
 .hero-texto { display: flex; flex-direction: column; justify-content: space-between; gap: 22px; padding-block: 4px; }
 .hero-texto .ola { margin: 0; font-size: 13px; color: #e7cbbf; }
+.hero-acao { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding-right: 8px; }
+.hero-acao .botao-laranja { align-self: center; }
+.hero-acao .pose img { width: 84px; }
+@media (max-width: 760px) { .hero-acao .pose img { width: 64px; } }
 .hero h1 {
   margin: 6px 0 0;
   font-size: clamp(28px, 3.1vw, 38px);
@@ -562,7 +565,12 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   background: var(--laranja); color: var(--tinta);
   min-height: 86px;
 }
-.dica-lobo img { position: absolute; left: 6px; bottom: 0; width: 64px; }
+.dica-lobo .pose { position: absolute; left: 6px; bottom: 0; }
+.dica-lobo .pose img { width: 64px; }
+.dica-lobo.sem-pose { padding-left: 14px; min-height: 0; }
+.aula-cabeca { display: flex; align-items: center; gap: 14px; }
+.aula-cabeca .pose img { width: 150px; }
+@media (max-width: 760px) { .aula-cabeca .pose img { width: 110px; } }
 .dica-lobo b { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
 .dica-lobo p { margin: 3px 0 0; font-size: 14px; font-weight: 600; line-height: 1.3; }
 .mini-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -702,7 +710,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   text-align: center;
   animation: sobe .35s ease;
 }
-.modal img { width: 130px; margin-top: -70px; }
+.modal .pose img { width: 160px; margin: -120px auto 0; }
 .modal h2 { margin: 6px 0 4px; font-size: 30px; line-height: 1; letter-spacing: -0.04em; }
 .modal p { margin: 0 0 16px; font-weight: 500; }
 .carregando { padding: 40px 22px; color: var(--suave); }
@@ -777,7 +785,8 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .tela-entrar { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: radial-gradient(circle at 20% 0%, rgba(255,91,31,.14), transparent 45%), var(--bg); }
 .cartao-entrar { width: 100%; max-width: 420px; padding: 28px; border-radius: var(--raio-g); background: var(--painel); border: 1px solid var(--linha); }
 .entrar-marca { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-.entrar-marca img { width: 56px; height: 56px; object-fit: contain; }
+.entrar-marca .pose img { width: 120px; }
+@media (max-width: 760px) { .entrar-marca .pose img { width: 96px; } }
 .entrar-marca .marca { font-size: 26px; font-weight: 700; color: var(--laranja); letter-spacing: -0.04em; }
 .entrar-marca p { margin: 0; color: var(--suave); font-size: 13px; }
 .abas-entrar { display: flex; gap: 6px; margin-bottom: 18px; }
@@ -835,7 +844,25 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .botao-ouvir:hover, .botao-ouvir[aria-pressed="true"] { border-color: var(--laranja); }
 @media (pointer: coarse) { .botao-ouvir { min-height: 44px; } }
 
-.estudar-ouvindo { margin-bottom: 14px; }
+.estudar-ouvindo { margin-bottom: 14px; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-items: center; }
+.estudar-ouvindo > .pose { grid-row: span 2; }
+.estudar-ouvindo > .pose img { width: 80px; }
+@media (max-width: 760px) { .estudar-ouvindo > .pose img { width: 56px; } }
+
+/* poses do Binho e da Lo: a altura segue a proporção; no celular encolhem */
+.pose { display: inline-block; flex: none; line-height: 0; }
+.pose img { display: block; max-width: 100%; height: auto; }
+.vazio .pose img { width: 70px; }
+.cabeca-pose img { width: 90px; }
+.cabeca-acoes { display: flex; align-items: flex-end; gap: 14px; }
+@media (max-width: 760px) { .cabeca-pose img { width: 64px; } }
+@media (max-width: 760px) { .pose img { max-width: min(100%, 72vw); } .vazio .pose img { width: 56px; } }
+/* sobre o laranja (cartão do nível): contorno branco de adesivo para a blusa laranja não sumir */
+.adesivo img { filter: drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff) drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff) drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+@media (prefers-reduced-motion: no-preference) {
+  .pose-pula img { animation: pulinho 0.9s cubic-bezier(.3,.7,.4,1) 0.2s 2 both; }
+  @keyframes pulinho { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-14px); } 60% { transform: translateY(-14px) rotate(-2deg); } }
+}
 
 /* mini-player da Lo (aparece só enquanto ela lê) */
 .mini-lo {
@@ -843,13 +870,16 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
   max-width: min(360px, calc(100vw - 32px)); padding: 8px 10px 8px 12px; border-radius: var(--raio);
   background: var(--cartao); border: 1px solid var(--linha); border-left: 3px solid var(--lo); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
-.mini-lo-ponto { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--lo); }
 .mini-lo-texto { display: flex; flex-direction: column; min-width: 0; font-size: 12.5px; }
 .mini-lo-texto .sub { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .mini-lo .botao-linha { min-width: 36px; min-height: 36px; padding: 0 8px; }
 @media (max-width: 760px) { .mini-lo { bottom: 76px; } }
 .voz-da-lo { margin: 0; padding: 10px 12px 4px; border: 1px solid var(--linha); border-left: 3px solid var(--lo); border-radius: var(--raio); }
 .voz-da-lo legend { padding: 0 6px; font-weight: 600; }
+.voz-da-lo-intro { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.voz-da-lo-intro .pose img { width: 64px; }
+.mini-lo .pose img { width: 56px; } /* ~75 px de altura */
+@media (max-width: 760px) { .mini-lo .pose img { width: 44px; } }
 .linha-erro.tocando { border-color: var(--laranja); }
 
 /* Admin: mudanças de norma esperando OK */

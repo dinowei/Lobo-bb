@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useApp, type Tela } from "./estado";
-import { MASCOTE, pct } from "./util";
+import { pct } from "./util";
+import { Pose } from "./componentes/Pose";
 import {
   IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
 } from "./componentes/Icones";
@@ -59,7 +60,7 @@ export function App() {
   const online = useOnline();
   const [menuMais, setMenuMais] = useState(false);
   // título da aba por tela (Praticar e Simulados detalham a questão)
-  useEffect(() => { document.title = `${TITULO[tela]} · Lobo`; }, [tela]);
+  useEffect(() => { document.title = `${TITULO[tela]} · Lobo Binho`; }, [tela]);
   useEffect(() => setMenuMais(false), [tela]);
 
   return (
@@ -85,7 +86,7 @@ export function App() {
         </nav>
         {painel && (
           <div className="cartao-nivel">
-            <img className="mascote" src={MASCOTE} alt="" width={166} height={188} />
+            <Pose nome="em-pe" largura={66} carregar="eager" className="mascote adesivo" />
             <span className="rotulo">Nível {painel.nivel.numero}</span>
             <h3>{painel.nivel.titulo}</h3>
             <div className="barra" role="progressbar" aria-valuenow={Math.round((painel.nivel.xpNoNivel / painel.nivel.xpParaProximo) * 100)} aria-label="Progresso do nível">
@@ -181,10 +182,10 @@ export function App() {
       {subiuNivel && (
         <div className="modal-fundo" role="dialog" aria-modal="true" aria-labelledby="titulo-nivel" onClick={fecharNivel}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <img src={MASCOTE} alt="" />
+            <Pose nome="comemorando" largura={160} carregar="eager" pular className="adesivo" />
             <p style={{ margin: "4px 0 0", opacity: 0.75 }}>Você subiu para o nível {subiuNivel.numero}</p>
             <h2 id="titulo-nivel">{subiuNivel.titulo}</h2>
-            <p>O lobo tá orgulhoso. Bora pro próximo.</p>
+            <p>O Binho tá orgulhoso. Bora pro próximo.</p>
             <button className="botao-escuro" onClick={fecharNivel} autoFocus>Continuar <ISeta /></button>
           </div>
         </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NOME_DISCIPLINA, type Disciplina, type ErroDTO } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { ISeta } from "../componentes/Icones";
-import { MASCOTE } from "../util";
+import { Pose } from "../componentes/Pose";
 import { pausarOuContinuar, tocarLista } from "../leitor";
 
 // aoTocar: posição (na lista mostrada) que está tocando agora, para destacar a linha; -1 = nenhuma
@@ -22,6 +22,7 @@ function EstudarOuvindo({ erros, aoTocar }: { erros: ErroDTO[]; aoTocar: (i: num
   };
   return (
     <div className="secao estudar-ouvindo">
+      <Pose nome="lo-lendo" largura={80} />
       <div>
         <strong>🎧 Estudar ouvindo</strong>
         <span className="sub"> · {atual >= 0 ? `a Lo está lendo ${atual + 1} de ${comExplicacao.length}: ${comExplicacao[atual].assunto}` : `a Lo lê as explicações dos seus erros (${comExplicacao.length}), uma atrás da outra`}</span>
@@ -65,7 +66,7 @@ export function Erros() {
 
       {erros.length === 0 ? (
         <div className="vazio">
-          <img src={MASCOTE} alt="" />
+          <Pose nome="comemorando" largura={70} />
           <div>
             <strong>Caderno limpo</strong>
             <p>Nenhum erro pendente. Quando errar, a questão aparece aqui com o caminho para refazer.</p>

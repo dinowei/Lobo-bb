@@ -4,7 +4,8 @@ import { DIAS_PARA_REFAZER, QUESTOES_DIAGNOSTICO, diagnosticoPendente, fortesEFo
 import { useApp } from "../estado";
 import { Alternativas, Cabecalho } from "../componentes/Questao";
 import { IDir, IEsq, ISeta } from "../componentes/Icones";
-import { MASCOTE, pct } from "../util";
+import { pct } from "../util";
+import { Pose } from "../componentes/Pose";
 
 // Raio-X: 30 questões médias na proporção da prova, sem correção até o fim e sem tempo
 export function Diagnostico() {
@@ -20,7 +21,7 @@ export function Diagnostico() {
     return () => guardarSaida(null);
   }, [rodando, guardarSaida]);
   useEffect(() => {
-    if (rodando) document.title = `Questão ${atual + 1}/${questoes!.length} · Raio-X · Lobo`;
+    if (rodando) document.title = `Questão ${atual + 1}/${questoes!.length} · Raio-X · Lobo Binho`;
   }, [rodando, atual, questoes]);
   const historico = painel?.diagnosticos ?? [];
   const ultimo = historico[historico.length - 1];
@@ -137,7 +138,7 @@ export function Diagnostico() {
   return (
     <div className="pagina">
       <div className="vazio" style={{ maxWidth: 680 }}>
-        <img src={MASCOTE} alt="" />
+        <Pose nome="confiante" largura={70} carregar="eager" />
         <div>
           <strong>Raio-X: descubra seu ponto de partida</strong>
           <p>

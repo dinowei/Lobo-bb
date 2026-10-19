@@ -1,6 +1,7 @@
 import { useApp } from "../estado";
 import { IMedalha, ISeta } from "../componentes/Icones";
-import { MASCOTE, pct } from "../util";
+import { pct } from "../util";
+import { Pose } from "../componentes/Pose";
 import { TabelaCalibragem } from "../componentes/Calibragem";
 
 export function Conquistas() {
@@ -12,7 +13,7 @@ export function Conquistas() {
   return (
     <div className="pagina">
       <div className="nivel-grande">
-        <img src={MASCOTE} alt="Lobo, o mascote" />
+        <Pose nome="comemorando" largura={150} carregar="eager" pular={obtidas > 0} className="adesivo" />
         <div>
           <span className="num" style={{ fontWeight: 500, opacity: 0.75 }}>Nível {nivel.numero} · {painel.xp.toLocaleString("pt-BR")} XP no total</span>
           <h2>{nivel.titulo}</h2>

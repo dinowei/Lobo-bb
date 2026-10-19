@@ -342,7 +342,48 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - Textos: 🔊 "Ouvir com a Lo" / "A Lo está lendo… pausar" / "Continuar com a Lo"; aula "Ouvir a aula com a Lo"; tutor "Ouvir resposta com a Lo"; Estudar ouvindo "a Lo lê as explicações dos seus erros".
 - Mini-player da Lo (`componentes/MiniLo.tsx`): aparece só enquanto ela lê, com pausar/parar e o título. Turquesa `--lo` (#14B8A6) só nele e na borda de "Voz da Lo"; nada mais mudou (regra 8). Media Session mostra "Lo, assistente do Binho".
 
-RETOMAR AQUI: mensagem do dono (Lo, 16 poses, ícone novo, o que faltou). Item 1 (Lo) feito. Próximo: item 2, as 16 poses em `web/src/assets/lobos/` (recorte por código, originais em `originais/`; Lo tem blusa turquesa; `lo-quadro` mantém o quadro). Depois item 3 (ícone laranja; o azul antigo vai para `web/src/assets/originais/`) e item 4 (chat por tópico, linha de voz na aba IA, RELATORIO-VIAGEM.md).
+## 18/10/2026 — 16 poses do Binho e da Lo (item 2)
+
+- `scripts/binho-recortar.py` agora recorta `binho-*` e `lo-*` (originais em `web/src/assets/lobos/originais/`, intactos), com WebP + PNG em 240/520 px e `dimensoes.json`. Aceita nomes na linha de comando para refazer só algumas.
+- Lo: o fundo branco sai igual ao do Binho; o quadro do `lo-quadro` fica (é cercado pela moldura cinza). A tolerância de sombra azulada resolveu o `lo-lendo`, mas comia o sapato em `lo-e-binho` e `lo-quadro`: nesses dois fica uma manchinha clara de chão (mesma limitação do `binho-mesa`).
+- `componentes/Pose.tsx`: `<picture>` WebP/PNG, `srcset` 1x/2x, `width`/`height` da proporção (sem pular layout), `loading="lazy"` (eager só no que está no topo), alt em português ("Binho comemorando", "Lo narrando"); pulinho só em comemoração, dentro de `prefers-reduced-motion: no-preference`.
+- Onde ficou cada pose (uma por tela):
+  - Binho:
+    - em-pe: cartão do nível na lateral (~120 px de altura)
+    - acenando: 1ª visita ao Painel depois de entrar ("Bem-vindo! O Binho vai estudar com você"), uma vez por conta
+    - lendo: Painel quando ainda não respondeu nada ("hora de estudar")
+    - andando: Painel com "Continuar estudando" (próxima tarefa)
+    - notebook: Praticar (dica lateral) e Cartões
+    - mesa: Plano e início do Simulado
+    - escrevendo: Redação
+    - pensativo: estados vazios, erro de tela, redação na fila, tutor gerando ("O Binho está pensando…")
+    - apontando: dica depois da correção (explicação do erro, "Mudou desde a prova") e simulado abaixo da metade
+    - comemorando: modal de nível, Conquistas, simulado acima do corte, cartões fechados, caderno limpo
+    - confiante: Raio-X e simulado médio
+  - Lo:
+    - lo-e-binho: tela de login
+    - lo-quadro: cabeçalho da aula
+    - lo-narrando: mini-player (56 px de largura, ~75 de altura)
+    - lo-lendo: Estudar ouvindo
+    - lo-acenando: "Voz da Lo" em Ajustes
+- No laranja (cartão do nível, dica, modal, Conquistas), contorno branco de adesivo (`.adesivo`) para a blusa laranja do Binho não sumir.
+- Prints: antes em `docs/telas/antes-binho/` (inclui o login antigo), depois em `docs/telas/*-desktop.png` e `*-celular.png`.
+- Typecheck ok; testes 149/149.
+
+## 18/10/2026 — Ícone novo, laranja (item 3)
+
+- Original do dono em `web/src/assets/originais/lobo-quadrado-laranja.jpg`; o azul antigo foi para `web/src/assets/originais/lobo-azul-antigo.png` e não é usado.
+- `scripts/icones.py` (refeito):
+  - (a) Ícones do quadrado como está: PWA 192/512, maskable 512 com zona segura de 80%, apple-touch 180, favicon 16/32/48 e `favicon.ico`.
+  - (b) Lobo solto `web/src/assets/lobo.png` (+ `.webp`). Não recorta por cor:
+    - 1ª passada: o laranja do fundo, das bordas até a borda branca.
+    - 2ª passada: a borda branca até o traço escuro.
+    - A primeira versão, que só parava no traço, entrava na blusa, porque embaixo ela encosta direto na borda branca. O laranja saturado agora segura a inundação.
+    - Por fim, um contorno branco fino de adesivo, conferido no fundo escuro e no laranja.
+  - (c) Procura ✦ (mancha pequena cercada pelo fundo laranja): nenhuma neste original.
+- Nome "Lobo Binho" (`short_name` "Binho"), `theme-color` #ff5b1f, títulos das abas "· Lobo Binho"; cache do service worker `lobo-v2`. A marca escrita "lobo" da lateral não mudou (regra 8).
+
+RETOMAR AQUI: mensagem do dono (Lo, 16 poses, ícone novo, o que faltou). Itens 1, 2 e 3 feitos. Próximo: item 4 (chat "Pergunte ao Binho" por tópico, linha de voz na aba IA do Admin, `docs/RELATORIO-VIAGEM.md`). O lobo solto (`MASCOTE`) não aparece mais nas telas: entra como avatar do Binho no chat.
 
 RETOMAR AQUI (antigo): Binho, o que falta: chat por tópico; telemetria de voz na aba IA; Parte 1 quando o dono puser as 5 poses em `web/src/assets/lobos/`. A voz padrão espera a escolha do dono (amostras em `docs/voz/`). Depois: ENTREGA FINAL do PROMPT-VIAGEM (RELATORIO-VIAGEM.md).
 

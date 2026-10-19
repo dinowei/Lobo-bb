@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RedacaoDTO, TemaRedacaoDTO } from "../../../shared/tipos";
 import { useApp } from "../estado";
+import { Pose } from "../componentes/Pose";
 import { LINHAS_REDACAO, linhasDaFolha } from "../../../shared/redacaoLinhas";
 
 type Rascunho = { texto: string; tempoSeg: number };
@@ -183,7 +184,11 @@ export function Redacao() {
     <div className="pagina">
       <div className="pagina-cabeca">
         <div><h1>Redação</h1><p>Treine o texto dissertativo-argumentativo e acompanhe sua evolução.</p></div>
-        <button className="botao-linha" onClick={() => { setAtual(null); setTexto(""); setTempoSeg(0); }}>Nova redação</button>
+        <div className="cabeca-acoes">
+          <button className="botao-linha" onClick={() => { setAtual(null); setTexto(""); setTempoSeg(0); }}>Nova redação</button>
+          {/* na fila de correção o Binho fica pensativo; no resto, escrevendo */}
+          <Pose nome={pendente ? "pensativo" : "escrevendo"} largura={90} carregar="eager" className="cabeca-pose" alt={pendente ? "O Binho está pensando…" : undefined} />
+        </div>
       </div>
 
       {api.modo === "demo" && <p className="msg-aviso">Modo demo: o tema de exemplo e o rascunho funcionam aqui; a correção precisa do servidor.</p>}

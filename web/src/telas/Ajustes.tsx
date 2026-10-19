@@ -3,6 +3,7 @@ import { useApp, type Ajustes } from "../estado";
 import { zerarDemo } from "../api/demo";
 import { conta, ErroCampo } from "../api/conta";
 import { CampoSenha } from "./Entrar";
+import { Pose } from "../componentes/Pose";
 import { forcaSenha, NOTA_MINIMA } from "../../../shared/senha";
 
 // Minha conta: nome, senha e sair de todos os aparelhos (só com login)
@@ -166,7 +167,10 @@ export function AjustesTela() {
         </label>
         <fieldset className="voz-da-lo">
           <legend>Voz da Lo</legend>
-          <p className="sub" style={{ margin: "0 0 8px" }}>A Lo é a assistente do Binho: é ela quem lê as explicações e as aulas para você.</p>
+          <div className="voz-da-lo-intro">
+            <Pose nome="lo-acenando" largura={64} />
+            <p className="sub" style={{ margin: 0 }}>A Lo é a assistente do Binho: é ela quem lê as explicações e as aulas para você.</p>
+          </div>
           <label htmlFor="voz-lo">
             Voz
             <select id="voz-lo" value={form.vozLo} onChange={(e) => setForm({ ...form, vozLo: e.target.value as Ajustes["vozLo"] })}>

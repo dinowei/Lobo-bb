@@ -4,7 +4,8 @@ import { NOME_DISCIPLINA } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { IEsq, IDir, ISeta } from "../componentes/Icones";
-import { MASCOTE, pct } from "../util";
+import { pct } from "../util";
+import { Pose } from "../componentes/Pose";
 import { RelogioAtivo } from "../relogio";
 import { COTAS_PROVA, ESTRUTURA_PROVA, resumoPorBloco, pontuacaoProva, type Mistura } from "../../../shared/estruturaProva";
 
@@ -49,7 +50,7 @@ export function Simulados() {
     return () => guardarSaida(null);
   }, [rodando, guardarSaida]);
   useEffect(() => {
-    if (rodando) document.title = `Questão ${atual + 1}/${questoes!.length} · Simulado · Lobo`;
+    if (rodando) document.title = `Questão ${atual + 1}/${questoes!.length} · Simulado · Lobo Binho`;
   }, [rodando, atual, questoes]);
 
   useEffect(() => {
@@ -107,7 +108,12 @@ export function Simulados() {
             <h1>Resultado do simulado</h1>
             <p className="num">{resultado.total} questões em {fmt(seg)} · as erradas já entraram na sua revisão espaçada</p>
           </div>
-          <button className="botao-laranja" onClick={() => { setQuestoes(null); setResultado(null); }}>Novo simulado <ISeta /></button>
+          <div className="cabeca-acoes">
+            <button className="botao-laranja" onClick={() => { setQuestoes(null); setResultado(null); }}>Novo simulado <ISeta /></button>
+            {/* bateu o corte: comemora; da metade para cima: confiante; abaixo: aponta para as correções */}
+            {nota >= corte ? <Pose nome="comemorando" largura={110} carregar="eager" pular className="cabeca-pose" />
+              : <Pose nome={nota >= 0.5 ? "confiante" : "apontando"} largura={90} carregar="eager" className="cabeca-pose" />}
+          </div>
         </div>
         <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", marginBottom: 18 }}>
           <div className="secao">
@@ -242,6 +248,7 @@ export function Simulados() {
           <h1>Simulados</h1>
           <p>As questões saem na proporção de cada disciplina na prova. Sem correção até entregar, como na prova.</p>
         </div>
+        <Pose nome="mesa" largura={90} carregar="eager" className="cabeca-pose" />
       </div>
       <p className="num" style={{ color: "var(--suave)", margin: "0 0 6px", fontSize: 13 }}>Prova completa: {COMPOSICAO}</p>
       <p className="num" style={{ color: "var(--suave)", margin: "0 0 16px", fontSize: 13 }}>
@@ -282,7 +289,6 @@ export function Simulados() {
           </table>
         ) : (
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-            <img src={MASCOTE} alt="" style={{ width: 56 }} />
             <p style={{ margin: 0, color: "var(--suave)" }}>Nenhum simulado ainda. Comece pelo Relâmpago para sentir o ritmo.</p>
           </div>
         )}

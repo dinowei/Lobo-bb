@@ -5,7 +5,7 @@ import type { AmostraFiguraDTO, FiguraConferenciaDTO, FiguraDTO, GraficoDados, P
 import { adminFiguras } from "../api/admin";
 import { Figura } from "../componentes/Figura";
 import { useApp } from "../estado";
-import { MASCOTE } from "../util";
+import { Pose } from "../componentes/Pose";
 
 const ROTULO_STATUS: Record<FiguraConferenciaDTO["status"], string> = {
   aguardando_conferencia: "Aguardando conferência",
@@ -49,7 +49,7 @@ export function Figuras() {
   if (api.modo !== "servidor")
     return (
       <div className="pagina">
-        <div className="vazio"><img src={MASCOTE} alt="" /><div><b>A conferência de figuras precisa do servidor.</b><p>Rode "npm run dev" na pasta do projeto.</p></div></div>
+        <div className="vazio"><Pose nome="pensativo" largura={70} /><div><b>A conferência de figuras precisa do servidor.</b><p>Rode "npm run dev" na pasta do projeto.</p></div></div>
       </div>
     );
 
@@ -72,11 +72,11 @@ export function Figuras() {
 
       {filtro === "geradas" ? <Amostras /> : <>
       {erro && (
-        <div className="vazio" role="alert"><img src={MASCOTE} alt="" /><div><b>Não deu para carregar as figuras.</b><p>{erro}</p><button className="botao-linha" onClick={carregar}>Tentar de novo</button></div></div>
+        <div className="vazio" role="alert"><Pose nome="pensativo" largura={70} /><div><b>Não deu para carregar as figuras.</b><p>{erro}</p><button className="botao-linha" onClick={carregar}>Tentar de novo</button></div></div>
       )}
       {!lista && !erro && <div className="esqueleto" style={{ height: 220 }} aria-busy="true" aria-label="Carregando figuras" />}
       {lista && !mostradas.length && (
-        <div className="vazio"><img src={MASCOTE} alt="" /><div><b>Nada pendente.</b><p>Todas as figuras já foram conferidas.</p></div></div>
+        <div className="vazio"><Pose nome="pensativo" largura={70} /><div><b>Nada pendente.</b><p>Todas as figuras já foram conferidas.</p></div></div>
       )}
 
       <div className="lista-figuras">
@@ -109,7 +109,7 @@ function Amostras() {
   }, [carregar]);
 
   if (erro)
-    return <div className="vazio" role="alert"><img src={MASCOTE} alt="" /><div><b>Não deu para montar as amostras.</b><p>{erro}</p><button className="botao-linha" onClick={carregar}>Tentar de novo</button></div></div>;
+    return <div className="vazio" role="alert"><Pose nome="pensativo" largura={70} /><div><b>Não deu para montar as amostras.</b><p>{erro}</p><button className="botao-linha" onClick={carregar}>Tentar de novo</button></div></div>;
   if (!itens) return <div className="esqueleto" style={{ height: 220 }} aria-busy="true" aria-label="Montando amostras" />;
   const so = paramDoHash("assunto");
   const mostradas = so ? itens.filter((a) => semAcento(a.assunto).startsWith(semAcento(so))) : itens;

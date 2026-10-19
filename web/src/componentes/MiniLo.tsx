@@ -2,6 +2,7 @@
 // Turquesa só aqui e em "Voz da Lo" (é a cor da blusa dela); o resto segue o visual de sempre.
 import { useEffect, useState } from "react";
 import { ouvir, parar, pausarOuContinuar } from "../leitor";
+import { Pose } from "./Pose";
 
 export function MiniLo() {
   const [e, setE] = useState<{ id: string | null; estado: string; titulo?: string }>({ id: null, estado: "parado" });
@@ -10,7 +11,7 @@ export function MiniLo() {
   const lendo = e.estado === "tocando";
   return (
     <div className="mini-lo" role="status" aria-live="polite">
-      <span className="mini-lo-ponto" aria-hidden="true" />
+      <Pose nome="lo-narrando" largura={56} carregar="eager" alt="" />
       <div className="mini-lo-texto">
         <strong>{e.estado === "carregando" ? "A Lo está se preparando…" : lendo ? "A Lo está lendo…" : "A Lo pausou"}</strong>
         {e.titulo && <span className="sub">{e.titulo}</span>}

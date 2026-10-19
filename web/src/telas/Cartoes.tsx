@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { NOME_DISCIPLINA, type FilaCartoesDTO, type NotaCartao } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { ISeta } from "../componentes/Icones";
-import { MASCOTE } from "../util";
+import { Pose } from "../componentes/Pose";
 
 const NOTAS: { nota: NotaCartao; rotulo: string; tecla: string }[] = [
   { nota: 1, rotulo: "Errei", tecla: "1" },
@@ -64,11 +64,12 @@ export function Cartoes() {
           <h1>Cartões</h1>
           <p>Leis, normas e vocabulário de Inglês em frente e verso, com a fonte. Errou, volta em 10 minutos; acertou, volta cada vez mais tarde.</p>
         </div>
+        {c && <Pose nome="notebook" largura={90} className="cabeca-pose" />}
       </div>
 
       {erro ? (
         <div className="vazio">
-          <img src={MASCOTE} alt="" />
+          <Pose nome="pensativo" largura={70} />
           <div>
             <strong>Não deu para carregar os cartões</strong>
             <div className="acoes"><button className="botao-laranja" onClick={carregar}>Tentar de novo</button></div>
@@ -78,10 +79,10 @@ export function Cartoes() {
         <div className="carregando">Embaralhando os cartões…</div>
       ) : !c ? (
         <div className="vazio">
-          <img src={MASCOTE} alt="" />
+          {feitos ? <Pose nome="comemorando" largura={70} pular /> : <Pose nome="pensativo" largura={70} />}
           <div>
             <strong>{feitos ? `Fechou por hoje: ${feitos} cartões revisados` : fila.total ? "Nenhum cartão para hoje" : "Os cartões ainda estão sendo preparados"}</strong>
-            <p>{fila.total ? "Os próximos voltam na data certa. Que tal umas questões enquanto isso?" : "O lobo monta cartões novos toda noite a partir das leis e das provas."}</p>
+            <p>{fila.total ? "Os próximos voltam na data certa. Que tal umas questões enquanto isso?" : "O Binho monta cartões novos toda noite a partir das leis e das provas."}</p>
             <div className="acoes"><button className="botao-laranja" onClick={() => ir("praticar")}>Praticar questões <ISeta /></button></div>
           </div>
         </div>

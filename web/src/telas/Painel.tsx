@@ -10,10 +10,19 @@ import { hojeLocal, usePlano } from "../usePlano";
 import { textoItem } from "../itensPlano";
 import { Ilustracao } from "../componentes/Ilustracoes";
 import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
-import { COR_DISC, CURTO, MASCOTE, SIGLA, diasAte, pct } from "../util";
+import { COR_DISC, CURTO, SIGLA, diasAte, pct } from "../util";
+import { Pose } from "../componentes/Pose";
 
 export function Painel() {
-  const { painel, ajustes, ir } = useApp();
+  const { painel, ajustes, ir, usuario } = useApp();
+  // 1ª visita depois de entrar (por conta; sem conta, por navegador): o Binho acena uma vez
+  const chaveVisita = `lobo-boas-vindas-${usuario?.email ?? "local"}`;
+  const [primeiraVisita] = useState(() => {
+    try { return !localStorage.getItem(chaveVisita); } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(chaveVisita, "1"); } catch { /* sem storage: acena de novo, sem problema */ }
+  }, [chaveVisita]);
 
   // disciplinas recomendadas: peso no edital × fraqueza
   const recomendadas = useMemo(() => {
@@ -47,7 +56,7 @@ export function Painel() {
           <div className="hero-texto">
             <div>
               <p className="ola">
-                Salve, {ajustes.nome || "concurseiro"}!
+                {primeiraVisita ? "Bem-vindo! O Binho vai estudar com você" : `Salve, ${ajustes.nome || "concurseiro"}!`}
                 {faltam !== null && faltam >= 0 && <> · faltam <b className="num">{faltam}</b> dias para a prova</>}
                 {plano?.totalSemanas && <> · <button className="link" onClick={() => ir("plano")}>semana <b className="num">{plano.semanaAtual}</b> de <b className="num">{plano.totalSemanas}</b></button></>}
               </p>
@@ -59,9 +68,13 @@ export function Painel() {
                 )}
               </h1>
             </div>
-            <button className="botao-laranja" onClick={() => ir("praticar")}>
-              {n > 0 ? "Continuar estudando" : "Começar agora"} <ISeta />
-            </button>
+            <div className="hero-acao">
+              <button className="botao-laranja" onClick={() => ir("praticar")}>
+                {n > 0 ? "Continuar estudando" : "Começar agora"} <ISeta />
+              </button>
+              {/* uma pose só: acenando na 1ª visita, lendo na hora de estudar, andando para a próxima tarefa */}
+              <Pose nome={primeiraVisita ? "acenando" : n > 0 ? "andando" : "lendo"} largura={84} carregar="eager" />
+            </div>
           </div>
           <CarrosselDisciplinas disciplinas={recomendadas} onPraticar={(disciplina) => ir("praticar", { disciplina })} />
         </div>
@@ -125,10 +138,9 @@ export function Painel() {
         )}
         {diagnosticoPendente(painel.diagnosticos?.[painel.diagnosticos.length - 1]?.data) && (
           <button className="evento convite-raiox" onClick={() => ir("diagnostico")}>
-            <img src={MASCOTE} alt="" />
             <span>
               <strong>{painel.diagnosticos?.length ? "Hora de refazer o Raio-X" : "Faça seu Raio-X"}</strong>
-              <span className="sub">{painel.diagnosticos?.length ? "Já faz 30 dias: veja quanto você evoluiu." : "30 questões para o lobo saber onde você está e não gastar seu tempo com o que já sabe."}</span>
+              <span className="sub">{painel.diagnosticos?.length ? "Já faz 30 dias: veja quanto você evoluiu." : "30 questões para o Binho saber onde você está e não gastar seu tempo com o que já sabe."}</span>
             </span>
           </button>
         )}
@@ -177,7 +189,6 @@ export function Painel() {
 
         {painel.totalRespondidas === 0 && (
           <div className="vazio" style={{ marginTop: 12 }}>
-            <img src={MASCOTE} alt="" style={{ width: 52 }} />
             <p style={{ margin: 0 }}>Cada questão respondida vira XP, agenda revisões e mostra seus pontos fracos aqui.</p>
           </div>
         )}
