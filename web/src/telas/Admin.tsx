@@ -205,7 +205,10 @@ function UsoDoBanco({ b }: { b: NonNullable<AdminIADTO["banco"]> }) {
       </div>
       <div className="barra" role="progressbar" aria-label="Uso do banco" aria-valuenow={Math.round(b.fracao * 100)}><i style={{ width: pct(Math.min(1, b.fracao)) }} /></div>
       <dl className="metricas">
-        <div><dt>Dados · índices · disco</dt><dd>{b.dadosMB} · {b.indicesMB} · {b.discoMB} MB</dd></div>
+        <div><dt>Dados · índices · disco (dbStats)</dt><dd>{b.dadosMB} · {b.indicesMB} · {b.discoMB} MB</dd></div>
+        <div><dt>Última referência do Atlas</dt><dd>{b.atlasReferenciaMB} MB (Data Size informado)</dd></div>
+        <div><dt>Vector Search (estimativa)</dt><dd>{b.indiceVetorMB} MB · {b.chunks} chunks × {b.vetorKBPorChunk} KB ({b.dimensoesVetor} dimensões)</dd></div>
+        <div><dt>Projeção de espaço</dt><dd>+{b.crescimentoKBPorChunk} KB/chunk · ~{b.novosChunksAteAlerta.toLocaleString("pt-BR")} até o alerta de 80% · ~{b.novosChunksAteLimite.toLocaleString("pt-BR")} até {b.limiteMB} MB</dd></div>
         <div><dt>Áudio da Lo</dt><dd>{b.audioMB} de {b.tetoAudioMB} MB (teto; saem os menos ouvidos)</dd></div>
         <div><dt>O que mais pesa</dt><dd>{b.colecoes.map((c) => `${c.nome} ${c.mb}`).join(" · ")} MB</dd></div>
         <div><dt>Telemetria</dt><dd>apagada sozinha em 30 dias</dd></div>

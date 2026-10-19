@@ -461,7 +461,7 @@ RETOMAR AQUI (antigo): esperar `aulas --n 3` e `cartoes --n 3` (logs em scratchp
 - E-mails não exemplares apareceram em 3 locais de script/teste/configuração e nos metadados de autoria de 72 commits (domínio de provedor pessoal). Valores omitidos neste registro; nenhum endereço foi copiado para logs ou commits.
 - O print local `docs/telas/login/entrar-celular.png` segue fora do stage e será preservado.
 
-RETOMAR AQUI: calibrar o uso do Atlas aos 165,05 MB reais, estimar crescimento do índice vetorial por chunk e incluir a projeção no alerta de 80%.
+RETOMAR AQUI: aplicar as fontes atuais aprovadas, fazer as duas conferências por disciplina e registrar os resultados.
 
 ## 19/10/2026 — fontes atuais por decisão do dono
 
@@ -472,3 +472,12 @@ RETOMAR AQUI: calibrar o uso do Atlas aos 165,05 MB reais, estimar crescimento d
 - `fontes-atuais conferir` agora aceita `--disciplina`, para não consumir pendências de outra matéria. Typecheck geral permaneceu travado sem saída após 35 s e foi interrompido; os comandos alterados foram executados com sucesso pelo CLI.
 
 RETOMAR AQUI: calibrar o uso do Atlas aos 165,05 MB reais, estimar crescimento do índice vetorial por chunk e incluir a projeção no alerta de 80%.
+
+## 19/10/2026 — uso do Atlas calibrado pela tela do cluster
+
+- Referência observada pelo dono: 165,05 MB de 512 MB em Project 0 → Overview → Cluster0. No momento da calibração havia 847 chunks, 31,6 MB de dados e 2,3 MB de índices no `dbStats`; o `storageSize` era 57,6 MB.
+- `uso-banco` agora usa a referência Atlas, adiciona a mudança em dados/índices e estima Vector Search a 9,6 KiB por chunk de 2.048 dimensões (float32 + 20% de metadados ANN). A projeção também soma tamanho médio do chunk e índice B-tree por chunk.
+- Após ingerir as quatro fontes aprovadas, o banco tem 904 chunks: uso estimado 167,14 MB (33%), índice vetorial estimado 8,48 MB, crescimento de 38,1 KB por chunk novo; cerca de 6.516 chunks até o alerta de 80% e 9.268 até 512 MB.
+- A referência e a estimativa aparecem na aba Admin → IA; o alerta também informa a estimativa vetorial. `npm run bb -- uso-banco` executou e o typecheck do site passou. A projeção é aproximada; o valor mais recente no Atlas pode ser usado para recalibrá-la.
+
+RETOMAR AQUI: testar três perguntas de Conhecimentos Bancários em "Pergunte ao Binho" após a busca de 300 trechos e registrar quantas foram aprovadas; depois criar o script e a instrução do Agendador de Tarefas para o noturno local.

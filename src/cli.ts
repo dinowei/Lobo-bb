@@ -265,7 +265,9 @@ async function main() {
           console.log(`Áudio: ${l.removidos} removido(s); cache em ${l.mb} MB (teto ${tetoAudioMB()} MB).`);
         }
         const [total, cols] = await Promise.all([usoBanco(), medirColecoes()]);
-        console.log(`Banco: ${total.usadoMB} MB de ${total.limiteMB} MB (${Math.round(total.fracao * 100)}%) · dados ${total.dadosMB} · índices ${total.indicesMB} · em disco ${total.discoMB}\n`);
+        console.log(`Atlas: ${total.usadoMB} MB de ${total.limiteMB} MB (${Math.round(total.fracao * 100)}%) · dbStats: dados ${total.dadosMB} · índices ${total.indicesMB} · em disco ${total.discoMB} MB`);
+        console.log(`Índice vetorial estimado: ${total.indiceVetorMB} MB · ${total.chunks} chunks × ${total.vetorKBPorChunk} KB (${total.dimensoesVetor} dimensões)`);
+        console.log(`Projeção: +${total.crescimentoKBPorChunk} KB por chunk novo · ~${total.novosChunksAteAlerta.toLocaleString("pt-BR")} chunks até o alerta de 80% · ~${total.novosChunksAteLimite.toLocaleString("pt-BR")} até ${total.limiteMB} MB\n`);
         console.log("coleção                     docs     dados MB  índices MB  disco MB  média KB");
         for (const c of cols) console.log(`${c.nome.padEnd(26)} ${String(c.docs).padStart(6)}  ${String(c.dadosMB).padStart(9)}  ${String(c.indicesMB).padStart(10)}  ${String(c.discoMB).padStart(8)}  ${String(c.mediaKB).padStart(8)}`);
         const bancos = await bancosDoCluster();

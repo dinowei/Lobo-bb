@@ -215,3 +215,9 @@ Histórico:
 
 Resolvido: **baixar leis e normas** — autorizado por você em 17/10/2026, só de sites oficiais
 (planalto.gov.br, bcb.gov.br, normativos do CMN/BCB, in.gov.br). Fica na Etapa 2.
+
+## Espaço no Atlas M0 — RESOLVIDO por decisão do dono (19/10/2026)
+
+- Usar como referência real o `Data Size: 165,05 MB / 512 MB` mostrado em Project 0 → Overview → Cluster0. O `dbStats` local não inclui o índice vetorial `chunks_vector` nem todo o overhead do cluster/oplog.
+- Para estimar o índice: 2.048 dimensões × 4 bytes por float32, com mais 20% para metadados do índice ANN = aproximadamente 9,6 KiB por chunk. O fator é uma estimativa, não uma medição do Atlas.
+- A projeção e o alerta de 80% usam a referência calibrada mais a variação do banco e do índice estimado. O detalhe aparece em `npm run bb -- uso-banco` e em Admin → IA.

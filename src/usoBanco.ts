@@ -10,6 +10,20 @@ export const LIMITE_ATLAS_MB = Number(process.env.ATLAS_LIMITE_MB) || 512;
 export const ALERTA_USO = 0.8;
 const MB = 1_048_576;
 const mb = (b: number) => Math.round((b / MB) * 10) / 10;
+const mb2 = (n: number) => Math.round(n * 100) / 100;
+
+// Calibração informada pelo dono no Atlas (Project 0 → Overview → Cluster0), em 18/10/2026.
+// Na mesma coleta, dbStats marcava 31,6 MB de dados + 2,3 MB de índices (57,6 MB em disco) e havia
+// 847 chunks; o restante cobre índice vetorial, oplog e outros bytes que dbStats não mostra. O vetor
+// float32 ocupa 8 KiB; +20% estima
+// metadados do índice ANN por chunk. Atualize a referência se o Atlas mostrar uma nova medida.
+export const ATLAS_REFERENCIA_MB = 165.05;
+const ATLAS_REFERENCIA_DB_MB = 33.9;
+const ATLAS_REFERENCIA_CHUNKS = 847;
+const ATLAS_REFERENCIA_DIM = 2048;
+const OVERHEAD_INDICE_VETORIAL = 1.2;
+const dimensoesVetor = () => Math.max(1, Number(process.env.EMBED_DIM) || ATLAS_REFERENCIA_DIM);
+const bytesPorVetor = (dim: number) => Math.ceil(dim * 4 * OVERHEAD_INDICE_VETORIAL);
 
 export interface ColecaoUso { nome: string; docs: number; dadosMB: number; discoMB: number; indicesMB: number; mediaKB: number }
 
@@ -49,12 +63,56 @@ export async function bancosDoCluster() {
 // Conservador: o maior entre dados + índices e disco + índices (o disco inclui espaço de documentos
 // apagados que o WiredTiger ainda não devolveu). Medido em 18/10/2026: 33,9 MB e 59,9 MB.
 export async function usoBanco(): Promise<UsoBancoDTO> {
-  const s = await mongoose.connection.db!.stats();
-  const usadoMB = mb(Math.max(s.dataSize ?? 0, s.storageSize ?? 0) + (s.indexSize ?? 0));
-  return { usadoMB, limiteMB: LIMITE_ATLAS_MB, fracao: usadoMB / LIMITE_ATLAS_MB, alerta: usadoMB / LIMITE_ATLAS_MB >= ALERTA_USO, dadosMB: mb(s.dataSize ?? 0), indicesMB: mb(s.indexSize ?? 0), discoMB: mb(s.storageSize ?? 0) };
+  const db = mongoose.connection.db!;
+  const [s, chunkRows] = await Promise.all([
+    db.stats(),
+    db.collection("chunks").aggregate<{ storageStats: { count: number; totalIndexSize: number; avgObjSize?: number } }>([{ $collStats: { storageStats: {} } }]).toArray().catch(() => []),
+  ]);
+  const chunkStats = chunkRows[0]?.storageStats;
+  const chunks = chunkStats?.count ?? await db.collection("chunks").estimatedDocumentCount().catch(() => 0);
+  const dim = dimensoesVetor();
+  const vetorBytes = bytesPorVetor(dim);
+  const indiceVetorBytes = chunks * vetorBytes;
+  const indiceVetorMB = indiceVetorBytes / MB;
+  const indiceBaseMB = (ATLAS_REFERENCIA_CHUNKS * bytesPorVetor(ATLAS_REFERENCIA_DIM)) / MB;
+  const externoBaseMB = Math.max(0, ATLAS_REFERENCIA_MB - ATLAS_REFERENCIA_DB_MB - indiceBaseMB);
+  const dadosMB = (s.dataSize ?? 0) / MB;
+  const discoMB = (s.storageSize ?? 0) / MB;
+  const indicesMB = (s.indexSize ?? 0) / MB;
+  // O Data Size cresce com os bytes lógicos gravados; `storageSize` permanece como diagnóstico,
+  // pois espaço pré-alocado do WiredTiger não representa crescimento por chunk.
+  const nativoMB = dadosMB + indicesMB;
+  const usadoMB = mb2(Math.max(ATLAS_REFERENCIA_MB, nativoMB + externoBaseMB + indiceVetorMB));
+  const mediaChunkKB = (chunkStats?.avgObjSize ?? 0) / 1024;
+  const indiceBtreePorChunkKB = chunks ? (chunkStats?.totalIndexSize ?? 0) / chunks / 1024 : 0;
+  const vetorKBPorChunk = Math.round((vetorBytes / 1024) * 10) / 10;
+  const crescimentoKBPorChunk = Math.round((mediaChunkKB + indiceBtreePorChunkKB + vetorKBPorChunk) * 10) / 10;
+  const crescimentoMBPorChunk = crescimentoKBPorChunk / 1024;
+  const novosChunksAteAlerta = crescimentoMBPorChunk > 0 ? Math.max(0, Math.floor((LIMITE_ATLAS_MB * ALERTA_USO - usadoMB) / crescimentoMBPorChunk)) : 0;
+  const novosChunksAteLimite = crescimentoMBPorChunk > 0 ? Math.max(0, Math.floor((LIMITE_ATLAS_MB - usadoMB) / crescimentoMBPorChunk)) : 0;
+  const fracao = usadoMB / LIMITE_ATLAS_MB;
+  return {
+    usadoMB,
+    limiteMB: LIMITE_ATLAS_MB,
+    fracao,
+    alerta: fracao >= ALERTA_USO,
+    dadosMB: mb(s.dataSize ?? 0),
+    indicesMB: mb(s.indexSize ?? 0),
+    discoMB: mb(s.storageSize ?? 0),
+    atlasReferenciaMB: ATLAS_REFERENCIA_MB,
+    chunks,
+    dimensoesVetor: dim,
+    indiceVetorMB: mb2(indiceVetorMB),
+    vetorKBPorChunk,
+    crescimentoKBPorChunk,
+    novosChunksAteAlerta,
+    novosChunksAteLimite,
+  };
 }
-export const alertaDoBanco = (u: UsoBancoDTO) =>
-  u.alerta ? `Banco em ${Math.round(u.fracao * 100)}% do limite do Atlas grátis (${u.usadoMB} de ${u.limiteMB} MB). Veja "npm run bb -- uso-banco".` : null;
+export const alertaDoBanco = (u: Pick<UsoBancoDTO, "alerta" | "fracao" | "usadoMB" | "limiteMB"> & Partial<Pick<UsoBancoDTO, "atlasReferenciaMB" | "indiceVetorMB" | "chunks" | "dimensoesVetor">>) =>
+  u.alerta
+    ? `Banco em ${Math.round(u.fracao * 100)}% do limite do Atlas grátis (${u.usadoMB} de ${u.limiteMB} MB; referência Atlas ${u.atlasReferenciaMB ?? "—"} MB; índice vetorial estimado ${u.indiceVetorMB ?? "—"} MB para ${u.chunks ?? "—"} chunks de ${u.dimensoesVetor ?? "—"} dimensões). Veja "npm run bb -- uso-banco".`
+    : null;
 
 // Telemetria some em 30 dias. Índice TTL que já existia (35 dias) não muda sozinho: collMod ajusta no lugar.
 export async function ajustarTTLTelemetria() {
