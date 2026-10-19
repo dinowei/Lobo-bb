@@ -155,8 +155,10 @@ sem IA) de todos e deixe as rodadas reais de 3 questões para o fim.
 ETAPA 8: ESTUDO DE ALTO RENDIMENTO (FASE B)
 ======================================================================
 Na ordem, um commit por item, servidor e modo demo juntos:
-8.1 Simulado fiel (PROMPTS-MELHORIAS §1). Use as 132 oficiais para a distribuição de
-    dificuldade.
+8.1 Simulado fiel (PROMPTS-MELHORIAS §1), concluído. `132 oficiais` é a contagem histórica
+    usada naquele planejamento, não um total atual. Fotografia do Atlas em 19/10/2026:
+    137 oficiais; 131 aprovadas e elegíveis (65 BB 2021, 66 BB 2023). O código atual usa
+    questões aprovadas de tópicos ativos nas disciplinas do edital, sem cota fixa por origem.
 8.2 Diagnóstico do tipo de erro (PLANO-MESTRE 5.3).
 8.3 Calibragem da confiança (5.4).
 8.4 Redação com correção por IA (PROMPTS-MELHORIAS §2).

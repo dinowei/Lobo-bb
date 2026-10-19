@@ -582,3 +582,39 @@ RETOMAR AQUI: item 1c — classificar os dois tópicos doutrinários de Vendas c
 - `ROADMAP.md` agora marca a Etapa 7 como concluída, veta repetição integral e deixa o benchmark noturno como próxima etapa; no bloco da Etapa 9, registra que fluxos e login já passaram e que falta o Lighthouse.
 
 RETOMAR AQUI: item 4 — atualizar o noturno local para dois trabalhadores, conferir `.env.example` e as instruções do Agendador; o relatório da primeira noite só poderá ser registrado depois que ela rodar.
+
+SPRINT CODEX 19/10/2026
+1. P0.1: fotografar o Atlas em leitura, reconciliar números por status/ID e sincronizar o estado atual nos documentos.
+2. P0.2: tornar o Agendador/noturno confiável, com prioridade da janela, limite de 4h30, log diário e proteção contra duplicidade.
+3. P0.3: backup gzip do Atlas com manifest, retenção, simulação de restauração e rollback documentado.
+4. P0.4–P0.5: smoke test da produção e correção/testes da voz Louise.
+5. P1 e P2: seguir a ordem do sprint; fontes de Bancários aguardam OK explícito do dono.
+
+## 19/10/2026 — P0.1: fotografia somente leitura do Atlas e reconciliação
+
+- Consulta em `bb-estudos.questions` com `$group` por `status`/`origem`, `variacao.tipo` e `prova`; junção somente de `_id` do tópico, disciplina e `ativo`. Trava `fila_jobs/job_de_ia` ausente. A elegibilidade oficial foi calculada como `status: aprovada`, tópico ativo e disciplina com cota no edital, conforme `src/estudo.ts`; nenhuma escrita no banco.
+- Para reproduzir no `mongosh` já conectado ao Atlas, executar somente agregações de leitura:
+
+```javascript
+db.questions.aggregate([{ $group: { _id: "$status", n: { $sum: 1 } } }, { $sort: { _id: 1 } }]);
+db.questions.aggregate([{ $group: { _id: "$origem", n: { $sum: 1 } } }, { $sort: { _id: 1 } }]);
+db.questions.aggregate([{ $match: { "variacao.tipo": { $type: "string", $ne: "" } } }, { $group: { _id: { tipo: "$variacao.tipo", origem: "$origem", status: "$status" }, n: { $sum: 1 } } }, { $sort: { "_id.tipo": 1, "_id.status": 1 } }]);
+db.questions.aggregate([{ $match: { origem: "oficial" } }, { $lookup: { from: "topics", localField: "topicId", foreignField: "_id", as: "topic" } }, { $unwind: "$topic" }, { $match: { status: "aprovada", "topic.ativo": true, "topic.disciplina": { $in: ["lingua_portuguesa", "lingua_inglesa", "matematica", "atualidades_mercado_financeiro", "matematica_financeira", "conhecimentos_bancarios", "informatica", "vendas_negociacao"] } } }, { $group: { _id: { prova: "$prova", status: "$status", origem: "$origem" }, n: { $sum: 1 } } }]);
+```
+
+- Fotografia: 19/10/2026 20:34 BRT (`2026-10-19T23:34:29Z`), total **226**.
+
+| Grupo | Situação | Quantidade |
+|---|---|---:|
+| Questões | aprovada / rejeitada / desatualizada / precisa_imagem | 195 / 25 / 4 / 2 |
+| Origem | oficial / gerada | 137 / 89 |
+| Com `variacao.tipo` (construção) | gerada aprovada / gerada rejeitada | 60 / 23 (83 no total) |
+| BB 2021 — oficial | aprovada elegível / precisa_imagem / desatualizada | 65 / 1 / 2 (68 registros) |
+| BB 2023 — oficial | aprovada elegível / precisa_imagem / desatualizada | 66 / 1 / 2 (69 registros) |
+
+- Não havia outros valores de `status`; não havia questão oficial `pendente`, `contestada` ou `anulada`. As seis oficiais fora do treino: BB 2021 Q5 `6ad19950d40dcba3f8f47f22` (`precisa_imagem`), Q67 `6ad19952d40dcba3f8f47f5d` e Q68 `6ad19952d40dcba3f8f47f5e` (`desatualizadas`); BB 2023 Q3 `6ad197ad8f365fc168fc07e3` (`precisa_imagem`), Q33 `6ad197ae8f365fc168fc0801` e Q40 `6ad197ae8f365fc168fc0808` (`desatualizadas`). Total oficial elegível: **131**.
+- Reconciliação: o ROADMAP antigo contava BB 2023 69 + BB 2021 67 = 136. O Atlas agora tem 69 + 68 = 137; o registro adicional é BB 2021 Q23, id `6ad2049c3638d1c7c41f2924`, criado em 16/10 às 08:03 BRT, aprovado e elegível. O `132` de `PROMPT-VIAGEM.md` é uma contagem histórica de elegibilidade, não a atual. Quatro oficiais desatualizadas correspondem à diferença aritmética 136−132, mas não existe fotografia contemporânea versionada para provar a composição exata daquele 132. Hoje Q3/Q5 `precisa_imagem` também ficam fora, e Q40 está desatualizada por decisão do dono; portanto a elegibilidade atual é 131. Omissões atuais por número: BB 2021 Q17/Q19 e BB 2023 Q60.
+- O DIARIO de 18/10 registra 166 após a primeira noite; o prompt revisado declarava aproximadamente 190 sem data/hora de medição. O Atlas está em 226 nesta fotografia; `createdAt` soma 35 registros em 18/10 e 27 em 19/10. Os 166 são históricos e os ~190 não são reproduzíveis sem horário/base da medição.
+- `docs/PENDENTES-FIGURA.md` foi reconciliado: Q23 de 2021 está cadastrada; Q27/2021 e Q41/2023 estão aprovadas com figura. ROADMAP, PROMPT-VIAGEM e CLAUDE agora distinguem estado atual de histórico. `docs/RELATORIO-VIAGEM.md` mantém 166 como histórico da primeira noite.
+
+RETOMAR AQUI: P0.2 — ajustar o script e a tarefa do Windows; provar WakeToRun, StartWhenAvailable, execução sem login e limite de 4h30, sem iniciar uma geração com escrita no Atlas.

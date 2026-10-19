@@ -13,9 +13,7 @@ o conteúdo e mude o status para `aprovada`.
 | Prova | Nº | Disciplina | O que falta |
 |---|---|---|---|
 | BB 2023 | 3 | Língua Portuguesa | Qual é a "expressão em destaque" (negrito) no trecho do parágrafo 3 |
-| BB 2023 | 41 | Informática | A planilha do Excel com os valores de B2:B6 (é imagem no PDF) |
 | BB 2021 | 5 | Língua Portuguesa | Qual é o "termo em destaque" (negrito) em cada alternativa |
-| BB 2021 | 27 | Matemática Financeira | Os expoentes dos dados: o PDF traz "1,15 = 1,611", que é 1,1⁵ = 1,611 (idem 1,1⁴ = 1,464 e 1,1³ = 1,331) |
 
 ## Não entraram no banco (cadastrar à mão)
 
@@ -24,7 +22,14 @@ o conteúdo e mude o status para `aprovada`.
 | BB 2023 | 60 | Vendas e Negociação | Tabela de compras iniciadas × finalizadas: a IA reorganizou a tabela e a cópia não bateu com o PDF (a tabela existe em texto) |
 | BB 2021 | 17 | Matemática | Alternativas são frações com operadores (+/−) que o PDF perdeu: "p m / 2" |
 | BB 2021 | 19 | Matemática | Fórmula (b − a)/2ⁿ e o erro 10⁻³ viraram "n b a 2" e "103" no texto |
-| BB 2021 | 23 | Informática | **Não é figura**: o texto está completo (token físico); ficou de fora porque, nas duas colunas do PDF, aparece intercalada com a 19. Dá para cadastrar só com texto |
+
+## Resolvidas desde a lista anterior (fotografia de 19/10/2026)
+
+| Prova | Nº | Resolução confirmada no Atlas |
+|---|---:|---|
+| BB 2021 | 23 | Cadastrada e aprovada (id `6ad2049c3638d1c7c41f2924`); elegível ao treino |
+| BB 2021 | 27 | Aprovada com figura (id `6ad19951d40dcba3f8f47f35`); elegível ao treino |
+| BB 2023 | 41 | Aprovada com figura (id `6ad197af8f365fc168fc0809`); elegível ao treino |
 
 ## Destaque perdido, mas dedutível (ficam no treino)
 

@@ -73,7 +73,8 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 - Deploy: Render (lobo-binho.onrender.com, deploy manual pelo dono); a imagem roda `node --import tsx` e abre a PORT antes de conectar no banco.
 - Fase B completa no código (8.1 a 8.9): simulado fiel, diagnóstico do erro, calibragem, redação (25 a 30 linhas por código), aulas e tutor, cartões, treino misturado, horas líquidas, Elo, Raio-X, plano até a prova. Aulas: 0 aprovadas nas rodadas reais até agora (DECISOES nº 9).
 - Etapa 9: error boundary, offline com fila, PWA, atalhos, Desfazer, prints em `docs/telas/`, bateria `npx tsx scripts/e2e-fluxos.ts` (servidores `bb-demo` e `bb-web` do launch.json) e `scripts/e2e-login.ts`.
-- Primeira noite real: 12 aprovadas em 16 tarefas; banco em 166 de 1.200.
+- [HISTÓRICO] Primeira noite curta: 12 aprovadas em 16 tarefas; o banco ficou em 166.
+- [CONFIRMADO no Atlas em 19/10/2026 20:34 BRT] 226 questões: 195 aprovadas, 25 rejeitadas, 4 desatualizadas e 2 `precisa_imagem`; 137 oficiais e 89 geradas. Há 131 oficiais aprovadas elegíveis ao treino. A fotografia e os IDs estão em `docs/DIARIO.md`.
 - Figuras por construção (`src/construcaoFiguras.ts`): fórmula em planilha, sistema linear em tabela, série de depósitos e taxa de abandono, na proporção de `data/figuras-meta.json`. Amostras sem IA em Figuras → "Geradas (amostra)"; prints com `npx tsx scripts/prints.ts`.
 - Por construção: Juros compostos, Descontos, Amortização, Taxas, Combinatória, Probabilidade (`src/construcaoMais.ts`), Crase, Concordância, Regência e Pontuação (`src/regrasPT.ts`). Rodadas reais de 3 por assunto ainda pendentes.
 - `npm run bb -- gerar --assunto "<tópico>" --n 3 [--tipo "<tipo>"]` força um tipo de `data/variacoes.json` (ex.: `--tipo "crase (por construção)"`).

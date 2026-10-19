@@ -14,7 +14,7 @@
 - [x] Matemática por construção (Juros compostos, Descontos) com conferência por mathjs
 - [x] Variedade sorteada pelo código com tabela de compatibilidade tipo × contexto
 - [x] Crase por construção: banco de regras, trava de posição, auditor por frase, enunciado conforme as alternativas, regras menos usadas primeiro
-- [x] Provas oficiais BB 2023 (69/70) e BB 2021 (67/70) ingeridas: gabarito por código, disciplina lida da capa, texto de apoio conferido no PDF, conferência literal campo a campo (corrige palavra trocada pela IA), comando `anular`
+- [x] Provas oficiais no Atlas (fotografia de 19/10/2026): BB 2023 69/70 e BB 2021 68/70 (137 registros; 131 aprovados elegíveis ao treino, 4 desatualizados e 2 `precisa_imagem`). Faltam BB 2023 Q60 e BB 2021 Q17/Q19; BB 2021 Q23 foi cadastrada. Gabarito por código, disciplina lida da capa e texto conferido no PDF.
 - [x] Pendentes de figura listados em `docs/PENDENTES-FIGURA.md` (status `precisa_imagem`, fora do treino)
 - [x] Fila de um job de IA por vez (`src/fila.ts`); escritor de Português com reserva; desempate da Crase pelo Ultra
 - [x] Figuras (5.8, fases 1 a 3): inventário, extração fiel das oficiais com tela de conferência, figuras desenhadas por código nas geradas (planilha, sistema linear, série de depósitos, taxa de abandono)
