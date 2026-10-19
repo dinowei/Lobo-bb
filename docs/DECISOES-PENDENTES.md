@@ -79,6 +79,57 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 - Na conferência do banco, a Q57 da BB 2023 (Segmentação) cita o CDC: ficou `confirmada`, ligada ao trecho do art. 6º, III, da Lei 8.078/1990. Por decisão posterior do dono, a Q58 da BB 2023 (Atendimento) fica `confirmada` com a Res. CMN 4.860/2020, art. 3º, I: sua resposta sobre Ouvidoria está diretamente coberta pela norma vigente; a referência está ligada ao trecho literal. Não havia questão que citasse suitability/Resolução CVM 30.
 - As demais questões dos dois tópicos foram classificadas `nao_se_aplica`; a classificação não altera o status de treino. A questão histórica que cita norma revogada mantém o aviso e o status histórico.
 
+## Decisão 1d — proposta de fontes para as 17 pendências de Conhecimentos Bancários
+
+**Proposta em 19/10/2026; nenhuma fonte nova foi baixada ou ingerida.** Fontes listadas vêm somente do Planalto ou do Banco Central. A conferência de 20 questões deixou 17 sem base atual suficiente. A projeção usa a calibração de `uso-banco`: **38,1 KB por chunk novo**, incluindo o índice vetorial estimado; cada intervalo é aproximado pelo tamanho e pelo recorte que seria ingerido. Fontes que já estão no banco têm **0 MB incrementais**.
+
+### Cobertura direta das 17
+
+| Questão | Assunto da questão | Fonte que responderia diretamente |
+|---|---|---|
+| BB 2021 Q32–33 | Fuga de capitais e desvalorização do real | Sem norma direta: explicação macroeconômica conceitual |
+| BB 2021 Q34 | Compras de títulos durante a pandemia | EC 106/2020, art. 7º — 1/17; histórica e temporária |
+| BB 2021 Q35 | CDB | Lei 13.986/2020, arts. 30–33 — 1/17 |
+| BB 2021 Q36 | Linha Pronaf Agroindústria | MCR, capítulos 3, seção 5, e 10, seção 6 — 1/17 |
+| BB 2021 Q37 | Garantia por alienação fiduciária de veículo | Decreto-Lei 911/1969, texto compilado — 1/17 |
+| BB 2021 Q38 | Paridade do Big Mac | Sem norma direta: conceito de paridade do poder de compra |
+| BB 2021 Q39 | Depósitos em espécie atípicos | Carta-Circular BCB 4.001/2020, versão vigente — junto com BB 2023 Q31, 2/17 |
+| BB 2021 Q40 | Código de Ética do Banco do Brasil | Sem fonte nos domínios autorizados; é documento institucional do BB |
+| BB 2023 Q31 | Perfil financeiro incompatível e monitoramento | Carta-Circular BCB 4.001/2020, versão vigente — cobertura conjunta acima |
+| BB 2023 Q32 | Código de Ética do Banco do Brasil | Sem fonte nos domínios autorizados; é documento institucional do BB |
+| BB 2023 Q33 | Controles de segurança cibernética | Res. CMN 4.893/2021, já no banco — 1/17 |
+| BB 2023 Q34 | Depreciação cambial e exportações | Sem norma direta: relação econômica conceitual |
+| BB 2023 Q35 | Receitas e despesas administrativas de tesouraria | Sem norma direta: prática/contabilidade bancária conceitual |
+| BB 2023 Q36 | Paridade relativa de poder de compra | Sem norma direta: relação entre inflação e câmbio |
+| BB 2023 Q37 | Recolhimentos e M1 | Lei 4.595/1964, art. 10, XII, já no banco — 1/17 |
+| BB 2023 Q39 | Paridade de juros com câmbio fixo e mobilidade de capital | Sem norma direta: conceito macroeconômico |
+
+Resultado da cobertura direta: **8/17** podem ser respondidas por normas oficiais específicas: 6 questões nas fontes novas propostas e 2 em fontes já existentes. A EC 106 é histórica e temporária; **9/17** são conceituais ou dependem de código interno do BB e não ganhariam resposta direta com norma dos domínios permitidos.
+
+### Normas e espaço projetado
+
+| Fonte proposta | Questões cobertas entre as 17 | Chunks estimados | Espaço projetado no Atlas | Situação |
+|---|---:|---:|---:|---|
+| [EC 106/2020, art. 7º](https://www.planalto.gov.br/ccivil_03/constituicao/emendas/emc/emc106.htm) | 1 | 5–8 | 0,19–0,30 MB | Nova; texto de medida temporária da pandemia |
+| [Lei 13.986/2020, arts. 30–33](https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l13986.htm) | 1 | 2–4 | 0,08–0,15 MB | Nova; recorte somente dos artigos do CDB |
+| [MCR atual, cap. 3, seção 5, e cap. 10, seção 6](https://www3.bcb.gov.br/mcr/completo) | 1 | 4–6 | 0,15–0,23 MB | Nova; recorte do Pronaf Agroindústria |
+| [Decreto-Lei 911/1969, compilado](https://www.planalto.gov.br/ccivil_03/decreto-lei/1965-1988/del0911compilado.htm) | 1 | 12–18 | 0,46–0,69 MB | Nova |
+| [Carta-Circular BCB 4.001/2020, versão vigente](https://normativos.bcb.gov.br/Lists/Normativos/Attachments/50911/C_Circ_4001_v4_L.pdf) | 2 | 12–18 | 0,46–0,69 MB | Nova; uma fonte responde às Q39 e Q31 |
+| [Res. CMN 4.893/2021](https://www.bcb.gov.br/estabilidadefinanceira/exibenormativo?numero=4893&tipo=Resolu%C3%A7%C3%A3o+CMN) | 1 | 25 já existentes | 0 incremental (≈0,95 MB estimado existente) | Já no banco |
+| [Lei 4.595/1964](https://www.planalto.gov.br/ccivil_03/leis/l4595.htm) | 1 | 58 já existentes | 0 incremental (≈2,21 MB estimado existente) | Já no banco |
+| [Lei 4.728/1965, compilada](https://www.planalto.gov.br/ccivil_03/leis/l4728compilado.htm) | 0 | 25–35 | 0,95–1,33 MB | Proposta para contexto de mercado; não responde diretamente nenhuma das 17 |
+| [Lei 6.385/1976](https://www.planalto.gov.br/ccivil_03/leis/l6385.htm) | 0 | 53 já existentes | 0 incremental (≈2,02 MB estimado existente) | Já no banco; sem cobertura direta |
+| [Lei 14.286/2021](https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14286.htm) | 0 | 29 já existentes | 0 incremental (≈1,10 MB estimado existente) | Já no banco; sem cobertura direta |
+| [Regulamento atual do Copom, Res. BCB 61/2021](https://www.bcb.gov.br/estabilidadefinanceira/exibenormativo?numero=61&tipo=Resolu%C3%A7%C3%A3o+BCB) | 0 | 8–12 | 0,30–0,46 MB | Nova; nenhuma das 17 pergunta sobre competências/funcionamento atual do Copom |
+| [Lei 14.478/2022](https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/lei/l14478.htm) | 0 | 12 já existentes | 0 incremental (≈0,46 MB estimado existente) | Já no banco; contexto do tópico separado de criptoativos |
+| [Res. BCB 519/2025](https://www.bcb.gov.br/estabilidadefinanceira/exibenormativo?numero=519&tipo=Resolu%C3%A7%C3%A3o+BCB) | 0 | 12–18 | 0,46–0,69 MB | Nova; autorização de prestadoras de ativos virtuais |
+| [Res. BCB 520/2025 consolidada com a Res. 589/2026](https://www.bcb.gov.br/estabilidadefinanceira/exibenormativo?numero=520&tipo=Resolu%C3%A7%C3%A3o+BCB) | 0 | 16–24 | 0,61–0,91 MB | Nova; prestação de serviços por PSAV; considerar vigências de 2026/2027 da Res. 589 |
+| [Res. BCB 521/2025](https://www.bcb.gov.br/estabilidadefinanceira/exibenormativo?numero=521&tipo=Resolu%C3%A7%C3%A3o+BCB) | 0 | 6–10 | 0,23–0,38 MB | Nova; câmbio e capitais internacionais ligados a ativos virtuais |
+
+As Leis 4.728, 6.385 e 14.286 não respondem diretamente nenhuma das 17 questões listadas: mantê-las como contexto de Mercados Financeiros só vale se você quiser essa cobertura adicional. A Lei 14.478 e as Resoluções BCB 519, 520 e 521 são propostas para o tópico separado de Criptoativos; não são base direta para essas 17. Para a Res. 520, o texto usado deve refletir a alteração da Res. 589/2026, inclusive as vigências futuras previstas nela. O regulamento do Copom é a Res. BCB 61/2021.
+
+Se você aprovar todas as fontes novas da tabela, a ingestão estimada acrescenta **102–153 chunks (≈3,89–5,83 MB)**; a projeção do cluster passa de 167,73 MB para aproximadamente **171,62–173,56 MB de 512 MB**, ainda bem abaixo do alerta de 80% (409,6 MB). Não ingerir antes da aprovação do dono.
+
 ## 1. Revisar o glossário de Vendas (Etapa 2.4)
 
 - **O que é:** `docs/fontes-vendas/glossario.md` (pronto em 18/10/2026): 25 verbetes tirados das 27 oficiais

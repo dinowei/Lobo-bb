@@ -561,4 +561,11 @@ RETOMAR AQUI: item 1c — classificar os dois tópicos doutrinários de Vendas c
 - Após esclarecimento do dono, a Q58 da BB 2023 (Atendimento) também ficou `confirmada`: a resposta sobre Ouvidoria está diretamente coberta pelo art. 3º, I, da Res. CMN 4.860/2020, vigente e ligada ao trecho literal. Não foi localizada questão que citasse suitability/Resolução CVM 30 nesses dois tópicos. A Q68 da BB 2021 segue histórica pela revogação da Res. CMN 4.539/2016.
 - No total das 15 questões pendentes desses tópicos: 13 `nao_se_aplica`, 2 `confirmada` (CDC e Res. CMN 4.860). As questões continuam com seus status de treino anteriores.
 
-RETOMAR AQUI: item 1d — propor em DECISOES as normas oficiais para as 17 questões pendentes de Bancários, com cobertura individual e projeção de espaço no Atlas; não baixar nem ingerir antes do OK do dono.
+## 19/10/2026 — proposta de fontes para as 17 pendências de Bancários
+
+- Conferi novamente `uso-banco`: Atlas 167,73/512 MB, 904 chunks; projeção calibrada de 38,1 KB por chunk novo e índice vetorial de 9,6 KB por chunk (2048 dimensões). O alerta de 80% segue em 409,6 MB, com cerca de 6.500 chunks de margem estimada.
+- `DECISOES-PENDENTES.md` agora discrimina cada uma das 17 questões, as fontes oficiais permitidas, a cobertura direta e a projeção de espaço. As propostas incluem EC 106/2020, Lei 13.986/2020, recortes do MCR atual, DL 911/1969 e Carta-Circular BCB 4.001/2020; fontes já ligadas — Res. CMN 4.893 e Lei 4.595 — foram identificadas sem custo incremental.
+- Cobertura: 8/17 diretas (6 por fontes novas propostas e 2 por fontes já existentes); 9/17 conceituais ou dependentes de código interno do BB. As Leis 4.728, 6.385 e 14.286, a Res. BCB 61 do Copom e o pacote de criptoativos constam como contexto proposto, sem cobertura direta dessas 17.
+- Se todas as novas fontes listadas forem aprovadas, estimativa de +102–153 chunks / 3,89–5,83 MB; Atlas projetado em 171,62–173,56 MB, abaixo do alerta. Nenhuma foi baixada ou ingerida; aguardam OK do dono.
+
+RETOMAR AQUI: item 2 — ajustar o sorteio dos seis tópicos de cálculo para garantir ao menos 80% de variantes construídas; corrigir explicações calculadas por IA e rodar 3 Taxas + 3 Amortização para comparar com as rodadas anteriores.
