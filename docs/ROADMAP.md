@@ -30,8 +30,8 @@
   - Lighthouse pendente (DECISOES nº 10).
 
 ## Próximo (em ordem)
-1. Rodadas reais de 3 por assunto da Etapa 7 (Amortização, Taxas, Combinatória, Probabilidade, Concordância, Regência, Pontuação).
-2. Benchmark completo de madrugada (retomando as amostras gravadas) → escolha definitiva da corrente (espera o dono).
+1. Rodadas reais da Etapa 7 concluídas em 19/10/2026: 7/21 aprovadas (Amortização 1/3, Taxas 0/3, Combinatória 2/3, Probabilidade 1/3, Concordância 0/3, Regência 0/3, Pontuação 3/3); descartes e modelos estão detalhados no `docs/DIARIO.md`.
+2. Benchmark completo de madrugada (retomar as amostras gravadas) → escolha definitiva da corrente (espera o dono).
 3. Bateria e2e completa (fluxos + login) com os jobs de IA parados; Lighthouse.
 4. Aplicar `docs/ADENDO-BINHO-VOZ.md` (depois de tudo).
 5. Pendências do dono: fontes do BCB, edital novo (cotas, pesos, duração, regra de linhas), deploy.

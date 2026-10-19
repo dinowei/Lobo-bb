@@ -534,4 +534,10 @@ RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows 
 - Uma chamada serial `gerar --assunto "Regência verbal e nominal e crase" --n 3`: 0/3 aprovadas. Uma foi descartada por crase antes de infinitivo; outra, por duplicidade (cosseno 0,865); a terceira, por ambiguidade conceitual na distinção entre crase, artigo e regência. Nenhuma foi salva como aprovada.
 - As tentativas demoraram 637–725 s cada, com timeout do GLM e fallback do escritor para gpt-oss nas chamadas afetadas. Juiz Super/Ultra e auditor Muse participaram das verificações.
 
-RETOMAR AQUI: rodar 3 questões reais de `Pontuação`; depois retomar o benchmark completo de madrugada, reaproveitando as amostras gravadas.
+## 19/10/2026 — Etapa 7: rodada real de Pontuação
+
+- Uma chamada serial `gerar --assunto "Pontuação" --n 3`: 3/3 aprovadas. As três passaram pela auditoria frase a frase e pela revisão completa.
+- Escritor `z-ai/glm-5.3-flash`, juiz de Português `nvidia/nemotron-3-super-120b-a12b` e auditor `meta/muse-glimmer-30b`, cada um em família diferente quando aplicável.
+- Fechamento das sete rodadas reais: 7/21 aprovadas (Sistemas de amortização 1/3; Taxas de juros 0/3; Análise combinatória 2/3; Probabilidade 1/3; Concordância 0/3; Regência/crase 0/3; Pontuação 3/3). Os demais resultados foram descartados pelas auditorias/regras registradas acima.
+
+RETOMAR AQUI: rodar o benchmark completo durante a madrugada, retomando as amostras gravadas sem refazer as prontas. Depois executar a bateria E2E completa com os jobs de IA parados e revisar o Lighthouse.
