@@ -13,6 +13,13 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ---
 
+## Decisão 1b — BB 2023, Q40: histórica por mudança legal
+
+- **Aprovação do dono já registrada na tela:** a atribuição do CMN de autorizar a emissão de papel-moeda foi revogada do art. 4º, I, da Lei 4.595/1964 pela LC 179/2021.
+- Conferência do banco em 19/10/2026: status `desatualizada`; a consulta do simulado fiel usa apenas `status: aprovada`, então Q40 não é elegível. A questão continua acessível pelo histórico/ID e o DTO entrega o aviso legal; a tela mostra “Norma atualizada · essa questão saiu do treino”.
+
+---
+
 ## Corrente de modelos — RESOLVIDO 18/10/2026: corrente definitiva (benchmark do auditor, 60 amostras)
 
 > **Decisão do dono**, ativa com `npm run bb -- corrente definitiva` (`CORRENTE_DEFINITIVA` em `src/catalogo.ts`;

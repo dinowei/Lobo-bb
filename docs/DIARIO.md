@@ -547,4 +547,9 @@ RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows 
 - Conferência do banco: `Q51` = `6ad19952d40dcba3f8f47f4d`, BB 2021; status `aprovada`, fonte `confirmada`, recusa registrada.
 - O job de benchmark do juiz que estava em andamento foi interrompido ao chegar a nova ordem de prioridades. As respostas parciais persistidas podem ser retomadas; a etapa de escritor não começou. O relatório local tinha sido gerado antes da interrupção e foi descartado por estar desatualizado.
 
-RETOMAR AQUI: item 1b — conferir Q40 da BB 2023 no banco e registrar que está fora do simulado fiel, como histórica, com aviso da LC 179/2021. Depois seguir para 1c.
+## 19/10/2026 — Decisão 1b: conferência da Q40 da BB 2023
+
+- A aprovação do dono já estava registrada. A Q40 (id `6ad197ae8f365fc168fc0808`) está `desatualizada`, com nota explicando que a LC 179/2021 revogou do art. 4º, I, da Lei 4.595/1964 a atribuição do CMN de autorizar a emissão de papel-moeda.
+- Verificação direta: elegibilidade para o simulado fiel (`status: aprovada`) = não; consulta histórica por ID funciona e retorna a nota. A tela exibe o selo “Norma atualizada” e o aviso “essa questão saiu do treino”. Nenhuma alteração adicional foi necessária.
+
+RETOMAR AQUI: item 1c — classificar os dois tópicos doutrinários de Vendas como `nao_se_aplica`, preservando exceções para questões com SAC, suitability ou CDC já presentes no banco.
