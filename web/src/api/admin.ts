@@ -38,6 +38,7 @@ export const adminTelas = {
   pendencias: () => req<PendenciaDTO[]>("/pendencias"),
   fontesAtuais: () => req<AdminFontesAtuaisDTO>("/fontes-atuais"),
   aprovarMudancas: (ids: string[]) => req<{ aprovadas: number }>("/fontes-atuais/aprovar", { method: "POST", body: JSON.stringify({ ids }) }),
+  manterQuestoes: (ids: string[], motivo: string) => req<{ mantidas: number }>("/fontes-atuais/manter", { method: "POST", body: JSON.stringify({ ids, motivo }) }),
   doc: (nome: string) => req<{ nome: string; markdown: string }>(`/doc?nome=${encodeURIComponent(nome)}`),
 };
 

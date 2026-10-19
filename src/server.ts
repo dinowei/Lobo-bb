@@ -11,7 +11,7 @@ import compression from "compression";
 import { listarFiguras, decidirFigura, contextoDaFigura, amostrasDeFiguras, type AcaoFigura } from "./admin.js";
 import { painelIA, painelFila, painelBenchmark, pendencias, lerDoc, DOCS_LIBERADOS } from "./adminTelas.js";
 import { aprovarCorrentes, desfazerCorrentes } from "./corrente.js";
-import { aprovarMudancas, relatorioFontesAtuais } from "./fontesAtuais.js";
+import { aprovarMudancas, manterQuestoes, relatorioFontesAtuais } from "./fontesAtuais.js";
 import { audioDe, audioPronto, marcarOuvida, VOZES_PT, vozPadrao } from "./voz.js";
 import { tentarDeNovoAgora } from "./noturno.js";
 import { FUNCOES, type Correntes } from "./catalogo.js";
@@ -265,6 +265,16 @@ app.post(
     const ids = Array.isArray(req.body?.ids) ? (req.body.ids as unknown[]).filter((x): x is string => typeof x === "string") : [];
     if (!ids.length) return res.status(400).json({ erro: "Envie { ids: [...] }." });
     res.json({ aprovadas: await aprovarMudancas(ids) });
+  })
+);
+app.post(
+  "/api/admin/fontes-atuais/manter",
+  rota(async (req, res) => {
+    const ids = Array.isArray(req.body?.ids) ? (req.body.ids as unknown[]).filter((x): x is string => typeof x === "string") : [];
+    const motivo = typeof req.body?.motivo === "string" ? req.body.motivo : "";
+    if (!ids.length) return res.status(400).json({ erro: "Envie { ids: [...] }." });
+    if (!motivo.trim()) return res.status(400).json({ erro: "Informe o motivo para manter a questão." });
+    res.json({ mantidas: await manterQuestoes(ids, motivo) });
   })
 );
 app.get(

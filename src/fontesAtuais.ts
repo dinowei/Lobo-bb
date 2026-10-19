@@ -212,6 +212,21 @@ export async function aprovarMudancas(ids: string[]) {
   return aprovadas;
 }
 
+// O dono pode rejeitar a mudança proposta: a questão fica confirmada e mantém seu status atual.
+export async function manterQuestoes(ids: string[], motivo: string) {
+  const motivoFinal = motivo.trim();
+  if (!motivoFinal) throw new Error("Registre o motivo para manter a questão.");
+  let mantidas = 0;
+  for (const id of ids.filter((x) => Types.ObjectId.isValid(x))) {
+    const r = await Question.updateOne(
+      { _id: id, situacaoFonte: "mudou", "oQueMudou.aprovadoEm": { $exists: false } },
+      { $set: { situacaoFonte: "confirmada", "oQueMudou.recusadaEm": new Date(), "oQueMudou.motivoRecusa": motivoFinal } }
+    );
+    mantidas += r.modifiedCount;
+  }
+  return mantidas;
+}
+
 export async function relatorioFontesAtuais() {
   const disciplinaDo = new Map((await Topic.find().select("disciplina").lean()).map((t) => [String(t._id), t.disciplina]));
   const qs = await Question.find({ situacaoFonte: { $exists: true } }).select("topicId situacaoFonte oQueMudou enunciado prova numeroOriginal").lean();

@@ -540,4 +540,11 @@ RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows 
 - Escritor `z-ai/glm-5.3-flash`, juiz de Português `nvidia/nemotron-3-super-120b-a12b` e auditor `meta/muse-glimmer-30b`, cada um em família diferente quando aplicável.
 - Fechamento das sete rodadas reais: 7/21 aprovadas (Sistemas de amortização 1/3; Taxas de juros 0/3; Análise combinatória 2/3; Probabilidade 1/3; Concordância 0/3; Regência/crase 0/3; Pontuação 3/3). Os demais resultados foram descartados pelas auditorias/regras registradas acima.
 
-RETOMAR AQUI: rodar o benchmark completo durante a madrugada, retomando as amostras gravadas sem refazer as prontas. Depois executar a bateria E2E completa com os jobs de IA parados e revisar o Lighthouse.
+## 19/10/2026 — Decisão 1a: Q51 mantida e botão de recusa em Pendências
+
+- Q51 da prova BB 2021 (Segurança da informação) foi marcada `confirmada`; continua `aprovada` e no treino. Motivo registrado no histórico: é classificação conceitual de controle de segurança em Informática; a Res. CMN 5.274/2025 não muda o conceito.
+- Admin → Pendências ganhou **Manter questão**, por mudança pendente, com registro do motivo e sem alterar o status da questão. A rota valida o motivo e só atua em proposta ainda não aprovada.
+- Conferência do banco: `Q51` = `6ad19952d40dcba3f8f47f4d`, BB 2021; status `aprovada`, fonte `confirmada`, recusa registrada.
+- O job de benchmark do juiz que estava em andamento foi interrompido ao chegar a nova ordem de prioridades. As respostas parciais persistidas podem ser retomadas; a etapa de escritor não começou. O relatório local tinha sido gerado antes da interrupção e foi descartado por estar desatualizado.
+
+RETOMAR AQUI: item 1b — conferir Q40 da BB 2023 no banco e registrar que está fora do simulado fiel, como histórica, com aviso da LC 179/2021. Depois seguir para 1c.

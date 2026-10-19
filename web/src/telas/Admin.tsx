@@ -543,6 +543,14 @@ function MudancasDeNorma() {
     setMarcadas(new Set());
     recarregar();
   };
+  const manter = async (id: string, questao: string) => {
+    const motivo = window.prompt(`Por que manter ${questao}?`, "Mudança proposta recusada pelo dono; questão mantida no treino.");
+    if (!motivo?.trim()) return;
+    const r = await adminTelas.manterQuestoes([id], motivo);
+    avisar(`${r.mantidas} questão(ões) mantida(s) e confirmada(s)`);
+    setMarcadas((s) => { const n = new Set(s); n.delete(id); return n; });
+    recarregar();
+  };
   return (
     <section className="secao pendencia" aria-labelledby="titulo-fontes-atuais">
       <div className="linha-titulo">
@@ -564,6 +572,7 @@ function MudancasDeNorma() {
                     <br />Na época: {m.antes}<br />Hoje: {m.hoje}
                   </span>
                 </label>
+                <button className="botao-linha" aria-label={`Manter questão ${m.questao}`} onClick={() => manter(m.id, m.questao)}>Manter questão</button>
               </li>
             ))}
           </ul>

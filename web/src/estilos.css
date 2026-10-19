@@ -888,7 +888,9 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 
 /* Admin: mudanças de norma esperando OK */
 .lista-mudancas { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 10px; font-size: 13px; }
-.lista-mudancas label { display: flex; gap: 10px; align-items: flex-start; }
+.lista-mudancas li { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-start; }
+.lista-mudancas label { display: flex; flex: 1 1 360px; gap: 10px; align-items: flex-start; }
+.lista-mudancas li > button { margin-left: 26px; }
 .lista-mudancas input { margin-top: 3px; accent-color: var(--laranja); }
 
 /* bloco "Fontes" embaixo da explicação (ADENDO-FONTES-ATUAIS) */

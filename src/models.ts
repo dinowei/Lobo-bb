@@ -242,6 +242,8 @@ const QuestionSchema = new Schema(
       sourceId: { type: Schema.Types.ObjectId, ref: "Source" },
       respostaMudaria: Boolean, // a resposta da questão deixaria de ser a mesma hoje
       aprovadoEm: Date, // só aparece para o aluno depois do OK do dono (aba Pendências)
+      recusadaEm: Date, // dono decidiu manter a questão apesar da mudança proposta
+      motivoRecusa: String,
       _id: false,
     },
 

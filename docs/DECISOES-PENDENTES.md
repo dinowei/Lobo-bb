@@ -5,6 +5,14 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ---
 
+## Decisão 1a — BB 2021, Q51 (Segurança da informação): manter no treino
+
+- **Decisão do dono aplicada em 19/10/2026:** recusada a proposta de desatualização. A Q51 é uma classificação conceitual de controle de segurança em Informática; a Resolução CMN 5.274/2025 não altera esse conceito.
+- A questão permanece `aprovada` e `situacaoFonte: confirmada`. O motivo e a data da recusa foram guardados junto ao histórico da mudança proposta.
+- Na tela Admin → Pendências, cada mudança pendente agora oferece **Manter questão**. A ação pede o motivo, confirma a fonte e preserva o status atual; aprovar a mudança continua sendo uma ação separada.
+
+---
+
 ## Corrente de modelos — RESOLVIDO 18/10/2026: corrente definitiva (benchmark do auditor, 60 amostras)
 
 > **Decisão do dono**, ativa com `npm run bb -- corrente definitiva` (`CORRENTE_DEFINITIVA` em `src/catalogo.ts`;
