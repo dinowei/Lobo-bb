@@ -52,6 +52,25 @@ Plano B mais barato: Railway Hobby (US$ 5 com US$ 5 de uso incluso; o site com 5
 
 A corrente de modelos aprovada (inclusive a provisória) fica no banco: vale igual no PC e na nuvem.
 
+## Noturno no Windows (PC local)
+
+O script `scripts/noturno-windows.ps1` roda `npm run bb -- noturno --ate 05:30` com **um trabalhador de IA**, grava um log por noite em `logs/noturno/` e filtra chaves, URI Mongo e e-mails antes de salvar cada linha. `logs/` está no `.gitignore`. Ele usa o `.env` da raiz do repositório e só começa entre 01:00 e 05:30; se o PC acordar depois, registra que perdeu a janela e sai.
+
+### Criar a tarefa
+
+1. Confirme que Node.js/npm estão instalados para a sua conta do Windows, as dependências estão em `node_modules/` e o `.env` está na raiz `C:\projetos\Lobo-bb`. O `.env` não deve ser copiado para a tarefa nem para o Git.
+2. Abra **Agendador de Tarefas** → **Criar Tarefa**. Em **Geral**, nomeie `Lobo Binho — Noturno`, marque **Executar independentemente de o usuário estar conectado** e **Oculto**. Use a sua conta do Windows.
+3. Em **Disparadores**, crie um disparador diário para **01:00**. Confira se o fuso do Windows está em Brasília.
+4. Em **Ações**, escolha **Iniciar um programa**:
+   - Programa: `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`
+   - Argumentos: `-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\projetos\Lobo-bb\scripts\noturno-windows.ps1"`
+   - **Iniciar em**: `C:\projetos\Lobo-bb`
+5. Em **Condições**, marque **Reativar o computador para executar esta tarefa**. Em Opções de Energia do Windows, habilite **Permitir despertadores** para a fonte usada pelo PC. Essa opção acorda o PC da suspensão; ela não liga um PC desligado.
+6. Em **Configurações**, marque **Executar a tarefa assim que possível após um início agendado perdido** e escolha **Não iniciar uma nova instância** se a tarefa já estiver em execução. Se o PC voltar depois das 05:30, o script registra e ignora essa execução.
+7. Clique **OK** e informe a senha da conta do Windows se o Agendador pedir. O processo roda sem janela. Na manhã seguinte, confira `logs\noturno\noturno-*.log` e o relatório da noite em Admin → Fila.
+
+O Agendador mantém o PC acordado enquanto a tarefa com a opção de reativação está em execução; isso depende de o Windows e o hardware aceitarem despertadores no estado de energia selecionado ([documentação da propriedade WakeToRun](https://learn.microsoft.com/en-us/windows/win32/taskschd/tasksettings-waketorun)). A opção `-WindowStyle Hidden` do PowerShell oculta a janela do processo.
+
 ## O que já vem no código
 
 - Uma imagem só (`Dockerfile`): API + site compilado; o noturno usa a mesma imagem com outro comando.

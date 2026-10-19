@@ -489,3 +489,11 @@ RETOMAR AQUI: testar três perguntas de Conhecimentos Bancários em "Pergunte ao
 - As três foram escritas pelo `gpt-oss-20b`; na primeira, o Muse falhou ao formatar JSON e o Super assumiu como reserva, de família diferente. Não aprovei respostas reprovadas.
 
 RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows para rodar o noturno diariamente à 01:00, acordar da suspensão, sem janela e com log em arquivo.
+
+## 19/10/2026 — noturno local no Agendador do Windows
+
+- Criado `scripts/noturno-windows.ps1`: trabalha na raiz do projeto, roda até 05:30, usa um trabalhador de IA, recusa uma inicialização fora da janela 01:00–05:30 e grava um log por noite em `logs/noturno/`.
+- O script mascara tokens, URI Mongo, chaves de API e e-mails antes de gravar cada linha; `logs/` foi acrescentado ao `.gitignore`.
+- `docs/DEPLOY.md` contém o passo a passo diário às 01:00, ação oculta do PowerShell, execução sem usuário conectado, reativação da suspensão e configuração de despertadores. A sintaxe do `.ps1` passou pelo parser do PowerShell.
+
+RETOMAR AQUI: corrigir e provar com uma geração real a corrente aprovada (Lightning falha → gpt-oss-20b assume → auditor Super de família diferente), escrever o teste solicitado e registrar commit/DIARIO; depois continuar o item 8.2.
