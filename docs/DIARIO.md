@@ -568,4 +568,11 @@ RETOMAR AQUI: item 1c — classificar os dois tópicos doutrinários de Vendas c
 - Cobertura: 8/17 diretas (6 por fontes novas propostas e 2 por fontes já existentes); 9/17 conceituais ou dependentes de código interno do BB. As Leis 4.728, 6.385 e 14.286, a Res. BCB 61 do Copom e o pacote de criptoativos constam como contexto proposto, sem cobertura direta dessas 17.
 - Se todas as novas fontes listadas forem aprovadas, estimativa de +102–153 chunks / 3,89–5,83 MB; Atlas projetado em 171,62–173,56 MB, abaixo do alerta. Nenhuma foi baixada ou ingerida; aguardam OK do dono.
 
-RETOMAR AQUI: item 2 — ajustar o sorteio dos seis tópicos de cálculo para garantir ao menos 80% de variantes construídas; corrigir explicações calculadas por IA e rodar 3 Taxas + 3 Amortização para comparar com as rodadas anteriores.
+## 19/10/2026 — matemática por construção e rodadas de comparação
+
+- A seleção antiga de `data/variacoes.json` era uniforme. A cobertura mostrou que as seis listas já eram 100% construídas: Juros compostos 8/8, Descontos 4/4, Amortização 5/5, Taxas 4/4, Combinatória 4/4 e Probabilidade 3/3. Nenhum tipo livre foi selecionado nas rodadas reais; os “conta errada” vinham de explicações escritas pela IA sobre valores calculados pelo código.
+- `sortearPar` passou a preferir tipos por construção com probabilidade de 80% nos seis assuntos quando há tipos livres no pool. Como os tipos atuais têm todos template, a seleção segue em 100% por construção.
+- `pipeline` substitui explicações de cálculo construído por explicações baseadas em `montada.resolucao`. Para Amortização, SAC/Price fica explícito e dados omitidos são inseridos como frase do enunciado; os campos numéricos e a conferência de dados continuam sob controle do código. O prompt de Taxas proíbe chamar a taxa mensal de nominal quando os dados não a definem assim.
+- Comparação final: Taxas de juros **3/3** aprovadas (antes 0/3); Amortização **3/3** aprovadas (antes 1/3, com duas perdas por falta de dado numérico). Uma tentativa intermediária de Amortização teve 1/3; outra questão perdeu por o auditor tratar “Dados necessários” como metadado, e uma terceira foi marcada Price porque SAC não estava explícito. Esse auditor demorou 512 s e concluiu discordando; a correção passou a inserir dados em frase natural e nomear SAC/Price. A rodada final passou sem falta de dado nem ambiguidade de sistema.
+
+RETOMAR AQUI: item 3 — conferir as rodadas reais da Etapa 7 já registradas, não repetir assuntos concluídos e atualizar o ROADMAP para a próxima atividade pendente.

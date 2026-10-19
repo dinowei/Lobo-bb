@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { Question } from "./models.js";
 import { ehDisciplinaDeCalculo } from "./verificacao.js";
+import { tiposConstruidos } from "./construcao.js";
 import type { Types } from "mongoose";
 
 export type ConfigVariacao = {
@@ -38,7 +39,17 @@ export function carregarVariacoes(): ConfigVariacao {
 }
 
 export const META_DUAS_ETAPAS = 0.4;
+export const META_VARIACAO_CONSTRUIDA = 0.8;
 const sortear = <T>(xs: readonly T[]): T => xs[Math.floor(Math.random() * xs.length)];
+
+const ASSUNTOS_COM_META_CONSTRUCAO = new Set([
+  "Juros compostos",
+  "Descontos",
+  "Sistemas de amortização",
+  "Taxas de juros",
+  "Análise combinatória",
+  "Probabilidade",
+]);
 
 export type Variacao = { tipo: string; contexto: string; duasEtapas: boolean };
 
@@ -70,8 +81,20 @@ export function sortearPar(
     const querFigura = comFigura.length > 0 && Math.random() < proporcaoFigura;
     const base = comFigura.length ? todos.filter((t) => ehTipoComFigura(t) === querFigura) : todos;
     const pool = base.length ? base : todos;
-    const candidatos = deDuas.length ? pool.filter((t) => deDuas.includes(t) === querDuasEtapas) : pool;
-    tipo = sortear(candidatos.length ? candidatos : pool);
+    let candidatos = deDuas.length ? pool.filter((t) => deDuas.includes(t) === querDuasEtapas) : pool;
+    if (!candidatos.length) candidatos = pool;
+    // Nos seis tópicos matemáticos, ao menos 80% das escolhas são por construção
+    // sempre que o pool elegível também tiver variantes livres. Se todos os tipos
+    // atuais têm template, a proporção é 100%; tipo forçado mantém o comportamento explícito.
+    if (!forcarTipo && ASSUNTOS_COM_META_CONSTRUCAO.has(topic.assunto)) {
+      const construidos = tiposConstruidos(topic.assunto);
+      const poolConstruido = candidatos.filter((t) => construidos.includes(t));
+      const poolLivre = candidatos.filter((t) => !construidos.includes(t));
+      if (poolConstruido.length && poolLivre.length)
+        candidatos = Math.random() < META_VARIACAO_CONSTRUIDA ? poolConstruido : poolLivre;
+      else if (poolConstruido.length) candidatos = poolConstruido;
+    }
+    tipo = sortear(candidatos);
   } else {
     tipo = topic.subtopicos.length ? sortear(topic.subtopicos) : topic.assunto;
   }

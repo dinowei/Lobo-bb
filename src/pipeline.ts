@@ -44,6 +44,15 @@ import { sortearVariacao, type Variacao } from "./variacao.js";
 import { filtrarRepeticao, detalheSimilaridade, impressaoEstrutural, pior, comparaveis, textoComparavel } from "./similaridade.js";
 import { carregarCenarios, sortearCenario, descreverCenario, N_PROIBIDOS, type Cenario } from "./cenarios.js";
 
+const EXPLICACAO_MATEMATICA_CONSTRUIDA = new Set([
+  "Juros compostos",
+  "Descontos",
+  "Sistemas de amortização",
+  "Taxas de juros",
+  "Análise combinatória",
+  "Probabilidade",
+]);
+
 // ------------------------------------------------------------
 // RAG (Atlas Vector Search na coleção de trechos)
 // ------------------------------------------------------------
@@ -134,6 +143,21 @@ function dadosFaltando(enunciado: string, dados: string[]): string[] {
     const [esq, dir] = d.split(" = "); // fator "1,04^8 = 1,3686": exige a base e o valor
     return dir ? !(e.includes(norm(dir)) && e.includes(norm(esq.split("^")[0]))) : !e.includes(norm(d));
   });
+}
+
+function descricaoNaturalDadosAmortizacao(dados: string[]): string {
+  if (!dados.length) return "";
+  const partes = dados.map((d) => {
+    if (/^R\$/.test(d)) return `valor financiado de ${d}`;
+    if (/\d+\s+prestações mensais/i.test(d)) return `prazo de ${d}`;
+    if (/\d+(?:[,.]\d+)?% ao mês/i.test(d)) return `taxa mensal de juros de ${d}`;
+    if (/\d+ª prestação/i.test(d)) return `prestação analisada: ${d}`;
+    if (/^SAC$/i.test(d)) return "sistema de amortização constante (SAC)";
+    if (/^Tabela Price$/i.test(d)) return "sistema Tabela Price";
+    if (d.includes(" = ")) return `fator informado ${d}`;
+    return d;
+  });
+  return `Na simulação do financiamento, considere ${partes.join(", ")}.`;
 }
 
 // Nenhuma falha (rede, banco, IA) derruba o lote: vira um Resultado com o motivo
@@ -297,8 +321,25 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
     if (alterada)
       return { ok: false, motivo: "numero_alterado", detalhes: [`alternativa ${alterada.letra}: esperado "${alterada.texto}", veio "${textoIA.get(alterada.letra)?.texto}"`] };
     const faltam = dadosFaltando(q.enunciado, montada.dados);
-    if (faltam.length) return { ok: false, motivo: "numero_alterado", detalhes: [`enunciado sem os dados: ${faltam.join(" ; ")}`] };
+    const sistemasAusentes: string[] = [];
+    if (montada.tipo.toLowerCase().includes("sac") && !/(\bSAC\b|amortização constante)/i.test(q.enunciado))
+      sistemasAusentes.push("A operação segue o Sistema de Amortização Constante (SAC).");
+    if (montada.tipo.toLowerCase().includes("price") && !/Tabela Price/i.test(q.enunciado))
+      sistemasAusentes.push("A operação usa o sistema Tabela Price.");
+    if (faltam.length && topic.assunto !== "Sistemas de amortização")
+      return { ok: false, motivo: "numero_alterado", detalhes: [`enunciado sem os dados: ${faltam.join(" ; ")}`] };
+    if (faltam.length || sistemasAusentes.length) {
+      // A IA pode omitir dados ou o sistema, apesar do prompt. Reinsere os dados
+      // calculados como frase legível do enunciado, nunca como nota/metadado.
+      const complemento = descricaoNaturalDadosAmortizacao(faltam.filter((d) => !/^(SAC|Tabela Price)$/i.test(d)));
+      const frases = [complemento, ...sistemasAusentes].filter(Boolean).join(" ");
+      q = { ...q, enunciado: `${frases}\n\n${q.enunciado.trim()}` };
+      const aindaFaltam = dadosFaltando(q.enunciado, montada.dados);
+      if (aindaFaltam.length)
+        return { ok: false, motivo: "numero_alterado", detalhes: [`enunciado sem os dados: ${aindaFaltam.join(" ; ")}`] };
+    }
     const certa = montada.alternativas.find((a) => a.correta)!;
+    const explicacaoDeterministica = EXPLICACAO_MATEMATICA_CONSTRUIDA.has(topic.assunto);
     if (montada.unidade !== "rotulo" && q.enunciado.includes(certa.texto))
       return { ok: false, motivo: "resposta_no_enunciado", detalhes: [certa.texto] };
     if (montada.figura) {
@@ -319,9 +360,20 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
         letra: a.letra,
         texto: a.texto,
         correta: a.correta,
-        explicacao: textoIA.get(a.letra)!.explicacao,
-        pegadinha: a.correta ? null : textoIA.get(a.letra)?.pegadinha ?? a.erro,
+        explicacao: explicacaoDeterministica
+          ? a.correta
+            ? `Resolução calculada pelo código: ${montada.resolucao}`
+            : `O erro neste resultado é ${a.erro ?? "um passo incorreto do cálculo"}. Resolução calculada pelo código: ${montada.resolucao}`
+          : textoIA.get(a.letra)!.explicacao,
+        pegadinha: a.correta
+          ? null
+          : explicacaoDeterministica
+            ? a.erro
+            : textoIA.get(a.letra)?.pegadinha ?? a.erro,
       })),
+      explicacaoGeral: explicacaoDeterministica
+        ? `A resolução é calculada por código a partir dos dados fornecidos. ${montada.resolucao}`
+        : q.explicacaoGeral,
       verificacao: { expressao: montada.expressao, fatoresDados: montada.fatoresDados },
     };
   }

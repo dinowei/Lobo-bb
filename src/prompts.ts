@@ -144,6 +144,14 @@ export function geradorConstruidoUser(p: CenarioPrompt & {
   enunciadosRecentes: string[];
   figura?: { tipo: string; descricao: string }; // figura desenhada pelo código no app
 }) {
+  const explicacaoPorCodigo = new Set([
+    "Juros compostos",
+    "Descontos",
+    "Sistemas de amortização",
+    "Taxas de juros",
+    "Análise combinatória",
+    "Probabilidade",
+  ]).has(p.assunto);
   const figura = p.figura
     ? `
 
@@ -161,13 +169,16 @@ CONTEXTO OBRIGATÓRIO: ${p.contexto}${blocoCenario(p)}${p.duasEtapas ? "\nA reso
 A questão pede: ${p.pergunta}
 Dados que o enunciado deve conter, copiados EXATAMENTE como estão (mesma grafia, vírgulas e "R$"):
 ${p.dados.map((d) => `- ${d}`).join("\n")}
+${p.assunto === "Taxas de juros" ? "Em equivalência entre períodos, trate a taxa indicada ao mês como efetiva daquele período; não a chame de nominal. Use o termo taxa nominal somente quando os dados o identificarem como tal (por exemplo, taxa anual com capitalização mensal)." : ""}${p.assunto === "Sistemas de amortização" ? "Diga explicitamente no enunciado qual sistema está sendo usado: SAC (Sistema de Amortização Constante) ou Tabela Price, conforme o tipo indicado. Não deixe o aluno inferir o sistema." : ""}
 Os fatores da lista (formato "base^n = valor") aparecem no enunciado como dados fornecidos ("Considere ..."). Não acrescente nenhum outro fator ou número além dos da lista.
 Resolução correta: ${p.resolucao}
 
 Alternativas FIXAS (copie o texto de cada uma exatamente; gabarito = ${p.gabarito}):
 ${p.alternativas.map((a) => `(${a.letra}) ${a.texto}${a.correta ? "  ← CORRETA" : `  ← erro que gera este valor: ${a.erro}`}`).join("\n")}
 
-SUA TAREFA: escrever o enunciado contextualizado (sem revelar a resposta), a "explicacao" de cada alternativa (na correta, a conta passo a passo; nas erradas, onde a conta escorrega, usando o erro informado), a "pegadinha" de cada errada, "explicacaoGeral" e "dicaDeProva". Use "verificacao": null e "trechoFonte": null.
+SUA TAREFA: escrever o enunciado contextualizado (sem revelar a resposta)${explicacaoPorCodigo
+    ? ` e uma "dicaDeProva" curta. A explicação de cada alternativa, a pegadinha e a explicação geral serão preenchidas pelo código com base na resolução acima. Para satisfazer o formato JSON, use em cada "explicacao" o texto "A explicação será preenchida pelo código após conferir a conta." e em "explicacaoGeral" o texto "A resolução calculada pelo código será mostrada ao aluno após a conferência dos dados.". Não faça nem afirme cálculos.`
+    : `, a "explicacao" de cada alternativa (na correta, a conta passo a passo; nas erradas, onde a conta escorrega, usando o erro informado), a "pegadinha" de cada errada e "explicacaoGeral". Use "verificacao": null e "trechoFonte": null.`}
 
 === NÃO REPITA ESTES ENFOQUES ===
 ${p.enunciadosRecentes.map((e) => `- ${e.slice(0, 160)}`).join("\n") || "(nenhum)"}`;

@@ -130,6 +130,13 @@ As Leis 4.728, 6.385 e 14.286 não respondem diretamente nenhuma das 17 questõe
 
 Se você aprovar todas as fontes novas da tabela, a ingestão estimada acrescenta **102–153 chunks (≈3,89–5,83 MB)**; a projeção do cluster passa de 167,73 MB para aproximadamente **171,62–173,56 MB de 512 MB**, ainda bem abaixo do alerta de 80% (409,6 MB). Não ingerir antes da aprovação do dono.
 
+## Decisão aplicada — matemática por construção (19/10/2026)
+
+- A checagem do sorteio encontrou que ele era uniforme entre os tipos de `data/variacoes.json`, mas **nenhum tipo dos seis assuntos estava livre**: Juros compostos 8/8, Descontos 4/4, Sistemas de amortização 5/5, Taxas de juros 4/4, Análise combinatória 4/4 e Probabilidade 3/3 são cobertos por `tiposConstruidos()`. Portanto, as rodadas anteriores não escolheram tipos livres; as falhas vieram do texto da IA, não da escolha de variante.
+- `src/variacao.ts` agora dá preferência de **80% a tipos construídos** quando um pool desses assuntos vier a misturar tipos com e sem construção; com os tipos atuais, a proporção efetiva é 100%. Tipos forçados e as regras de figura/duas etapas continuam respeitados.
+- Em questões construídas desses seis assuntos, a resolução das alternativas e a explicação geral são montadas pela resolução calculada em código. Em Amortização, o enunciado passa a declarar SAC/Price e a completar números omitidos em uma frase natural, em vez de perder a questão ou deixar o sistema implícito. Em Taxas, o prompt diferencia taxa mensal efetiva de taxa nominal anual com capitalização.
+- Rodadas reais finais, serialmente: **Taxas de juros 3/3 aprovadas** (taxas proporcionais, efetiva a partir da nominal, equivalentes); **Sistemas de amortização 3/3 aprovadas** (saldo SAC, juros SAC, comparação SAC × Price). Antes: Taxas 0/3 por explicações de conta incorretas; Amortização 1/3, com duas perdas por dado numérico ausente. A primeira tentativa intermediária de Amortização expôs também a ambiguidade de SAC quando o auditor não via o sistema; esse caso levou à inclusão explícita do sistema e à frase natural de dados antes da rodada final.
+
 ## 1. Revisar o glossário de Vendas (Etapa 2.4)
 
 - **O que é:** `docs/fontes-vendas/glossario.md` (pronto em 18/10/2026): 25 verbetes tirados das 27 oficiais
