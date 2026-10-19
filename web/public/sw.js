@@ -1,7 +1,7 @@
 // Service worker mínimo: deixa o app instalável e abrir sem internet (a casca do site).
 // Páginas: rede primeiro, cópia guardada se cair. /api nunca passa pelo cache (dados sempre frescos;
 // respostas offline vão para a fila do próprio app).
-const CACHE = "lobo-v1";
+const CACHE = "lobo-v2"; // v2: ícone novo (Lobo Binho)
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(["/", "/manifest.webmanifest", "/icones/icone-192.png"])).then(() => self.skipWaiting()));

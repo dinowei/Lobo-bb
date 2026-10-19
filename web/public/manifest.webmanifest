@@ -1,6 +1,6 @@
 {
-  "name": "Lobo BB: estudos para o Banco do Brasil",
-  "short_name": "Lobo",
+  "name": "Lobo Binho",
+  "short_name": "Binho",
   "description": "Questões, revisão espaçada, simulados e redação para o concurso de Escriturário do Banco do Brasil.",
   "lang": "pt-BR",
   "start_url": "/#painel",
@@ -11,6 +11,7 @@
   "icons": [
     { "src": "/icones/icone-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icones/icone-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/icones/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/icones/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icones/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
   ]
 }
