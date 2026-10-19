@@ -481,3 +481,11 @@ RETOMAR AQUI: calibrar o uso do Atlas aos 165,05 MB reais, estimar crescimento d
 - A referência e a estimativa aparecem na aba Admin → IA; o alerta também informa a estimativa vetorial. `npm run bb -- uso-banco` executou e o typecheck do site passou. A projeção é aproximada; o valor mais recente no Atlas pode ser usado para recalibrá-la.
 
 RETOMAR AQUI: testar três perguntas de Conhecimentos Bancários em "Pergunte ao Binho" após a busca de 300 trechos e registrar quantas foram aprovadas; depois criar o script e a instrução do Agendador de Tarefas para o noturno local.
+
+## 19/10/2026 — teste real do "Pergunte ao Binho" após ampliar a busca
+
+- `trechosDoTopico` consulta até 300 chunks vigentes antes da seleção lexical dos 5 trechos enviados ao tutor. Fiz três chamadas reais, em sequência, sem concorrência de jobs.
+- Resultado: 1/3 respostas aprovada. A pergunta sobre o dever de sigilo (LC 105/2001) passou com citação literal; a pergunta sobre atribuições do CMN e outra sobre operações/serviços foram reprovadas pelo auditor por incluir detalhes ausentes dos trechos.
+- As três foram escritas pelo `gpt-oss-20b`; na primeira, o Muse falhou ao formatar JSON e o Super assumiu como reserva, de família diferente. Não aprovei respostas reprovadas.
+
+RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows para rodar o noturno diariamente à 01:00, acordar da suspensão, sem janela e com log em arquivo.
