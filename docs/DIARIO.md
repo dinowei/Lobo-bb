@@ -519,4 +519,9 @@ RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows 
 - Uma chamada serial `gerar --assunto "Análise combinatória" --n 3`: 2/3 aprovadas. Uma foi reprovada na revisão por erro de gênero em “dividir o carona”; duas passaram. Houve um timeout/conexão do gpt-oss, resolvido pela repetição automática.
 - As três tentativas usaram `openai/gpt-oss-20b`; auditorias pelo `meta/muse-glimmer-30b`, de família diferente. Lightning permaneceu em descanso por taxa baixa.
 
-RETOMAR AQUI: rodar 3 questões reais de `Probabilidade`; depois seguir, sempre serialmente, com `Concordância verbal e nominal`, `Regência verbal e nominal e crase` e `Pontuação`. Depois retomar o benchmark completo de madrugada, reaproveitando as amostras gravadas.
+## 19/10/2026 — Etapa 7: rodada real de Probabilidade
+
+- Uma chamada serial `gerar --assunto "Probabilidade" --n 3`: 1/3 aprovada (`probabilidade condicional em tabela de clientes`). Uma foi reprovada por explicar probabilidade condicional invertendo numerador e denominador; outra tinha enunciado ambíguo e cenário temporal contraditório. Nenhuma das duas foi salva como aprovada.
+- As três tentativas usaram `openai/gpt-oss-20b`; auditorias pelo `meta/muse-glimmer-30b`, de família diferente. Lightning permaneceu em descanso por taxa baixa.
+
+RETOMAR AQUI: rodar 3 questões reais de `Concordância verbal e nominal`; depois seguir, sempre serialmente, com `Regência verbal e nominal e crase` e `Pontuação`. Depois retomar o benchmark completo de madrugada, reaproveitando as amostras gravadas.
