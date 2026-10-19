@@ -453,3 +453,12 @@ RETOMAR AQUI (antigo): Binho, o que falta: chat por tópico; telemetria de voz n
 RETOMAR AQUI (antigo, concluído): ADENDO-FONTES-ATUAIS (POST-IT 5b), em andamento. Já há campos novos em `models.ts` (`referencias`, `situacaoFonte`, `oQueMudou`) e o tipo `FontesQuestaoDTO`, sem commit. Depois, ADENDO-BINHO-VOZ.
 
 RETOMAR AQUI (antigo): esperar `aulas --n 3` e `cartoes --n 3` (logs em scratchpad `aulas3.log` e `cartoes1.log`) e registrar o resultado (mostrar uma aula aprovada, se houver). Depois, Etapa 9: testes ponta a ponta dos fluxos (login, responder, revisão, simulado completo, redação, contestar, offline/online) com os jobs de IA parados; prints de todas as telas (1440 e 390) em docs/telas/; Lighthouse. Depois: rodadas reais de 3 por assunto da Etapa 7 e, por último, ADENDO-BINHO-VOZ.
+
+## 19/10/2026 — revezamento e varredura de segurança
+
+- `gh api repos/dinowei/Lobo-bb --jq .private` retornou `true`; os 6 commits locais foram enviados para `origin/main` (`9999f57`).
+- Varredura de `git log -p --all`: nenhuma chave `nvapi-`, URI Mongo com credenciais, valor real de `MONGODB_URI` ou senha literal identificada. Os exemplos de URI encontrados são placeholders/incompletos.
+- E-mails não exemplares apareceram em 3 locais de script/teste/configuração e nos metadados de autoria de 72 commits (domínio de provedor pessoal). Valores omitidos neste registro; nenhum endereço foi copiado para logs ou commits.
+- O print local `docs/telas/login/entrar-celular.png` segue fora do stage e será preservado.
+
+RETOMAR AQUI: concluir as fontes aprovadas e as conferências de Segurança da informação e Conhecimentos Bancários; depois calibrar projeção e alerta de espaço contra os 165,05 MB do Atlas.
