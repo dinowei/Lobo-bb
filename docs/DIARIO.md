@@ -496,4 +496,12 @@ RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows 
 - O script mascara tokens, URI Mongo, chaves de API e e-mails antes de gravar cada linha; `logs/` foi acrescentado ao `.gitignore`.
 - `docs/DEPLOY.md` contém o passo a passo diário às 01:00, ação oculta do PowerShell, execução sem usuário conectado, reativação da suspensão e configuração de despertadores. A sintaxe do `.ps1` passou pelo parser do PowerShell.
 
-RETOMAR AQUI: corrigir e provar com uma geração real a corrente aprovada (Lightning falha → gpt-oss-20b assume → auditor Super de família diferente), escrever o teste solicitado e registrar commit/DIARIO; depois continuar o item 8.2.
+## 19/10/2026 — corrente aprovada: diagnóstico e geração real
+
+- `correnteAtiva()` lê `Config.findById("correntes")` a cada chamada; não havia cache do módulo. A leitura segura confirmou `ativa: true` e a corrente definitiva aprovada que consta em `CORRENTE_DEFINITIVA`: gerador/tutor gpt-oss → Muse → Lightning; auditor Muse → Super → Ultra. O motivo do log antigo de três tentativas no Lightning não se reproduziu com a configuração atual.
+- `src/corrente.test.ts` cobre a aprovação escrita por outro processo, incluindo a ordem provisória Lightning → gpt-oss e auditor Super, e garante que erro de leitura do Mongo não regrida silenciosamente ao legado. `npx tsx --test src/corrente.test.ts`: 11/11.
+- Geração real de uma questão: Lightning foi pulado porque a telemetria o colocou em descanso por taxa baixa; `openai/gpt-oss-20b` gerou e `meta/muse-glimmer-30b` auditou, de outra família. A questão foi reprovada na revisão por exceções ao sigilo; não foi salva como aprovada.
+- Portanto, a geração pedida na ordem provisória exata (Lightning falha → gpt-oss assume → Super audita) não foi reproduzida: a corrente aprovada atual é a definitiva, e não forcei uma configuração antiga nem contornei o descanso do Lightning.
+- O item 8.2 e os itens 8.3 a 8.9 já constam como concluídos. A retomada segue a ordem atual do ROADMAP: rodadas reais de três por assunto da Etapa 7.
+
+RETOMAR AQUI: executar em sequência as rodadas reais de 3 questões por assunto da Etapa 7 (Amortização, Taxas, Combinatória, Probabilidade, Concordância, Regência e Pontuação); um job de IA por vez. Depois retomar o benchmark completo de madrugada, reaproveitando as amostras gravadas.
