@@ -1,17 +1,17 @@
-// Leitor do Binho: um áudio por vez. Primeiro tenta o MP3 da voz da NVIDIA (servidor, pré-gerado);
+// Leitor da Lo (a assistente do Binho é a voz da narração): um áudio por vez. Primeiro tenta o MP3 da voz da NVIDIA (servidor, pré-gerado);
 // sem ele (demo, offline, cota, falha), usa a voz do navegador em pt-BR. Sempre com paraFala.
 import { paraFala, frasesParaFala } from "../../shared/fala";
 
 type Estado = "parado" | "carregando" | "tocando" | "pausado";
-type Ouvinte = (e: { id: string | null; estado: Estado }) => void;
+type Ouvinte = (e: { id: string | null; estado: Estado; titulo?: string }) => void;
 
-let atual: { id: string; audio?: HTMLAudioElement; fala?: boolean } | null = null;
+let atual: { id: string; titulo?: string; audio?: HTMLAudioElement; fala?: boolean } | null = null;
 let estado: Estado = "parado";
 const ouvintes = new Set<Ouvinte>();
-const avisar = () => ouvintes.forEach((o) => o({ id: atual?.id ?? null, estado }));
+const avisar = () => ouvintes.forEach((o) => o({ id: atual?.id ?? null, estado, titulo: atual?.titulo }));
 const mudar = (e: Estado) => { estado = e; avisar(); };
 
-export const ouvir = (o: Ouvinte) => { ouvintes.add(o); o({ id: atual?.id ?? null, estado }); return () => { ouvintes.delete(o); }; };
+export const ouvir = (o: Ouvinte) => { ouvintes.add(o); o({ id: atual?.id ?? null, estado, titulo: atual?.titulo }); return () => { ouvintes.delete(o); }; };
 
 export function parar() {
   atual?.audio?.pause();
@@ -76,14 +76,14 @@ export function tocar(id: string, texto: string, opts: { velocidade?: number; se
   if (atual?.id === id) { pausarOuContinuar(); return Promise.resolve(); }
   parar();
   const velocidade = opts.velocidade ?? 1;
-  atual = { id };
+  atual = { id, titulo: opts.titulo };
   mudar("carregando");
   return new Promise<void>((terminou) => {
     const fim = () => { if (atual?.id === id) { atual = null; mudar("parado"); } terminou(); };
     (async () => {
       const blob = opts.servidor ? await mp3DoServidor(texto, !!opts.naHora, opts.voz) : null;
       if (atual?.id !== id) return terminou(); // trocou no meio
-      if ("mediaSession" in navigator && opts.titulo) navigator.mediaSession.metadata = new MediaMetadata({ title: opts.titulo, artist: "Binho" });
+      if ("mediaSession" in navigator && opts.titulo) navigator.mediaSession.metadata = new MediaMetadata({ title: opts.titulo, artist: "Lo, assistente do Binho" });
       if (blob) {
         const audio = new Audio(URL.createObjectURL(blob));
         audio.playbackRate = velocidade;

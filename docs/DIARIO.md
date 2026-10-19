@@ -333,7 +333,18 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
   - Chat "Pergunte ao Binho" por tópico: o da questão já existe (tutor com cota e cache).
   - Telemetria de voz no Admin: as chamadas já vão para `chamadas_modelo` como função "voz"; falta a linha na aba IA.
 
-RETOMAR AQUI: Binho, o que falta: chat por tópico; telemetria de voz na aba IA; Parte 1 quando o dono puser as 5 poses em `web/src/assets/lobos/`. A voz padrão espera a escolha do dono (amostras em `docs/voz/`). Depois: ENTREGA FINAL do PROMPT-VIAGEM (RELATORIO-VIAGEM.md).
+## 18/10/2026 — Personagem "Lo" (item 1 da mensagem do dono)
+
+- **Binho = mascote; Lo = assistente do Binho e voz da narração** (registrado também no topo do ADENDO-BINHO-VOZ).
+- `.env`: `NVIDIA_TTS_VOZ` = Louise (só essa linha foi tocada, nada impresso). `VOZES_PT` com Louise primeiro.
+- `npm run bb -- voz limpar` (novo): tirou do cache os 6 áudios de outras vozes; o noturno regera com a Louise.
+- Ajustes: `vozBinho` virou `vozLo` (padrão Louise), seção "Voz da Lo" com voz e velocidade.
+- Textos: 🔊 "Ouvir com a Lo" / "A Lo está lendo… pausar" / "Continuar com a Lo"; aula "Ouvir a aula com a Lo"; tutor "Ouvir resposta com a Lo"; Estudar ouvindo "a Lo lê as explicações dos seus erros".
+- Mini-player da Lo (`componentes/MiniLo.tsx`): aparece só enquanto ela lê, com pausar/parar e o título. Turquesa `--lo` (#14B8A6) só nele e na borda de "Voz da Lo"; nada mais mudou (regra 8). Media Session mostra "Lo, assistente do Binho".
+
+RETOMAR AQUI: mensagem do dono (Lo, 16 poses, ícone novo, o que faltou). Item 1 (Lo) feito. Próximo: item 2, as 16 poses em `web/src/assets/lobos/` (recorte por código, originais em `originais/`; Lo tem blusa turquesa; `lo-quadro` mantém o quadro). Depois item 3 (ícone laranja; o azul antigo vai para `web/src/assets/originais/`) e item 4 (chat por tópico, linha de voz na aba IA, RELATORIO-VIAGEM.md).
+
+RETOMAR AQUI (antigo): Binho, o que falta: chat por tópico; telemetria de voz na aba IA; Parte 1 quando o dono puser as 5 poses em `web/src/assets/lobos/`. A voz padrão espera a escolha do dono (amostras em `docs/voz/`). Depois: ENTREGA FINAL do PROMPT-VIAGEM (RELATORIO-VIAGEM.md).
 
 RETOMAR AQUI (antigo, concluído): ADENDO-FONTES-ATUAIS (POST-IT 5b), em andamento. Já há campos novos em `models.ts` (`referencias`, `situacaoFonte`, `oQueMudou`) e o tipo `FontesQuestaoDTO`, sem commit. Depois, ADENDO-BINHO-VOZ.
 

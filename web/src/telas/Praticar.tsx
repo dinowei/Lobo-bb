@@ -329,7 +329,7 @@ export function Praticar() {
                 {carregandoAula ? <p>Carregando a aula…</p> : aula ? (
                   <>
                     <h2>{aula.assunto}</h2>
-                    <Ouvir texto={textoDaAula(aula)} titulo={`Aula: ${aula.assunto}`} rotulo="Ouvir a aula" />
+                    <Ouvir texto={textoDaAula(aula)} titulo={`Aula: ${aula.assunto}`} rotulo="Ouvir a aula com a Lo" />
                     <Markdown texto={aula.conteudo} />
                     <section><h3>Pontos-chave</h3><ul>{aula.pontosChave.map((p) => <li key={p}>{p}</li>)}</ul></section>
                     <section><h3>Como a banca cobra</h3><p>{aula.comoABancaCobra}</p></section>
@@ -416,7 +416,7 @@ export function Praticar() {
                   </button>
                   {origemTutor && <small>{origemTutor}{restantesTutor !== undefined ? ` · ${restantesTutor} pedido(s) novo(s) restante(s) hoje` : ""}</small>}
                   {respostaTutor && <p className="resposta-tutor" aria-live="polite">{respostaTutor}</p>}
-                  {respostaTutor && <Ouvir texto={respostaTutor} titulo="Resposta do Binho" naHora />}
+                  {respostaTutor && <Ouvir texto={respostaTutor} titulo="Resposta do Binho" rotulo="Ouvir resposta com a Lo" naHora />}
                 </div>
                 <div className="acoes">
                   <button className="botao-laranja" onClick={proxima} autoFocus>

@@ -5,6 +5,7 @@ import {
   IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
 } from "./componentes/Icones";
 import { ErroTela, Esqueleto } from "./componentes/ErroTela";
+import { MiniLo } from "./componentes/MiniLo";
 import { Painel } from "./telas/Painel";
 
 // cada tela num pedaço próprio do bundle (o painel vem junto: é a primeira que aparece)
@@ -140,6 +141,7 @@ export function App() {
           </ErroTela>
         </main>
       </div>
+      <MiniLo />
 
       <nav className="nav-inferior" aria-label="Principal (celular)">
         {[NAV[0], NAV[1], NAV[2], NAV[3]].map(({ tela: t, rotulo, Icone }) => (

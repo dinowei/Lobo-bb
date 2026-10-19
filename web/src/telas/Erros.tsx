@@ -16,7 +16,7 @@ function EstudarOuvindo({ erros, aoTocar }: { erros: ErroDTO[]; aoTocar: (i: num
   const comecar = () => {
     const fim = tocarLista(
       comExplicacao.map((e) => ({ id: e.questaoId, texto: `${e.assunto}. ${e.explicacao}`, titulo: e.assunto })),
-      { velocidade: ajustes.velocidadeVoz, servidor: api.modo === "servidor", voz: ajustes.vozBinho, aoMudar: (i) => { setAtual(i); aoTocar(i === -1 ? -1 : erros.indexOf(comExplicacao[i])); if (i === -1) setEncerrar(null); } }
+      { velocidade: ajustes.velocidadeVoz, servidor: api.modo === "servidor", voz: ajustes.vozLo, aoMudar: (i) => { setAtual(i); aoTocar(i === -1 ? -1 : erros.indexOf(comExplicacao[i])); if (i === -1) setEncerrar(null); } }
     );
     setEncerrar(() => fim);
   };
@@ -24,7 +24,7 @@ function EstudarOuvindo({ erros, aoTocar }: { erros: ErroDTO[]; aoTocar: (i: num
     <div className="secao estudar-ouvindo">
       <div>
         <strong>🎧 Estudar ouvindo</strong>
-        <span className="sub"> · {atual >= 0 ? `tocando ${atual + 1} de ${comExplicacao.length}: ${comExplicacao[atual].assunto}` : `${comExplicacao.length} explicação(ões) dos seus erros, uma atrás da outra`}</span>
+        <span className="sub"> · {atual >= 0 ? `a Lo está lendo ${atual + 1} de ${comExplicacao.length}: ${comExplicacao[atual].assunto}` : `a Lo lê as explicações dos seus erros (${comExplicacao.length}), uma atrás da outra`}</span>
       </div>
       <div className="acoes" style={{ marginTop: 8 }}>
         {encerrar ? (
@@ -33,7 +33,7 @@ function EstudarOuvindo({ erros, aoTocar }: { erros: ErroDTO[]; aoTocar: (i: num
             <button className="botao-linha" onClick={() => { encerrar(); setEncerrar(null); }}>Parar</button>
           </>
         ) : (
-          <button className="botao-laranja" onClick={comecar}>Ouvir explicações <ISeta /></button>
+          <button className="botao-laranja" onClick={comecar}>Ouvir com a Lo <ISeta /></button>
         )}
       </div>
     </div>

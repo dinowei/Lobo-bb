@@ -22,6 +22,7 @@
   --errado-fundo: rgba(240, 89, 106, 0.1);
   --roxo: #8b7cf6;
   --amarelo: #f5c542;
+  --lo: #14b8a6; /* blusa da Lo: só no mini-player e em "Voz da Lo" */
 
   --fonte: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --raio: 14px;
@@ -835,6 +836,20 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 @media (pointer: coarse) { .botao-ouvir { min-height: 44px; } }
 
 .estudar-ouvindo { margin-bottom: 14px; }
+
+/* mini-player da Lo (aparece só enquanto ela lê) */
+.mini-lo {
+  position: fixed; right: 16px; bottom: 16px; z-index: 40; display: flex; align-items: center; gap: 10px;
+  max-width: min(360px, calc(100vw - 32px)); padding: 8px 10px 8px 12px; border-radius: var(--raio);
+  background: var(--cartao); border: 1px solid var(--linha); border-left: 3px solid var(--lo); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+.mini-lo-ponto { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--lo); }
+.mini-lo-texto { display: flex; flex-direction: column; min-width: 0; font-size: 12.5px; }
+.mini-lo-texto .sub { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.mini-lo .botao-linha { min-width: 36px; min-height: 36px; padding: 0 8px; }
+@media (max-width: 760px) { .mini-lo { bottom: 76px; } }
+.voz-da-lo { margin: 0; padding: 10px 12px 4px; border: 1px solid var(--linha); border-left: 3px solid var(--lo); border-radius: var(--raio); }
+.voz-da-lo legend { padding: 0 6px; font-weight: 600; }
 .linha-erro.tocando { border-color: var(--laranja); }
 
 /* Admin: mudanças de norma esperando OK */

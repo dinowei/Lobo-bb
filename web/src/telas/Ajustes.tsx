@@ -164,14 +164,17 @@ export function AjustesTela() {
           Limite de linhas da redação (padrão 30; confira no edital)
           <input id="linhas-redacao" type="number" min={5} max={60} value={form.linhasRedacaoMax} onChange={(e) => setForm({ ...form, linhasRedacaoMax: Number(e.target.value) })} />
         </label>
-        <label htmlFor="voz-binho">
-          Voz do Binho (🔊)
-          <select id="voz-binho" value={form.vozBinho} onChange={(e) => setForm({ ...form, vozBinho: e.target.value as Ajustes["vozBinho"] })}>
-            <option value="Diego">Diego</option>
-            <option value="Isabela">Isabela</option>
-            <option value="Louise">Louise</option>
-          </select>
-        </label>
+        <fieldset className="voz-da-lo">
+          <legend>Voz da Lo</legend>
+          <p className="sub" style={{ margin: "0 0 8px" }}>A Lo é a assistente do Binho: é ela quem lê as explicações e as aulas para você.</p>
+          <label htmlFor="voz-lo">
+            Voz
+            <select id="voz-lo" value={form.vozLo} onChange={(e) => setForm({ ...form, vozLo: e.target.value as Ajustes["vozLo"] })}>
+              <option value="Louise">Louise (padrão)</option>
+              <option value="Diego">Diego</option>
+              <option value="Isabela">Isabela</option>
+            </select>
+          </label>
         <label htmlFor="velocidade-voz">
           Velocidade da voz
           <select id="velocidade-voz" value={form.velocidadeVoz} onChange={(e) => setForm({ ...form, velocidadeVoz: Number(e.target.value) })}>
@@ -181,6 +184,7 @@ export function AjustesTela() {
             <option value={1.5}>Bem rápida</option>
           </select>
         </label>
+        </fieldset>
         <label htmlFor="ciclo-foco">
           Ciclo de foco no treino (minutos de foco/pausa)
           <select id="ciclo-foco" value={form.cicloFoco} onChange={(e) => setForm({ ...form, cicloFoco: e.target.value as Ajustes["cicloFoco"] })}>

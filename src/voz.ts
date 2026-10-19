@@ -10,8 +10,15 @@ import { registrarChamada } from "./telemetria.js";
 import { pregeracoes } from "./noturno.js";
 import { frasesParaFala, paraFala, textoDaAula } from "../shared/fala.js";
 
-export const VOZES_PT = ["Magpie-Multilingual.PT-BR.Diego", "Magpie-Multilingual.PT-BR.Isabela", "Magpie-Multilingual.PT-BR.Louise"] as const;
+// A narração é da Lo (assistente do Binho), voz Louise; Diego e Isabela ficam como opção em Ajustes
+export const VOZES_PT = ["Magpie-Multilingual.PT-BR.Louise", "Magpie-Multilingual.PT-BR.Diego", "Magpie-Multilingual.PT-BR.Isabela"] as const;
 export const vozPadrao = () => process.env.NVIDIA_TTS_VOZ || VOZES_PT[0];
+
+// Troca de voz padrão: o áudio de outras vozes sai do cache (o noturno regera com a voz nova)
+export async function limparCacheDeOutrasVozes() {
+  const r = await Audio.deleteMany({ voz: { $ne: vozPadrao() } });
+  return r.deletedCount ?? 0;
+}
 const TAXA_HZ = 22050;
 
 const chave = () => process.env.NVIDIA_TTS_API_KEY || process.env.GERADOR_API_KEY;

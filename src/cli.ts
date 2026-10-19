@@ -55,7 +55,7 @@ import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { gerarAulas, planejarAulas } from "./aulas.js";
 import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
 import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, relatorioFontesAtuais } from "./fontesAtuais.js";
-import { planejarVoz } from "./voz.js";
+import { limparCacheDeOutrasVozes, planejarVoz, vozPadrao } from "./voz.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -249,6 +249,12 @@ async function main() {
         console.log("Rótulo da dificuldade × dificuldade medida pelo rating (erro > 0: o rótulo exagera a dificuldade)\n");
         for (const l of linhas) console.log(`${l.erroMedio >= 0 ? "+" : ""}${l.erroMedio.toFixed(2)}  n=${l.n}  ↑${l.superestima} ↓${l.subestima}  ${l.grupo}`);
         return;
+      }
+
+      case "voz": {
+        // voz limpar: tira do cache o áudio de vozes que não são a padrão (NVIDIA_TTS_VOZ)
+        if (args[0] !== "limpar") throw new Error('Use "voz limpar".');
+        return console.log(`✔ ${await limparCacheDeOutrasVozes()} áudio(s) de outras vozes removido(s) do cache; o noturno regera com ${vozPadrao()}.`);
       }
 
       case "fontes-atuais": {

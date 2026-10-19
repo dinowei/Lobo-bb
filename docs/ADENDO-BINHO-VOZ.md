@@ -1,5 +1,13 @@
 # Adendo: Binho (imagens) + voz e chat
 
+> **Decisão do dono (18/10/2026): Binho = mascote; Lo = assistente e voz da narração.**
+> A voz NÃO é do Binho. Quem lê em voz alta é a Lo, assistente do Binho (voz Louise, pt-BR; blusa turquesa
+> #14B8A6 com "LO" no peito). Textos: 🔊 "Ouvir com a Lo"; tocando "A Lo está lendo…"; Estudar ouvindo
+> "A Lo lê as explicações dos seus erros"; o chat continua "Pergunte ao Binho" (o Binho responde em texto) e o
+> áudio da resposta é "Ouvir resposta com a Lo"; Ajustes: "Voz da Lo" (Louise padrão, Diego, Isabela) + velocidade.
+> O turquesa é só da Lo, discreto (mini-player e "Voz da Lo"); nada mais muda no visual (regra 8).
+> Onde abaixo se lê "voz do Binho", entenda "voz da Lo".
+
 **Quando:** só DEPOIS que todo o PROMPT-VIAGEM / PROMPT-RETOMADA estiver concluído (inclusive Etapa 9).
 Não muda a ordem do que está sendo feito agora.
 
