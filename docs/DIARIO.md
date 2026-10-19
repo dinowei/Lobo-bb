@@ -509,4 +509,9 @@ RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows 
 - Uma chamada serial `gerar --assunto "Sistemas de amortização" --n 3`: 1/3 aprovada. Aprovada: saldo devedor após k parcelas no SAC. Duas descartadas como `numero_alterado`, pois o enunciado omitiu os dados numéricos da taxa (1% e 3% ao mês).
 - As três tentativas usaram `openai/gpt-oss-20b`; as auditorias da questão aprovada foram feitas pelo Muse, de outra família. Lightning permaneceu em descanso por taxa baixa.
 
-RETOMAR AQUI: rodar 3 questões reais de `Taxas de juros`; depois seguir, sempre serialmente, com `Análise combinatória`, `Probabilidade`, `Concordância verbal e nominal`, `Regência verbal e nominal e crase` e `Pontuação`. Depois retomar o benchmark completo de madrugada, reaproveitando as amostras gravadas.
+## 19/10/2026 — Etapa 7: rodada real de Taxas de juros
+
+- Uma chamada serial `gerar --assunto "Taxas de juros" --n 3`: 0/3 aprovadas. As três passaram pelo gerador e auditor de família diferente, mas foram reprovadas na revisão por explicações matemáticas incoerentes com as alternativas; uma também tinha cenário confuso. Nenhuma foi salva como aprovada.
+- As três tentativas usaram `openai/gpt-oss-20b`; auditorias pelo `meta/muse-glimmer-30b`. O Lightning permaneceu em descanso por taxa baixa.
+
+RETOMAR AQUI: rodar 3 questões reais de `Análise combinatória`; depois seguir, sempre serialmente, com `Probabilidade`, `Concordância verbal e nominal`, `Regência verbal e nominal e crase` e `Pontuação`. Depois retomar o benchmark completo de madrugada, reaproveitando as amostras gravadas.
