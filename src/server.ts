@@ -12,7 +12,7 @@ import { listarFiguras, decidirFigura, contextoDaFigura, amostrasDeFiguras, type
 import { painelIA, painelFila, painelBenchmark, pendencias, lerDoc, DOCS_LIBERADOS } from "./adminTelas.js";
 import { aprovarCorrentes, desfazerCorrentes } from "./corrente.js";
 import { aprovarMudancas, relatorioFontesAtuais } from "./fontesAtuais.js";
-import { audioDe, audioPronto, VOZES_PT, vozPadrao } from "./voz.js";
+import { audioDe, audioPronto, marcarOuvida, VOZES_PT, vozPadrao } from "./voz.js";
 import { tentarDeNovoAgora } from "./noturno.js";
 import { FUNCOES, type Correntes } from "./catalogo.js";
 import { autenticar, usuarioAtualId } from "./auth.js";
@@ -157,6 +157,7 @@ app.post(
       }
     }
     if (!mp3) return res.status(204).end();
+    void marcarOuvida(texto, voz).catch(() => undefined); // o teto de áudio tira primeiro os menos ouvidos
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "private, max-age=86400");
     res.end(mp3);

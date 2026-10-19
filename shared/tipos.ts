@@ -347,7 +347,10 @@ export interface AdminIADTO {
   hoje: Record<string, { modelo: string; n: number }[]>;
   verificadoEm?: string;
   voz?: VozIADTO; // a narração da Lo (Magpie TTS)
+  banco?: UsoBancoDTO & { audioMB: number; tetoAudioMB: number; colecoes: { nome: string; mb: number }[] };
 }
+// espaço do banco (Atlas grátis): alerta a partir de 80% do limite
+export interface UsoBancoDTO { usadoMB: number; limiteMB: number; fracao: number; alerta: boolean; dadosMB: number; indicesMB: number; discoMB: number }
 export interface VozIADTO {
   configurada: boolean;
   vozPadrao: string;

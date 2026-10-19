@@ -184,6 +184,7 @@ function AbaIA() {
             </dl>
             <p className="suave">Verificação semanal dos modelos: {dados.verificadoEm ? quando(dados.verificadoEm) : "ainda não rodou"} (no noturno).</p>
           </div>
+          {dados.banco && <UsoDoBanco b={dados.banco} />}
           {dados.voz && <LinhaVoz v={dados.voz} />}
           <div className="grade-modelos">
             {dados.modelos.map((m) => <CartaoModelo key={m.id} m={m} />)}
@@ -191,6 +192,25 @@ function AbaIA() {
         </div>
       )}
     </Estado>
+  );
+}
+
+// Espaço no Atlas grátis: barra de uso (alerta em 80%), o que mais pesa e o cache de áudio contra o teto
+function UsoDoBanco({ b }: { b: NonNullable<AdminIADTO["banco"]> }) {
+  return (
+    <div className="secao">
+      <div className="linha-titulo">
+        <h2>Uso do banco</h2>
+        <span className={`selo ${b.alerta ? "alerta" : ""}`}>{b.usadoMB} de {b.limiteMB} MB · {pct(b.fracao)}</span>
+      </div>
+      <div className="barra" role="progressbar" aria-label="Uso do banco" aria-valuenow={Math.round(b.fracao * 100)}><i style={{ width: pct(Math.min(1, b.fracao)) }} /></div>
+      <dl className="metricas">
+        <div><dt>Dados · índices · disco</dt><dd>{b.dadosMB} · {b.indicesMB} · {b.discoMB} MB</dd></div>
+        <div><dt>Áudio da Lo</dt><dd>{b.audioMB} de {b.tetoAudioMB} MB (teto; saem os menos ouvidos)</dd></div>
+        <div><dt>O que mais pesa</dt><dd>{b.colecoes.map((c) => `${c.nome} ${c.mb}`).join(" · ")} MB</dd></div>
+        <div><dt>Telemetria</dt><dd>apagada sozinha em 30 dias</dd></div>
+      </dl>
+    </div>
   );
 }
 

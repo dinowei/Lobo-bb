@@ -8,7 +8,8 @@ import { fileURLToPath } from "node:url";
 import { Question, Tarefa, Geracao, ChamadaModelo } from "./models.js";
 import { carregarCatalogo, FUNCOES, NOME_FUNCAO, validarCorrentes, type Correntes } from "./catalogo.js";
 import { correnteAtiva } from "./corrente.js";
-import { resumoVoz } from "./voz.js";
+import { bytesDeAudio, resumoVoz, tetoAudioMB } from "./voz.js";
+import { alertaDoBanco, medirColecoes, usoBanco } from "./usoBanco.js";
 import { estatisticasModelos, atendeuHoje, type EstatisticaModelo } from "./telemetria.js";
 import { ultimaVerificacao, alertasDeModelos, type Verificacao } from "./sondagem.js";
 import { relatorio, empatados, RODADAS, amostraOficiais } from "./benchmark.js";
@@ -59,6 +60,7 @@ export async function painelIA(): Promise<AdminIADTO> {
     correnteAtiva(), ultimaVerificacao(), estatisticasModelos(24), estatisticasModelos(24 * 7), atendeuHoje(),
     resumoVoz().catch(() => undefined),
   ]);
+  const banco = await espacoDoBanco().catch(() => undefined);
   const cat = carregarCatalogo();
   const por24 = new Map(h24.map((e) => [e.modelo, e]));
   const por7 = new Map(d7.map((e) => [e.modelo, e]));
@@ -88,16 +90,29 @@ export async function painelIA(): Promise<AdminIADTO> {
     aprovadaEm: ativa.aprovadaEm,
     correntes: ativa.correntes,
     nomesFuncoes: NOME_FUNCAO,
-    alertas: alertasDeModelos(ativa, verif),
+    alertas: [...alertasDeModelos(ativa, verif), ...(banco && alertaDoBanco(banco) ? [alertaDoBanco(banco)!] : [])],
     modelos,
     hoje,
     verificadoEm: verif?.em,
     voz,
+    banco,
   };
 }
 
 export async function alertasAdminAgora(): Promise<string[]> {
-  return alertasDeModelos(await correnteAtiva(), await ultimaVerificacao());
+  const alerta = await usoBanco().then(alertaDoBanco).catch(() => null);
+  return [...alertasDeModelos(await correnteAtiva(), await ultimaVerificacao()), ...(alerta ? [alerta] : [])];
+}
+
+// uso do banco na aba IA: total, o que pesa (5 maiores coleções) e o cache de áudio contra o teto
+async function espacoDoBanco() {
+  const [u, cols, audio] = await Promise.all([usoBanco(), medirColecoes(), bytesDeAudio()]);
+  return {
+    ...u,
+    audioMB: Math.round(audio / 104857.6) / 10,
+    tetoAudioMB: tetoAudioMB(),
+    colecoes: cols.slice(0, 5).map((c) => ({ nome: c.nome, mb: Math.round((Math.max(c.dadosMB, c.discoMB) + c.indicesMB) * 10) / 10 })),
+  };
 }
 
 // ---------- Fila + relatório da noite ----------

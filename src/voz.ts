@@ -5,7 +5,7 @@
 // ============================================================
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { Audio, Aula, ChamadaModelo, Question, Tarefa, Topic } from "./models.js";
+import { Attempt, Audio, Aula, ChamadaModelo, Question, Tarefa, Topic } from "./models.js";
 import type { VozIADTO } from "../shared/tipos.js";
 import { registrarChamada } from "./telemetria.js";
 import { pregeracoes } from "./noturno.js";
@@ -101,7 +101,7 @@ export async function audioDe(textoTela: string, voz = vozPadrao()): Promise<{ h
     for (const frase of frasesParaFala(falado)) partes.push(pcmDe(await sintetizarFrase(frase, voz)), pausa);
     const pcm = Buffer.concat(partes);
     const mp3 = await paraMp3(pcm);
-    await Audio.updateOne({ hash, voz }, { $setOnInsert: { hash, voz, dados: mp3, bytes: mp3.length, segundos: pcm.length / 2 / TAXA_HZ } }, { upsert: true });
+    await Audio.updateOne({ hash, voz }, { $setOnInsert: { hash, voz, dados: mp3, bytes: mp3.length, segundos: pcm.length / 2 / TAXA_HZ, ouvidas: 0 } }, { upsert: true });
     return { hash, mp3 };
   } catch (e) {
     console.warn(`[voz] ${String(e instanceof Error ? e.message : e).slice(0, 200)}`);
@@ -128,17 +128,59 @@ pregeracoes["voz"] = async (params) => {
   return a ? { ok: true } : { ok: false, motivo: "provedor_falhou", detalhes: "TTS falhou; tenta de novo na próxima noite" };
 };
 
+// ---------- espaço no Atlas grátis: teto do cache de áudio ----------
+// Medido em 18/10/2026: ~210 KB por explicação; áudio de todas as 1.200 passaria de 250 MB. Então: de noite
+// só as explicações de questões que alguém ERROU (o que se ouve no "Estudar ouvindo") e as aulas; acima do
+// teto AUDIO_MAX_MB saem primeiro os menos ouvidos (e, no empate, os ouvidos há mais tempo). Áudio é cache.
+export const tetoAudioMB = () => Number(process.env.AUDIO_MAX_MB) || 100;
+export async function bytesDeAudio() {
+  const [g] = await Audio.aggregate<{ b: number }>([{ $group: { _id: null, b: { $sum: "$bytes" } } }]);
+  return g?.b ?? 0;
+}
+export async function limparAudios(tetoMB = tetoAudioMB()) {
+  const teto = tetoMB * 1_048_576;
+  let total = await bytesDeAudio();
+  if (total <= teto) return { removidos: 0, mb: Math.round(total / 104857.6) / 10 };
+  const alvo = teto * 0.9; // folga para a noite seguinte não limpar de novo
+  let removidos = 0;
+  const fila = Audio.find().sort({ ouvidas: 1, ultimaVez: 1, createdAt: 1 }).select("_id bytes").lean().cursor();
+  for await (const a of fila) {
+    if (total <= alvo) break;
+    await Audio.deleteOne({ _id: a._id });
+    total -= a.bytes ?? 0;
+    removidos++;
+  }
+  await fila.close();
+  return { removidos, mb: Math.round(total / 104857.6) / 10 };
+}
+// cada vez que o aluno ouve (não conta a pré-geração)
+export async function marcarOuvida(textoTela: string, voz = vozPadrao()) {
+  await Audio.updateOne({ hash: hashFala(paraFala(textoTela), voz), voz }, { $inc: { ouvidas: 1 }, $set: { ultimaVez: new Date() } });
+}
+
 export async function planejarVoz(lote: string, max = Number(process.env.VOZ_NOITE) || 40) {
   if (!vozConfigurada()) return 0;
   const voz = vozPadrao();
+  // sem espaço no teto (depois da limpeza), a noite não gera áudio novo
+  if ((await bytesDeAudio()) >= tetoAudioMB() * 1_048_576 * 0.95) return 0;
   const abertas = new Set((await Tarefa.distinct("params.id", { tipo: "voz", status: { $in: ["pendente", "rodando", "aguardando"] } })).map(String));
   const candidatos: { tipo: "aula" | "explicacao"; id: string; texto: string }[] = [];
+  // 1º as explicações de questões erradas (as mais recentes primeiro), depois as aulas
+  const erradas = await Attempt.aggregate<{ _id: unknown }>([
+    { $match: { acertou: false } },
+    { $group: { _id: "$questionId", ultima: { $max: "$createdAt" } } },
+    { $sort: { ultima: -1 } },
+    { $limit: max * 10 },
+  ]);
+  const porId = new Map((await Question.find({ _id: { $in: erradas.map((e) => e._id) }, status: "aprovada", explicacaoGeral: { $nin: [null, ""] } }).select("explicacaoGeral").lean()).map((q) => [String(q._id), q.explicacaoGeral!]));
+  for (const e of erradas) {
+    const texto = porId.get(String(e._id));
+    if (texto) candidatos.push({ tipo: "explicacao", id: String(e._id), texto });
+  }
   for (const a of await Aula.find({ status: "aprovada" }).select("_id").lean()) {
     const texto = await textoParaVoz({ tipo: "aula", id: String(a._id) });
     if (texto) candidatos.push({ tipo: "aula", id: String(a._id), texto });
   }
-  for (const q of await Question.find({ status: "aprovada", explicacaoGeral: { $nin: [null, ""] } }).select("explicacaoGeral").sort({ updatedAt: -1 }).limit(max * 10).lean())
-    candidatos.push({ tipo: "explicacao", id: String(q._id), texto: q.explicacaoGeral! });
   const prontos = new Set((await Audio.find({ voz, hash: { $in: candidatos.map((c) => hashFala(paraFala(c.texto), voz)) } }).select("hash").lean()).map((a) => a.hash));
   const novos = candidatos.filter((c) => !abertas.has(c.id) && !prontos.has(hashFala(paraFala(c.texto), voz))).slice(0, max);
   if (novos.length) await Tarefa.insertMany(novos.map((c) => ({ tipo: "voz", params: { tipo: c.tipo, id: c.id }, lote })));

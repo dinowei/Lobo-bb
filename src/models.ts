@@ -339,7 +339,7 @@ const GeracaoSchema = new Schema(
 export const Geracao = model("Geracao", GeracaoSchema, "geracoes");
 
 // ------------------------------------------------------------
-// 9. TELEMETRIA DE MODELOS — uma linha por chamada HTTP (sem texto, sem chave). Some em 35 dias.
+// 9. TELEMETRIA DE MODELOS — uma linha por chamada HTTP (sem texto, sem chave). Some em 30 dias (TTL).
 // ------------------------------------------------------------
 export const TIPOS_FALHA = ["429", "5xx", "timeout", "formato", "permanente", "outro"] as const;
 const ChamadaModeloSchema = new Schema({
@@ -353,7 +353,8 @@ const ChamadaModeloSchema = new Schema({
   reserva: Boolean, // atendeu no lugar do principal da corrente
   em: { type: Date, default: Date.now },
 });
-ChamadaModeloSchema.index({ em: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 35 });
+export const TTL_TELEMETRIA_SEG = 60 * 60 * 24 * 30;
+ChamadaModeloSchema.index({ em: 1 }, { expireAfterSeconds: TTL_TELEMETRIA_SEG });
 ChamadaModeloSchema.index({ modelo: 1, em: -1 });
 export const ChamadaModelo = model("ChamadaModelo", ChamadaModeloSchema, "chamadas_modelo");
 
@@ -424,10 +425,14 @@ const AudioSchema = new Schema(
     dados: { type: Buffer, required: true },
     bytes: Number,
     segundos: Number,
+    // espaço do Atlas grátis: o teto AUDIO_MAX_MB tira primeiro os menos ouvidos (o áudio é cache, regera)
+    ouvidas: { type: Number, default: 0 },
+    ultimaVez: Date,
   },
   { timestamps: true }
 );
 AudioSchema.index({ hash: 1, voz: 1 }, { unique: true });
+AudioSchema.index({ ouvidas: 1, ultimaVez: 1 });
 export const Audio = model("Audio", AudioSchema, "audios");
 
 // Rating Elo do aluno por disciplina (8.7)

@@ -400,7 +400,28 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
 - `docs/RELATORIO-VIAGEM.md`: entrega final (o que foi feito, testes, o que fica com o dono). DECISOES-PENDENTES nº 11 resolvido.
 - Testes: 153/153. Typecheck ok.
 
-RETOMAR AQUI: pedido do dono sobre o espaço do Atlas (512 MB; 165 MB usados): medir por coleção, projetar para 1.200 questões com áudio e, se passar de ~400 MB, áudio fora do Mongo (ou só dos erros, com limpeza dos menos ouvidos), TTL de 30 dias na telemetria, uso do banco na aba IA com alerta em 80%.
+## 18/10/2026 — Espaço no Atlas grátis (pedido do dono)
+
+- Medido com `npm run bb -- uso-banco` (só leitura):
+  - 33,9 MB de dados + índices; 59,9 MB de disco + índices. Só o banco `bb-estudos` existe no cluster.
+  - Os 165 MB citados pelo dono não aparecem nas estatísticas: falta saber de qual tela do Atlas vieram.
+  - Por coleção: chunks 23,4 MB (45 em disco, 28 KB cada: embedding de 2048 números), questões 6,4 MB (33 KB cada), telemetria 0,1 MB, áudio 0.
+- Projeção para 1.200 questões, com áudio de toda explicação:
+  - questões ~40 MB, chunks ~28 MB;
+  - áudio ~250 MB das explicações (~210 KB cada) + ~60 MB das aulas;
+  - total ≈ 400 MB antes do disco, ou seja, passa do limite pedido.
+- Aplicado:
+  - Áudio continua no Mongo, mas a noite só gera o das explicações de questões que alguém **errou** (as mais recentes primeiro) e o das aulas.
+    - Teto `AUDIO_MAX_MB=100`: acima dele saem primeiro os menos ouvidos (cada vez que o aluno ouve conta) e a noite não gera áudio novo.
+    - Fora do Mongo exigiria conta num armazenamento externo (do dono).
+  - Telemetria com TTL de 30 dias. O usuário do Atlas não pode `collMod`, então o índice TTL foi recriado. Aplicado com `uso-banco ajustar`; a noite confere.
+  - Admin → IA, "Uso do banco":
+    - barra contra 512 MB, as 5 coleções que mais pesam, áudio × teto;
+    - alerta a partir de 80%, na aba e nos alertas do admin;
+    - conta conservadora: o maior entre dados e disco, mais os índices.
+- Testes e typecheck ok.
+
+RETOMAR AQUI: decisões do dono depois do benchmark (corrente definitiva, descanso de 1 h para modelo com < 20% de sucesso, fontes atuais de Informática e Vendas, item 11, Dockerfile e PORT para o Render).
 
 RETOMAR AQUI (antigo): Binho, o que falta: chat por tópico; telemetria de voz na aba IA; Parte 1 quando o dono puser as 5 poses em `web/src/assets/lobos/`. A voz padrão espera a escolha do dono (amostras em `docs/voz/`). Depois: ENTREGA FINAL do PROMPT-VIAGEM (RELATORIO-VIAGEM.md).
 

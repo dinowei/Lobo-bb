@@ -55,8 +55,9 @@ import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { gerarAulas, planejarAulas } from "./aulas.js";
 import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
 import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, relatorioFontesAtuais } from "./fontesAtuais.js";
-import { limparCacheDeOutrasVozes, planejarVoz, vozPadrao } from "./voz.js";
+import { limparAudios, limparCacheDeOutrasVozes, planejarVoz, tetoAudioMB, vozPadrao } from "./voz.js";
 import { perguntarAoBinho } from "./chatBinho.js";
+import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -253,6 +254,25 @@ async function main() {
         return;
       }
 
+      case "uso-banco": {
+        // espaço no Atlas por coleção (só leitura); "uso-banco ajustar" aplica o TTL de 30 dias e o teto do áudio
+        if (args[0] === "ajustar") {
+          console.log(await ajustarTTLTelemetria() ? "✔ Telemetria: TTL ajustado para 30 dias." : "Telemetria: TTL já está em 30 dias.");
+          const l = await limparAudios();
+          console.log(`Áudio: ${l.removidos} removido(s); cache em ${l.mb} MB (teto ${tetoAudioMB()} MB).`);
+        }
+        const [total, cols] = await Promise.all([usoBanco(), medirColecoes()]);
+        console.log(`Banco: ${total.usadoMB} MB de ${total.limiteMB} MB (${Math.round(total.fracao * 100)}%) · dados ${total.dadosMB} · índices ${total.indicesMB} · em disco ${total.discoMB}\n`);
+        console.log("coleção                     docs     dados MB  índices MB  disco MB  média KB");
+        for (const c of cols) console.log(`${c.nome.padEnd(26)} ${String(c.docs).padStart(6)}  ${String(c.dadosMB).padStart(9)}  ${String(c.indicesMB).padStart(10)}  ${String(c.discoMB).padStart(8)}  ${String(c.mediaKB).padStart(8)}`);
+        const bancos = await bancosDoCluster();
+        if (bancos) {
+          console.log("\nBancos no cluster (todos contam no limite do Atlas grátis):");
+          for (const b of bancos) console.log(`  ${b.nome.padEnd(24)} dados ${b.dadosMB} MB · índices ${b.indicesMB} MB${b.app ? "  ← o do app" : ""}`);
+        }
+        return;
+      }
+
       case "binho": {
         // binho --assunto "<parte do tópico>" --pergunta "...": o chat "Pergunte ao Binho" como o dono (ALUNO_ID)
         const busca = exigir(o.assunto, "--assunto");
@@ -338,6 +358,10 @@ async function main() {
           const cartoes = await planejarCartoes(lote);
           const fontesAtuais = await planejarFontesAtuais(lote);
           const temas = await planejarTemasRedacao(lote);
+          // espaço do Atlas grátis: telemetria em 30 dias e teto do áudio antes de planejar áudio novo
+          if (await ajustarTTLTelemetria()) console.log("✔ Telemetria: TTL ajustado para 30 dias.");
+          const limpeza = await limparAudios();
+          if (limpeza.removidos) console.log(`✔ Áudio: ${limpeza.removidos} menos ouvido(s) removido(s); cache em ${limpeza.mb} MB (teto ${tetoAudioMB()} MB).`);
           const audios = await planejarVoz(lote);
           console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s), ${aulas} aula(s), ${cartoes} lote(s) de cartões, ${fontesAtuais} conferência(s) de fonte atual, ${temas} tema(s) de redação e ${audios} áudio(s) do Binho (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
           const r = await rodarFila({ ate, max: max !== undefined ? max + extras + aulas + cartoes + fontesAtuais + temas + audios + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
