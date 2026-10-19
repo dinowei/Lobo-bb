@@ -529,4 +529,9 @@ RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows 
 - Uma chamada serial `gerar --assunto "Concordância verbal e nominal" --n 3`: 0/3 aprovadas. Uma foi reprovada por erro conceitual na explicação; outra, porque o auditor aceitou duas alternativas como corretas; a terceira, porque as frases e a reescrita não obedeceram à regra sorteada. Nenhuma foi salva como aprovada.
 - A construção das frases foi demorada (328–568 s por questão). O GLM teve timeout em tentativas; a corrente fez fallback para gpt-oss quando necessário. Juiz de Português Super/Ultra e auditor Muse verificaram frases e questão.
 
-RETOMAR AQUI: rodar 3 questões reais de `Regência verbal e nominal e crase`; depois seguir, sempre serialmente, com `Pontuação`. Depois retomar o benchmark completo de madrugada, reaproveitando as amostras gravadas.
+## 19/10/2026 — Etapa 7: rodada real de Regência verbal e nominal e crase
+
+- Uma chamada serial `gerar --assunto "Regência verbal e nominal e crase" --n 3`: 0/3 aprovadas. Uma foi descartada por crase antes de infinitivo; outra, por duplicidade (cosseno 0,865); a terceira, por ambiguidade conceitual na distinção entre crase, artigo e regência. Nenhuma foi salva como aprovada.
+- As tentativas demoraram 637–725 s cada, com timeout do GLM e fallback do escritor para gpt-oss nas chamadas afetadas. Juiz Super/Ultra e auditor Muse participaram das verificações.
+
+RETOMAR AQUI: rodar 3 questões reais de `Pontuação`; depois retomar o benchmark completo de madrugada, reaproveitando as amostras gravadas.
