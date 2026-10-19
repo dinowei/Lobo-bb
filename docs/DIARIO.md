@@ -504,4 +504,9 @@ RETOMAR AQUI: criar o script e a instrução do Agendador de Tarefas do Windows 
 - Portanto, a geração pedida na ordem provisória exata (Lightning falha → gpt-oss assume → Super audita) não foi reproduzida: a corrente aprovada atual é a definitiva, e não forcei uma configuração antiga nem contornei o descanso do Lightning.
 - O item 8.2 e os itens 8.3 a 8.9 já constam como concluídos. A retomada segue a ordem atual do ROADMAP: rodadas reais de três por assunto da Etapa 7.
 
-RETOMAR AQUI: executar em sequência as rodadas reais de 3 questões por assunto da Etapa 7 (Amortização, Taxas, Combinatória, Probabilidade, Concordância, Regência e Pontuação); um job de IA por vez. Depois retomar o benchmark completo de madrugada, reaproveitando as amostras gravadas.
+## 19/10/2026 — Etapa 7: rodada real de Sistemas de amortização
+
+- Uma chamada serial `gerar --assunto "Sistemas de amortização" --n 3`: 1/3 aprovada. Aprovada: saldo devedor após k parcelas no SAC. Duas descartadas como `numero_alterado`, pois o enunciado omitiu os dados numéricos da taxa (1% e 3% ao mês).
+- As três tentativas usaram `openai/gpt-oss-20b`; as auditorias da questão aprovada foram feitas pelo Muse, de outra família. Lightning permaneceu em descanso por taxa baixa.
+
+RETOMAR AQUI: rodar 3 questões reais de `Taxas de juros`; depois seguir, sempre serialmente, com `Análise combinatória`, `Probabilidade`, `Concordância verbal e nominal`, `Regência verbal e nominal e crase` e `Pontuação`. Depois retomar o benchmark completo de madrugada, reaproveitando as amostras gravadas.
