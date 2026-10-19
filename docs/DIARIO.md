@@ -558,7 +558,7 @@ RETOMAR AQUI: item 1c — classificar os dois tópicos doutrinários de Vendas c
 
 - Atendimento e Segmentação ficaram `nao_se_aplica` para fonte atual; a classificação não muda `status` nem tira questões do treino.
 - Exceção confirmada: Q57 da BB 2023 (Segmentação) cita o CDC e ficou `confirmada`, ligada ao trecho literal do art. 6º, III, da Lei 8.078/1990.
-- Q58 da BB 2023 menciona SAC apenas como canal na explicação, sem citar o Decreto 11.034; conforme o critério decidido, ficou `nao_se_aplica`. Não foi localizada questão que citasse suitability/Resolução CVM 30 nesses dois tópicos. A Q68 da BB 2021 segue histórica pela revogação da Res. CMN 4.539/2016.
-- No total das 15 questões pendentes desses tópicos: 14 `nao_se_aplica`, 1 `confirmada` (CDC). As questões continuam com seus status de treino anteriores.
+- Após esclarecimento do dono, a Q58 da BB 2023 (Atendimento) também ficou `confirmada`: a resposta sobre Ouvidoria está diretamente coberta pelo art. 3º, I, da Res. CMN 4.860/2020, vigente e ligada ao trecho literal. Não foi localizada questão que citasse suitability/Resolução CVM 30 nesses dois tópicos. A Q68 da BB 2021 segue histórica pela revogação da Res. CMN 4.539/2016.
+- No total das 15 questões pendentes desses tópicos: 13 `nao_se_aplica`, 2 `confirmada` (CDC e Res. CMN 4.860). As questões continuam com seus status de treino anteriores.
 
 RETOMAR AQUI: item 1d — propor em DECISOES as normas oficiais para as 17 questões pendentes de Bancários, com cobertura individual e projeção de espaço no Atlas; não baixar nem ingerir antes do OK do dono.

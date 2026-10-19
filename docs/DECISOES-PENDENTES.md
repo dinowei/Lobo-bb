@@ -76,7 +76,7 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 ### Decisão aplicada: dois tópicos doutrinários de Vendas
 
 - **Atendimento, satisfação e experiência do cliente** e **Segmentação de mercado e gestão de carteira** ficam como `nao_se_aplica` para fonte atual, exceto questão que cite expressamente SAC/Decreto 11.034, suitability/Resolução CVM 30 ou CDC.
-- Na conferência do banco, somente a Q57 da BB 2023 (Segmentação) cita o CDC: ficou `confirmada`, ligada ao trecho do art. 6º, III, da Lei 8.078/1990. A Q58 da BB 2023 (Atendimento) menciona SAC apenas como exemplo de canal na explicação, sem citar o Decreto 11.034; não é exceção e ficou `nao_se_aplica`. Não havia questão que citasse suitability/Resolução CVM 30.
+- Na conferência do banco, a Q57 da BB 2023 (Segmentação) cita o CDC: ficou `confirmada`, ligada ao trecho do art. 6º, III, da Lei 8.078/1990. Por decisão posterior do dono, a Q58 da BB 2023 (Atendimento) fica `confirmada` com a Res. CMN 4.860/2020, art. 3º, I: sua resposta sobre Ouvidoria está diretamente coberta pela norma vigente; a referência está ligada ao trecho literal. Não havia questão que citasse suitability/Resolução CVM 30.
 - As demais questões dos dois tópicos foram classificadas `nao_se_aplica`; a classificação não altera o status de treino. A questão histórica que cita norma revogada mantém o aviso e o status histórico.
 
 ## 1. Revisar o glossário de Vendas (Etapa 2.4)
