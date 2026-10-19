@@ -24,17 +24,17 @@
 - Fase B (8.1 a 8.9) concluída no código, no servidor e no demo. Redação: regra de 25 a 30 linhas por código (DECISOES nº 8).
 - Aulas (8.5): 0 aprovadas em duas rodadas reais; citação e formato endurecidos por código (DECISOES nº 9).
 - Etapa 6: primeira noite real feita (12 aprovadas em 16 tarefas); a meta de aprovadas agora só para a geração.
+- Etapa 7 concluída: os sete assuntos tiveram 3 tentativas cada em 18/10 (12/21 aprovadas) e nova rodada registrada em 19/10 (7/21 aprovadas). Após corrigir a construção, os retestes direcionados de Taxas e Amortização ficaram em 3/3 cada. Não repetir as rodadas completas; reabrir somente um assunto quando houver correção específica.
 - Etapa 9:
   - estados (erro, vazio, carregando), offline com fila, atalhos, PWA, Desfazer, menu "Mais" no celular;
-  - bateria e2e 6/6 (`scripts/e2e-fluxos.ts`) e prints em `docs/telas/`;
+  - fluxos 6/6 (`scripts/e2e-fluxos.ts`), login 7/7 (`scripts/e2e-login.ts`) e prints em `docs/telas/` já conferidos;
   - Lighthouse pendente (DECISOES nº 10).
 
 ## Próximo (em ordem)
-1. Rodadas reais da Etapa 7 concluídas em 19/10/2026: 7/21 aprovadas (Amortização 1/3, Taxas 0/3, Combinatória 2/3, Probabilidade 1/3, Concordância 0/3, Regência 0/3, Pontuação 3/3); descartes e modelos estão detalhados no `docs/DIARIO.md`.
-2. Benchmark completo de madrugada (retomar as amostras gravadas) → escolha definitiva da corrente (espera o dono).
-3. Bateria e2e completa (fluxos + login) com os jobs de IA parados; Lighthouse.
-4. Aplicar `docs/ADENDO-BINHO-VOZ.md` (depois de tudo).
-5. Pendências do dono: fontes do BCB, edital novo (cotas, pesos, duração, regra de linhas), deploy.
+1. Benchmark completo de madrugada (retomar as amostras gravadas) → proposta da corrente definitiva para decisão do dono.
+2. Lighthouse da Etapa 9 (DECISOES nº 10); os fluxos e o login já têm baterias concluídas.
+3. Aplicar `docs/ADENDO-BINHO-VOZ.md` (depois de tudo).
+4. Pendências do dono: fontes do BCB, edital novo (cotas, pesos, duração, regra de linhas), deploy.
 
 ## Ideias para depois
 - Questões com imagem/tabela: cadastro com figura para as de `docs/PENDENTES-FIGURA.md`

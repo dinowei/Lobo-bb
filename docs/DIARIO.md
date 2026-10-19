@@ -575,4 +575,10 @@ RETOMAR AQUI: item 1c — classificar os dois tópicos doutrinários de Vendas c
 - `pipeline` substitui explicações de cálculo construído por explicações baseadas em `montada.resolucao`. Para Amortização, SAC/Price fica explícito e dados omitidos são inseridos como frase do enunciado; os campos numéricos e a conferência de dados continuam sob controle do código. O prompt de Taxas proíbe chamar a taxa mensal de nominal quando os dados não a definem assim.
 - Comparação final: Taxas de juros **3/3** aprovadas (antes 0/3); Amortização **3/3** aprovadas (antes 1/3, com duas perdas por falta de dado numérico). Uma tentativa intermediária de Amortização teve 1/3; outra questão perdeu por o auditor tratar “Dados necessários” como metadado, e uma terceira foi marcada Price porque SAC não estava explícito. Esse auditor demorou 512 s e concluiu discordando; a correção passou a inserir dados em frase natural e nomear SAC/Price. A rodada final passou sem falta de dado nem ambiguidade de sistema.
 
-RETOMAR AQUI: item 3 — conferir as rodadas reais da Etapa 7 já registradas, não repetir assuntos concluídos e atualizar o ROADMAP para a próxima atividade pendente.
+## 19/10/2026 — Etapa 7 encerrada sem repetir assuntos
+
+- O registro de 18/10 confirma 3 tentativas em cada um dos sete assuntos (21 tentativas no total), com 12 aprovadas. Portanto, “12 de 21” era a contagem de aprovações, não 12 assuntos: não havia tópico sem rodada.
+- O DIARIO também registra nova rodada real em 19/10 nos mesmos sete assuntos, 7/21 aprovadas. Não repeti as cinco rodadas não matemáticas. As únicas rodadas extras foram as duas explicitamente pedidas no item 2: retestes corrigidos de Taxas (3/3) e Amortização (3/3).
+- `ROADMAP.md` agora marca a Etapa 7 como concluída, veta repetição integral e deixa o benchmark noturno como próxima etapa; no bloco da Etapa 9, registra que fluxos e login já passaram e que falta o Lighthouse.
+
+RETOMAR AQUI: item 4 — atualizar o noturno local para dois trabalhadores, conferir `.env.example` e as instruções do Agendador; o relatório da primeira noite só poderá ser registrado depois que ela rodar.
