@@ -56,6 +56,7 @@ import { gerarAulas, planejarAulas } from "./aulas.js";
 import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
 import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, relatorioFontesAtuais } from "./fontesAtuais.js";
 import { limparCacheDeOutrasVozes, planejarVoz, vozPadrao } from "./voz.js";
+import { perguntarAoBinho } from "./chatBinho.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -118,6 +119,7 @@ async function main() {
     args: resto,
     allowPositionals: true,
     options: {
+      pergunta: { type: "string" },
       tipo: { type: "string" },
       titulo: { type: "string" },
       disciplina: { type: "string" },
@@ -249,6 +251,19 @@ async function main() {
         console.log("Rótulo da dificuldade × dificuldade medida pelo rating (erro > 0: o rótulo exagera a dificuldade)\n");
         for (const l of linhas) console.log(`${l.erroMedio >= 0 ? "+" : ""}${l.erroMedio.toFixed(2)}  n=${l.n}  ↑${l.superestima} ↓${l.subestima}  ${l.grupo}`);
         return;
+      }
+
+      case "binho": {
+        // binho --assunto "<parte do tópico>" --pergunta "...": o chat "Pergunte ao Binho" como o dono (ALUNO_ID)
+        const busca = exigir(o.assunto, "--assunto");
+        const topico = await Topic.findOne({ assunto: new RegExp(busca.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }).select("_id assunto").lean();
+        if (!topico) throw new Error(`Nenhum tópico com "${busca}" no nome.`);
+        const r = await perguntarAoBinho(String(topico._id), process.env.ALUNO_ID || "000000000000000000000001", exigir(o.pergunta, "--pergunta"));
+        console.log(`Tópico: ${topico.assunto}`);
+        if (r.mensagem) return console.log(`(aviso) ${r.mensagem}`);
+        console.log(`\n${r.resposta}\n`);
+        for (const c of r.citacoes ?? []) console.log(`  · ${c.titulo}: “${c.trecho}”`);
+        return console.log(`origem: ${r.origem}${r.restantesHoje !== undefined ? ` · restam ${r.restantesHoje} hoje` : ""}`);
       }
 
       case "voz": {

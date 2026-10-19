@@ -5,7 +5,8 @@
 // ============================================================
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { Audio, Aula, Question, Tarefa, Topic } from "./models.js";
+import { Audio, Aula, ChamadaModelo, Question, Tarefa, Topic } from "./models.js";
+import type { VozIADTO } from "../shared/tipos.js";
 import { registrarChamada } from "./telemetria.js";
 import { pregeracoes } from "./noturno.js";
 import { frasesParaFala, paraFala, textoDaAula } from "../shared/fala.js";
@@ -142,6 +143,42 @@ export async function planejarVoz(lote: string, max = Number(process.env.VOZ_NOI
   const novos = candidatos.filter((c) => !abertas.has(c.id) && !prontos.has(hashFala(paraFala(c.texto), voz))).slice(0, max);
   if (novos.length) await Tarefa.insertMany(novos.map((c) => ({ tipo: "voz", params: { tipo: c.tipo, id: c.id }, lote })));
   return novos.length;
+}
+
+// Linha de voz na aba IA do Admin: chamadas e falhas do TTS (telemetria) e o tamanho do cache de áudio
+export async function resumoVoz(): Promise<VozIADTO> {
+  const agora = Date.now();
+  const desde = (h: number) => new Date(agora - h * 3_600_000);
+  const [c24, c7, falha, cache] = await Promise.all([
+    ChamadaModelo.aggregate<{ _id: { ok: boolean; falha?: string }; n: number }>([
+      { $match: { funcao: "voz", em: { $gte: desde(24) } } },
+      { $group: { _id: { ok: "$ok", falha: "$falha" }, n: { $sum: 1 } } },
+    ]),
+    ChamadaModelo.aggregate<{ _id: boolean; n: number }>([
+      { $match: { funcao: "voz", em: { $gte: desde(24 * 7) } } },
+      { $group: { _id: "$ok", n: { $sum: 1 } } },
+    ]),
+    ChamadaModelo.findOne({ funcao: "voz", ok: false }).sort({ em: -1 }).select("em").lean(),
+    Audio.aggregate<{ _id: string; n: number; bytes: number; segundos: number }>([
+      { $group: { _id: "$voz", n: { $sum: 1 }, bytes: { $sum: "$bytes" }, segundos: { $sum: "$segundos" } } },
+    ]),
+  ]);
+  const porTipo: Record<string, number> = {};
+  for (const g of c24) if (!g._id.ok) porTipo[g._id.falha ?? "outro"] = (porTipo[g._id.falha ?? "outro"] ?? 0) + g.n;
+  const soma = (xs: { n: number }[]) => xs.reduce((s, x) => s + x.n, 0);
+  return {
+    configurada: vozConfigurada(),
+    vozPadrao: vozPadrao().split(".").pop() ?? vozPadrao(),
+    h24: { chamadas: soma(c24), falhas: soma(c24.filter((g) => !g._id.ok)), porTipo },
+    d7: { chamadas: soma(c7), falhas: soma(c7.filter((g) => !g._id)) },
+    cache: {
+      audios: soma(cache),
+      daVozPadrao: cache.find((g) => g._id === vozPadrao())?.n ?? 0,
+      mb: Math.round((cache.reduce((s, g) => s + (g.bytes ?? 0), 0) / 1_048_576) * 10) / 10,
+      minutos: Math.round(cache.reduce((s, g) => s + (g.segundos ?? 0), 0) / 60),
+    },
+    ultimaFalha: falha?.em ? new Date(falha.em).toISOString() : undefined,
+  };
 }
 
 // Só o que já está pronto (de dia não se chama a NVIDIA para explicação: vem da pré-geração)

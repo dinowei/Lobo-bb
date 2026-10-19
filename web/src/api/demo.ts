@@ -302,6 +302,9 @@ export const apiDemo: Api = {
   explicarMais() {
     return espera({ requerServidor: true, mensagem: "O tutor precisa do servidor. No demo, use a explicação da questão." });
   },
+  perguntarBinho() {
+    return espera({ requerServidor: true, mensagem: "No modo demo o Binho não responde perguntas. Com o servidor ligado, ele responde por tópico." });
+  },
 
   async cartoes() {
     const e = ler();

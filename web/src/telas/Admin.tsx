@@ -7,6 +7,7 @@ import type {
   AdminIADTO,
   BenchmarkLinhaDTO,
   ModeloIADTO,
+  VozIADTO,
   PendenciaDTO,
   PropostaCorrenteDTO,
   StatusTarefa,
@@ -183,12 +184,32 @@ function AbaIA() {
             </dl>
             <p className="suave">Verificação semanal dos modelos: {dados.verificadoEm ? quando(dados.verificadoEm) : "ainda não rodou"} (no noturno).</p>
           </div>
+          {dados.voz && <LinhaVoz v={dados.voz} />}
           <div className="grade-modelos">
             {dados.modelos.map((m) => <CartaoModelo key={m.id} m={m} />)}
           </div>
         </div>
       )}
     </Estado>
+  );
+}
+
+// Voz da Lo (Magpie TTS): chamadas, falhas e cache, numa linha
+function LinhaVoz({ v }: { v: VozIADTO }) {
+  const tipos = Object.entries(v.h24.porTipo).map(([t, n]) => `${t}: ${n}`).join(", ");
+  return (
+    <div className="secao">
+      <div className="linha-titulo">
+        <h2>Voz da Lo</h2>
+        <span className={`selo ${v.configurada ? "" : "alerta"}`}>{v.configurada ? `Magpie · ${v.vozPadrao}` : "não configurada (usa a voz do navegador)"}</span>
+      </div>
+      <dl className="metricas">
+        <div><dt>24 h</dt><dd>{v.h24.chamadas} chamadas · {v.h24.falhas} falha(s){tipos ? ` (${tipos})` : ""}</dd></div>
+        <div><dt>7 dias</dt><dd>{v.d7.chamadas} chamadas · {v.d7.falhas} falha(s)</dd></div>
+        <div><dt>Cache</dt><dd>{v.cache.audios} áudio(s) · {v.cache.daVozPadrao} na voz atual · {v.cache.mb} MB · {v.cache.minutos} min</dd></div>
+        <div><dt>Última falha</dt><dd>{v.ultimaFalha ? haQuanto(v.ultimaFalha) : "—"}</dd></div>
+      </dl>
+    </div>
   );
 }
 

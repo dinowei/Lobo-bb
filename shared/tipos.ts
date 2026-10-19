@@ -346,6 +346,15 @@ export interface AdminIADTO {
   modelos: ModeloIADTO[];
   hoje: Record<string, { modelo: string; n: number }[]>;
   verificadoEm?: string;
+  voz?: VozIADTO; // a narração da Lo (Magpie TTS)
+}
+export interface VozIADTO {
+  configurada: boolean;
+  vozPadrao: string;
+  h24: { chamadas: number; falhas: number; porTipo: Record<string, number> };
+  d7: { chamadas: number; falhas: number };
+  cache: { audios: number; daVozPadrao: number; mb: number; minutos: number };
+  ultimaFalha?: string;
 }
 export type StatusTarefa = "pendente" | "rodando" | "aguardando" | "concluida" | "descartada" | "esgotada";
 export interface TarefaDTO {
@@ -485,6 +494,16 @@ export interface AulaDTO {
   exemplos: string[];
   fontes: AulaFonteDTO[];
 }
+// "Pergunte ao Binho" por tópico: resposta conferida ou mensagem (cota, ocupado, demo)
+export interface RespostaBinhoDTO {
+  resposta?: string;
+  citacoes?: { titulo: string; trecho: string }[];
+  origem?: "cache" | "nova";
+  restantesHoje?: number;
+  requerServidor?: boolean;
+  mensagem?: string;
+}
+
 export interface ExplicacaoMaisDTO {
   explicacao?: string;
   origem?: "pregerada" | "cache" | "nova";
@@ -509,6 +528,7 @@ export interface Api {
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;
   aula(topicoId: string): Promise<AulaDTO | null>;
   explicarMais(questaoId: string, duvida?: string): Promise<ExplicacaoMaisDTO>;
+  perguntarBinho(topicoId: string, pergunta: string): Promise<RespostaBinhoDTO>;
   cartoes(): Promise<FilaCartoesDTO>;
   avaliarCartao(cartaoId: string, nota: NotaCartao): Promise<{ proximaRevisaoDias: number }>;
   // motivo do último erro nessa questão; devolve a ação (aula/tópico, comparação, palavra-chave, revisão antecipada)

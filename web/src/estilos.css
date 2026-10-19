@@ -569,6 +569,10 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .dica-lobo .pose img { width: 64px; }
 .dica-lobo.sem-pose { padding-left: 14px; min-height: 0; }
 .aula-cabeca { display: flex; align-items: center; gap: 14px; }
+.pergunte-binho { display: grid; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--linha); }
+.pergunte-binho h3 { margin: 0; font-size: 16px; }
+.pergunte-binho textarea { width: 100%; min-height: 62px; resize: vertical; padding: 10px; border: 1px solid var(--linha); border-radius: 8px; background: var(--fundo); color: var(--texto); font: inherit; }
+.pergunte-binho .acoes { display: flex; gap: 8px; flex-wrap: wrap; }
 .aula-cabeca .pose img { width: 150px; }
 @media (max-width: 760px) { .aula-cabeca .pose img { width: 110px; } }
 .dica-lobo b { display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }

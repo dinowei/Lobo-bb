@@ -383,7 +383,24 @@ RETOMAR AQUI: o benchmark roda em segundo plano (auditor até 60, juiz, escritor
   - (c) Procura ✦ (mancha pequena cercada pelo fundo laranja): nenhuma neste original.
 - Nome "Lobo Binho" (`short_name` "Binho"), `theme-color` #ff5b1f, títulos das abas "· Lobo Binho"; cache do service worker `lobo-v2`. A marca escrita "lobo" da lateral não mudou (regra 8).
 
-RETOMAR AQUI: mensagem do dono (Lo, 16 poses, ícone novo, o que faltou). Itens 1, 2 e 3 feitos. Próximo: item 4 (chat "Pergunte ao Binho" por tópico, linha de voz na aba IA do Admin, `docs/RELATORIO-VIAGEM.md`). O lobo solto (`MASCOTE`) não aparece mais nas telas: entra como avatar do Binho no chat.
+## 18/10/2026 — O que faltou do adendo (item 4)
+
+- **Pergunte ao Binho por tópico** (`src/chatBinho.ts`, aba Aula do Praticar, CLI `binho --assunto --pergunta`):
+  - Contexto: aula conferida mais trechos do tópico, rankeados por termos da pergunta. O tutor responde e um auditor de outra família confere.
+  - Em Bancários, Atualidades e Vendas: citação literal conferida por código, "sem base" quando não há fonte, recusa fora do edital.
+  - Cache por aluno, tópico e pergunta normalizada; cota `CHAT_BINHO_MAX_DIA` (15); uma IA por vez. Falhou: "O Binho está ocupado".
+  - O áudio é "Ouvir resposta com a Lo".
+- **Rodadas reais** (6 perguntas):
+  - SFN ×4: todas viraram "não achei nas fontes" (nada errado chegou ao aluno).
+    - 1ª: o modelo citou o trecho com o número errado. Agora a frase é procurada em todos os trechos; o título mostrado é o de onde ela está.
+    - 2ª e 3ª: o auditor reprovou com razão: "fixa as diretrizes da política monetária" não estava nos trechos, e na lei o CMN age "segundo diretrizes do Presidente da República".
+    - A busca só via os 12 primeiros trechos do tópico (a mesma função da aula). Agora vê até 300 trechos.
+  - Juros compostos ×2: na 1ª o tutor marcou "sem base" num conceito de matemática. Agora o "sem base" só vale onde a fonte é obrigatória, e o prompt diz isso. Na 2ª, aprovada pelo auditor Muse (Meta) e salva.
+- **Admin → IA**: linha "Voz da Lo" com chamadas e falhas em 24 h (por tipo) e 7 dias, cache (áudios, na voz atual, MB, minutos) e última falha (`resumoVoz` em `src/voz.ts`).
+- `docs/RELATORIO-VIAGEM.md`: entrega final (o que foi feito, testes, o que fica com o dono). DECISOES-PENDENTES nº 11 resolvido.
+- Testes: 153/153. Typecheck ok.
+
+RETOMAR AQUI: pedido do dono sobre o espaço do Atlas (512 MB; 165 MB usados): medir por coleção, projetar para 1.200 questões com áudio e, se passar de ~400 MB, áudio fora do Mongo (ou só dos erros, com limpeza dos menos ouvidos), TTL de 30 dias na telemetria, uso do banco na aba IA com alerta em 80%.
 
 RETOMAR AQUI (antigo): Binho, o que falta: chat por tópico; telemetria de voz na aba IA; Parte 1 quando o dono puser as 5 poses em `web/src/assets/lobos/`. A voz padrão espera a escolha do dono (amostras em `docs/voz/`). Depois: ENTREGA FINAL do PROMPT-VIAGEM (RELATORIO-VIAGEM.md).
 

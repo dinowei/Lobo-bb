@@ -506,6 +506,35 @@ const TutorUsoSchema = new Schema(
 TutorUsoSchema.index({ userId: 1, dia: 1 }, { unique: true });
 export const TutorUso = model("TutorUso", TutorUsoSchema, "tutor_usos");
 
+// "Pergunte ao Binho" por tópico (ADENDO-BINHO-VOZ): resposta conferida, em cache por aluno/tópico/pergunta
+const RespostaBinhoSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    topicId: { type: Schema.Types.ObjectId, ref: "Topic", required: true },
+    perguntaHash: { type: String, required: true },
+    pergunta: { type: String, required: true },
+    resposta: { type: String, required: true },
+    citacoes: [{ _id: false, titulo: String, trecho: String }],
+    modelo: String,
+    conferidaPor: String,
+  },
+  { timestamps: true }
+);
+RespostaBinhoSchema.index({ userId: 1, topicId: 1, perguntaHash: 1 }, { unique: true });
+export const RespostaBinho = model("RespostaBinho", RespostaBinhoSchema, "respostas_binho");
+
+// cota diária do chat (CHAT_BINHO_MAX_DIA), separada da do tutor da questão
+const ChatUsoSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    dia: { type: String, required: true },
+    quantidade: { type: Number, default: 0 },
+  },
+  { timestamps: true }
+);
+ChatUsoSchema.index({ userId: 1, dia: 1 }, { unique: true });
+export const ChatUso = model("ChatUso", ChatUsoSchema, "chat_usos");
+
 // ------------------------------------------------------------
 // 12. TAREFAS — fila persistida do noturno: sobrevive a reinício; falha de infraestrutura
 // volta para a fila com espera crescente; descarte só por qualidade, com motivo.

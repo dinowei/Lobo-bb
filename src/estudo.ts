@@ -50,6 +50,7 @@ import type { AcaoMotivoDTO, MotivoErro } from "../shared/tipos.js";
 import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
 import { aulaDoTopico } from "./aulas.js";
 import { explicarSobDemanda } from "./outroJeito.js";
+import { perguntarAoBinho } from "./chatBinho.js";
 import { avaliarCartao, filaCartoes } from "./cartoes.js";
 import { fontesDaQuestao } from "./fontesAtuais.js";
 
@@ -243,6 +244,7 @@ export const apiServidor: Omit<Api, "modo"> = {
   topicos: listarTopicos,
   aula: aulaDoTopico,
   explicarMais: (questaoId, duvida) => explicarSobDemanda(questaoId, String(ALUNO()), duvida),
+  perguntarBinho: (topicoId, pergunta) => perguntarAoBinho(topicoId, String(ALUNO()), pergunta),
   cartoes: filaCartoes,
   avaliarCartao,
 

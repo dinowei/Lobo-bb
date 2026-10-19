@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import { Question, Tarefa, Geracao, ChamadaModelo } from "./models.js";
 import { carregarCatalogo, FUNCOES, NOME_FUNCAO, validarCorrentes, type Correntes } from "./catalogo.js";
 import { correnteAtiva } from "./corrente.js";
+import { resumoVoz } from "./voz.js";
 import { estatisticasModelos, atendeuHoje, type EstatisticaModelo } from "./telemetria.js";
 import { ultimaVerificacao, alertasDeModelos, type Verificacao } from "./sondagem.js";
 import { relatorio, empatados, RODADAS, amostraOficiais } from "./benchmark.js";
@@ -54,7 +55,10 @@ export function corDoModelo(
 }
 
 export async function painelIA(): Promise<AdminIADTO> {
-  const [ativa, verif, h24, d7, hoje] = await Promise.all([correnteAtiva(), ultimaVerificacao(), estatisticasModelos(24), estatisticasModelos(24 * 7), atendeuHoje()]);
+  const [ativa, verif, h24, d7, hoje, voz] = await Promise.all([
+    correnteAtiva(), ultimaVerificacao(), estatisticasModelos(24), estatisticasModelos(24 * 7), atendeuHoje(),
+    resumoVoz().catch(() => undefined),
+  ]);
   const cat = carregarCatalogo();
   const por24 = new Map(h24.map((e) => [e.modelo, e]));
   const por7 = new Map(d7.map((e) => [e.modelo, e]));
@@ -88,6 +92,7 @@ export async function painelIA(): Promise<AdminIADTO> {
     modelos,
     hoje,
     verificadoEm: verif?.em,
+    voz,
   };
 }
 

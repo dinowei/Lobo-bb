@@ -13,6 +13,7 @@ import { Markdown } from "../componentes/Markdown";
 import { ISeta } from "../componentes/Icones";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
+import { PergunteAoBinho } from "../componentes/PergunteAoBinho";
 
 const CONFIANCAS: { v: Confianca; rotulo: string }[] = [
   { v: 1, rotulo: "Chutei" },
@@ -349,6 +350,7 @@ export function Praticar() {
                     <button className="botao-laranja" onClick={abrirQuestoes}>Ir para as questões <ISeta /></button>
                   </>
                 )}
+                <PergunteAoBinho topicoId={q.topicoId} assunto={q.assunto} />
               </article>
             ) : <>
 
