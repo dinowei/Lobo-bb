@@ -38,28 +38,25 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 - **Como aprovar:** tela Benchmark → "Aprovar corrente" (com confirmação e "Desfazer"), ou
   `CORRENTE_ATIVA=1` + `CORRENTE_<FUNÇÃO>` no `.env`.
 
-## 12. Fontes atuais de Vendas e Negociação e de Segurança da informação (média) — PROPOSTA para aprovar
+## 12. Fontes atuais de Vendas e Negociação e Segurança da informação — RESOLVIDO por decisão do dono (18/10/2026)
 
-- **Feito (decisão do dono, 18/10/2026):** Informática é conceito técnico → "não se aplica". A exceção é tópico com lei aplicável (Segurança da informação / proteção de dados). Vale para as novas e para as 26 que estavam pendentes (`fontes-atuais migrar`).
-- **Situação hoje** (`npm run bb -- fontes-atuais relatorio`):
-  - Vendas: 29 pendentes e 1 confirmada.
-  - Segurança da informação: 12 pendentes.
-- **Já ingeridas** (oficiais, Vendas): CDC (Lei 8.078, texto compilado, já com a Lei 14.181/2021 do superendividamento), Estatuto da Pessoa com Deficiência (Lei 13.146), Res. CMN 4.949/2021 + 5.117/2024 (relacionamento com clientes) e Res. CMN 4.860/2020 + 5.182/2024 (ouvidoria).
-- **Proposta, por tópico.** Só planalto.gov.br e DOU (in.gov.br); nada foi baixado.
+- **Decisão do dono:** Informática é conceito técnico → "não se aplica". A exceção é Segurança da informação / proteção de dados: vincular a LGPD (Lei 13.709/2018) e às Resoluções CMN 4.893/2021 e 5.274/2025. Essas fontes também podem fundamentar geração de questões e aulas desse tópico. Conferir as 12 questões pendentes de Segurança da informação.
+- **Vendas e Negociação:** baixar somente de `planalto.gov.br` e `in.gov.br` o Decreto 11.034/2022 (SAC), a Lei 10.048/2000, a Lei 12.414/2011 e a Resolução CVM 30/2021 (publicada no DOU). Vincular a LGPD ao tópico Marketing de relacionamento e fidelização. "Técnicas de negociação" fica como "não se aplica".
+- Fontes já ingeridas em Vendas: CDC (Lei 8.078, texto compilado), Estatuto da Pessoa com Deficiência (Lei 13.146), Res. CMN 4.949/2021 + 5.117/2024 e Res. CMN 4.860/2020 + 5.182/2024.
+- Depois das ligações e ingestões, conferir as 20 questões pendentes de Conhecimentos Bancários.
 
-| Tópico (pendentes) | Já temos | Proposta nova (fonte oficial) |
+| Tópico | Fontes aprovadas |
 |---|---|---|
-| Atendimento, satisfação e experiência do cliente (8) | Res. CMN 4.949, 4.860, CDC, Lei 13.146 | **Decreto nº 11.034/2022** (SAC; planalto) · **Lei nº 10.048/2000** (atendimento prioritário; planalto) |
-| Ética, conduta e direitos do consumidor (4) | CDC, Res. CMN 4.949 | Res. CMN 3.919/2010 (tarifas; já na lista 1b, falta o texto do BCB) |
-| Marketing de relacionamento e fidelização (6) | — | **LGPD** (Lei 13.709, já ingerida, hoje ligada a Bancários) · **Lei nº 12.414/2011** (Cadastro Positivo; planalto) |
-| Segmentação de mercado e gestão de carteira (7) | Res. CMN 4.949 | **Resolução CVM nº 30/2021** (adequação do produto ao perfil, "suitability"; publicada no DOU) |
-| Técnicas de negociação (3) | — | Nenhuma norma: é doutrina. Proposta: "não se aplica", como Informática (o glossário de Vendas, item 1, cobre o conceito) |
-| Segurança da informação, Informática (12) | — | **LGPD** e **Res. CMN 4.893/2021 + 5.274/2025** (segurança cibernética), as duas já ingeridas: só ligar ao tópico |
+| Atendimento, satisfação e experiência do cliente | Res. CMN 4.949, 4.860, CDC, Lei 13.146, Decreto 11.034/2022, Lei 10.048/2000 |
+| Ética, conduta e direitos do consumidor | CDC, Res. CMN 4.949 |
+| Marketing de relacionamento e fidelização | LGPD, Lei 12.414/2011 |
+| Segmentação de mercado e gestão de carteira | Res. CMN 4.949, Resolução CVM 30/2021 |
+| Técnicas de negociação | Não se aplica |
+| Segurança da informação | LGPD, Res. CMN 4.893/2021 e 5.274/2025 |
 
-- **Como aprovar:** responda quais linhas valem.
-  - "Baixar" acrescenta a norma em `data/fontes-oficiais.json` e roda `baixar-fontes` e `ingerir-fontes`.
-  - "Ligar" põe os trechos da norma já ingerida também no tópico. Isso muda o que o gerador usa nesse tópico, por isso precisa do seu OK.
-  - Depois, `fontes-atuais conferir` confere de novo as pendentes.
+- Execução: `baixar-fontes` recebe somente os quatro IDs de Vendas; `ingerir-fontes` recebe esses mesmos IDs. Fontes já ingeridas são ligadas por `vincular-fonte`, que só acrescenta tópicos a trechos vigentes. A conferência aceita `--disciplina` para selecionar exatamente as questões aprovadas pendentes da disciplina desejada.
+- Execução concluída: os quatro atos foram baixados somente do Planalto/DOU e ingeridos. A LGPD ficou ligada a Segurança da informação e Marketing; as Res. CMN 4.893/2021 e 5.274/2025 a Segurança; a Lei 12.414 a Marketing. "Técnicas de negociação" teve 3 questões classificadas como "não se aplica".
+- Conferência de Segurança (12): 4 confirmadas, 1 marcada "mudou" e 7 sem base normativa suficiente. Conferência de Conhecimentos Bancários (20): 2 confirmadas, 1 marcada "mudou" e 17 sem base normativa suficiente. As 2 mudanças aguardam seu OK em Admin → Pendências; não foram aprovadas automaticamente.
 
 ## 1. Revisar o glossário de Vendas (Etapa 2.4)
 

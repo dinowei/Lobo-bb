@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { z } from "zod";
 import { htmlParaTexto } from "./extrair.js";
 
-const HOSTS_OFICIAIS = new Set(["www.planalto.gov.br", "planalto.gov.br", "www.bcb.gov.br", "bcb.gov.br", "www.in.gov.br", "in.gov.br"]);
+const HOSTS_OFICIAIS = new Set(["www.planalto.gov.br", "planalto.gov.br", "www.bcb.gov.br", "bcb.gov.br", "www.in.gov.br", "in.gov.br", "pesquisa.in.gov.br"]);
 export function hostOficial(url: string): boolean {
   try {
     const u = new URL(url);

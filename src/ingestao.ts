@@ -203,6 +203,21 @@ export async function reclassificarFonte(titulo: string, disciplina: string) {
   return chunks.length;
 }
 
+// Decisão de fontes atuais: uma lei pode sustentar mais de um tópico. A ligação é explícita e aditiva;
+// preserva os tópicos já classificados e nunca inclui trechos revogados.
+export async function vincularFonteAoTopico(tituloFonte: string, assunto: string) {
+  const [fonte, topico] = await Promise.all([
+    Source.findOne({ titulo: tituloFonte }).select("_id titulo").lean(),
+    Topic.findOne({ assunto, ativo: true }).select("_id assunto").lean(),
+  ]);
+  if (!fonte) throw new Error(`Fonte não encontrada: ${tituloFonte}`);
+  if (!topico) throw new Error(`Tópico ativo não encontrado: ${assunto}`);
+  const filtro = { sourceId: fonte._id, revogada: false, topicIds: { $ne: topico._id } };
+  const novos = await Chunk.updateMany(filtro, { $addToSet: { topicIds: topico._id } });
+  const total = await Chunk.countDocuments({ sourceId: fonte._id, revogada: false, topicIds: topico._id });
+  return { fonte: fonte.titulo, assunto: topico.assunto, novos: novos.modifiedCount, total };
+}
+
 export async function ingerirFonte(caminho: string, meta: MetaFonte) {
   if (meta.disciplina && !ehDisciplina(meta.disciplina))
     throw new Error(`--disciplina inválida. Use: ${DISCIPLINAS.join(", ")}`);

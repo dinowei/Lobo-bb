@@ -461,4 +461,14 @@ RETOMAR AQUI (antigo): esperar `aulas --n 3` e `cartoes --n 3` (logs em scratchp
 - E-mails não exemplares apareceram em 3 locais de script/teste/configuração e nos metadados de autoria de 72 commits (domínio de provedor pessoal). Valores omitidos neste registro; nenhum endereço foi copiado para logs ou commits.
 - O print local `docs/telas/login/entrar-celular.png` segue fora do stage e será preservado.
 
-RETOMAR AQUI: concluir as fontes aprovadas e as conferências de Segurança da informação e Conhecimentos Bancários; depois calibrar projeção e alerta de espaço contra os 165,05 MB do Atlas.
+RETOMAR AQUI: calibrar o uso do Atlas aos 165,05 MB reais, estimar crescimento do índice vetorial por chunk e incluir a projeção no alerta de 80%.
+
+## 19/10/2026 — fontes atuais por decisão do dono
+
+- Vendas: baixados e ingeridos somente do Planalto/DOU o Decreto 11.034/2022 (12 trechos), a Lei 10.048/2000 (5), a Lei 12.414/2011 (26) e a Resolução CVM 30/2021 (14). A Resolução CVM foi encontrada no DOU de 12/05/2021, página 176.
+- Ligações vigentes: LGPD → Segurança da informação (80 trechos) e Marketing de relacionamento (80); Res. CMN 4.893/2021 → Segurança (25); Res. CMN 5.274/2025 → Segurança (13); Lei 12.414/2011 → Marketing (26). A ligação é aditiva e preserva classificações existentes.
+- "Técnicas de negociação": as 3 questões pendentes foram classificadas como "não se aplica" para fonte atual.
+- Conferência serial, um trabalhador de IA: Segurança da informação (12) → 4 confirmadas, 1 mudança aguardando OK, 7 sem base atual; Conhecimentos Bancários (20) → 2 confirmadas, 1 mudança aguardando OK, 17 sem base atual. As questões sem base continuam pendentes. Não aprovei automaticamente as 2 mudanças.
+- `fontes-atuais conferir` agora aceita `--disciplina`, para não consumir pendências de outra matéria. Typecheck geral permaneceu travado sem saída após 35 s e foi interrompido; os comandos alterados foram executados com sucesso pelo CLI.
+
+RETOMAR AQUI: calibrar o uso do Atlas aos 165,05 MB reais, estimar crescimento do índice vetorial por chunk e incluir a projeção no alerta de 80%.

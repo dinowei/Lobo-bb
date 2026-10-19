@@ -24,7 +24,9 @@ type FonteConsulta = { indice: number; sourceId: string; titulo: string; texto: 
 // aplicável (LGPD em Segurança da informação / proteção de dados)
 export const INFORMATICA_COM_LEI = /seguran[çc]a|prote[çc][ãa]o de dados|lgpd|privacidade/i;
 export const semFonteAtual = (disciplina: Disciplina, assunto = "") =>
-  SEM_FONTE_ATUAL.includes(disciplina) || (disciplina === "informatica" && !INFORMATICA_COM_LEI.test(assunto));
+  SEM_FONTE_ATUAL.includes(disciplina) ||
+  (disciplina === "informatica" && !INFORMATICA_COM_LEI.test(assunto)) ||
+  (disciplina === "vendas_negociacao" && normalizar(assunto) === "tecnicas de negociacao");
 
 // ---------- partes puras (testadas sem banco) ----------
 export function situacaoInicial(disciplina: Disciplina, temTrechoDeFonte: boolean, assunto = ""): Situacao {
@@ -169,10 +171,16 @@ export async function planejarFontesAtuais(lote: string, max = Number(process.en
   return novas.length;
 }
 
-export async function conferirFontesAgora(n = 5) {
+export async function conferirFontesAgora(n = 5, disciplina?: string) {
   const lote = `fontes atuais ${new Date().toISOString().slice(0, 10)}`;
   await migrarReferencias();
-  const qs = await Question.find({ situacaoFonte: "pendente", status: { $in: ["aprovada", "desatualizada"] } }).select("_id").limit(n).lean();
+  const topicos = disciplina ? await Topic.find({ disciplina, ativo: true }).select("_id").lean() : [];
+  if (disciplina && !topicos.length) throw new Error(`Nenhum tópico ativo na disciplina "${disciplina}".`);
+  const qs = await Question.find({
+    situacaoFonte: "pendente",
+    status: { $in: ["aprovada", "desatualizada"] },
+    ...(disciplina ? { topicId: { $in: topicos.map((t) => t._id) } } : {}),
+  }).select("_id").limit(n).lean();
   const tarefas = qs.length ? await Tarefa.insertMany(qs.map((q) => ({ tipo: "fonte_atual", params: { questionId: String(q._id) }, lote }))) : [];
   const atual = await correnteAtiva();
   return rodarFila({ max: tarefas.length, trabalhadores: 1, tarefaIds: tarefas.map((t) => String(t._id)), geradores: atual.correntes.auditor });

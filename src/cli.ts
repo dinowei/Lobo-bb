@@ -11,6 +11,7 @@ import {
   semearTopicos,
   ingerirFonte,
   reclassificarFonte,
+  vincularFonteAoTopico,
   ingerirProva,
   explicarOficiais,
   anularOficial,
@@ -84,7 +85,8 @@ BB Estudos — comandos (npm run bb -- <comando>)
   gerar --assunto "<parte do nome>" [--n 3] [--tipo "<tipo>"]   gera questões novas de um tópico
   aulas [--assunto "<parte do nome>"] [--n 3]   prepara aulas curtas aprovadas por tópico
   cartoes [--assunto "<parte do nome>"] [--n 3] prepara cartões (normas com fonte e vocabulário de Inglês)
-  fontes-atuais migrar|conferir [--n 5]|relatorio  fonte da prova + fonte atual de cada questão (adendo)
+  fontes-atuais migrar|conferir [--n 5] [--disciplina id]|relatorio  fonte da prova + fonte atual de cada questão
+  vincular-fonte --fonte "<título exato>" --assunto "<tópico exato>"  liga fonte vigente a outro tópico
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
@@ -138,6 +140,7 @@ async function main() {
       filtro: { type: "string" },
       prova: { type: "string" },
       numero: { type: "string" },
+      fonte: { type: "string" },
       max: { type: "string" },
       ate: { type: "string" },
     },
@@ -307,7 +310,7 @@ async function main() {
         }
         if (args[0] !== "conferir") throw new Error('Use "fontes-atuais migrar", "fontes-atuais conferir [--n 5]" ou "fontes-atuais relatorio".');
         return await naFila(rotulo, async () => {
-          const r = await conferirFontesAgora(o.n ? Number(o.n) : 5);
+          const r = await conferirFontesAgora(o.n ? Number(o.n) : 5, o.disciplina);
           console.log(`Fontes atuais: ${r.concluidas} conferida(s), ${r.descartadas} sem base atual ou com erro, ${r.aguardando} aguardando.`);
         });
       }
@@ -462,6 +465,11 @@ async function main() {
             });
           }
         });
+      }
+
+      case "vincular-fonte": {
+        const r = await vincularFonteAoTopico(exigir(o.fonte, "--fonte"), exigir(o.assunto, "--assunto"));
+        return console.log(`✔ ${r.total} trecho(s) de "${r.fonte}" ligados a "${r.assunto}" (${r.novos} vínculo(s) novo(s)).`);
       }
 
       case "benchmark": {
