@@ -49,7 +49,7 @@ import { indexarQuestoes, calibrar } from "./similaridade.js";
 import { carregarCatalogo, CORRENTE_DEFINITIVA } from "./catalogo.js";
 import { aprovarCorrentes, desfazerCorrentes, correnteAtiva } from "./corrente.js";
 import { sondarModelos, verificarModelos } from "./sondagem.js";
-import { planejarNoite, rodarFila } from "./noturno.js";
+import { calcularAteFila, planejarNoite, rodarFila } from "./noturno.js";
 import { planejarPregeracoes } from "./outroJeito.js";
 import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { gerarAulas, planejarAulas } from "./aulas.js";
@@ -414,15 +414,24 @@ async function main() {
           if (limpeza.removidos) console.log(`✔ Áudio: ${limpeza.removidos} menos ouvido(s) removido(s); cache em ${limpeza.mb} MB (teto ${tetoAudioMB()} MB).`);
           const audios = await planejarVoz(lote);
           console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s), ${aulas} aula(s), ${cartoes} lote(s) de cartões, ${fontesAtuais} conferência(s) de fonte atual, ${temas} tema(s) de redação e ${audios} áudio(s) do Binho (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
-          const r = await rodarFila({ ate, max: max !== undefined ? max + extras + aulas + cartoes + fontesAtuais + temas + audios + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
+          const ateFila = calcularAteFila(ate, inicio);
+          const r = await rodarFila({ ate: ateFila, max: max !== undefined ? max + extras + aulas + cartoes + fontesAtuais + temas + audios + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
           console.log(`\n${r.rodadas} tarefa(s): ${r.aprovadas} questão(ões) aprovada(s), ${r.concluidas} concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa, ${r.esgotadas} esgotada(s)${r.orfas ? `, ${r.orfas} recuperada(s) de processo que caiu` : ""}`);
-          const noite = await relatorioDaNoite(inicio);
-          const aprovadas = await Question.countDocuments({ status: "aprovada" });
-          await Relatorio.create({ lote, inicio, fim: new Date(), resumo: r, noite, progresso: { aprovadas, meta: META_BANCO } });
-          console.log(`Banco: ${aprovadas} de ${META_BANCO} aprovadas (meta)`);
-          const backup = await criarBackupAtlas(mongoose.connection.db!);
-          const totalBackup = backup.manifesto.colecoes.reduce((soma, c) => soma + c.quantidade, 0);
-          console.log(`Backup noturno concluído: ${backup.manifesto.colecoes.length} coleções, ${totalBackup} documentos.`);
+          try {
+            const noite = await relatorioDaNoite(inicio);
+            const aprovadas = await Question.countDocuments({ status: "aprovada" });
+            await Relatorio.create({ lote, inicio, fim: new Date(), resumo: r, noite, progresso: { aprovadas, meta: META_BANCO } });
+            console.log(`Banco: ${aprovadas} de ${META_BANCO} aprovadas (meta)`);
+          } catch (e) {
+            console.error("Falha ao salvar relatório da noite:", e);
+          }
+          try {
+            const backup = await criarBackupAtlas(mongoose.connection.db!);
+            const totalBackup = backup.manifesto.colecoes.reduce((soma, c) => soma + c.quantidade, 0);
+            console.log(`Backup noturno concluído: ${backup.manifesto.colecoes.length} coleções, ${totalBackup} documentos.`);
+          } catch (e) {
+            console.error("Falha ao criar backup noturno:", e);
+          }
         });
       }
 

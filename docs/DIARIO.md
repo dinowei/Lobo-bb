@@ -672,3 +672,24 @@ RETOMAR AQUI: P1.1 — ingerir uma fonte aprovada de Conhecimentos Bancários po
 - Testes do downloader: 4/4 passaram, incluindo validação de versão compilada e rejeição de tipo/data ausente. git diff --check passou. Atlas após: 184,94/512 MB, 1.359 chunks, índice vetorial estimado 12,74 MB, cerca de 6.053 chunks até o alerta de 80%; trava fila_jobs/job_de_ia ausente.
 
 RETOMAR AQUI: P1.3 — criar e executar o golden set fixo de 12 perguntas do chat do Binho; medir base, citações, respostas úteis e invenções.
+
+## 20/10/2026 — F1: Análise da primeira noite real e correção do encerramento com backup
+
+- **Resultado da execução noturna pelo Agendador (20/10/2026)**:
+  - **Rodou**: Sim, disparada via `schtasks` às 01:00:01, processo iniciado às 01:00:10 BRT.
+  - **Início/Fim**: 01:00:10 BRT → 05:29:39 BRT.
+  - **Tarefas**: 343 no total (181 concluídas, 160 descartadas, 2 aguardando, 0 esgotadas).
+  - **Questões aprovadas**: 100 (atingiu a meta noturna de 100). Atlas foi de 195 para 295 questões aprovadas (131 oficiais, 164 geradas). Total geral de questões no banco: 374 (295 aprovadas, 73 rejeitadas, 4 desatualizadas, 2 precisa_imagem).
+  - **Demais entregas**: 37 explicações alternativas, 28 temas de redação, 9 lotes de cartões, 3 conferências de fonte atual, 2 aulas, 2 áudios de voz.
+  - **Descartes por motivo**: 48 reprovada_na_revisao, 28 fonte_insuficiente, 17 fonte_pendente (as 17 de bancários), 13 auditor_discordou, 11 tema_invalido, 10 aula_invalida, 8 outro_jeito_reprovado, 8 conta_nao_confere, 7 sem_trecho_fonte, 4 trecho_fonte_inventado, 2 auditor_por_frase_discordou, 1 aula_reprovada, 1 frase_fora_da_regra, 1 ignorou_gabarito_obrigatorio, 1 numero_alterado.
+  - **Falhas de modelos**: fallbacks tratados pela reserva sem interrupção — `meta/muse-glimmer-30b` (5), `nvidia/nemotron-3-super-120b-a12b` (4), `openai/gpt-oss-20b` (3), `z-ai/glm-5.3-flash` (2).
+  - **Trava**: Liberada com sucesso às 05:29:39; `limparTravaOrfa` garantiu remoção de trava no MongoDB para o PID encerrado.
+  - **Backup na noite**: Não gerou automaticamente porque o wrapper PowerShell atingiu o deadline operacional às 05:29:00 (código 124) enquanto o Node continuava executando `rodarFila` até 05:30:00, impedindo o avanço para a etapa de relatório e backup.
+- **Causa e correção com teste**:
+  - `scripts/noturno-windows.ps1` ajustado para passar `--ate 05:25` ao Node (4 minutos antes do deadline do wrapper em 05:29).
+  - `src/noturno.ts` e `src/cli.ts`: criada e testada a função `calcularAteFila(ate, inicio)`, que garante 5 minutos de folga antes do limite para encerramento gracioso da fila, salvamento do `Relatorio` e execução do `criarBackupAtlas`. Blocos de relatório e backup agora protegidos com try/catch.
+  - Teste automatizado adicionado em `src/noturno.test.ts` (9/9 passaram).
+  - Backup executado e validado com dados reais: `npm run bb -- backup` concluiu com 6 coleções e 13 documentos em `backups/2026-10-20/`.
+  - Simulação de restauração executada: `npm run bb -- restaurar backups/2026-10-20 --simular` confirmou hashes e integridade sem mutação no Atlas.
+
+RETOMAR AQUI: F2 — Chat do Binho sem invenção (golden set completo de 12; meta: 0 invenções, 100% sem base = "não achei", úteis ≥ 7).

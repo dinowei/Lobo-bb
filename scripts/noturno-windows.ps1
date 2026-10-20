@@ -150,7 +150,7 @@ try {
       $env:NOTURNO_TRABALHADORES = "2"
       "Início do noturno: dois trabalhadores; janela BRT até 05:30; log diário." | Write-SafeLog
       $node = (Get-Command node.exe -ErrorAction Stop).Source
-      $processoNoturno = Invoke-LoggedProcess -FilePath $node -Arguments '--import tsx src/cli.ts noturno --ate 05:30' -Deadline $janelaFim.AddMinutes(-1)
+      $processoNoturno = Invoke-LoggedProcess -FilePath $node -Arguments '--import tsx src/cli.ts noturno --ate 05:25' -Deadline $janelaFim.AddMinutes(-1)
       $codigoSaida = $processoNoturno.ExitCode
       if ($processoNoturno.TimedOut) { $codigoSaida = 124 }
       "Fim do noturno com código $codigoSaida." | Write-SafeLog

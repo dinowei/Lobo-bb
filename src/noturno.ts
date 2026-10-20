@@ -228,6 +228,11 @@ export interface ResumoNoite { rodadas: number; concluidas: number; aprovadas: n
 // Meta de aprovadas batida: a fila deixa de pegar "gerar" (o que sobrou fica para a próxima noite)
 export const filtroDaMeta = (aprovadas: number, meta: number): { tipo?: { $ne: "gerar" } } => (aprovadas >= meta ? { tipo: { $ne: "gerar" } } : {});
 
+export function calcularAteFila(ate: Date | undefined, inicio: Date = new Date()): Date | undefined {
+  if (!ate) return undefined;
+  return new Date(Math.max(+inicio, +ate - 5 * 60_000));
+}
+
 export async function rodarFila(opcoes: { ate?: Date; max?: number; trabalhadores?: number; metaAprovadas?: number; geradores?: string[]; tarefaIds?: string[] } = {}) {
   const n = Math.max(1, opcoes.trabalhadores ?? (Number(process.env.NOTURNO_TRABALHADORES) || 3));
   const metaAprovadas = opcoes.metaAprovadas ?? (Number(process.env.META_APROVADAS_NOITE) || 100);

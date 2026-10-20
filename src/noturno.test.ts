@@ -2,7 +2,15 @@
 // "antes de salvar" pega a parecida que outro trabalhador acabou de salvar (sem banco e sem IA)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { planoDaNoite, metaDoTopico, destinoDaTarefa, TravaTopicos, filtroDaMeta, type AlunoPlano } from "./noturno.js";
+import { planoDaNoite, metaDoTopico, destinoDaTarefa, TravaTopicos, filtroDaMeta, calcularAteFila, type AlunoPlano } from "./noturno.js";
+
+test("calcularAteFila reserva 5 minutos de margem para relatório e backup", () => {
+  const inicio = new Date("2026-10-20T01:00:00Z");
+  const ate = new Date("2026-10-20T05:30:00Z");
+  const filaAte = calcularAteFila(ate, inicio);
+  assert.equal(filaAte?.toISOString(), "2026-10-20T05:25:00.000Z");
+  assert.equal(calcularAteFila(undefined, inicio), undefined);
+});
 
 test("meta de aprovadas para só a geração: explicações, aulas, cartões e temas seguem", () => {
   assert.deepEqual(filtroDaMeta(9, 10), {});
