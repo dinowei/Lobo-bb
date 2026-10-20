@@ -664,4 +664,11 @@ RETOMAR AQUI: P1.1 — ingerir uma fonte aprovada de Conhecimentos Bancários po
 - Downloader agora aceita hosts oficiais BCB/Normativos, PDF, recortes explícitos de artigos; ingestão individual tem simulação de contagem e confirmação, e remove fonte/trechos novos se a gravação falhar. Vínculo de fonte tem simulação e confirmação aditiva. Testes do módulo: **3/3**. `uso-banco` validou Atlas antes/depois; o primeiro `typecheck` sofreu falha interna de memória do TypeScript 7, mas `npm run typecheck` passou com paralelização limitada (`GOMAXPROCS=2`). `git diff --check` passou.
 - Tentativa de abrir os visualizadores no navegador com `@oai/sky` não foi possível: o helper retornou `Computer Use native pipe is unavailable`. Não houve automação de browser nem transmissão de dados.
 
-RETOMAR AQUI: P1.2 — obter, um de cada vez, textos consolidados de Res. BCB 1/2020, Circular 3.978/2020 e Res. CMN 3.919/2010; se o BCB/normativos não fornecer texto vigente, manter pendentes com link e instrução manual, sem ensinar versão antiga como atual.
+### 19/10/2026 — P1.2: três normas consolidadas do BCB
+
+- Resolvi o acesso sem usar texto antigo: o BCB publica a Resolução BCB 1/2020 compilada pela API oficial (versão 43, 2/10/2026); o portal Normativos publica a Circular 3.978/2020 compilada v6_L e a Resolução CMN 3.919/2010 compilada v7_L. URL, data, bytes, caracteres e SHA-256 foram gravados em fontes/LEIAME.json.
+- Baixadas e ingeridas uma por vez, cada uma com simulação antes da confirmação: Pix 231 trechos (230.331 caracteres extraídos); PLD/FT 62 trechos (61.515 caracteres; 25 páginas); tarifas 36 trechos (36.278 caracteres; 16 páginas). O extrator PDF avisou sobre operadores não suportados, mas as contagens foram confirmadas; não houve falha de ingestão.
+- Consulta somente leitura à coleção sources: nenhuma versão anterior dessas normas existia; as três fontes ativas agora são as versões compiladas, sem necessidade de revogação. O texto original de 2020 não foi ingerido.
+- Testes do downloader: 4/4 passaram, incluindo validação de versão compilada e rejeição de tipo/data ausente. git diff --check passou. Atlas após: 184,94/512 MB, 1.359 chunks, índice vetorial estimado 12,74 MB, cerca de 6.053 chunks até o alerta de 80%; trava fila_jobs/job_de_ia ausente.
+
+RETOMAR AQUI: P1.3 — criar e executar o golden set fixo de 12 perguntas do chat do Binho; medir base, citações, respostas úteis e invenções.

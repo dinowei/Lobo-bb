@@ -74,7 +74,7 @@ export function decodificar(buf: Uint8Array, contentType: string | null): string
 
 async function baixarBytes(url: string): Promise<{ dados: Uint8Array; bytes: number; contentType: string; urlFinal: string }> {
   if (!hostOficial(url)) throw new Error(`site não oficial: ${url}`);
-  const r = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,application/pdf" }, redirect: "follow", signal: AbortSignal.timeout(90_000) });
+  const r = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,application/pdf,application/json" }, redirect: "follow", signal: AbortSignal.timeout(90_000) });
   if (!hostOficial(r.url)) throw new Error(`redirecionou para fora dos sites oficiais: ${r.url}`);
   if (!r.ok) throw new Error(`HTTP ${r.status} em ${url}`);
   const dados = new Uint8Array(await r.arrayBuffer());
@@ -84,6 +84,15 @@ async function baixarBytes(url: string): Promise<{ dados: Uint8Array; bytes: num
 async function baixar(url: string): Promise<{ html: string; bytes: number; urlFinal: string }> {
   const r = await baixarBytes(url);
   return { html: decodificar(r.dados, r.contentType), bytes: r.bytes, urlFinal: r.urlFinal };
+}
+
+export function extrairHtmlCompiladoBcb(json: string): { html: string; versao: string; data: string } {
+  const resposta = JSON.parse(json) as { conteudo?: { Texto?: unknown; TipoTexto?: unknown; VersaoNormativo?: unknown; DataTexto?: unknown }[] };
+  const documento = resposta.conteudo?.[0];
+  if (documento?.TipoTexto !== "Compilado") throw new Error("a API do BCB não retornou uma versão compilada");
+  if (typeof documento.Texto !== "string" || documento.Texto.length < 800) throw new Error("texto compilado ausente ou curto na API do BCB");
+  if (documento.VersaoNormativo == null || !documento.DataTexto) throw new Error("versão/data ausente na resposta compilada do BCB");
+  return { html: documento.Texto, versao: String(documento.VersaoNormativo), data: String(documento.DataTexto) };
 }
 
 export function selecionarArtigos(texto: string, artigos: string[]): string {
@@ -181,6 +190,7 @@ export async function baixarFontes(apenas: string[] = [], pasta = "fontes"): Pro
       let pdf: Uint8Array | undefined;
       let bytes: number;
       let citadaPor: Registro["citadaPor"];
+      let vigenciaOficial: string | undefined;
       if (f.planalto) {
         url = f.planalto;
         ({ html, bytes } = await baixar(url));
@@ -190,6 +200,12 @@ export async function baixarFontes(apenas: string[] = [], pasta = "fontes"): Pro
         bytes = resposta.bytes;
         if (/application\/pdf/i.test(resposta.contentType) || new URL(url).pathname.toLowerCase().endsWith(".pdf")) {
           pdf = resposta.dados;
+          const versao = /(?:Circ|Res)_\d+_v(\d+)_L\.pdf$/i.exec(new URL(url).pathname)?.[1];
+          if (versao) vigenciaOficial = `texto vigente compilado no BCB (PDF v${versao}_L)`;
+        } else if (/application\/json/i.test(resposta.contentType)) {
+          const compilado = extrairHtmlCompiladoBcb(decodificar(resposta.dados, resposta.contentType));
+          html = compilado.html;
+          vigenciaOficial = `texto vigente compilado no BCB, versão ${compilado.versao} (${compilado.data})`;
         } else {
           html = decodificar(resposta.dados, resposta.contentType);
         }
@@ -225,7 +241,7 @@ export async function baixarFontes(apenas: string[] = [], pasta = "fontes"): Pro
         caracteres = texto.length;
       }
       else {
-        const conteudo = `${f.titulo}\nFonte oficial: ${url} (consultado em ${new Date().toISOString().slice(0, 10)})\n\n${texto}\n`;
+        const conteudo = `${f.titulo}\n${vigenciaOficial ? `Versão: ${vigenciaOficial}\n` : ""}Fonte oficial: ${url} (consultado em ${new Date().toISOString().slice(0, 10)})\n\n${texto}\n`;
         await writeFile(join(pasta, arquivo), conteudo, "utf8");
         if (html) await writeFile(join(pasta, f.id, `${f.id}.original.html`), `<meta charset="utf-8">\n${html}`, "utf8"); // para auditoria
         sha256 = createHash("sha256").update(conteudo).digest("hex");
@@ -244,7 +260,7 @@ export async function baixarFontes(apenas: string[] = [], pasta = "fontes"): Pro
         sha256,
         bytes,
         caracteres,
-        vigencia: conferirVigencia(texto, citadaPor),
+        vigencia: vigenciaOficial ?? conferirVigencia(texto, citadaPor),
         citadaPor,
       };
       registros.set(f.id, reg);

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { hostOficial, selecionarArtigos } from "./baixar.js";
+import { extrairHtmlCompiladoBcb, hostOficial, selecionarArtigos } from "./baixar.js";
 
 test("só aceita HTTPS nos hosts oficiais, incluindo normativos e MCR do BCB", () => {
   assert.equal(hostOficial("https://www.planalto.gov.br/lei"), true);
@@ -20,4 +20,12 @@ test("recorta os artigos indicados, sem trazer os artigos vizinhos", () => {
 
 test("recorte falha fechado quando artigo pedido não existe", () => {
   assert.throws(() => selecionarArtigos("Art. 1º único.", ["2"]), /artigo 2 não encontrado/);
+});
+
+test("accepts only a compiled dated response from BCB", () => {
+  const html = "<p>" + "official text ".repeat(60) + "</p>";
+  const doc = { TipoTexto: "Compilado", VersaoNormativo: 43, DataTexto: "2/10/2026", Texto: html };
+  assert.deepEqual(extrairHtmlCompiladoBcb(JSON.stringify({ conteudo: [doc] })), { html, versao: "43", data: "2/10/2026" });
+  assert.throws(() => extrairHtmlCompiladoBcb(JSON.stringify({ conteudo: [{ ...doc, TipoTexto: "Vigente" }] })), /compilada/);
+  assert.throws(() => extrairHtmlCompiladoBcb(JSON.stringify({ conteudo: [{ ...doc, Texto: "short" }] })), /curto/);
 });

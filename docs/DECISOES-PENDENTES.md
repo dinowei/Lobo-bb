@@ -154,16 +154,12 @@ Estimativa original antes da autorização: todas as fontes novas acrescentariam
 - **Como fazer:** ler o glossário (Admin → Pendências → "Glossário de Vendas"); se estiver bom,
   `npm run bb -- liberar-fonte "Glossário de Vendas"` (é esse comando que ingere).
 
-## 1b. Três normas do BCB sem texto atualizado (média)
+## 1b. Três normas do BCB sem texto atualizado — concluído em 19/10/2026
 
-- **O que é:** Res. BCB 1/2020 (Pix), Circular 3.978/2020 (lavagem de dinheiro) e Res. CMN 3.919/2010
-  (tarifas). Estão vigentes, mas foram alteradas várias vezes; o DOU só tem o texto original e o texto
-  consolidado só existe no site do BCB, que recusou as requisições em 17/10/2026 (inclusive no navegador).
-- **Por que precisa de você:** treinar com o texto de 2020 do Pix ensinaria regra velha.
-- **Como fazer:** num navegador onde o site do BCB abra, em "Busca de normas", baixe o PDF do texto
-  atualizado de cada uma e grave em `fontes/res-bcb-1-2020/`, `fontes/circ-bcb-3978-2020/` e
-  `fontes/res-cmn-3919-2010/`; depois `npm run bb -- fonte <arquivo.pdf> --tipo norma_bacen_cmn --titulo "<título>" --disciplina conhecimentos_bancarios`.
-  Ou rode `npm run bb -- baixar-fontes` outro dia (se o BCB voltar a responder, eu adapto o download).
+- Resolução BCB nº 1/2020 (Pix): texto compilado vigente, versão 43, datado pelo BCB em 2/10/2026. Fonte oficial: https://www.bcb.gov.br/api/conteudo/app/normativos/exibeversao?p1=51118&p2=43&p3=Compilado. Ingeridos 231 trechos.
+- Circular BCB nº 3.978/2020 (PLD/FT): PDF de texto vigente compilado v6_L, do registro oficial 50905. Fonte: https://normativos.bcb.gov.br/Lists/Normativos/Attachments/50905/Circ_3978_v6_L.pdf. Ingeridos 62 trechos.
+- Resolução CMN nº 3.919/2010 (tarifas): PDF de texto vigente compilado v7_L, do registro oficial 49514. Fonte: https://normativos.bcb.gov.br/Lists/Normativos/Attachments/49514/Res_3919_v7_L.pdf. Ingeridos 36 trechos.
+- Cada fonte foi baixada, simulada e ingerida isoladamente. A coleção Atlas não tinha versão anterior dessas três normas; não havia fonte antiga para marcar como revogada. Nenhum texto antigo foi mantido como vigente. Os arquivos e os metadados de consulta, tamanho e hash ficam em fontes/LEIAME.json (fora do Git). PDFs deram avisos do extrator sobre operadores não suportados, mas a extração passou e as contagens foram conferidas antes da ingestão.
 
 ## 2. Conta de administrador (Etapa 4)
 
