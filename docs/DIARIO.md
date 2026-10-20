@@ -694,7 +694,34 @@ RETOMAR AQUI: P1.3 — criar e executar o golden set fixo de 12 perguntas do cha
 
 RETOMAR AQUI: F2 — Chat do Binho sem invenção (golden set completo de 12; meta: 0 invenções, 100% sem base = "não achei", úteis ≥ 7).
 
-## 20/10/2026 — F5: aulas no noturno (Claude Code assumiu o PROMPT-FECHAMENTO do Antigravity)
+## 20/10/2026 — F2: chat do Binho sem invenção (Claude Code assumiu o PROMPT-FECHAMENTO do Antigravity)
+
+- Partida conferida:
+  - [CONFIRMADO] o commit do F1 (`17a5641`) estava local; repositório privado (`true`), push feito.
+  - Sem processo `node` vivo nem trava a liberar.
+  - O código do F2 do Antigravity (recusa por código, citação no índice exato, uma reescrita, `eval-chat` + golden de 12) foi revisado e commitado em `4ec1919` (testes 10/10).
+  - `scratchpad/` na raiz (scripts de inspeção dele, nunca commitados) foi para o `.gitignore`.
+- **1ª rodada completa (12)** [CONFIRMADO]: 6/12 aprovados; úteis com base 5/8; caso sem base: 0/1 com "não achei".
+  - O `eval-chat` não guardava o texto da resposta: não dava para saber se havia invenção aceita. Ganhou `invencoesAceitas` (caso sem base que saiu com conteúdo), o começo de cada resposta no relatório e `--casos a,b` para diagnosticar só os que falharam.
+- **Diagnóstico** (4 casos, `--casos`):
+  - Caso sem base do Pix: saiu "fora do edital", não invenção.
+  - Phishing: "não achei" porque o tutor marcou conceito como sem base.
+  - CMN 3.919 art. 2º e Pix art. 3º: a busca não trazia o artigo citado ("2º" é curto demais para virar termo e "art" está em todo trecho).
+- **Ajuste (uma rodada, com testes):**
+  - O trecho do artigo citado vem primeiro, da norma citada pelo número (`artigosDaPergunta`, bônus no `escolherTrechos`).
+  - Onde a fonte é obrigatória, "fora do edital" e "sem base" viram o "não achei" fixo.
+  - Conceito estável marcado como sem base pede o conceito uma vez (é a única reescrita).
+- **Rodada final completa (12)** [CONFIRMADO, 1.069 s]:
+  - **0 invenções aceitas**; **"não achei" correto no único caso sem base (1/1)**; 5 invenções barradas pelo código ou pelo auditor; 4 reescritas.
+  - **Úteis com base: 6/8 (meta ≥ 7 não batida)**; 9/12 aprovados no total; 0 falhas de infraestrutura.
+- **Os 3 que viraram "não achei"** (a trava ficou, como manda o item: invenção zero vale mais que utilidade):
+  - `kb-pld-comunicacao-lei9613`: as frases do tutor não ancoraram literalmente em nenhum trecho, nem na reescrita.
+  - `vendas-lgpd-protecao-credito`: recusa antes da IA; os trechos do tópico não sustentam a pergunta (o art. 7º, X, da LGPD não está ligado a Marketing de relacionamento; ver DECISOES nº 12).
+  - `informatica-phishing` (sem base declarada, esperado útil): a resposta tinha palavras do vocabulário legal e a frase passou a exigir citação.
+- Limite: o golden tem só 1 caso sem base/pegadinha; a meta "100% sem base" vale sobre 1 caso.
+- Testes: chat 8/8, eval 4/4.
+
+## 20/10/2026 — F5: aulas no noturno
 
 - [CONFIRMADO] A fila roda na ordem de criação (`sort proximaEm, createdAt`), então a ordem do plano é a ordem da noite.
 - A sequência saiu do `cli.ts` para `planejarEtapasDaNoite` com `ORDEM_PRE_GERACAO` (`src/noturno.ts`): questões → explicações alternativas → aulas → cartões → fontes atuais → temas → áudio. O TTL da telemetria e a limpeza do áudio seguem antes de planejar áudio.

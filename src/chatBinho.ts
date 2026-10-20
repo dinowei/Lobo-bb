@@ -17,7 +17,8 @@ import { seFilaLivre } from "./fila.js";
 import type { RespostaBinhoDTO } from "../shared/tipos.js";
 
 export const OCUPADO = "O Binho está ocupado, tenta de novo em instantes.";
-export const SEM_BASE = "Não achei isso nas fontes que tenho deste tópico, então prefiro não chutar. Tenta perguntar de outro jeito ou veja a aula.";
+export const FORA_DO_EDITAL = "Aqui eu só te ajudo com o conteúdo da prova do BB. Manda uma dúvida sobre este tópico!";
+export const SEM_BASE ="Não achei isso nas fontes que tenho deste tópico, então prefiro não chutar. Tenta perguntar de outro jeito ou veja a aula.";
 const MAX_TRECHOS = 5;
 
 export type DiagnosticoBinho = { tipo: "invencao_barrada" | "reescrita" | "falha_infra"; motivo?: string };
@@ -28,12 +29,24 @@ export const hashPergunta = (p: string) => createHash("sha256").update(normaliza
 const PARADAS = new Set("que para com uma uns umas por como qual quais quando onde porque sobre isso essa esse esta este pode ser sao nao mais mas tem ter dos das nos nas pela pelo entre".split(" "));
 const termos = (s: string) => new Set((normalizar(s).match(/[\p{L}\p{N}]{3,}/gu) ?? []).filter((w) => !PARADAS.has(w)));
 
-// RAG simples: os trechos com mais termos da pergunta (empate: ordem da fonte); sem termo em comum, os primeiros
-export function escolherTrechos<T extends { texto: string }>(pergunta: string, fontes: T[], n = MAX_TRECHOS): T[] {
+// Artigo citado na pergunta ("art. 2º", "artigo 7") e número da norma ("3.919", "13.709", "105"):
+// "2º" é curto demais para virar termo e "art" aparece em todo trecho, então o código procura o artigo
+export const artigosDaPergunta = (pergunta: string) => [...pergunta.matchAll(/\bart(?:igo)?\.?\s*(\d{1,3})\s*[ºo°]?/gi)].map((m) => m[1]);
+const numerosDeNorma = (pergunta: string) =>
+  [...pergunta.replace(/\bart(?:igo)?\.?\s*\d{1,3}\s*[ºo°]?/gi, " ").matchAll(/\b(\d{1,2}\.\d{3}|\d{2,5})(?:\/\d{2,4})?\b/g)].map((m) => m[1]);
+const temArtigo = (texto: string, n: string) => new RegExp(`\\bArt\\.?\\s*${n}\\s*[ºo°]?(?![\\d.])`, "i").test(texto);
+
+// RAG simples: o trecho do artigo citado primeiro; depois os com mais termos da pergunta (bônus para a norma
+// citada pelo número); empate: ordem da fonte; sem termo em comum, os primeiros
+export function escolherTrechos<T extends { texto: string; titulo?: string }>(pergunta: string, fontes: T[], n = MAX_TRECHOS): T[] {
   const alvo = termos(pergunta);
+  const artigos = artigosDaPergunta(pergunta);
+  const normas = numerosDeNorma(pergunta);
   const pontuados = fontes.map((f, i) => {
     const t = termos(f.texto);
-    return { f, i, pontos: [...alvo].filter((w) => t.has(w)).length };
+    const daNorma = normas.length > 0 && normas.some((num) => (f.titulo ?? "").includes(num));
+    const doArtigo = artigos.some((a) => temArtigo(f.texto, a)) && (normas.length === 0 || daNorma);
+    return { f, i, pontos: [...alvo].filter((w) => t.has(w)).length + (doArtigo ? 100 : 0) + (daNorma ? 3 : 0) };
   });
   const com = pontuados.filter((p) => p.pontos > 0).sort((a, b) => b.pontos - a.pontos || a.i - b.i);
   return (com.length ? com : pontuados).slice(0, n).map((p) => p.f);
@@ -226,9 +239,21 @@ export async function perguntarAoBinho(
       });
       let t = await chatJSONFuncao("tutor", BINHO_CHAT_SYSTEM, user, 0.1, 900);
       let r = (await validarOuReparar(RespostaBinhoZ, t.json, { client: t.client, model: t.modelo, system: BINHO_CHAT_SYSTEM, user })) as ReturnType<typeof RespostaBinhoZ.parse>;
-      // fora do edital ou sem base: resposta curta e fixa do código (não vai para o cache: pode ganhar fonte depois)
-      if (r.foraDoEdital) return void (saida = { resposta: "Aqui eu só te ajudo com o conteúdo da prova do BB. Manda uma dúvida sobre este tópico!", citacoes: [], origem: "nova", restantesHoje });
-      if (r.semBase) return void (saida = { resposta: SEM_BASE, citacoes: [], origem: "nova", restantesHoje });
+      // fora do edital ou sem base: resposta curta e fixa do código (não vai para o cache: pode ganhar fonte depois).
+      // Onde a fonte é obrigatória, a pergunta é do tópico e não tem base: "não achei" (nunca um chute).
+      if (r.foraDoEdital) return void (saida = { resposta: exigeFonte ? SEM_BASE : FORA_DO_EDITAL, citacoes: [], origem: "nova", restantesHoje });
+      if (r.semBase && exigeFonte) return void (saida = { resposta: SEM_BASE, citacoes: [], origem: "nova", restantesHoje });
+      let reescreveu = false;
+      if (r.semBase) {
+        // conceito estável (Informática, Matemática…) não precisa de fonte: pede o conceito uma vez (é a única reescrita)
+        reescreveu = true;
+        diagnostico?.({ tipo: "reescrita", motivo: "conceito estável marcado como sem base" });
+        const pedido = `${user}\n\nEsta pergunta é de conceito estável e NÃO precisa de lei nem de fonte: responda o conceito com semBase=false e sem citar norma. Se for de lei, prazo ou regra de banco, mantenha semBase=true.`;
+        t = await chatJSONFuncao("tutor", BINHO_CHAT_SYSTEM, pedido, 0.1, 900, { preferir: t.modelo });
+        r = (await validarOuReparar(RespostaBinhoZ, t.json, { client: t.client, model: t.modelo, system: BINHO_CHAT_SYSTEM, user: pedido })) as ReturnType<typeof RespostaBinhoZ.parse>;
+        if (r.foraDoEdital) return void (saida = { resposta: FORA_DO_EDITAL, citacoes: [], origem: "nova", restantesHoje });
+        if (r.semBase) return void (saida = { resposta: SEM_BASE, citacoes: [], origem: "nova", restantesHoje });
+      }
       const validarCandidato = async (escrita: typeof t, candidato: typeof r) => {
         const preparada = prepararCitacoesDaResposta(candidato.resposta, candidato.fontes, trechos, exigeTodaFrase);
         if (!preparada || (exigeTodaFrase && !preparada.fontes.length)) {
@@ -250,6 +275,11 @@ export async function perguntarAoBinho(
       };
 
       let validacao = await validarCandidato(t, r);
+      if (!validacao.ok && reescreveu) {
+        // já usou a única reescrita (conceito): não achei, sem nova chamada
+        if (validacao.invencao) diagnostico?.({ tipo: "invencao_barrada", motivo: validacao.motivo });
+        return void (saida = { resposta: SEM_BASE, citacoes: [], origem: "nova", restantesHoje });
+      }
       if (!validacao.ok) {
         if (validacao.invencao) diagnostico?.({ tipo: "invencao_barrada", motivo: validacao.motivo });
         diagnostico?.({ tipo: "reescrita", motivo: validacao.motivo });
@@ -257,7 +287,7 @@ export async function perguntarAoBinho(
         const pedido = `${user}\n\nA RESPOSTA ANTERIOR FOI REJEITADA: ${validacao.motivo}\nReescreva uma única vez usando SOMENTE os trechos acima. Cada afirmação legal deve trazer [N] no próprio texto e uma citação literal correspondente em "fontes". Se os trechos não sustentarem a resposta, use semBase=true e diga que não achou nas fontes.`;
         t = await chatJSONFuncao("tutor", BINHO_CHAT_SYSTEM, pedido, 0.1, 900, { preferir: t.modelo });
         r = (await validarOuReparar(RespostaBinhoZ, t.json, { client: t.client, model: t.modelo, system: BINHO_CHAT_SYSTEM, user: pedido })) as ReturnType<typeof RespostaBinhoZ.parse>;
-        if (r.foraDoEdital) return void (saida = { resposta: "Aqui eu só te ajudo com o conteúdo da prova do BB. Manda uma dúvida sobre este tópico!", citacoes: [], origem: "nova", restantesHoje });
+        if (r.foraDoEdital) return void (saida = { resposta: FORA_DO_EDITAL, citacoes: [], origem: "nova", restantesHoje });
         if (r.semBase) return void (saida = { resposta: SEM_BASE, citacoes: [], origem: "nova", restantesHoje });
         validacao = await validarCandidato(t, r);
         if (!validacao.ok) {

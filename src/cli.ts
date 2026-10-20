@@ -129,6 +129,7 @@ async function main() {
     allowPositionals: true,
     options: {
       pergunta: { type: "string" },
+      casos: { type: "string" },
       tipo: { type: "string" },
       titulo: { type: "string" },
       disciplina: { type: "string" },
@@ -306,10 +307,10 @@ async function main() {
       }
 
       case "eval-chat": {
-        const r = await executarEvalChat(o.n ? Number(o.n) : 12);
-        console.log(`\nChat Binho: ${r.respostasAprovadas}/${r.casos} resultados aprovados; ${r.naoAcheiCorretos} "não achei" corretos; ${r.invencoesBarradas} invenção(ões) barrada(s); ${r.reescritas} reescrita(s).`);
+        const r = await executarEvalChat(o.n ? Number(o.n) : 12, o.casos ? o.casos.split(",").map((s) => s.trim()).filter(Boolean) : []);
+        console.log(`\nChat Binho: ${r.respostasAprovadas}/${r.casos} resultados aprovados; ${r.naoAcheiCorretos} "não achei" corretos; ${r.invencoesAceitas} invenção(ões) ACEITA(S); ${r.invencoesBarradas} invenção(ões) barrada(s); ${r.reescritas} reescrita(s).`);
         console.log(`Respostas úteis com base: ${r.respostasUteisComBase}/${r.perguntasComBase}; artigos esperados citados: ${r.artigosEsperadosEncontrados}; úteis sem base declarada: ${r.respostasUteisSemBaseDeclarada}; falhas de infraestrutura: ${r.falhasInfraestrutura}; tempo: ${r.segundos}s.`);
-        for (const item of r.itens) console.log(`  ${item.estado.padEnd(9)} ${item.id} (${item.segundos}s)`);
+        for (const item of r.itens) console.log(`  ${item.estado.padEnd(9)} ${item.id} (${item.segundos}s) — ${item.resumo}`);
         return;
       }
 

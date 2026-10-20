@@ -2,6 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { conferirCitacoes, escolherTrechos, hashPergunta, prepararCitacoesDaResposta, trechosSustentamPergunta, validarCitacoesNaResposta } from "./chatBinho.js";
 import { RespostaBinhoZ } from "./prompts.js";
+import { artigosDaPergunta } from "./chatBinho.js";
+
+test("chat: artigo citado na pergunta traz o trecho dele primeiro, da norma pedida", () => {
+  const fontes = [
+    { titulo: "Res. CMN 3.919/2010", texto: "Art. 1º A cobrança de tarifas pela prestação de serviços por parte das instituições financeiras deve estar prevista no contrato." },
+    { titulo: "Res. CMN 3.919/2010", texto: "Art. 12. As instituições devem divulgar a tabela de serviços." },
+    { titulo: "Res. CMN 3.919/2010", texto: "Art. 2º É vedada às instituições a cobrança de tarifas pela prestação de serviços essenciais a pessoas naturais." },
+    { titulo: "Lei 4.595/1964", texto: "Art. 2º Fica extinto o Conselho da atual Superintendência da Moeda e do Crédito." },
+  ];
+  assert.deepEqual(artigosDaPergunta("Segundo o art. 2º da Resolução CMN 3.919/2010"), ["2"]);
+  assert.deepEqual(artigosDaPergunta("pelo artigo 7, inciso X, da LGPD"), ["7"]);
+  const r = escolherTrechos("Segundo o art. 2º da Resolução CMN 3.919/2010, que serviços essenciais não podem ser tarifados?", fontes, 2);
+  assert.match(r[0].texto, /^Art\. 2º É vedada/); // o art. 2º da 3.919, não o da 4.595 nem o art. 12
+});
 
 const trechos = [
   { indice: 1, titulo: "Lei 4.595", texto: "O Conselho Monetário Nacional formula a política da moeda e do crédito. Compete ao CMN fixar as diretrizes." },

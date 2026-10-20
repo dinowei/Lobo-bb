@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import { validarGoldenChat, verificarResultado } from "./evalChat.js";
+import { ehInvencaoAceita, validarGoldenChat, verificarResultado } from "./evalChat.js";
+import { FORA_DO_EDITAL, SEM_BASE } from "./chatBinho.js";
+
+test("golden do Binho: invenção aceita = caso sem base que saiu com resposta de conteúdo", () => {
+  const caso = { id: "x", disciplina: "conhecimentos_bancarios", topico: "Pix", pergunta: "?", respostaExisteNasFontes: false, artigoEsperado: null, resultadoEsperado: "nao_achei" } as const;
+  assert.equal(ehInvencaoAceita(caso as never, "O art. 9º garante o seguro."), true);
+  assert.equal(ehInvencaoAceita(caso as never, SEM_BASE), false);
+  assert.equal(ehInvencaoAceita(caso as never, FORA_DO_EDITAL), false);
+  assert.equal(ehInvencaoAceita({ ...caso, resultadoEsperado: "resposta_util" } as never, "conceito"), false);
+});
 
 const golden = JSON.parse(readFileSync("docs/eval/chat-golden.json", "utf8")) as unknown;
 

@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { DISCIPLINAS, ChatUso, Chunk, RespostaBinho, Source, Topic } from "./models.js";
-import { OCUPADO, SEM_BASE, perguntarAoBinho, type DiagnosticoBinho } from "./chatBinho.js";
+import { FORA_DO_EDITAL, OCUPADO, SEM_BASE, perguntarAoBinho, type DiagnosticoBinho } from "./chatBinho.js";
 
 const CasoChatZ = z.object({
   id: z.string().min(1),
@@ -84,15 +84,26 @@ export type ResultadoEvalChat = {
   perguntasComBase: number;
   artigosEsperadosEncontrados: number;
   respostasUteisSemBaseDeclarada: number;
+  invencoesAceitas: number; // caso sem base que recebeu resposta (nem "não achei" nem fora do edital)
   falhasInfraestrutura: number;
   segundos: number;
-  itens: { id: string; estado: "aprovado" | "reprovado" | "infra"; segundos: number }[];
+  // resumo: começo do que o aluno veria (evidência para o DIARIO; nada de dado de aluno real)
+  itens: { id: string; estado: "aprovado" | "reprovado" | "infra"; segundos: number; resumo: string }[];
 };
 
-export async function executarEvalChat(quantidade = 12): Promise<ResultadoEvalChat> {
+// Invenção aceita = pergunta sem base que saiu com resposta de conteúdo para o aluno
+export function ehInvencaoAceita(caso: CasoChat, resposta?: string) {
+  return caso.resultadoEsperado === "nao_achei" && !!resposta && resposta !== SEM_BASE && resposta !== FORA_DO_EDITAL && resposta !== OCUPADO;
+}
+
+export async function executarEvalChat(quantidade = 12, ids: string[] = []): Promise<ResultadoEvalChat> {
   if (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > 12) throw new Error("--n deve ser um inteiro de 1 a 12.");
   const bruto = JSON.parse(await readFile(new URL("../docs/eval/chat-golden.json", import.meta.url), "utf8"));
-  const casos = validarGoldenChat(bruto).slice(0, quantidade);
+  const todos = validarGoldenChat(bruto);
+  // --casos a,b: só esses (diagnóstico barato); a rodada oficial é a completa, sem --casos
+  const casos = ids.length ? todos.filter((c) => ids.includes(c.id)) : todos.slice(0, quantidade);
+  if (ids.length && casos.length !== ids.length) throw new Error(`Caso(s) desconhecido(s): ${ids.filter((i) => !todos.some((c) => c.id === i)).join(", ")}`);
+  quantidade = casos.length;
 
   const topicos = new Map<string, { id: string; chunks: number }>();
   for (const caso of casos) {
@@ -127,6 +138,7 @@ export async function executarEvalChat(quantidade = 12): Promise<ResultadoEvalCh
     perguntasComBase: casos.filter((c) => c.respostaExisteNasFontes).length,
     artigosEsperadosEncontrados: 0,
     respostasUteisSemBaseDeclarada: 0,
+    invencoesAceitas: 0,
     falhasInfraestrutura: 0,
     segundos: 0,
     itens: [],
@@ -149,8 +161,12 @@ export async function executarEvalChat(quantidade = 12): Promise<ResultadoEvalCh
       if (caso.respostaExisteNasFontes && avaliacao.util) resultado.respostasUteisComBase++;
       if (caso.artigoEsperado && avaliacao.artigoEsperado) resultado.artigosEsperadosEncontrados++;
       if (!caso.respostaExisteNasFontes && caso.resultadoEsperado === "resposta_util" && avaliacao.util) resultado.respostasUteisSemBaseDeclarada++;
+      if (ehInvencaoAceita(caso, resposta.resposta)) resultado.invencoesAceitas++;
       resultado.segundos += segundos;
-      resultado.itens.push({ id: caso.id, estado: infra ? "infra" : avaliacao.aprovado ? "aprovado" : "reprovado", segundos });
+      const texto = resposta.resposta ?? resposta.mensagem ?? "";
+      const resumo = texto === SEM_BASE ? "[não achei]" : texto === FORA_DO_EDITAL ? "[fora do edital]" : texto.replace(/\s+/g, " ").slice(0, 140);
+      const motivos = eventos.filter((e) => e.motivo).map((e) => e.motivo!.slice(0, 80));
+      resultado.itens.push({ id: caso.id, estado: infra ? "infra" : avaliacao.aprovado ? "aprovado" : "reprovado", segundos, resumo: motivos.length ? `${resumo} {${motivos.join(" | ")}}` : resumo });
     }
   } finally {
     try {
