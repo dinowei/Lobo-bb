@@ -754,6 +754,17 @@ RETOMAR AQUI: F2 — Chat do Binho sem invenção (golden set completo de 12; me
 - Também a totalidade de Bancários subiu para 32 confirmadas: as geradas da noite de 20/10 ganharam a camada de fontes na migração que roda antes da conferência (já vinham com `trechoFonte` literal).
 - `fontes-atuais relatorio --disciplina X` agora lista as oficiais, uma por linha (prova, nº, situação, tópico), só leitura.
 
+## 20/10/2026 — F9: pendências pequenas já decididas
+
+- **Figura copiada no texto** (risco ALTO, 2 questões):
+  - `npx tsx scripts/limpar-figura-no-texto.ts` (simulação) mostrou antes/depois de `6ad2141444b319b9b25921e0` (planilha) e `6ad2255834220f3eb6eea79e` (sistema linear).
+  - O "antes" completo foi para `backups/rollback-figura-no-texto-2026-10-20.txt` (fora do Git) e serve de rollback.
+  - `--gravar`: **2 corrigidas**; nova simulação: **0** a corrigir.
+- **Duplicada** `6ad0921d7e82740f59004d5f` (mesma de Juros que `6ad090cff648279cd1b7605c`, outro capital):
+  - Novo comando `npm run bb -- contestar <id> --motivo … --comentario … --simular|--confirmar`, pelo mesmo caminho do botão Contestar (Report + `status: contestada`).
+  - Simulação: status `aprovada`. Confirmado: `contestada`. Rollback: status de volta para `aprovada`.
+- **`npm audit --omit=dev`:** servidor 0 vulnerabilidades; site 0.
+
 ## 20/10/2026 — F5: aulas no noturno
 
 - [CONFIRMADO] A fila roda na ordem de criação (`sort proximaEm, createdAt`), então a ordem do plano é a ordem da noite.

@@ -58,6 +58,7 @@ import { limparAudios, limparCacheDeOutrasVozes, planejarVoz, tetoAudioMB } from
 import { perguntarAoBinho } from "./chatBinho.js";
 import { executarEvalChat } from "./evalChat.js";
 import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
+import type { Disciplina, MotivoContestacao } from "../shared/tipos.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -129,6 +130,8 @@ async function main() {
     options: {
       pergunta: { type: "string" },
       casos: { type: "string" },
+      motivo: { type: "string" },
+      comentario: { type: "string" },
       tipo: { type: "string" },
       titulo: { type: "string" },
       disciplina: { type: "string" },
@@ -217,6 +220,22 @@ async function main() {
         return await naFila(rotulo, () =>
           recuperarQuestao(exigir(args[0], "o PDF da prova"), exigir(o.gabarito, "--gabarito"), exigir(o.nome, "--nome"), numero)
         );
+      }
+
+      case "contestar": {
+        // tira uma questão de circulação pelo mesmo caminho do botão "Contestar" (Report + status contestada)
+        const id = exigir(args[0], "o id da questão");
+        const motivos = ["gabarito_errado", "duas_corretas", "desatualizada", "ambigua", "explicacao_ruim"];
+        const motivo = o.motivo ?? "ambigua";
+        if (!motivos.includes(motivo)) throw new Error(`--motivo deve ser: ${motivos.join(" | ")}`);
+        if (o.simular === o.confirmar) throw new Error("Escolha exatamente uma opção: --simular ou --confirmar.");
+        const q = await Question.findById(id).select("status enunciado").lean();
+        if (!q) throw new Error("Questão não encontrada.");
+        console.log(`${id} · status ${q.status} · ${q.enunciado.replace(/\s+/g, " ").slice(0, 100)}…`);
+        if (o.simular) return console.log(`Simulação: viraria "contestada" (motivo ${motivo}). Desfazer depois: status "${q.status}".`);
+        const { apiServidor } = await import("./estudo.js");
+        await apiServidor.contestar(id, motivo as MotivoContestacao, o.comentario);
+        return console.log(`✔ contestada (antes: ${q.status}).`);
       }
 
       case "anular": {
@@ -330,6 +349,14 @@ async function main() {
           for (const [d, s] of Object.entries(r.porDisciplina)) console.log(`${d}: ${Object.entries(s).map(([k, v]) => `${k} ${v}`).join(" · ")}`);
           if (r.mudancas.length) console.log(`\n${r.mudancas.length} mudança(s) esperando seu OK (Admin → Pendências).`);
           if (r.faltaIngerir.length) console.log(`\nNormas a ingerir (tópicos com questões sem base atual):\n${r.faltaIngerir.slice(0, 15).map((t) => `  ${t.questoes} · ${t.topico} (${t.disciplina})`).join("\n")}`);
+          // --disciplina X: uma linha por questão OFICIAL dessa disciplina (prova, nº, situação, tópico) — só leitura
+          if (o.disciplina) {
+            const tops = await Topic.find({ disciplina: o.disciplina as Disciplina }).select("assunto").lean();
+            const assunto = new Map(tops.map((t) => [String(t._id), t.assunto]));
+            const qs = await Question.find({ topicId: { $in: tops.map((t) => t._id) }, origem: "oficial" }).select("prova numeroOriginal situacaoFonte topicId status").sort({ prova: 1, numeroOriginal: 1 }).lean();
+            console.log(`\nOficiais de ${o.disciplina} (${qs.length}):`);
+            for (const q of qs) console.log(`  ${(q.prova ?? "").slice(0, 34).padEnd(34)} Q${String(q.numeroOriginal ?? "?").padEnd(3)} ${String(q.situacaoFonte ?? "—").padEnd(13)} ${q.status.padEnd(12)} ${assunto.get(String(q.topicId)) ?? ""}`);
+          }
           return;
         }
         if (args[0] !== "conferir") throw new Error('Use "fontes-atuais migrar", "fontes-atuais conferir [--n 5]" ou "fontes-atuais relatorio".');
