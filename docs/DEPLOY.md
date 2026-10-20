@@ -54,22 +54,30 @@ A corrente de modelos aprovada (inclusive a provisória) fica no banco: vale igu
 
 ## Noturno no Windows (PC local)
 
-O script `scripts/noturno-windows.ps1` roda `npm run bb -- noturno --ate 05:30` com **um trabalhador de IA**, grava um log por noite em `logs/noturno/` e filtra chaves, URI Mongo e e-mails antes de salvar cada linha. `logs/` está no `.gitignore`. Ele usa o `.env` da raiz do repositório e só começa entre 01:00 e 05:30; se o PC acordar depois, registra que perdeu a janela e sai.
+O script `scripts/noturno-windows.ps1` inicia `node --import tsx src/cli.ts noturno --ate 05:30` com **dois trabalhadores de IA** (`NOTURNO_TRABALHADORES=2`), usa o `.env` da raiz e grava em `logs/noturno/AAAA-MM-DD.log`. Ele mascara chaves, URI Mongo, bearer tokens e e-mails antes de gravar; `logs/` está no `.gitignore`. A janela é 01:00–05:30 BRT; se o PC acordar depois, o script registra e sai. Um arquivo com compartilhamento exclusivo impede duas instâncias locais.
 
 ### Criar a tarefa
 
-1. Confirme que Node.js/npm estão instalados para a sua conta do Windows, as dependências estão em `node_modules/` e o `.env` está na raiz `C:\projetos\Lobo-bb`. O `.env` não deve ser copiado para a tarefa nem para o Git.
-2. Abra **Agendador de Tarefas** → **Criar Tarefa**. Em **Geral**, nomeie `Lobo Binho — Noturno`, marque **Executar independentemente de o usuário estar conectado** e **Oculto**. Use a sua conta do Windows.
-3. Em **Disparadores**, crie um disparador diário para **01:00**. Confira se o fuso do Windows está em Brasília.
-4. Em **Ações**, escolha **Iniciar um programa**:
+1. Confirme que Node.js está instalado, `node_modules/` existe e o `.env` está na raiz `C:\projetos\Lobo-bb`. Não copie o `.env` para os argumentos da tarefa nem para o Git.
+2. A tarefa criada é `Lobo Binho - Noturno Local`, diária às **01:00 BRT**. Confira o fuso `E. South America Standard Time` e o próximo horário no Agendador.
+3. Em **Ações**, escolha **Iniciar um programa**:
    - Programa: `C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe`
    - Argumentos: `-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\projetos\Lobo-bb\scripts\noturno-windows.ps1"`
    - **Iniciar em**: `C:\projetos\Lobo-bb`
-5. Em **Condições**, marque **Reativar o computador para executar esta tarefa**. Em Opções de Energia do Windows, habilite **Permitir despertadores** para a fonte usada pelo PC. Essa opção acorda o PC da suspensão; ela não liga um PC desligado.
-6. Em **Configurações**, marque **Executar a tarefa assim que possível após um início agendado perdido** e escolha **Não iniciar uma nova instância** se a tarefa já estiver em execução. Se o PC voltar depois das 05:30, o script registra e ignora essa execução.
-7. Clique **OK** e informe a senha da conta do Windows se o Agendador pedir. O processo roda sem janela. Na manhã seguinte, confira `logs\noturno\noturno-*.log` e o relatório da noite em Admin → Fila.
+4. Em **Condições**, marque **Reativar o computador para executar esta tarefa** e habilite **Permitir despertadores** nas Opções de Energia. A tarefa está configurada para iniciar e continuar também na bateria; ela acorda da suspensão, mas não liga um PC desligado.
+5. Em **Configurações**, marque **Executar assim que possível após um início agendado perdido**, **Não iniciar uma nova instância** e limite de **4h30**. O XML atual confirma `WakeToRun=true`, `StartWhenAvailable=true`, `MultipleInstances=IgnoreNew` e `ExecutionTimeLimit=PT4H30M`.
 
-O Agendador mantém o PC acordado enquanto a tarefa com a opção de reativação está em execução; isso depende de o Windows e o hardware aceitarem despertadores no estado de energia selecionado ([documentação da propriedade WakeToRun](https://learn.microsoft.com/en-us/windows/win32/taskschd/tasksettings-waketorun)). A opção `-WindowStyle Hidden` do PowerShell oculta a janela do processo.
+**Limite confirmado do Windows neste PC:** a tarefa atual ainda usa `InteractiveToken`, então só roda enquanto a conta estiver conectada. A tentativa de trocar para execução sem login/S4U foi negada pelo Windows (`0x80070005`), e `schtasks /Create ... /NP` pediu a senha e terminou em acesso negado. Para habilitar a execução sem login, abra as propriedades desta tarefa → **Geral** → **Executar independentemente de o usuário estar conectado** e informe a senha da conta diretamente na janela local do Agendador. A senha não deve ser escrita no script, `.env`, argumento, log ou Git. Não use a conta `SYSTEM`.
+
+O teste manual `scripts/noturno-windows.ps1 -SmokeTest` passou: mascarou valores sintéticos, encerrou um processo de teste no timeout e não deixou processo filho. O teste disparado pelo Agendador não concluiu: tanto o smoke como uma tarefa curta `cmd /c exit` ficaram em estado `Em execução`; as tarefas de teste foram encerradas e removidas. A rodada integral com `META_APROVADAS_NOITE=2` não foi feita, pois escreveria questões novas no Atlas de produção sem rollback seguro. Portanto, ainda falta comprovar uma execução noturna real.
+
+O Agendador mantém o PC acordado enquanto a tarefa com a opção de reativação está em execução; isso depende de o Windows e o hardware aceitarem despertadores no estado de energia selecionado ([documentação da propriedade WakeToRun](https://learn.microsoft.com/en-us/windows/win32/taskschd/tasksettings-waketorun)). A opção `-WindowStyle Hidden` oculta a janela do PowerShell.
+
+### Conferir pela manhã
+
+1. Rode `schtasks /query /tn "Lobo Binho - Noturno Local" /v /fo LIST` e confira `Last Run Time`, `Last Result` e o próximo horário.
+2. Abra `logs\noturno\AAAA-MM-DD.log`; confirme início, fim, status de saída e que os valores sensíveis aparecem mascarados.
+3. Em Admin → Fila, registre aprovadas, tentativas e descartes agrupados pelo motivo exibido no relatório da noite.
 
 ## O que já vem no código
 

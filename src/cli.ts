@@ -44,7 +44,7 @@ function perguntar(texto: string, oculto = false): Promise<string> {
 }
 import { join } from "node:path";
 import { listarModelos } from "./llm.js";
-import { naFila } from "./fila.js";
+import { limparTravaOrfa, naFila } from "./fila.js";
 import { extrairFigurasOficiais } from "./figuras.js";
 import { indexarQuestoes, calibrar } from "./similaridade.js";
 import { carregarCatalogo, CORRENTE_DEFINITIVA } from "./catalogo.js";
@@ -91,6 +91,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
+  limpar-trava-orfa <pid>       só libera a trava local se o processo já terminou
   temas [--n 10]                prepara temas inéditos para redação
   criar-admin <email>           sua conta de administrador (pede a senha) e leva seu progresso para ela
   convite [--max 7]             código de cadastro de uso único (validade em dias)
@@ -160,6 +161,12 @@ async function main() {
   const rotulo = `bb ${[comando, ...resto].join(" ")}`.slice(0, 160);
   try {
     switch (comando) {
+      case "limpar-trava-orfa": {
+        const pid = Number(args[0]);
+        const limpa = await limparTravaOrfa(pid);
+        return console.log(limpa ? `✔ Trava órfã do PID ${pid} liberada.` : `Nenhuma trava órfã do PID ${pid} foi removida.`);
+      }
+
       case "indice":
         return await criarIndice();
 

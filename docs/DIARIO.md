@@ -617,4 +617,11 @@ db.questions.aggregate([{ $match: { origem: "oficial" } }, { $lookup: { from: "t
 - O DIARIO de 18/10 registra 166 após a primeira noite; o prompt revisado declarava aproximadamente 190 sem data/hora de medição. O Atlas está em 226 nesta fotografia; `createdAt` soma 35 registros em 18/10 e 27 em 19/10. Os 166 são históricos e os ~190 não são reproduzíveis sem horário/base da medição.
 - `docs/PENDENTES-FIGURA.md` foi reconciliado: Q23 de 2021 está cadastrada; Q27/2021 e Q41/2023 estão aprovadas com figura. ROADMAP, PROMPT-VIAGEM e CLAUDE agora distinguem estado atual de histórico. `docs/RELATORIO-VIAGEM.md` mantém 166 como histórico da primeira noite.
 
-RETOMAR AQUI: P0.2 — ajustar o script e a tarefa do Windows; provar WakeToRun, StartWhenAvailable, execução sem login e limite de 4h30, sem iniciar uma geração com escrita no Atlas.
+## 19/10/2026 — P0.2: noturno local e Agendador do Windows
+
+- `scripts/noturno-windows.ps1` agora roda com dois trabalhadores, log diário em `logs/noturno/AAAA-MM-DD.log`, mascaramento de segredos/URI/bearer/e-mail, trava local exclusiva, corte antes de 05:30 BRT e encerramento controlado do filho. A limpeza de trava órfã exige host e PID do processo já encerrado (`bb limpar-trava-orfa <pid>`). A fila protege outros jobs de IA entre 01:00 e 05:30 BRT.
+- A tarefa `Lobo Binho - Noturno Local` está diária às 01:00, oculta, no diretório do repositório, com `WakeToRun=true`, `StartWhenAvailable=true`, limite `PT4H30M`, `IgnoreNew` e execução também na bateria. Continua em `InteractiveToken`: a troca para S4U foi negada (`0x80070005`) e `schtasks /NP` terminou em acesso negado. Portanto, só executa com a conta conectada; o dono poderá informar a senha localmente nas propriedades do Agendador para habilitar execução sem login, sem salvá-la no projeto.
+- Smoke manual do script passou: valores sintéticos mascarados e processo de teste morto no timeout. Pelo Agendador, tanto o smoke quanto uma tarefa mínima `cmd /c exit` ficaram em `Em execução`; ambas foram removidas. Não foi feita geração de IA nem escrita no Atlas de produção. A execução noturna real ainda precisa ser confirmada.
+- Verificações: `src/fila.test.ts` passou 3/3; smoke manual PowerShell saiu com código 0; `git diff --check` passou. `tsc --noEmit` terminou sem diagnósticos visíveis após a correção da tipagem em `src/fontesAtuais.ts`.
+
+RETOMAR AQUI: P0.3 — implementar backup gzip do Atlas com manifest, retenção de 14, simulação de restauração e rollback documentado; integrar o backup ao fim do noturno.

@@ -174,7 +174,7 @@ export async function planejarFontesAtuais(lote: string, max = Number(process.en
 export async function conferirFontesAgora(n = 5, disciplina?: string) {
   const lote = `fontes atuais ${new Date().toISOString().slice(0, 10)}`;
   await migrarReferencias();
-  const topicos = disciplina ? await Topic.find({ disciplina, ativo: true }).select("_id").lean() : [];
+  const topicos = disciplina ? await Topic.find({ disciplina: disciplina as Disciplina, ativo: true }).select("_id").lean() : [];
   if (disciplina && !topicos.length) throw new Error(`Nenhum tópico ativo na disciplina "${disciplina}".`);
   const qs = await Question.find({
     situacaoFonte: "pendente",
