@@ -701,3 +701,14 @@ RETOMAR AQUI: F2 — Chat do Binho sem invenção (golden set completo de 12; me
 - Regra 18 no planejamento: `filtrarTopicosParaAula` (`src/aulas.ts`). Não repete tópico com aula aprovada ou tarefa aberta; Bancários, Atualidades e Vendas só com fonte ingerida e vigente.
 - [CONFIRMADO] A noite de 20/10 já planejou e rodou aulas (2 concluídas; 10 `aula_invalida`, 1 `aula_reprovada`, ver F1).
 - Testes `src/noturno.test.ts`: 11/11 (2 novos: ordem com aulas na fila e regra 18).
+
+## 20/10/2026 — F8: site acordado nos horários de estudo
+
+- `.github/workflows/acordar.yml`: `GET https://lobo-binho.onrender.com/api/saude` a cada 10 min.
+  - Horários: 11:30–13:30 e 18:30–23:30 de Brasília; cron em UTC: 14:30–16:30 e 21:30–02:30, a segunda faixa passa da meia-noite.
+  - Também roda manual (`workflow_dispatch`).
+  - Sem segredos, `permissions: {}`, timeout de 3 min. Site fora vira aviso, não falha, para não mandar e-mail a cada 10 min.
+- Números (estimativa):
+  - 13 + 31 = **44 execuções/dia**. O Actions cobra 1 min por job: **~1.320 min/mês** (meta < 1.500; o repositório privado tem 2.000 grátis).
+  - Acordado: 2 h + 5 h por dia, mais ~15 min depois do último GET em cada faixa: **~7,5 h/dia ≈ 225 h/mês** (o Render free dá 750 h/mês).
+  - O cron do GitHub pode atrasar alguns minutos nos horários de pico; o 1º acesso logo no início da faixa ainda pode pegar o site dormindo.
