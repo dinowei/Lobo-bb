@@ -64,6 +64,7 @@ import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
 import { telemetriaPendente } from "./telemetria.js";
+import { criarBackupAtlas, simularRestauracao, restaurarBackupAtlas } from "./backup.js";
 import { readFile, writeFile } from "node:fs/promises";
 
 const AJUDA = `
@@ -91,6 +92,9 @@ BB Estudos — comandos (npm run bb -- <comando>)
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
+  backup                        exporta as coleções críticas do Atlas para backups/ (gzip + manifest)
+  restaurar <pasta> --simular   valida o backup e mostra contagens, sem alterar o banco
+  restaurar <pasta> --confirmar valida, cria rollback, pede confirmação digitada e restaura
   limpar-trava-orfa <pid>       só libera a trava local se o processo já terminou
   temas [--n 10]                prepara temas inéditos para redação
   criar-admin <email>           sua conta de administrador (pede a senha) e leva seu progresso para ela
@@ -144,6 +148,8 @@ async function main() {
       fonte: { type: "string" },
       max: { type: "string" },
       ate: { type: "string" },
+      simular: { type: "boolean" },
+      confirmar: { type: "boolean" },
     },
   });
 
@@ -353,6 +359,36 @@ async function main() {
       case "status":
         return await mostrarStatus();
 
+      case "backup": {
+        const backup = await criarBackupAtlas(mongoose.connection.db!);
+        const quantidade = backup.manifesto.colecoes.reduce((soma, c) => soma + c.quantidade, 0);
+        console.log(`Backup concluído: ${backup.manifesto.colecoes.length} coleções, ${quantidade} documentos; manifest e hashes validados.`);
+        return;
+      }
+
+      case "restaurar": {
+        const pasta = exigir(args[0], "a pasta do backup");
+        if (o.simular === o.confirmar) throw new Error("Escolha exatamente uma opção: --simular ou --confirmar.");
+        const db = mongoose.connection.db!;
+        const plano = await simularRestauracao(db, pasta);
+        console.log(`${o.simular ? "Simulação" : "Prévia"} do backup ${plano.banco} para o banco atual ${db.databaseName}, sem alterações:`);
+        for (const c of plano.colecoes) console.log(`  ${c.nome}: atual ${c.atual} → backup ${c.backup}`);
+        if (o.simular) return;
+        if (!process.stdin.isTTY) throw new Error("A restauração real exige um terminal interativo para confirmar o banco e a data.");
+        const data = plano.criadoEm.slice(0, 10);
+        const frase = `RESTAURAR ${db.databaseName} ${data}`;
+        if ((await perguntar(`Para aplicar e criar um snapshot de rollback, digite exatamente \"${frase}\": `)).trim() !== frase) {
+          throw new Error("Confirmação não corresponde; nenhuma alteração foi feita.");
+        }
+        const resultado = await restaurarBackupAtlas(db, pasta);
+        console.log(`Restauração concluída. Snapshot de rollback preservado em backups/${resultado.diretorioRollback.split(/[\\/]/).at(-1)}.`);
+        for (const c of resultado.depois) {
+          const anterior = resultado.antes.find((a) => a.nome === c.nome)?.atual ?? 0;
+          console.log(`  ${c.nome}: ${anterior} → ${c.quantidade}`);
+        }
+        return;
+      }
+
       case "noturno": {
         // planeja a noite (tópicos abaixo do estoque + verificação semanal) e roda a fila persistida
         const max = o.max ? Number(o.max) : undefined;
@@ -385,6 +421,9 @@ async function main() {
           const aprovadas = await Question.countDocuments({ status: "aprovada" });
           await Relatorio.create({ lote, inicio, fim: new Date(), resumo: r, noite, progresso: { aprovadas, meta: META_BANCO } });
           console.log(`Banco: ${aprovadas} de ${META_BANCO} aprovadas (meta)`);
+          const backup = await criarBackupAtlas(mongoose.connection.db!);
+          const totalBackup = backup.manifesto.colecoes.reduce((soma, c) => soma + c.quantidade, 0);
+          console.log(`Backup noturno concluído: ${backup.manifesto.colecoes.length} coleções, ${totalBackup} documentos.`);
         });
       }
 

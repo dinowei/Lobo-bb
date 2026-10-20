@@ -79,6 +79,28 @@ O Agendador mantém o PC acordado enquanto a tarefa com a opção de reativaçã
 2. Abra `logs\noturno\AAAA-MM-DD.log`; confirme início, fim, status de saída e que os valores sensíveis aparecem mascarados.
 3. Em Admin → Fila, registre aprovadas, tentativas e descartes agrupados pelo motivo exibido no relatório da noite.
 
+## Backup do Atlas
+
+`npm run bb -- backup` grava em `backups/AAAA-MM-DD/` um `manifest.json` e um `.json.gz` por coleção. O comando do noturno executa esse backup depois de salvar o relatório da noite. A pasta `backups/` está ignorada pelo Git; no Windows, o script limita a ACL à conta atual e, nos demais sistemas, usa permissão `0700` (arquivos `0600`). Se não conseguir restringir a pasta, o backup falha sem declarar sucesso.
+
+O pacote contém contas, tentativas, revisão SM-2, redações, rating e apenas a configuração aprovada da corrente. A senha da conta fica como hash scrypt para permitir recuperação; sessões e tokens não são incluídos. XP, progresso e conquistas são calculados a partir das tentativas, então não têm coleção separada. O manifesto registra banco, data, coleção, quantidade, bytes gzip e SHA-256; o terminal mostra só contagens. A retenção mantém os 14 diretórios diários mais recentes. Um erro de leitura/escrita remove o diretório temporário e não marca backup como concluído.
+
+Para conferir um backup sem alterar o banco:
+
+```text
+npm run bb -- restaurar backups/AAAA-MM-DD --simular
+```
+
+A simulação verifica o manifesto, hashes, gzip e contagens e mostra somente contagens atuais e esperadas. Para restaurar:
+
+```text
+npm run bb -- restaurar backups/AAAA-MM-DD --confirmar
+```
+
+O comando pede a frase `RESTAURAR <banco> <data>` antes de escrever, salva um snapshot local do estado atual e só então substitui as coleções incluídas. Se a restauração falhar, tenta repor o snapshot; seu diretório `rollback-*` fica preservado para recuperação manual. O código não foi executado contra o Atlas de produção neste sprint; a exportação, a simulação e o rollback foram testados com um banco falso em memória. Nunca rode `--confirmar` em produção sem verificar a simulação e o snapshot local.
+
+Para desfazer uma restauração concluída, ou continuar uma recuperação se o rollback automático também falhar, simule primeiro o diretório `backups/rollback-*` e depois use `restaurar <pasta-rollback> --confirmar`; o comando também guardará o estado atual antes de aplicar esse snapshot. Não apague o diretório de rollback antes de validar o banco restaurado.
+
 ## O que já vem no código
 
 - Uma imagem só (`Dockerfile`): API + site compilado; o noturno usa a mesma imagem com outro comando.

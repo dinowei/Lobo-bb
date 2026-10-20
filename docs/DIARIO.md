@@ -625,3 +625,13 @@ db.questions.aggregate([{ $match: { origem: "oficial" } }, { $lookup: { from: "t
 - Verificações: `src/fila.test.ts` passou 3/3; smoke manual PowerShell saiu com código 0; `git diff --check` passou. `tsc --noEmit` terminou sem diagnósticos visíveis após a correção da tipagem em `src/fontesAtuais.ts`.
 
 RETOMAR AQUI: P0.3 — implementar backup gzip do Atlas com manifest, retenção de 14, simulação de restauração e rollback documentado; integrar o backup ao fim do noturno.
+
+## 19/10/2026 — P0.3: backup gzip e restauração protegida
+
+- `npm run bb -- backup` exporta `users`, `attempts`, `reviewstates`, `redacoes`, `ratings_aluno` e somente o documento da corrente aprovada em `config`, em `backups/AAAA-MM-DD/`. Cada arquivo é JSON Extended compactado em gzip; `manifest.json` registra banco, data, contagem, bytes gzip e SHA-256. O write é temporário e atômico; falha parcial remove o diretório temporário e não declara sucesso.
+- `backups/` está no `.gitignore`. ACL do Windows fica restrita à conta atual (`icacls`); nos demais sistemas, diretórios ficam em `0700` e arquivos em `0600`. Retenção: 14 diretórios diários; snapshots `rollback-*` de restaurações manuais ficam preservados à parte.
+- A configuração usa allowlist (`ativa`, modelos por função, data de aprovação e configuração anterior), excluindo campos arbitrários que poderiam carregar segredo. Sessões e tokens não entram. `senhaHash` é mantido como hash scrypt para recuperar a conta. XP, progresso e conquistas não têm coleção persistida separada: derivam das tentativas.
+- `npm run bb -- noturno` agora faz backup após salvar o relatório noturno. `restaurar <pasta> --simular` valida manifesto, hash, gzip e contagens sem mutação. `--confirmar` exige frase exata com banco/data, cria snapshot completo antes da escrita, compara contagens depois e tenta rollback automático em falha; nenhum restore real foi feito no Atlas de produção.
+- Testes com banco falso: **4/4** passaram — gzip/hash e contagens, allowlist sem sentinelas de segredo, erro parcial sem pasta final, restauração com rollback e retenção de 14. `npx tsc --noEmit`, `npm run bb -- ajuda` e `git diff --check` passaram. Não foi exportado dado real do Atlas neste sprint.
+
+RETOMAR AQUI: P0.4 — implementar `scripts/smoke-prod.ts` com checks de saúde/login e prova sem escrita; depois concluir P0.5 da voz Louise.
