@@ -635,3 +635,12 @@ RETOMAR AQUI: P0.3 — implementar backup gzip do Atlas com manifest, retenção
 - Testes com banco falso: **4/4** passaram — gzip/hash e contagens, allowlist sem sentinelas de segredo, erro parcial sem pasta final, restauração com rollback e retenção de 14. `npx tsc --noEmit`, `npm run bb -- ajuda` e `git diff --check` passaram. Não foi exportado dado real do Atlas neste sprint.
 
 RETOMAR AQUI: P0.4 — implementar `scripts/smoke-prod.ts` com checks de saúde/login e prova sem escrita; depois concluir P0.5 da voz Louise.
+
+## 19/10/2026 — P0.4: smoke de produção
+
+- Criado `scripts/smoke-prod.ts`: timeout individual de 30 s, respostas e durações por endpoint, verificação de corpo contra padrões de segredo sem imprimir corpo/URL completa. Login usa e-mail `.invalid` e senha sintéticos; não cria conta nem sessão.
+- Primeira execução fria: saúde **timeout 30.049 ms**; página **200/22.439 ms**; `/manifest` **200/334 ms**; `/manifest.webmanifest` **200/174 ms**; ícones 192 **200/172 ms**, 512 **200/1.334 ms**, maskable 512 **200/914 ms**; login **401/404 ms**. Resultado **7/8**, falha preservada.
+- Segunda execução após o serviço despertar: saúde **200/1.018 ms**; página **200/250 ms**; `/manifest` **200/351 ms**; `/manifest.webmanifest` **200/193 ms**; ícones 192 **200/458 ms**, 512 **200/348 ms**, maskable 512 **200/442 ms**; login **401/324 ms**. Resultado **8/8**, nenhuma falha e nenhum segredo detectado.
+- `/manifest` devolve HTTP 200 como fallback da SPA; o arquivo PWA vinculado no HTML e usado para validar ícones é `/manifest.webmanifest`. `npx tsc --noEmit` passou. Nenhum endpoint de escrita foi chamado.
+
+RETOMAR AQUI: P0.5 — investigar e corrigir a escolha/migração/cache da voz Louise e o fallback pt-BR do navegador; provar com testes automatizados.

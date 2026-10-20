@@ -101,6 +101,10 @@ O comando pede a frase `RESTAURAR <banco> <data>` antes de escrever, salva um sn
 
 Para desfazer uma restauração concluída, ou continuar uma recuperação se o rollback automático também falhar, simule primeiro o diretório `backups/rollback-*` e depois use `restaurar <pasta-rollback> --confirmar`; o comando também guardará o estado atual antes de aplicar esse snapshot. Não apague o diretório de rollback antes de validar o banco restaurado.
 
+## Smoke test da produção
+
+Rode `npx tsx scripts/smoke-prod.ts https://lobo-binho.onrender.com`. O comando testa saúde, título da página, `/manifest`, o manifesto PWA real (`/manifest.webmanifest`), ícones locais 192/512 e login com credencial sintética inválida. Cada chamada tem timeout próprio de 30 s; saída lista somente endpoint, status e duração. Timeout ou resposta inválida encerra com código diferente de zero. O corpo não é impresso e é verificado contra padrões de segredo.
+
 ## O que já vem no código
 
 - Uma imagem só (`Dockerfile`): API + site compilado; o noturno usa a mesma imagem com outro comando.
