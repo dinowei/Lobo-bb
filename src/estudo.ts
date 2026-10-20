@@ -196,12 +196,15 @@ async function registrar(
   await Question.updateOne({ _id: q._id }, { $inc: { "stats.tentativas": 1, "stats.acertos": acertou ? 1 : 0, ratingN: 1 }, $set: { rating: r.questao } });
   if (disciplina) await RatingAluno.updateOne({ userId, disciplina }, { $set: { rating: r.aluno }, $inc: { n: 1 } }, { upsert: true });
 
-  const atual = await ReviewState.findOne({ userId, questionId: q._id });
-  const novo = agendar(atual ?? ESTADO_INICIAL, notaSM2(acertou, confianca));
+  // só os 3 campos do SM-2: espalhar o documento inteiro levava _id/__v para o $set e a 2ª resposta à
+  // mesma questão (revisão, simulado) quebrava com "Updating the path '__v' would create a conflict"
+  const atual = await ReviewState.findOne({ userId, questionId: q._id }).select("facilidade intervaloDias repeticoes").lean();
+  const estado = atual ? { facilidade: atual.facilidade, intervaloDias: atual.intervaloDias, repeticoes: atual.repeticoes } : ESTADO_INICIAL;
+  const novo = agendar(estado, notaSM2(acertou, confianca));
   await ReviewState.updateOne(
     { userId, questionId: q._id },
     {
-      $set: { ...novo, proximaRevisao: new Date(Date.now() + novo.intervaloDias * 86_400_000) },
+      $set: { facilidade: novo.facilidade, intervaloDias: novo.intervaloDias, repeticoes: novo.repeticoes, proximaRevisao: new Date(Date.now() + novo.intervaloDias * 86_400_000) },
       ...(acertou ? { $unset: { comTempo: 1 } } : {}), // acertou: sai do treino com tempo
     },
     { upsert: true }

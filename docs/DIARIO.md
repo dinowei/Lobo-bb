@@ -729,6 +729,26 @@ RETOMAR AQUI: F2 — Chat do Binho sem invenção (golden set completo de 12; me
 - [CONFIRMADO] A noite de 20/10 já planejou e rodou aulas (2 concluídas; 10 `aula_invalida`, 1 `aula_reprovada`, ver F1).
 - Testes `src/noturno.test.ts`: 11/11 (2 novos: ordem com aulas na fila e regra 18).
 
+## 20/10/2026 — F7: uma conta não vê a outra
+
+- Como testei:
+  - `src/isolamento.test.ts`, HTTP de verdade (o `app` do `server.ts`, que agora só abre porta quando é o processo principal), com 2 alunos de teste.
+  - Banco: MongoDB **em memória** (`mongodb-memory-server` 11.3.0, só dev). O usuário do Atlas só tem direito no banco do app (`dropDatabase` e `listCollections` negados num banco de teste) e criar conta em produção ligaria o login do site.
+  - Produção só é **lida**, por outra conexão (1 tópico, 2 questões oficiais, 1 cartão, 1 tema). Cotas do tutor e do chat em 0: nenhuma IA chamada.
+  - Rodar: `ISOLAMENTO=1 npx tsx --test --test-force-exit src/isolamento.test.ts`. Sem a variável, o teste pula.
+- **Rotas cobertas:**
+  - Sem sessão (401): `/api/painel`, `/api/erros`, `/api/redacoes`, `/api/cartoes`, `/api/admin/ia`.
+  - Aluno no Admin (403): `/api/admin/ia`, `/fila`, `/pendencias`, `/figuras`.
+  - A estuda: `/api/responder`, `/api/motivo-erro`, `/api/simulado/corrigir`, `/api/cartoes/:id`, `/api/redacoes/corrigir`, mais cache de `/api/explicar-mais` e `/api/binho/perguntar`.
+  - B lê e não vê nada de A: `/api/painel` (XP, respondidas, revisões), `/api/erros`, `/api/redacoes`, `/api/proxima?revisao=1`, `/api/cartoes`, `/api/explicar-mais`, `/api/binho/perguntar`.
+  - B tenta alterar A, com `userId` de A no corpo, mais `acertou`, `xp`, `papel`, `gabarito` e `status` injetados: `/api/motivo-erro`, `/api/redacoes/vistas`, `/api/responder`, `/api/cartoes/:id`.
+  - Conferido no banco depois: contagens de A iguais, motivo do erro de A intacto, redação de A não marcada como vista, tentativa injetada gravada como de B com o XP do servidor, gabarito/status da questão e papel de B intocados.
+  - Áudio (`/api/voz`) é cache por texto, não dado de aluno. Preferências e plano ficam no navegador.
+- **Dois defeitos achados e corrigidos (o teste falhava antes):**
+  1. **Vazamento:** o Express casa rotas sem diferenciar maiúsculas, mas a trava de login comparava `req.path.startsWith("/api/")`. `GET /API/painel` **sem login devolvia 200 com o progresso do dono** (`ALUNO_ID`), e um aluno abria `/API/admin/fila` (200). Correção: a trava compara em minúsculas (`src/auth.ts`).
+  2. **Revisão quebrada:** a 2ª resposta à mesma questão (revisão, ou simulado com questão já vista) dava 500 "Updating the path '__v' would create a conflict". O `registrar` espalhava o documento inteiro do `ReviewState` no `$set`. Correção: só os 3 campos do SM-2 (`src/estudo.ts`). [PENDENTE] não medi quantas revisões falharam em produção.
+- Resultado: **0 vazamentos** depois das correções; teste 3/3; suíte completa 185 ok, 3 pulados.
+
 ## 20/10/2026 — F8: site acordado nos horários de estudo
 
 - `.github/workflows/acordar.yml`: `GET https://lobo-binho.onrender.com/api/saude` a cada 10 min.

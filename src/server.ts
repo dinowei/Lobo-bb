@@ -19,7 +19,7 @@ import { autenticar, usuarioAtualId } from "./auth.js";
 import { registrarRotasDeLogin } from "./rotasLogin.js";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { apiServidor } from "./estudo.js";
 import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro, type NotaCartao } from "../shared/tipos.js";
 
@@ -343,7 +343,11 @@ async function iniciar() {
   await mongoose.connect(uri);
   console.log("✔ Banco conectado");
 }
-iniciar().catch((e) => {
-  console.error(`✖ ${e instanceof Error ? e.message : e}`);
-  process.exit(1);
-});
+// só sobe quando é o processo principal; o teste de isolamento importa o app sem abrir porta nem banco
+export { app };
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  iniciar().catch((e) => {
+    console.error(`✖ ${e instanceof Error ? e.message : e}`);
+    process.exit(1);
+  });
+}

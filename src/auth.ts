@@ -93,9 +93,12 @@ export function autenticar() {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const usuario = await usuarioDaSessao(lerCookie(req));
-      if (req.path.startsWith("/api/") && !LIVRES.some((l) => req.path.startsWith(l)) && (await loginAtivo())) {
+      // o roteamento do Express ignora maiúsculas: "/API/painel" cai na rota "/api/painel". A trava compara em
+      // minúsculas, senão "/API/..." passava sem login (e caía no progresso do dono) e "/Api/admin" sem ser admin.
+      const caminho = req.path.toLowerCase();
+      if (caminho.startsWith("/api/") && !LIVRES.some((l) => caminho.startsWith(l)) && (await loginAtivo())) {
         if (!usuario) return res.status(401).json({ erro: "Sua sessão acabou. Entre de novo.", codigo: "sessao_expirada" });
-        if (req.path.startsWith("/api/admin/") && usuario.papel !== "admin") return res.status(403).json({ erro: "Só o administrador acessa isto." });
+        if (caminho.startsWith("/api/admin/") && usuario.papel !== "admin") return res.status(403).json({ erro: "Só o administrador acessa isto." });
       }
       contexto.run({ usuario }, () => next());
     } catch (e) {
