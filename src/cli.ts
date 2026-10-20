@@ -57,6 +57,7 @@ import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
 import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, reclassificarSemFonte, relatorioFontesAtuais } from "./fontesAtuais.js";
 import { limparAudios, limparCacheDeOutrasVozes, planejarVoz, tetoAudioMB } from "./voz.js";
 import { perguntarAoBinho } from "./chatBinho.js";
+import { executarEvalChat } from "./evalChat.js";
 import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
@@ -87,6 +88,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   cartoes [--assunto "<parte do nome>"] [--n 3] prepara cartões (normas com fonte e vocabulário de Inglês)
   fontes-atuais migrar|conferir [--n 5] [--disciplina id]|relatorio  fonte da prova + fonte atual de cada questão
   vincular-fonte --fonte "<título exato>" --assunto "<tópico exato>" --simular|--confirmar  prévia e vínculo aditivo
+  eval-chat [--n 12]            roda o golden set do Binho em série, sem guardar respostas de avaliação
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
@@ -301,6 +303,14 @@ async function main() {
         console.log(`\n${r.resposta}\n`);
         for (const c of r.citacoes ?? []) console.log(`  · ${c.titulo}: “${c.trecho}”`);
         return console.log(`origem: ${r.origem}${r.restantesHoje !== undefined ? ` · restam ${r.restantesHoje} hoje` : ""}`);
+      }
+
+      case "eval-chat": {
+        const r = await executarEvalChat(o.n ? Number(o.n) : 12);
+        console.log(`\nChat Binho: ${r.respostasAprovadas}/${r.casos} resultados aprovados; ${r.naoAcheiCorretos} "não achei" corretos; ${r.invencoesBarradas} invenção(ões) barrada(s); ${r.reescritas} reescrita(s).`);
+        console.log(`Respostas úteis com base: ${r.respostasUteisComBase}/${r.perguntasComBase}; artigos esperados citados: ${r.artigosEsperadosEncontrados}; úteis sem base declarada: ${r.respostasUteisSemBaseDeclarada}; falhas de infraestrutura: ${r.falhasInfraestrutura}; tempo: ${r.segundos}s.`);
+        for (const item of r.itens) console.log(`  ${item.estado.padEnd(9)} ${item.id} (${item.segundos}s)`);
+        return;
       }
 
       case "voz": {

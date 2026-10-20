@@ -8,3 +8,5 @@ provas/
 fontes/
 logs/
 backups/
+# rascunhos de inspeção dos agentes (fora do projeto)
+scratchpad/

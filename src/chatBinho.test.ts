@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { conferirCitacoes, escolherTrechos, hashPergunta } from "./chatBinho.js";
+import { conferirCitacoes, escolherTrechos, hashPergunta, prepararCitacoesDaResposta, trechosSustentamPergunta, validarCitacoesNaResposta } from "./chatBinho.js";
 import { RespostaBinhoZ } from "./prompts.js";
 
 const trechos = [
@@ -21,12 +21,66 @@ test("chat: citação literal passa; inventada ou de fonte inexistente derruba a
   assert.equal(ok.invalida, false);
   assert.equal(ok.invalida === false && ok.citacoes[0].titulo, "Resolução CMN");
   assert.equal(conferirCitacoes([{ indice: 2, trecho: "O prazo de resposta é de cinco dias corridos para o cliente" }], trechos).invalida, true);
-  // número do trecho errado (ou inexistente), mas a frase existe em outro: vale, com o título de onde está
+  // Uma citação só vale quando o índice aponta para o trecho que contém o texto.
   const outro = conferirCitacoes([{ indice: 9, trecho: "O Conselho Monetário Nacional formula" }], trechos);
-  assert.equal(outro.invalida === false && outro.citacoes[0].titulo, "Lei 4.595");
+  assert.equal(outro.invalida, true);
   // paráfrase próxima é ancorada na frase da fonte
   const ancorada = conferirCitacoes([{ indice: 1, trecho: "o Conselho Monetário Nacional formula a política de moeda e crédito" }], trechos);
   assert.equal(ancorada.invalida, false);
+});
+
+test("chat: cada afirmação legal precisa de [n] existente no trecho citado", () => {
+  const citacoes = [{ indice: 1, trecho: "O Conselho Monetário Nacional formula a política da moeda e do crédito" }];
+  assert.deepEqual(
+    validarCitacoesNaResposta("O CMN formula a política da moeda e do crédito [1].", citacoes, trechos, true),
+    { ok: true },
+  );
+  assert.equal(
+    validarCitacoesNaResposta("O CMN formula a política da moeda e do crédito.", citacoes, trechos, true).ok,
+    false,
+  );
+  assert.equal(
+    validarCitacoesNaResposta("O CMN formula a política da moeda e do crédito [9].", citacoes, trechos, true).ok,
+    false,
+  );
+  assert.equal(
+    validarCitacoesNaResposta("O CMN formula a política da moeda e do crédito [1].", [{ indice: 9, trecho: "O Conselho Monetário Nacional formula a política da moeda e do crédito" }], trechos, true).ok,
+    false,
+  );
+});
+
+test("chat: código ancora afirmação no melhor trecho literal e bloqueia afirmação sem apoio", () => {
+  const frase = "O Conselho Monetário Nacional formula a política da moeda e do crédito.";
+  const preparada = prepararCitacoesDaResposta(frase, [], trechos, true);
+  assert.ok(preparada);
+  assert.match(preparada.resposta, /\[1\]\.$/);
+  assert.equal(validarCitacoesNaResposta(preparada.resposta, preparada.fontes, trechos, true).ok, true);
+  assert.equal(preparada.fontes[0].trecho, trechos[0].texto.split(".")[0] + ".");
+  assert.equal(prepararCitacoesDaResposta("Um seguro de celular gratuito é garantido a quem usa Pix.", [], trechos, true), null);
+  // citação única do tutor que não tem termos em comum com a afirmação também é recusada
+  assert.equal(
+    prepararCitacoesDaResposta(
+      "Um seguro de celular gratuito é garantido a quem usa Pix.",
+      [{ indice: 1, trecho: "O Conselho Monetário Nacional formula a política da moeda e do crédito." }],
+      trechos,
+      true,
+    ),
+    null,
+  );
+  const tutorSemMarcador = prepararCitacoesDaResposta(
+    frase,
+    [{ indice: 1, trecho: "O Conselho Monetário Nacional formula a política da moeda e do crédito" }],
+    trechos,
+    true,
+  );
+  assert.ok(tutorSemMarcador);
+  assert.match(tutorSemMarcador.resposta, /\[1\]\.$/);
+});
+
+test("chat: trechosSustentamPergunta exige termos específicos do tema na base", () => {
+  assert.equal(trechosSustentamPergunta("qual o prazo de resposta da ouvidoria?", trechos), true);
+  assert.equal(trechosSustentamPergunta("Qual artigo garante seguro de celular gratuito para toda pessoa que faz um Pix?", trechos), false);
+  assert.equal(trechosSustentamPergunta("qualquer coisa", []), false);
 });
 
 test("chat: a mesma pergunta com caixa, acento e pontuação diferentes cai no mesmo cache", () => {

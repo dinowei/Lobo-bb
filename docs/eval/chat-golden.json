@@ -1,0 +1,116 @@
+{
+  "versao": 1,
+  "casos": [
+    {
+      "id": "kb-sigilo-lc105",
+      "disciplina": "conhecimentos_bancarios",
+      "topico": "Sigilo bancário e proteção de dados",
+      "pergunta": "Pelo art. 1º da Lei Complementar 105/2001, quem deve conservar o sigilo das operações e dos serviços das instituições financeiras?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 1º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "kb-atribuicoes-cmn",
+      "disciplina": "conhecimentos_bancarios",
+      "topico": "Estrutura do Sistema Financeiro Nacional",
+      "pergunta": "Conforme o art. 2º da Lei 4.595/1964, qual é a finalidade atribuída ao Conselho Monetário Nacional?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 2º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "kb-servicos-essenciais-cmn3919",
+      "disciplina": "conhecimentos_bancarios",
+      "topico": "Produtos bancários",
+      "pergunta": "Segundo o art. 2º da Resolução CMN 3.919/2010, que grupos de serviços essenciais para pessoa física não podem ser tarifados?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 2º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "kb-pix-beneficio-sem-base",
+      "disciplina": "conhecimentos_bancarios",
+      "topico": "Pix e arranjos de pagamento",
+      "pergunta": "Qual artigo garante seguro de celular gratuito para toda pessoa que faz um Pix?",
+      "respostaExisteNasFontes": false,
+      "artigoEsperado": null,
+      "resultadoEsperado": "nao_achei"
+    },
+    {
+      "id": "kb-pld-comunicacao-lei9613",
+      "disciplina": "conhecimentos_bancarios",
+      "topico": "Prevenção à lavagem de dinheiro e ao financiamento do terrorismo",
+      "pergunta": "Pelo art. 11, inciso II, da Lei 9.613/1998, a quem e em que prazo devem ser comunicadas operações suspeitas?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 11",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "kb-pix-participacao",
+      "disciplina": "conhecimentos_bancarios",
+      "topico": "Pix e arranjos de pagamento",
+      "pergunta": "O que o art. 3º do Regulamento do Pix determina sobre a participação das instituições financeiras e de pagamento autorizadas pelo Banco Central?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 3º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "vendas-sac-gratuito",
+      "disciplina": "vendas_negociacao",
+      "topico": "Atendimento, satisfação e experiência do cliente",
+      "pergunta": "O que o art. 3º do Decreto 11.034/2022 determina sobre o custo do acesso ao SAC?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 3º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "vendas-lgpd-protecao-credito",
+      "disciplina": "vendas_negociacao",
+      "topico": "Marketing de relacionamento e fidelização",
+      "pergunta": "Qual hipótese do art. 7º, inciso X, da LGPD permite o tratamento de dados pessoais para proteção do crédito?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 7º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "informatica-lgpd-seguranca",
+      "disciplina": "informatica",
+      "topico": "Segurança da informação",
+      "pergunta": "O que o art. 46 da LGPD exige dos agentes de tratamento para proteger dados pessoais?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 46",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "informatica-phishing",
+      "disciplina": "informatica",
+      "topico": "Segurança da informação",
+      "pergunta": "Quais sinais comuns ajudam a reconhecer uma tentativa de phishing por e-mail?",
+      "respostaExisteNasFontes": false,
+      "artigoEsperado": null,
+      "resultadoEsperado": "resposta_util",
+      "indicadoresEsperados": ["remetente", "link"]
+    },
+    {
+      "id": "matematica-juros-compostos",
+      "disciplina": "matematica_financeira",
+      "topico": "Juros compostos",
+      "pergunta": "Uma aplicação de R$ 1.000 rende 10% ao mês por dois meses, sem depósitos nem retiradas. Qual é o montante ao final? Explique a conta.",
+      "respostaExisteNasFontes": false,
+      "artigoEsperado": null,
+      "resultadoEsperado": "resposta_util",
+      "indicadoresEsperados": ["1210"]
+    },
+    {
+      "id": "matematica-taxas-equivalentes",
+      "disciplina": "matematica_financeira",
+      "topico": "Taxas de juros",
+      "pergunta": "Uma taxa efetiva é de 1% ao mês. Qual é a taxa efetiva equivalente para dois meses? Explique a conversão.",
+      "respostaExisteNasFontes": false,
+      "artigoEsperado": null,
+      "resultadoEsperado": "resposta_util",
+      "indicadoresEsperados": ["2,01%"]
+    }
+  ]
+}
