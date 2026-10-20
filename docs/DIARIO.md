@@ -693,3 +693,11 @@ RETOMAR AQUI: P1.3 — criar e executar o golden set fixo de 12 perguntas do cha
   - Simulação de restauração executada: `npm run bb -- restaurar backups/2026-10-20 --simular` confirmou hashes e integridade sem mutação no Atlas.
 
 RETOMAR AQUI: F2 — Chat do Binho sem invenção (golden set completo de 12; meta: 0 invenções, 100% sem base = "não achei", úteis ≥ 7).
+
+## 20/10/2026 — F5: aulas no noturno (Claude Code assumiu o PROMPT-FECHAMENTO do Antigravity)
+
+- [CONFIRMADO] A fila roda na ordem de criação (`sort proximaEm, createdAt`), então a ordem do plano é a ordem da noite.
+- A sequência saiu do `cli.ts` para `planejarEtapasDaNoite` com `ORDEM_PRE_GERACAO` (`src/noturno.ts`): questões → explicações alternativas → aulas → cartões → fontes atuais → temas → áudio. O TTL da telemetria e a limpeza do áudio seguem antes de planejar áudio.
+- Regra 18 no planejamento: `filtrarTopicosParaAula` (`src/aulas.ts`). Não repete tópico com aula aprovada ou tarefa aberta; Bancários, Atualidades e Vendas só com fonte ingerida e vigente.
+- [CONFIRMADO] A noite de 20/10 já planejou e rodou aulas (2 concluídas; 10 `aula_invalida`, 1 `aula_reprovada`, ver F1).
+- Testes `src/noturno.test.ts`: 11/11 (2 novos: ordem com aulas na fila e regra 18).

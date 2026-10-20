@@ -49,7 +49,7 @@ import { indexarQuestoes, calibrar } from "./similaridade.js";
 import { carregarCatalogo, CORRENTE_DEFINITIVA } from "./catalogo.js";
 import { aprovarCorrentes, desfazerCorrentes, correnteAtiva } from "./corrente.js";
 import { sondarModelos, verificarModelos } from "./sondagem.js";
-import { calcularAteFila, planejarNoite, rodarFila } from "./noturno.js";
+import { calcularAteFila, planejarEtapasDaNoite, planejarNoite, rodarFila } from "./noturno.js";
 import { planejarPregeracoes } from "./outroJeito.js";
 import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { gerarAulas, planejarAulas } from "./aulas.js";
@@ -411,18 +411,23 @@ async function main() {
         return await naFila(rotulo, async () => {
           const inicio = new Date();
           const lote = `noite ${inicio.toISOString().slice(0, 10)}`;
-          // ordem da noite (adendo): questões até a meta → explicações alternativas → aulas → temas
-          const n = await planejarNoite(lote, { max });
-          const extras = await planejarPregeracoes(lote);
-          const aulas = await planejarAulas(lote);
-          const cartoes = await planejarCartoes(lote);
-          const fontesAtuais = await planejarFontesAtuais(lote);
-          const temas = await planejarTemasRedacao(lote);
-          // espaço do Atlas grátis: telemetria em 30 dias e teto do áudio antes de planejar áudio novo
-          if (await ajustarTTLTelemetria()) console.log("✔ Telemetria: TTL ajustado para 30 dias.");
-          const limpeza = await limparAudios();
-          if (limpeza.removidos) console.log(`✔ Áudio: ${limpeza.removidos} menos ouvido(s) removido(s); cache em ${limpeza.mb} MB (teto ${tetoAudioMB()} MB).`);
-          const audios = await planejarVoz(lote);
+          // ordem da noite: questões → explicações alternativas → aulas → cartões → fontes atuais → temas → áudio
+          // (a fila roda na ordem de criação, então esta é também a ordem de execução)
+          const { gerar: n, explicar_outro_jeito: extras, aula: aulas, cartoes, fonte_atual: fontesAtuais, tema: temas, voz: audios } = await planejarEtapasDaNoite({
+            gerar: () => planejarNoite(lote, { max }),
+            explicar_outro_jeito: () => planejarPregeracoes(lote),
+            aula: () => planejarAulas(lote),
+            cartoes: () => planejarCartoes(lote),
+            fonte_atual: () => planejarFontesAtuais(lote),
+            tema: () => planejarTemasRedacao(lote),
+            voz: async () => {
+              // espaço do Atlas grátis: telemetria em 30 dias e teto do áudio antes de planejar áudio novo
+              if (await ajustarTTLTelemetria()) console.log("✔ Telemetria: TTL ajustado para 30 dias.");
+              const limpeza = await limparAudios();
+              if (limpeza.removidos) console.log(`✔ Áudio: ${limpeza.removidos} menos ouvido(s) removido(s); cache em ${limpeza.mb} MB (teto ${tetoAudioMB()} MB).`);
+              return planejarVoz(lote);
+            },
+          });
           console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s), ${aulas} aula(s), ${cartoes} lote(s) de cartões, ${fontesAtuais} conferência(s) de fonte atual, ${temas} tema(s) de redação e ${audios} áudio(s) do Binho (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
           const ateFila = calcularAteFila(ate, inicio);
           const r = await rodarFila({ ate: ateFila, max: max !== undefined ? max + extras + aulas + cartoes + fontesAtuais + temas + audios + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });

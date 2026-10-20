@@ -123,6 +123,16 @@ export async function recuperarOrfas(agora = new Date()) {
 // Plano da noite: meta do banco por disciplina e tópico (data/estrutura-prova.json), até
 // GERACAO_MAX_TENTATIVAS_NOITE tarefas. Tópico que exige fonte e não tem trecho, ou que espera
 // a liberação de uma fonte pelo dono, fica fora da conta.
+// Pré-geração da noite, na ordem: questões → explicações alternativas → aulas → cartões → fontes atuais →
+// temas → áudio. A fila executa na ordem de criação, então a ordem do plano é a ordem da noite.
+export const ORDEM_PRE_GERACAO = ["gerar", "explicar_outro_jeito", "aula", "cartoes", "fonte_atual", "tema", "voz"] as const;
+export type EtapaNoite = (typeof ORDEM_PRE_GERACAO)[number];
+export async function planejarEtapasDaNoite(planejadores: Record<EtapaNoite, () => Promise<number>>) {
+  const feitas = {} as Record<EtapaNoite, number>;
+  for (const etapa of ORDEM_PRE_GERACAO) feitas[etapa] = await planejadores[etapa]();
+  return feitas;
+}
+
 export async function planejarNoite(lote: string, opcoes: { max?: number } = {}) {
   const estrutura = JSON.parse(await readFile(join(RAIZ, "data", "estrutura-prova.json"), "utf8")) as {
     totalQuestoes: number; metaBanco: number; cotas: Record<string, number>; esperamLiberacao: Record<string, string[]>;

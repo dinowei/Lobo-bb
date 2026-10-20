@@ -2,7 +2,35 @@
 // "antes de salvar" pega a parecida que outro trabalhador acabou de salvar (sem banco e sem IA)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { planoDaNoite, metaDoTopico, destinoDaTarefa, TravaTopicos, filtroDaMeta, calcularAteFila, type AlunoPlano } from "./noturno.js";
+import { planoDaNoite, metaDoTopico, destinoDaTarefa, TravaTopicos, filtroDaMeta, calcularAteFila, planejarEtapasDaNoite, ORDEM_PRE_GERACAO, type AlunoPlano } from "./noturno.js";
+import { filtrarTopicosParaAula } from "./aulas.js";
+
+test("plano da noite: aulas entram na fila depois das questões e das explicações, antes de temas e áudio", async () => {
+  const chamadas: string[] = [];
+  const fake = (nome: string, n: number) => async () => (chamadas.push(nome), n);
+  const r = await planejarEtapasDaNoite({
+    gerar: fake("gerar", 10), explicar_outro_jeito: fake("explicar_outro_jeito", 5), aula: fake("aula", 3),
+    cartoes: fake("cartoes", 2), fonte_atual: fake("fonte_atual", 4), tema: fake("tema", 1), voz: fake("voz", 6),
+  });
+  assert.deepEqual(chamadas, [...ORDEM_PRE_GERACAO]);
+  assert.equal(r.aula, 3);
+  const pos = (e: (typeof ORDEM_PRE_GERACAO)[number]) => chamadas.indexOf(e);
+  assert.ok(pos("gerar") < pos("explicar_outro_jeito") && pos("explicar_outro_jeito") < pos("aula") && pos("aula") < pos("tema") && pos("tema") < pos("voz"));
+});
+
+test("aulas da noite (regra 18): Bancários/Atualidades/Vendas só com fonte; aprovada ou aberta não repete", () => {
+  const topicos = [
+    { _id: "a", disciplina: "matematica" },
+    { _id: "b", disciplina: "conhecimentos_bancarios" },
+    { _id: "c", disciplina: "conhecimentos_bancarios" },
+    { _id: "d", disciplina: "vendas_negociacao" },
+    { _id: "e", disciplina: "lingua_portuguesa" },
+    { _id: "f", disciplina: "informatica" },
+  ];
+  const r = filtrarTopicosParaAula(topicos, new Set(["e"]), new Set(["f"]), new Set(["c"]), 10).map((t) => t._id);
+  assert.deepEqual(r, ["a", "c"]);
+  assert.equal(filtrarTopicosParaAula(topicos, new Set(), new Set(), new Set(["b", "c", "d"]), 2).length, 2);
+});
 
 test("calcularAteFila reserva 5 minutos de margem para relatório e backup", () => {
   const inicio = new Date("2026-10-20T01:00:00Z");

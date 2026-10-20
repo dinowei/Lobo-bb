@@ -232,10 +232,15 @@ async function topicosElegiveis(opcoes: { assunto?: string; max: number }) {
   const chunks = await Chunk.find({ topicIds: { $in: topicos.map((t) => t._id) }, revogada: false }).select("topicIds sourceId").lean();
   const sources = new Set((await Source.distinct("_id", { _id: { $in: chunks.map((c) => c.sourceId) }, revogada: false })).map(String));
   const comFonte = new Set(chunks.filter((c) => sources.has(String(c.sourceId))).flatMap((c) => c.topicIds.map(String)));
+  return filtrarTopicosParaAula(topicos, aprovadas, abertas, comFonte, opcoes.max);
+}
+
+// Regra 18 no planejamento: sem aula aprovada nem tarefa aberta; Bancários, Atualidades e Vendas só com fonte ingerida
+export function filtrarTopicosParaAula<T extends { _id: unknown; disciplina: string }>(topicos: T[], aprovadas: Set<string>, abertas: Set<string>, comFonte: Set<string>, max: number): T[] {
   return topicos
     .filter((t) => !aprovadas.has(String(t._id)) && !abertas.has(String(t._id)))
     .filter((t) => !(DISCIPLINAS_COM_FONTE_OBRIGATORIA as readonly string[]).includes(t.disciplina) || comFonte.has(String(t._id)))
-    .slice(0, Math.max(0, Math.floor(opcoes.max)));
+    .slice(0, Math.max(0, Math.floor(max)));
 }
 
 export async function planejarAulas(lote: string, max = Number(process.env.AULAS_NOITE) || 10) {
