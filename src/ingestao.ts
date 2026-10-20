@@ -240,17 +240,7 @@ export async function ingerirFonte(caminho: string, meta: MetaFonte) {
     "passage"
   );
 
-  const { disciplina: _ignorada, ...metaFonte } = meta;
-  const fonte = await Source.create({
-    ...metaFonte,
-    hashArquivo: hash,
-    arquivoNome: basename(caminho),
-    paginas: paginas.length,
-    totalChunks: trechos.length,
-  });
-
-  const docs = trechos.map((t, i) => ({
-    sourceId: fonte._id,
+  const docsSemFonte = trechos.map((t, i) => ({
     ordem: i,
     pagina: t.pagina,
     texto: t.texto,
@@ -260,7 +250,26 @@ export async function ingerirFonte(caminho: string, meta: MetaFonte) {
     topicIds: classificar(vetores[i], topicos, { forcar: !!meta.disciplina }),
     revogada: false,
   }));
-  await Chunk.insertMany(docs);
+  const { disciplina: _ignorada, ...metaFonte } = meta;
+  const fonte = await Source.create({
+    ...metaFonte,
+    hashArquivo: hash,
+    arquivoNome: basename(caminho),
+    paginas: paginas.length,
+    totalChunks: trechos.length,
+  });
+  const docs = docsSemFonte.map((d) => ({ ...d, sourceId: fonte._id }));
+  try {
+    await Chunk.insertMany(docs);
+  } catch {
+    try {
+      await Chunk.deleteMany({ sourceId: fonte._id });
+      await Source.deleteOne({ _id: fonte._id });
+    } catch {
+      throw new Error(`Falha na ingestão e no rollback automático; confira a fonte nova ${fonte._id} antes de repetir.`);
+    }
+    throw new Error("Falha na gravação dos trechos; a fonte nova foi removida pelo rollback automático.");
+  }
 
   // relatório: quanto da fonte caiu em cada tópico
   const nomes = new Map(topicos.map((t) => [String(t._id), t.assunto]));

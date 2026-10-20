@@ -9,9 +9,9 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
-import { htmlParaTexto } from "./extrair.js";
+import { htmlParaTexto, lerArquivo } from "./extrair.js";
 
-const HOSTS_OFICIAIS = new Set(["www.planalto.gov.br", "planalto.gov.br", "www.bcb.gov.br", "bcb.gov.br", "www.in.gov.br", "in.gov.br", "pesquisa.in.gov.br"]);
+const HOSTS_OFICIAIS = new Set(["www.planalto.gov.br", "planalto.gov.br", "www.bcb.gov.br", "bcb.gov.br", "www3.bcb.gov.br", "normativos.bcb.gov.br", "www.in.gov.br", "in.gov.br", "pesquisa.in.gov.br"]);
 export function hostOficial(url: string): boolean {
   try {
     const u = new URL(url);
@@ -29,6 +29,8 @@ const FonteZ = z.object({
   orgao: z.string(),
   ano: z.number().int(),
   planalto: z.string().url().optional(),
+  url: z.string().url().optional(), // endereço oficial direto (HTML ou PDF)
+  incluirArtigos: z.array(z.string()).optional(), // recorte explícito para não ingerir artigos sem relação com a decisão
   dou: z.string().optional(), // consulta exata na busca do DOU
   tituloDou: z.string().optional(), // título do ato no DOU (confere o resultado certo)
   douUrl: z.string().optional(), // endereço direto do ato no DOU (quando a busca não traz o ato antigo)
@@ -54,8 +56,8 @@ export interface Registro {
   citadaPor?: { titulo: string; data: string; trecho: string }[];
 }
 
-const pausa = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36";
+const pausa = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
 
 // Planalto serve windows-1252; o DOU, UTF-8
 export function decodificar(buf: Uint8Array, contentType: string | null): string {
@@ -70,13 +72,34 @@ export function decodificar(buf: Uint8Array, contentType: string | null): string
   }
 }
 
-async function baixar(url: string): Promise<{ html: string; bytes: number }> {
+async function baixarBytes(url: string): Promise<{ dados: Uint8Array; bytes: number; contentType: string; urlFinal: string }> {
   if (!hostOficial(url)) throw new Error(`site não oficial: ${url}`);
-  const r = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml" }, redirect: "follow", signal: AbortSignal.timeout(90_000) });
+  const r = await fetch(url, { headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,application/pdf" }, redirect: "follow", signal: AbortSignal.timeout(90_000) });
   if (!hostOficial(r.url)) throw new Error(`redirecionou para fora dos sites oficiais: ${r.url}`);
   if (!r.ok) throw new Error(`HTTP ${r.status} em ${url}`);
-  const buf = new Uint8Array(await r.arrayBuffer());
-  return { html: decodificar(buf, r.headers.get("content-type")), bytes: buf.length };
+  const dados = new Uint8Array(await r.arrayBuffer());
+  return { dados, bytes: dados.length, contentType: r.headers.get("content-type") ?? "", urlFinal: r.url };
+}
+
+async function baixar(url: string): Promise<{ html: string; bytes: number; urlFinal: string }> {
+  const r = await baixarBytes(url);
+  return { html: decodificar(r.dados, r.contentType), bytes: r.bytes, urlFinal: r.urlFinal };
+}
+
+export function selecionarArtigos(texto: string, artigos: string[]): string {
+  const cabecalhos = [...texto.matchAll(/(^|\n)\s*Art\.\s*(\d+)(?:º|°|o)?(?=\s|[.):-]|$)/gim)].map((m) => ({
+    inicio: (m.index ?? 0) + m[1].length,
+    numero: m[2] ?? "",
+  }));
+  const selecionados = artigos.map((artigo) => {
+    const numero = artigo.replace(/\D/g, "");
+    const indice = cabecalhos.findIndex((h) => h.numero === numero);
+    if (indice < 0) throw new Error(`artigo ${artigo} não encontrado para selecionar`);
+    const de = cabecalhos[indice].inicio;
+    const ate = cabecalhos[indice + 1]?.inicio ?? texto.length;
+    return texto.slice(de, ate).trim();
+  });
+  return selecionados.join("\n\n");
 }
 
 // ---------- DOU ----------
@@ -154,12 +177,22 @@ export async function baixarFontes(apenas: string[] = [], pasta = "fontes"): Pro
     }
     try {
       let url: string;
-      let html: string;
+      let html: string | undefined;
+      let pdf: Uint8Array | undefined;
       let bytes: number;
       let citadaPor: Registro["citadaPor"];
       if (f.planalto) {
         url = f.planalto;
         ({ html, bytes } = await baixar(url));
+      } else if (f.url) {
+        const resposta = await baixarBytes(f.url);
+        url = resposta.urlFinal;
+        bytes = resposta.bytes;
+        if (/application\/pdf/i.test(resposta.contentType) || new URL(url).pathname.toLowerCase().endsWith(".pdf")) {
+          pdf = resposta.dados;
+        } else {
+          html = decodificar(resposta.dados, resposta.contentType);
+        }
       } else if (f.dou || f.douUrl) {
         const resultados = f.dou ? await buscarNoDou(f.dou) : [];
         const ato = f.douUrl ? { urlTitle: f.douUrl, title: f.tituloDou ?? "" } : resultados.find((r) => r.title.toUpperCase() === f.tituloDou?.toUpperCase());
@@ -175,14 +208,29 @@ export async function baixarFontes(apenas: string[] = [], pasta = "fontes"): Pro
       } else throw new Error("sem endereço (planalto ou dou)");
 
       // texto limpo (sem o riscado e sem os artigos revogados) é o que vai para a ingestão
-      let texto = htmlParaTexto(html).replace(/[ \t ]+/g, " ").replace(/\n\s*\n+/g, "\n").trim();
+      let texto = html ? htmlParaTexto(html).replace(/[ \t ]+/g, " ").replace(/\n\s*\n+/g, "\n").trim() : "";
+      if (html && f.incluirArtigos?.length) texto = selecionarArtigos(texto, f.incluirArtigos);
       if (f.revogados?.length) texto = semArtigos(texto, f.revogados);
-      if (texto.length < 800) throw new Error(`texto curto demais (${texto.length} caracteres): página mudou?`);
+      if (pdf && pdf.length < 1_000) throw new Error(`PDF curto demais (${pdf.length} bytes): página mudou?`);
+      if (pdf && (f.incluirArtigos?.length || f.revogados?.length)) throw new Error("PDF exige fonte consolidada; não é possível aplicar recortes HTML nele.");
+      if (!pdf && texto.length < 800) throw new Error(`texto curto demais (${texto.length} caracteres): página mudou?`);
       await mkdir(join(pasta, f.id), { recursive: true });
-      const arquivo = join(f.id, `${f.id}.txt`);
-      const conteudo = `${f.titulo}\nFonte oficial: ${url} (consultado em ${new Date().toISOString().slice(0, 10)})\n\n${texto}\n`;
-      await writeFile(join(pasta, arquivo), conteudo, "utf8");
-      await writeFile(join(pasta, f.id, `${f.id}.original.html`), `<meta charset="utf-8">\n${html}`, "utf8"); // para auditoria
+      const arquivo = join(f.id, pdf ? `${f.id}.pdf` : `${f.id}.txt`);
+      let sha256: string;
+      let caracteres: number;
+      if (pdf) {
+        await writeFile(join(pasta, arquivo), pdf);
+        sha256 = createHash("sha256").update(pdf).digest("hex");
+        texto = (await lerArquivo(join(pasta, arquivo))).paginas.join("\n");
+        caracteres = texto.length;
+      }
+      else {
+        const conteudo = `${f.titulo}\nFonte oficial: ${url} (consultado em ${new Date().toISOString().slice(0, 10)})\n\n${texto}\n`;
+        await writeFile(join(pasta, arquivo), conteudo, "utf8");
+        if (html) await writeFile(join(pasta, f.id, `${f.id}.original.html`), `<meta charset="utf-8">\n${html}`, "utf8"); // para auditoria
+        sha256 = createHash("sha256").update(conteudo).digest("hex");
+        caracteres = texto.length;
+      }
       const reg: Registro = {
         id: f.id,
         titulo: f.titulo,
@@ -193,9 +241,9 @@ export async function baixarFontes(apenas: string[] = [], pasta = "fontes"): Pro
         url,
         arquivo,
         consultadoEm: new Date().toISOString(),
-        sha256: createHash("sha256").update(conteudo).digest("hex"),
+        sha256,
         bytes,
-        caracteres: texto.length,
+        caracteres,
         vigencia: conferirVigencia(texto, citadaPor),
         citadaPor,
       };

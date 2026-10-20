@@ -10,7 +10,6 @@ import {
   criarIndice,
   semearTopicos,
   ingerirFonte,
-  reclassificarFonte,
   vincularFonteAoTopico,
   ingerirProva,
   explicarOficiais,
@@ -21,7 +20,7 @@ import {
   type MetaFonte,
 } from "./ingestao.js";
 import { gerarQuestao, reabastecerEstoque } from "./pipeline.js";
-import { Topic, Source, User, Sessao, Question, Relatorio, Aula, Tarefa, Cartao } from "./models.js";
+import { Topic, Source, Chunk, User, Sessao, Question, Relatorio, Aula, Tarefa, Cartao } from "./models.js";
 import { randomBytes } from "node:crypto";
 import { createInterface } from "node:readline";
 import { hashSenha, migrarProgresso, donoAntigoId, criarConvite } from "./auth.js";
@@ -87,7 +86,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   aulas [--assunto "<parte do nome>"] [--n 3]   prepara aulas curtas aprovadas por tópico
   cartoes [--assunto "<parte do nome>"] [--n 3] prepara cartões (normas com fonte e vocabulário de Inglês)
   fontes-atuais migrar|conferir [--n 5] [--disciplina id]|relatorio  fonte da prova + fonte atual de cada questão
-  vincular-fonte --fonte "<título exato>" --assunto "<tópico exato>"  liga fonte vigente a outro tópico
+  vincular-fonte --fonte "<título exato>" --assunto "<tópico exato>" --simular|--confirmar  prévia e vínculo aditivo
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
@@ -101,7 +100,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   convite [--max 7]             código de cadastro de uso único (validade em dias)
   senha <email>                 senha provisória para quem esqueceu
   liberar-fonte "Glossário de Vendas"   seu OK: ingere a fonte doutrinária escrita por IA (antes não gera)
-  ingerir-fontes [id ...]       ingere o que o baixar-fontes gravou (pula a que já existe)
+  ingerir-fontes <id> --simular|--confirmar  simula contagens; confirma uma fonte oficial por vez
   baixar-fontes [id ...]        baixa as leis e normas de data/fontes-oficiais.json (só sites oficiais) para fontes/
   verificar-modelos             1 chamada curta por modelo do catálogo (a verificação semanal)
   benchmark auditor|juiz|escritor|relatorio [--max N]   compara os modelos grátis (docs/BENCHMARK-MODELOS.md)
@@ -493,30 +492,57 @@ async function main() {
       }
 
       case "ingerir-fontes": {
-        // Etapa 2.2: ingere o que o baixar-fontes gravou (fontes/LEIAME.json); fonte com o mesmo título é pulada
+        // Fonte é escrita em isolamento: primeiro simula páginas/trechos e duplicidade; depois confirma só um ID.
+        if (args.length !== 1) throw new Error('Informe exatamente um ID de fonte. Use "ingerir-fontes <id> --simular" antes de "--confirmar".');
         const manifesto = JSON.parse(await readFile("fontes/LEIAME.json", "utf8")) as { fontes: Registro[] };
+        const f = manifesto.fontes.find((x) => x.id === args[0]);
+        if (!f) throw new Error(`Fonte ${args[0]} não encontrada em fontes/LEIAME.json. Baixe primeiro apenas esse ID.`);
+        if (!o.simular && !o.confirmar) throw new Error('Faça a prévia com --simular e, após conferir as contagens, repita com --confirmar.');
+        const caminho = join("fontes", f.arquivo);
+        if (o.simular) {
+          const { lerArquivo, fatiar } = await import("./extrair.js");
+          const { paginas, hash } = await lerArquivo(caminho);
+          const n = fatiar(paginas).length;
+          const duplicada = await Source.findOne({ $or: [{ titulo: f.titulo }, { hashArquivo: hash }] }).select("_id").lean();
+          console.log(JSON.stringify({ modo: "simulação", id: f.id, titulo: f.titulo, páginas: paginas.length, caracteres: paginas.join("").length, trechos: n, incrementoEstimadoMB: Number((n * 0.0381).toFixed(2)), jáExiste: !!duplicada }));
+          return;
+        }
+        if (await Source.exists({ titulo: f.titulo })) {
+          return console.log(`↷ ${f.id}: já ingerida; nenhuma fonte ou trecho foi alterado.`);
+        }
         return await naFila(rotulo, async () => {
-          for (const f of manifesto.fontes.filter((x) => !args.length || args.includes(x.id))) {
-            if (await Source.exists({ titulo: f.titulo })) {
-              const n = await reclassificarFonte(f.titulo, f.disciplina);
-              console.log(`↷ ${f.id}: já ingerida${n ? ` (${n} trecho(s) sem tópico foram para o mais próximo da disciplina)` : ""}`);
-              continue;
-            }
-            console.log(`\n## ${f.id}`);
-            await ingerirFonte(join("fontes", f.arquivo), {
-              tipo: f.tipo,
-              titulo: f.titulo,
-              disciplina: f.disciplina,
-              orgao: f.orgao,
-              ano: f.ano,
-              url: f.url,
-            });
-          }
+          console.log(`Ingerindo uma única fonte: ${f.id} (${f.titulo}).`);
+          await ingerirFonte(caminho, {
+            tipo: f.tipo,
+            titulo: f.titulo,
+            disciplina: f.disciplina,
+            orgao: f.orgao,
+            ano: f.ano,
+            url: f.url,
+          });
         });
       }
 
       case "vincular-fonte": {
-        const r = await vincularFonteAoTopico(exigir(o.fonte, "--fonte"), exigir(o.assunto, "--assunto"));
+        const titulo = exigir(o.fonte, "--fonte");
+        const assunto = exigir(o.assunto, "--assunto");
+        if (o.simular) {
+          const [fonte, topico] = await Promise.all([
+            Source.findOne({ titulo }).select("_id titulo").lean(),
+            Topic.findOne({ assunto, ativo: true }).select("_id assunto").lean(),
+          ]);
+          if (!fonte) throw new Error(`Fonte não encontrada: ${titulo}`);
+          if (!topico) throw new Error(`Tópico ativo não encontrado: ${assunto}`);
+          const filtro = { sourceId: fonte._id, revogada: false };
+          const [total, vinculados] = await Promise.all([
+            Chunk.countDocuments(filtro),
+            Chunk.countDocuments({ ...filtro, topicIds: topico._id }),
+          ]);
+          console.log(JSON.stringify({ modo: "simulação", fonte: titulo, assunto, trechosVigentes: total, jáVinculados: vinculados, novosVínculos: total - vinculados }));
+          return;
+        }
+        if (!o.confirmar) throw new Error('Faça a prévia com --simular e, após conferir as contagens, repita com --confirmar.');
+        const r = await vincularFonteAoTopico(titulo, assunto);
         return console.log(`✔ ${r.total} trecho(s) de "${r.fonte}" ligados a "${r.assunto}" (${r.novos} vínculo(s) novo(s)).`);
       }
 
