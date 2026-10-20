@@ -754,6 +754,41 @@ RETOMAR AQUI: F2 — Chat do Binho sem invenção (golden set completo de 12; me
 - Também a totalidade de Bancários subiu para 32 confirmadas: as geradas da noite de 20/10 ganharam a camada de fontes na migração que roda antes da conferência (já vinham com `trechoFonte` literal).
 - `fontes-atuais relatorio --disciplina X` agora lista as oficiais, uma por linha (prova, nº, situação, tópico), só leitura.
 
+## 20/10/2026 — F4: qualidade do gerador
+
+- **`npm run bb -- eval-gerador --n 1`** (novo, `src/evalGerador.ts`):
+  - Pega os 8 tópicos de maior peso: cota da disciplina ÷ tópicos dela, a mesma conta da meta do noturno. Empate alterna disciplinas; tópico que espera fonte liberada fica fora.
+  - Gera pelo pipeline de verdade, em série; aprovada entra no banco.
+  - `--assuntos "A;B"` repete só esses (o separador é ";" porque nome de tópico tem vírgula).
+- **Teto diário:** a noite já tinha usado o `GERACAO_MAX_DIA` (o contador conta do 00:00: 216/60). As duas rodadas usaram o teto **só no processo** (224 e 240 = exatamente as gerações da rodada); `.env` e código intactos.
+  - Uma rodada com a lista errada (vírgula no nome) foi interrompida após 2 gerações; trava órfã liberada com `limpar-trava-orfa`.
+- **Rodada 1 (n=1)** [CONFIRMADO]: **1/8**.
+
+  | Tópico | Disciplina | Resultado |
+  |---|---|---|
+  | Atendimento, satisfação e experiência do cliente | Vendas | reprovada na revisão: trecho da fonte fora do assunto (Libras no ensino) |
+  | Ética, conduta e direitos do consumidor | Vendas | fonte_insuficiente |
+  | Análise de dados, Python e R | Informática | reprovada: explicação da alternativa errada ensina conceito errado |
+  | Banco de dados e SQL | Informática | reprovada: idem |
+  | Editores de texto e apresentações | Informática | reprovada: idem (Ctrl+T) |
+  | Planilhas eletrônicas | Informática | reprovada |
+  | Redes, internet e computação em nuvem | Informática | **aprovada** |
+  | Segurança da informação | Informática | reprovada |
+
+  - **Motivos:** `reprovada_na_revisao` (6) e `fonte_insuficiente` (1). Só houve esses dois.
+- **Motivo nº 1 atacado** (barato, no prompt, com teste):
+  - A regra 8 do `GERADOR_SYSTEM` mandava "apontar o conceito exato" em toda alternativa, o que levava o gerador a inventar fato técnico para explicar o distrator.
+  - Agora, nas erradas, explica o erro comparando com o enunciado e a correta (o mesmo erro da "pegadinha"), sem fato técnico novo. Se só der para justificar com fato de fora, muda o distrator.
+  - Teste em `src/evalGerador.test.ts` (3/3, com a escolha dos tópicos e a contagem de motivos).
+- **Rodada 2 (n=2 nos 7 que falharam, já com o prompt novo)** [CONFIRMADO]: **3/14**.
+  - Aprovadas: Python e R 2/2; Editores 1/2.
+  - Descartes: `reprovada_na_revisao` 6, `fonte_insuficiente` 2, `sem_trecho_fonte` 1, `auditor_discordou` 1, `trecho_fonte_inventado` 1.
+  - "Explicação de alternativa errada ensinando errado" caiu de 4 em 7 descartes para 2 em 11. Amostra pequena: é indício, não prova.
+- **Leitura:**
+  - Vendas falha por fonte (o trecho sorteado não é do assunto; DECISOES nº 12 e 13).
+  - Informática falha na revisão, que é a trava funcionando: nada errado foi aprovado.
+- `bb -- status` agora mostra também o total de questões por status e por origem.
+
 ## 20/10/2026 — F9: pendências pequenas já decididas
 
 - **Figura copiada no texto** (risco ALTO, 2 questões):

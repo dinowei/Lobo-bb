@@ -856,7 +856,7 @@ export async function revogarFonte(alvo: string) {
     { status: "desatualizada" }
   );
   const k = await Cartao.updateMany({ sourceId: fonte._id, status: "aprovado" }, { status: "desatualizado" });
-  // ADENDO-FONTES-ATUAIS: questões cuja base atual era essa fonte voltam para a conferência
+  // fonte revogada: questões cuja base atual era essa fonte voltam para a conferência
   await Question.updateMany(
     { $or: [{ "referencias.sourceId": fonte._id }, { "oQueMudou.sourceId": fonte._id }], situacaoFonte: { $in: ["confirmada", "mudou"] } },
     { $set: { situacaoFonte: "pendente" } }
@@ -918,4 +918,9 @@ export async function mostrarStatus() {
     }))
   );
   console.log(`${fontes} fonte(s) ativa(s) · ${orfaos} trecho(s) sem tópico · ${hoje}/${tetoDiario()} gerações hoje (GERACAO_MAX_DIA)`);
+  // totais do banco de questões por status e por origem (relatórios e docs/MESTRE.md)
+  const contar = async (campo: "status" | "origem") =>
+    (await Question.aggregate<{ _id: string; n: number }>([{ $group: { _id: `$${campo}`, n: { $sum: 1 } } }, { $sort: { n: -1 } }])).map((g) => `${g._id} ${g.n}`).join(" · ");
+  console.log(`Questões por status: ${await contar("status")}`);
+  console.log(`Questões por origem: ${await contar("origem")}`);
 }

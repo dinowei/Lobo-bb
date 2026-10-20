@@ -59,6 +59,7 @@ import { perguntarAoBinho } from "./chatBinho.js";
 import { executarEvalChat } from "./evalChat.js";
 import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
 import type { Disciplina, MotivoContestacao } from "../shared/tipos.js";
+import { executarEvalGerador } from "./evalGerador.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -131,6 +132,7 @@ async function main() {
       pergunta: { type: "string" },
       casos: { type: "string" },
       motivo: { type: "string" },
+      assuntos: { type: "string" },
       comentario: { type: "string" },
       tipo: { type: "string" },
       titulo: { type: "string" },
@@ -220,6 +222,19 @@ async function main() {
         return await naFila(rotulo, () =>
           recuperarQuestao(exigir(args[0], "o PDF da prova"), exigir(o.gabarito, "--gabarito"), exigir(o.nome, "--nome"), numero)
         );
+      }
+
+      case "eval-gerador": {
+        // F4: 1 (ou --n) questão em cada um dos 8 tópicos de maior peso; --assuntos "A;B" repete só esses
+        // (separador ";": nome de tópico tem vírgula, ex.: "Atendimento, satisfação e experiência do cliente")
+        const n = o.n ? Number(o.n) : 1;
+        return await naFila(rotulo, async () => {
+          const r = await executarEvalGerador(n, o.assuntos ? o.assuntos.split(";").map((s) => s.trim()).filter(Boolean) : []);
+          console.log("\nAprovação por tópico:");
+          for (const l of r.linhas) console.log(`  ${l.aprovadas}/${l.total}  ${l.assunto} (${l.disciplina}) · ${Math.round(l.segundos / Math.max(1, l.total))}s/questão${l.motivos.length ? ` · ${l.motivos.join(", ")}` : ""}`);
+          console.log(`Total: ${r.linhas.reduce((s, l) => s + l.aprovadas, 0)}/${r.linhas.reduce((s, l) => s + l.total, 0)}${r.parouNoTeto ? " (parou no teto diário)" : ""}`);
+          console.log(`Motivos de descarte mais comuns: ${r.motivos.map((m) => `${m.motivo} (${m.n})`).join(", ") || "nenhum"}`);
+        });
       }
 
       case "contestar": {
@@ -339,7 +354,7 @@ async function main() {
       }
 
       case "fontes-atuais": {
-        // ADENDO-FONTES-ATUAIS: migrar (sem IA) · conferir [--n 5] (fila de IA) · relatorio
+        // fonte da prova + fonte atual de cada questão: migrar (sem IA) · conferir [--n 5] (fila de IA) · relatorio
         if (args[0] === "migrar") {
           console.log(`✔ ${await migrarReferencias()} questão(ões) ganharam a camada de fontes (nada foi apagado).`);
           return console.log(`✔ ${await reclassificarSemFonte()} pendente(s) viraram "não se aplica" (Informática sem lei aplicável e conceitos estáveis).`);

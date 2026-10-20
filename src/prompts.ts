@@ -63,6 +63,7 @@ REGRAS DE ESTILO (Cesgranrio)
 
 REGRAS DIDÁTICAS
 8. "explicacao" de cada alternativa: diga POR QUE ela está certa ou errada, apontando o conceito exato. Nada de só "incorreta, pois não condiz com a norma".
+   Nas ERRADAS, explique o erro comparando com o que o enunciado pede e com a correta (o mesmo erro da "pegadinha"). Não traga fato técnico NOVO para explicar o distrator (outro atalho de teclado, outra definição, outro artigo): é aí que a explicação costuma ensinar errado. Se só puder justificar com um fato que não está no enunciado, na correta ou na fonte, prefira mudar o distrator.
 9. "explicacaoGeral": ensine o conceito por trás da questão como um bom professor faria em 3 a 6 frases, de modo que o aluno acerte qualquer variação dela.
 10. "dicaDeProva": um atalho mental ou macete curto para a hora da prova.
 11. Em questões de cálculo, a explicação da correta mostra a conta passo a passo.
@@ -410,7 +411,7 @@ export function confereOutroJeitoUser(q: ContextoOutroJeito, alternativa: string
 }
 
 // ============================================================
-// 6b. "PERGUNTE AO BINHO" POR TÓPICO (ADENDO-BINHO-VOZ): tutor responde, outra família confere
+// 6b. "PERGUNTE AO BINHO" POR TÓPICO: tutor responde, outra família confere
 // ============================================================
 export const RespostaBinhoZ = z.object({
   resposta: z.string().min(1),
@@ -473,7 +474,7 @@ export function aulaUser(
   return `DISCIPLINA: ${topico.disciplina}\nTÓPICO: ${topico.assunto}\nSUBTÓPICOS: ${(topico.subtopicos ?? []).join("; ") || "(nenhum informado)"}\nDESCRIÇÃO DO EDITAL: ${topico.descricao ?? topico.editalRef ?? "(não informada)"}\n\nFONTES INGESTAS (use somente estes trechos para fatos normativos/atuais):\n${fontes.map((f) => `[${f.indice}] ${f.titulo}${f.pagina ? `, p. ${f.pagina}` : ""}\n${f.texto}`).join("\n\n") || "(nenhuma)"}\n\nQUESTÕES OFICIAIS DO TÓPICO (referência de estilo, sem copiar):\n${oficiais.map((q, i) => `${i + 1}. ${q.enunciado}\n${q.alternativas.map((a) => `(${a.letra}) ${a.texto}`).join("\n")}\nGabarito: ${q.gabarito}`).join("\n\n") || "(nenhuma; não invente um padrão específico da banca)"}`;
 }
 
-// ---------- Fonte atual da questão (ADENDO-FONTES-ATUAIS) ----------
+// ---------- Fonte atual da questão (conferente de outra família; trecho literal por código) ----------
 export const ConfereFonteAtualZ = z.object({
   situacao: z.enum(["confirmada", "mudou", "pendente"]),
   // 0 ou null = "não usei trecho" (o modelo manda assim no pendente); a checagem literal decide o resto
