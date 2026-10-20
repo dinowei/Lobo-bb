@@ -292,7 +292,7 @@ app.post(
     res.json({ provisoria: r.provisoria });
   })
 );
-// ADENDO-FONTES-ATUAIS: relatório e aprovação (em lote) das mudanças de norma antes de irem ao aluno
+// fonte atual: relatório e aprovação (em lote) das mudanças de norma antes de irem ao aluno
 app.get("/api/admin/fontes-atuais", rota(async (_req, res) => res.json(await relatorioFontesAtuais())));
 app.post(
   "/api/admin/fontes-atuais/aprovar",

@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Telemetria por modelo (PROMPT-RETOMADA R2.2)
+// BB Estudos — Telemetria por modelo (uma linha por chamada, sem texto nem chave)
 // Chamadas, sucesso, falhas por tipo (429, 5xx, timeout, formato, permanente), latência
 // mediana e p95, uso como reserva. Registra só números: nada de texto nem de chave.
 // ============================================================

@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Corrente de modelos por função (PROMPT-RETOMADA R2.2)
+// BB Estudos — Corrente de modelos por função (regra de família)
 // Vale, nesta ordem: a corrente aprovada pelo dono (tela Benchmark, salva no banco), a do
 // .env (CORRENTE_ATIVA=1) ou o legado (os modelos do .env, como sempre rodou).
 // Executa na ordem da corrente, pulando quem está desativado ou descansando, e aplica a

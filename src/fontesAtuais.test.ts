@@ -1,4 +1,4 @@
-// ADENDO-FONTES-ATUAIS: partes puras (sem rede e sem banco)
+// Fonte atual das questões: partes puras (sem rede e sem banco)
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { fontesDaQuestao, origemDe, situacaoInicial, statusDepoisDeAprovar, validarConferencia } from "./fontesAtuais.js";

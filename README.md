@@ -2,7 +2,7 @@
 
 Banco de questões para o concurso do Banco do Brasil que cresce sozinho: provas oficiais, questões novas geradas por IA a partir de fontes primárias e auditadas por um segundo modelo, explicação de cada alternativa e revisão espaçada.
 
-> Começando agora? Leia o **COMECE-AQUI.md**.
+> Começando agora? Leia o **docs/MESTRE.md** (estado, como rodar e publicar, e o que fazer se quebrar).
 
 ## O site
 

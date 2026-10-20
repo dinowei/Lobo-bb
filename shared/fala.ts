@@ -1,4 +1,4 @@
-// Normalizador de fala (ADENDO-BINHO-VOZ): converte o texto SÓ para o áudio. Na tela continua
+// Normalizador de fala (antes de qualquer áudio da Lo): converte o texto SÓ para o áudio. Na tela continua
 // "R$ 5.306,04"; para a voz vira "cinco mil, trezentos e seis reais e quatro centavos". Puro, sem IA,
 // usado no servidor (antes da NVIDIA) e no navegador (voz do navegador). Siglas: shared/siglasFala.ts.
 import { SIGLAS_FALA } from "./siglasFala.js";

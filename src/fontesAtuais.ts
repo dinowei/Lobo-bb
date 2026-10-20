@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — fonte da prova + fonte atual em cada explicação (docs/ADENDO-FONTES-ATUAIS.md)
+// BB Estudos — fonte da prova + fonte atual em cada explicação (camada acrescentada, nada é reescrito)
 // Nada da questão é reescrito: só se ACRESCENTA a camada "referencias". Gabarito oficial não muda
 // (regra 1). "mudou" só chega ao aluno depois do OK do dono (Admin → Pendências).
 // ============================================================

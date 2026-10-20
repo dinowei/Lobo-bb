@@ -1,4 +1,4 @@
-# Blueprint do Render (docs/DEPLOY.md): site + API e o noturno, na mesma imagem (Dockerfile).
+# Blueprint do Render (docs/MESTRE.md, seção 6): site + API e o noturno, na mesma imagem (Dockerfile).
 # Nenhum valor secreto aqui: os "sync: false" são preenchidos no painel do Render, uma vez só.
 envVarGroups:
   - name: lobo-segredos

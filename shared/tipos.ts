@@ -32,7 +32,7 @@ export type Letra = (typeof LETRAS)[number];
 export type Confianca = 1 | 2 | 3; // 1 = chutei · 2 = dúvida · 3 = certeza
 export type Modo = "treino" | "revisao" | "simulado";
 
-// Por que errou (1 toque, opcional, depois do erro) — PLANO-MESTRE 5.3
+// Por que errou (1 toque, opcional, depois do erro)
 export const MOTIVOS_ERRO = ["nao_sabia", "confundi", "desatencao", "chutei"] as const;
 export type MotivoErro = (typeof MOTIVOS_ERRO)[number];
 export const NOME_MOTIVO: Record<MotivoErro, string> = {
@@ -158,7 +158,7 @@ export interface AdminFontesAtuaisDTO {
   faltaIngerir: { topico: string; disciplina: string; questoes: number }[];
 }
 
-// Bloco "Fontes" embaixo da explicação (ADENDO-FONTES-ATUAIS): de onde veio e se ainda vale hoje
+// Bloco "Fontes" embaixo da explicação: de onde veio e se ainda vale hoje
 export interface FontesQuestaoDTO {
   origem?: { ref: string; questao?: string };
   atual?: { ref: string; trecho: string; conferidoEm?: string };
@@ -200,7 +200,7 @@ export interface MotivosDisciplinaDTO {
   motivos: Record<MotivoErro, number>;
 }
 
-// Calibragem da confiança (PLANO-MESTRE 5.4): quanto você acerta em cada nível de confiança
+// Calibragem da confiança: quanto você acerta em cada nível de confiança
 export interface FaixaConfianca { n: number; acertos: number }
 export interface CalibragemDTO {
   disciplina: Disciplina | null; // null = geral

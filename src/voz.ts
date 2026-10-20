@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — voz do Binho (ADENDO-BINHO-VOZ): NVIDIA Magpie TTS Multilingual, API hospedada.
+// BB Estudos — voz da Lo (narração): NVIDIA Magpie TTS Multilingual, API hospedada.
 // Todo texto passa por paraFala (shared/fala.ts) e é quebrado em frases curtas; WAV → MP3 (ffmpeg);
 // cache no Mongo pelo hash do texto falado + voz. Falhou: devolve null e o site usa a voz do navegador.
 // ============================================================

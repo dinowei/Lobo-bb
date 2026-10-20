@@ -1,4 +1,4 @@
-// Plano até a prova (PROMPTS-MELHORIAS §6) — puro, igual no servidor e no demo.
+// Plano até a prova — puro, igual no servidor e no demo.
 // Sem data: ciclo contínuo (rodízio por peso × fraqueza). Com data: fases Base → Aprofundamento →
 // Reta final (3 últimas semanas: revisão, caderno de erros, redação e 2 simulados por semana).
 // O plano é recalculado do estado atual a cada vez: atrasou, ele redistribui sozinho, sem culpa.

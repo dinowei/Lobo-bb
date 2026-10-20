@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Noturno: fila persistida de tarefas (PROMPT-RETOMADA R2.2; PROMPT-VIAGEM etapa 6)
+// BB Estudos — Noturno: fila persistida de tarefas (sobrevive a reinício; infraestrutura volta, qualidade descarta)
 // Planeja (questões que faltam por tópico + verificação semanal dos modelos) e roda uma por vez.
 // Falha de infraestrutura volta para a fila até 3 vezes, com espera crescente (NOTURNO_ESPERAS_MIN);
 // descarte só por qualidade, com o motivo. Sobrevive a reinício: tarefa "rodando" de um processo
@@ -48,7 +48,7 @@ export function destinoDaTarefa(r: { ok: boolean; motivo?: string }, tentativas:
   return { status: "aguardando", tentativas: n, proximaEm: new Date(+agora + espera * 60_000), motivo };
 }
 
-// ---------- plano da noite (PLANO-MESTRE 5.1 + adendo do banco grande) ----------
+// ---------- plano da noite (meta do banco pela cota da prova) ----------
 export interface TopicoPlano { id: string; assunto: string; disciplina: string; elegivel: boolean }
 export interface AlunoPlano {
   respondidas: Map<string, number>; // tópico → questões aprovadas já respondidas

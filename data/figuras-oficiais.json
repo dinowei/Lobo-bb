@@ -1,5 +1,5 @@
 {
-  "_aviso": "Figuras das provas oficiais (docs/FIGURAS-INVENTARIO.md). 'antes'/'depois' = trechos de texto da página que ficam logo acima e logo abaixo da figura (o recorte é feito entre eles, na coluna da questão). 'imagem: true' = figura é imagem embutida no PDF (extrai o arquivo original). Toda figura entra como 'aguardando_conferencia' e só aparece no treino depois do OK do dono na tela Figuras.",
+  "_aviso": "Figuras das provas oficiais (inventário na tag docs-antes-da-limpeza). 'antes'/'depois' = trechos de texto da página que ficam logo acima e logo abaixo da figura (o recorte é feito entre eles, na coluna da questão). 'imagem: true' = figura é imagem embutida no PDF (extrai o arquivo original). Toda figura entra como 'aguardando_conferencia' e só aparece no treino depois do OK do dono na tela Figuras.",
   "provas": [
     {
       "prova": "BB 2023 — Escriturário Agente Comercial",

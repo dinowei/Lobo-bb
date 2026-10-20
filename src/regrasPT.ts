@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Português por construção, além da Crase (PLANO-MESTRE 5.2, etapa 7)
+// BB Estudos — Português por construção, além da Crase (regra 14: explicações vêm do banco de regras)
 // Concordância, Regência e Pontuação no mesmo molde da Crase: o CÓDIGO sorteia 1 regra de
 // uso CORRETO e 4 regras de ERRO diferentes e a letra do gabarito; a IA (escritor de Português)
 // só escreve as frases e aponta o trecho; a trava de posição confere o trecho; explicação,

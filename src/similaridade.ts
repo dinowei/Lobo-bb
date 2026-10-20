@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Filtro anti-repetição (PLANO-MESTRE 5.8, fase 4)
+// BB Estudos — Filtro anti-repetição (regra 16)
 // Antes do auditor, toda questão nova é comparada com as do mesmo tópico e com as oficiais
 // da disciplina: cosseno do embedding (enunciado + correta) e sobreposição de trechos
 // (Jaccard de 4 palavras, pega cópia com palavras trocadas). Nas questões por construção,

@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Construção em outras matérias (PLANO-MESTRE 5.2, PROMPT-VIAGEM etapa 7)
+// BB Estudos — Construção em outras matérias (regra 12: números, alternativas e gabarito vêm do código)
 // Mesmo padrão de Juros compostos e Descontos: o CÓDIGO sorteia os números (redondos, fatores
 // tabelados com 4 casas), calcula a resposta e monta os distratores a partir de erros clássicos.
 // A IA só escreve o texto. A conferência por mathjs (verificacao.ts) continua como trava final.

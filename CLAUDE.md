@@ -35,7 +35,7 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 - `npm run typecheck`: checa servidor e site
 - `npm --prefix web run build:demo`: um HTML único do modo demo (`web/dist-demo/`)
 - `npm run bb -- ajuda`: comandos de ingestão e geração (`modelos` lista os ids da NVIDIA)
-- Integração com Atlas e NVIDIA: siga `docs/INTEGRACAO.md` etapa por etapa
+- Montar do zero (Atlas, NVIDIA, tópicos, provas, normas): `docs/MESTRE.md`, seção 6
 - Nunca imprima nem faça commit de chaves ou da `MONGODB_URI`
 - **Edite código SEMPRE pelo editor (ferramentas Edit/Write), nunca por script** (sed, node -e, heredoc que reescreve arquivo): os escapes de regex (`\s`, `\d`, `\p{L}`) já se perderam três vezes assim. Script só para LER arquivos ou gerar dados.
 - `provas/` e `fontes/` ficam fora do Git (PDFs e gabaritos oficiais só no PC).
@@ -63,19 +63,4 @@ App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco
 19. O tutor alternativo recebe gabarito e explicações salvas, nunca pode contradizê-los; dúvidas novas são cacheadas por aluno, questão e texto normalizado, com limite diário `EXPLICACOES_MAIS_MAX_DIA`.
 
 ## Estado atual
-- Tudo compila (`npm run typecheck`). Leitura de PDF, fatiamento, gabarito, validações e motor de progressão foram testados.
-- Atlas e NVIDIA conectados e testados: gerador `nemotron-3.5-lightning` (pensamento limitado por `GERADOR_RACIOCINIO`), auditor `nemotron-3-super` com reserva `nemotron-3-ultra`, escritor de Português `glm-5.3-flash`, embeddings `nemotron-3-embed-1b` (2048 dim).
-- Provas oficiais ingeridas: BB 2023 e BB 2021 (Agente Comercial). A ingestão lê gabarito e disciplinas (capa) por código, extrai com a IA sem "pensar", busca uma a uma as questões que faltarem, copia o texto de apoio e confere cada campo literalmente contra o PDF (`TextoPdf` em `src/extrair.ts`): palavra trocada é corrigida pelo PDF; o que não bate fica de fora. Prova incompleta não é salva.
-- Questões que dependem de figura: `status: "precisa_imagem"` (fora do treino), listadas em `docs/PENDENTES-FIGURA.md`. Anulação pela banca: `npm run bb -- anular --prova "<parte do nome>" --numero <n>`.
-- Leis e normas ingeridas de sites oficiais (`baixar-fontes`, `ingerir-fontes`); 3 normas do BCB pendentes (DECISOES-PENDENTES).
-- Corrente DEFINITIVA ativa (`corrente definitiva`, `CORRENTE_DEFINITIVA` em `src/catalogo.ts`): gerador/tutor gpt-oss → Muse → Lightning; auditor Muse → Super → Ultra; escritor PT GLM → gpt-oss → Muse; juiz PT Super → Ultra; redação Super → Ultra → Muse. Modelo com < 20% de sucesso em 24 h descansa 1 h.
-- Fontes atuais: Informática "não se aplica" (exceto tópico com lei, como Segurança da informação); normas de Vendas propostas em DECISOES nº 12.
-- Deploy: Render (lobo-binho.onrender.com, deploy manual pelo dono); a imagem roda `node --import tsx` e abre a PORT antes de conectar no banco.
-- Fase B completa no código (8.1 a 8.9): simulado fiel, diagnóstico do erro, calibragem, redação (25 a 30 linhas por código), aulas e tutor, cartões, treino misturado, horas líquidas, Elo, Raio-X, plano até a prova. Aulas: 0 aprovadas nas rodadas reais até agora (DECISOES nº 9).
-- Etapa 9: error boundary, offline com fila, PWA, atalhos, Desfazer, prints em `docs/telas/`, bateria `npx tsx scripts/e2e-fluxos.ts` (servidores `bb-demo` e `bb-web` do launch.json) e `scripts/e2e-login.ts`.
-- [HISTÓRICO] Primeira noite curta: 12 aprovadas em 16 tarefas; o banco ficou em 166.
-- [CONFIRMADO no Atlas em 19/10/2026 20:34 BRT] 226 questões: 195 aprovadas, 25 rejeitadas, 4 desatualizadas e 2 `precisa_imagem`; 137 oficiais e 89 geradas. Há 131 oficiais aprovadas elegíveis ao treino. A fotografia e os IDs estão em `docs/DIARIO.md`.
-- Figuras por construção (`src/construcaoFiguras.ts`): fórmula em planilha, sistema linear em tabela, série de depósitos e taxa de abandono, na proporção de `data/figuras-meta.json`. Amostras sem IA em Figuras → "Geradas (amostra)"; prints com `npx tsx scripts/prints.ts`.
-- Por construção: Juros compostos, Descontos, Amortização, Taxas, Combinatória, Probabilidade (`src/construcaoMais.ts`), Crase, Concordância, Regência e Pontuação (`src/regrasPT.ts`). Rodadas reais de 3 por assunto ainda pendentes.
-- `npm run bb -- gerar --assunto "<tópico>" --n 3 [--tipo "<tipo>"]` força um tipo de `data/variacoes.json` (ex.: `--tipo "crase (por construção)"`).
-- Próximos passos: `docs/ROADMAP.md`.
+Ver `docs/MESTRE.md`: números do banco, o que funciona, decisões abertas, pendências do dono, como rodar e publicar, e o que fazer se quebrar. O registro do dia a dia fica em `docs/DIARIO.md`.

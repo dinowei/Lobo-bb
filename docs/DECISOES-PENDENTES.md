@@ -47,7 +47,7 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
   família testada (`src/catalogo.ts`, `src/corrente.ts`), telemetria por modelo, e o benchmark
   (`docs/BENCHMARK-MODELOS.md`). Enquanto você não aprovar, o app segue no **legado** (os modelos do `.env`,
   sem trocar nada), e a tela IA mostra o alerta "Regra de família ferida".
-- **Por que precisa de você:** trocar modelo de produção é decisão sua (PROMPT-RETOMADA R2).
+- **Por que precisa de você:** trocar modelo de produção é decisão sua.
 - **Opções:** A) gerador Nemotron + auditor de outra família; B) gerador gpt-oss/Muse + auditor Nemotron.
   A proposta com evidência, riscos e plano de reversão entra aqui quando o benchmark terminar.
 - **Como aprovar:** tela Benchmark → "Aprovar corrente" (com confirmação e "Desfazer"), ou
@@ -261,7 +261,7 @@ Estimativa original antes da autorização: todas as fontes novas acrescentariam
   - auditor sem critério de extensão.
   Tudo com teste. A citação que chega ao aluno continua sendo literal, e o auditor de outra família
   continua julgando.
-- **Próxima prova real:** a noite curta (POST-IT A.1) inclui aulas. O resultado vai para o DIARIO.
+- **Próxima prova real:** a noite curta inclui aulas. O resultado vai para o DIARIO.
 - **Se continuar falhando:** (a) testar outro escritor da corrente "tutor" (Muse Glimmer escreveu uma
   e só caiu na citação); (b) deixar as aulas só para tópicos com fonte curta. Não há decisão sua
   agora; anoto aqui para você saber por que o cartão de aula ainda não aparece no servidor.
@@ -290,7 +290,7 @@ Histórico:
 ## 7. Aviso da redação — RESOLVIDO 18/10/2026: "Nota estimada (correção automática; pode variar da banca)"
 
 - **O que é:** a regra 17 do CLAUDE.md manda sinalizar que a nota da redação é estimativa da IA; o
-  ADENDO-BANCO-GRANDE diz que o aluno não vê menção a IA nem a modelos.
+  a regra do banco grande diz que o aluno não vê menção a IA nem a modelos.
 - **Hoje:** a tela mostra "Nota estimada por IA; use como treino, não como garantia."
 - **Opções:** (a) manter; (b) trocar por "Nota estimada pelo corretor automático; use como treino,
   não como garantia." (sinaliza a estimativa sem dizer IA).

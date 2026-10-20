@@ -1,6 +1,6 @@
 // ============================================================
 // BB Estudos — Tela Admin (só o dono): abas IA, Fila, Benchmark e Pendências
-// (PROMPT-RETOMADA R3 + adendo do banco grande, item 7). O aluno nunca vê nada disto.
+// (e Convites/Contas, só com admin logado). O aluno nunca vê nada disto.
 // ============================================================
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -214,6 +214,7 @@ export async function painelBenchmark(): Promise<AdminBenchmarkDTO> {
 
 // ---------- Pendências do dono (lista viva do DECISOES-PENDENTES.md) ----------
 export const DOCS_LIBERADOS = [
+  "MESTRE.md",
   "DECISOES-PENDENTES.md",
   "CALIBRAGEM-SIMILARIDADE.md",
   "BENCHMARK-MODELOS.md",

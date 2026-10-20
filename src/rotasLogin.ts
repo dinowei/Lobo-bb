@@ -1,4 +1,4 @@
-// Rotas de login e da conta (PLANO-MESTRE 5.7): entrar, cadastrar com convite, sair, minha conta
+// Rotas de login e da conta: entrar, cadastrar com convite, sair, minha conta
 import type { Express, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import { User, Sessao, Convite } from "./models.js";

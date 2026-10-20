@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Benchmark de modelos grátis (PROMPT-RETOMADA R2.3)
+// BB Estudos — Benchmark de modelos grátis (amostra cega, IC de Wilson)
 // Auditor: cada candidato resolve ÀS CEGAS uma amostra estratificada de oficiais (o gabarito
 // nunca entra no prompt). Português: o juiz julga frases com resposta conhecida (banco de
 // regras da Crase + casos em que o auditor já errou); o escritor escreve frases pela regra e

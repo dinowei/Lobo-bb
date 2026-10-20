@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Login (PLANO-MESTRE 5.7, PROMPT-VIAGEM etapa 4)
+// BB Estudos — Login (contas com convite; sem conta, modo dono único)
 // Senha com scrypt (node:crypto), sessão em cookie httpOnly (no banco só o hash do token),
 // cadastro só com convite de uso único, limite de tentativas por IP.
 // Enquanto não existe nenhum usuário, o app segue no modo dono único (ALUNO_ID, sem tela de

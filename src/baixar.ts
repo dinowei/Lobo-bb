@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Download de leis e normas SÓ de sites oficiais (PROMPT-VIAGEM, etapa 2.1)
+// BB Estudos — Download de leis e normas SÓ de sites oficiais (planalto.gov.br, bcb.gov.br, in.gov.br)
 // Autorizado pelo dono em 17/10/2026: planalto.gov.br, bcb.gov.br, normativos do CMN/BCB, in.gov.br.
 // Leis: página do Planalto. Resoluções e circulares: texto publicado no DOU (in.gov.br), achado
 // pela busca oficial. Grava em fontes/<id>/ (fora do Git) e registra em fontes/LEIAME.json a data

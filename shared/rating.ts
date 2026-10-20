@@ -1,4 +1,4 @@
-// Dificuldade calibrada por rating Elo (PROMPTS-MELHORIAS §4) — puro, usado pelo servidor e pelo demo.
+// Dificuldade calibrada por rating Elo — puro, usado pelo servidor e pelo demo.
 // Aluno: um rating por disciplina (começa em 1200). Questão: começa pela dificuldade rotulada e se
 // ajusta com as respostas. Chute certo conta meio acerto.
 import type { Confianca } from "./tipos.js";

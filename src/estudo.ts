@@ -216,7 +216,7 @@ async function registrar(
 // Geração sob demanda: estoque baixo num tópico → a IA gera em segundo plano
 // ------------------------------------------------------------
 const gerando = new Set<string>();
-// De dia o app só usa o que está pronto (PLANO-MESTRE 5.1): o banco cresce no noturno.
+// De dia o app só usa o que está pronto: o banco cresce no noturno.
 // GERACAO_DE_DIA=1 religa a geração sob demanda (útil só enquanto o noturno não roda).
 const geraDeDia = () => process.env.GERACAO_DE_DIA === "1";
 function reabastecerEmSegundoPlano(topicId: string, quantas = 3) {

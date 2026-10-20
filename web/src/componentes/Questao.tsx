@@ -110,7 +110,7 @@ export function Licao({ c }: { c: CorrecaoDTO }) {
   );
 }
 
-// De onde veio a questão e se o que ela cobra continua valendo hoje (ADENDO-FONTES-ATUAIS)
+// De onde veio a questão e se o que ela cobra continua valendo hoje ("mudou" só aparece com o OK do dono)
 function FontesDaQuestao({ f }: { f: NonNullable<CorrecaoDTO["referencias"]> }) {
   if (!f.origem && !f.atual && !f.mudou && !f.emConferencia) return null;
   const data = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("pt-BR") : "");

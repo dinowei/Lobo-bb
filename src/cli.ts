@@ -89,7 +89,13 @@ BB Estudos — comandos (npm run bb -- <comando>)
   cartoes [--assunto "<parte do nome>"] [--n 3] prepara cartões (normas com fonte e vocabulário de Inglês)
   fontes-atuais migrar|conferir [--n 5] [--disciplina id]|relatorio  fonte da prova + fonte atual de cada questão
   vincular-fonte --fonte "<título exato>" --assunto "<tópico exato>" --simular|--confirmar  prévia e vínculo aditivo
-  eval-chat [--n 12]            roda o golden set do Binho em série, sem guardar respostas de avaliação
+  eval-chat [--n 12] [--casos a,b]  roda o golden set do Binho em série, sem guardar respostas de avaliação
+  eval-gerador [--n 1] [--assuntos "A;B"]  gera nos 8 tópicos de maior peso e mostra aprovação e motivos
+  binho --assunto "<tópico>" --pergunta "<texto>"  o chat "Pergunte ao Binho" como o dono
+  contestar <id> --motivo <m> [--comentario "..."] --simular|--confirmar  tira a questão de circulação
+  uso-banco [ajustar]           espaço no Atlas por coleção; "ajustar" aplica TTL de 30 dias e teto do áudio
+  corrente definitiva|desfazer  ativa a corrente de modelos aprovada pelo dono (ou volta à anterior)
+  voz limpar                    tira do cache o áudio de vozes fora da lista aprovada
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos

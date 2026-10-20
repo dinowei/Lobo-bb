@@ -1,5 +1,5 @@
-// Tela Admin (só o dono): IA, Fila, Benchmark e Pendências numa tela só, com abas
-// (PROMPT-RETOMADA R3 + adendo do banco grande, item 7). O aluno nunca vê esta tela.
+// Tela Admin (só o dono): IA, Fila, Benchmark, Pendências, Convites e Contas numa tela só, com abas.
+// O aluno nunca vê esta tela.
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type {
   AdminBenchmarkDTO,

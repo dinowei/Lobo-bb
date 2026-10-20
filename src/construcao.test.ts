@@ -19,7 +19,7 @@ const ASSUNTOS: [string, string][] = [
   ["Análise combinatória", "probabilidade_estatistica"],
   ["Probabilidade", "probabilidade_estatistica"],
 ];
-const N = 1000; // por tipo (5 letras × 200), mínimo do PLANO-MESTRE 5.2
+const N = 1000; // por tipo (5 letras × 200): mínimo de montagens conferidas por tipo de construção
 
 for (const [assunto, disciplina] of ASSUNTOS) {
   for (const tipo of tiposConstruidos(assunto)) {

@@ -1,4 +1,4 @@
-// Diagnóstico inicial (PROMPTS-MELHORIAS §5) — puro, servidor e demo.
+// Diagnóstico inicial (Raio-X) — puro, servidor e demo.
 // 30 questões na proporção da prova, dificuldade média, sem correção até o fim e sem tempo.
 // Guardado como tentativas de simulado com simuladoId "diag:<id>" (fora do histórico de simulados).
 import { COTAS_PROVA } from "./estruturaProva.js";

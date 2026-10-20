@@ -219,7 +219,7 @@ const QuestionSchema = new Schema(
     explicacaoAlternativa: { texto: String, modelo: String, conferidaPor: String, em: Date, _id: false },
 
     // estatística agregada (taxa de acerto geral = termômetro de dificuldade real)
-    // ADENDO-FONTES-ATUAIS: camada de fontes ACRESCENTADA (nada da questão é reescrito; "fontes" acima fica)
+    // fonte atual: camada de fontes ACRESCENTADA (nada da questão é reescrito; "fontes" acima fica)
     referencias: [
       {
         papel: { type: String, enum: ["origem", "atual"], required: true },
@@ -417,7 +417,7 @@ const AulaSchema = new Schema(
 );
 export const Aula = model("Aula", AulaSchema, "aulas");
 
-// Áudio do Binho (ADENDO-BINHO-VOZ): MP3 comprimido, ligado ao hash do texto FALADO + voz
+// Áudio da Lo (voz da narração): MP3 comprimido, ligado ao hash do texto FALADO + voz
 // (texto mudou → hash muda → regera). Explicações e aulas são pré-geradas de noite.
 const AudioSchema = new Schema(
   {
@@ -513,7 +513,7 @@ const TutorUsoSchema = new Schema(
 TutorUsoSchema.index({ userId: 1, dia: 1 }, { unique: true });
 export const TutorUso = model("TutorUso", TutorUsoSchema, "tutor_usos");
 
-// "Pergunte ao Binho" por tópico (ADENDO-BINHO-VOZ): resposta conferida, em cache por aluno/tópico/pergunta
+// "Pergunte ao Binho" por tópico: resposta conferida, em cache por aluno/tópico/pergunta
 const RespostaBinhoSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -600,7 +600,7 @@ RelatorioSchema.index({ fim: -1 });
 export const Relatorio = model("Relatorio", RelatorioSchema, "relatorios");
 
 // ------------------------------------------------------------
-// 13. LOGIN (PLANO-MESTRE 5.7) — usuário, sessão (só o hash do token) e convite de uso único.
+// 13. LOGIN — usuário, sessão (só o hash do token) e convite de uso único.
 // Enquanto não existe usuário, o app segue no modo dono único (ALUNO_ID), sem tela de login.
 // ------------------------------------------------------------
 const UserSchema = new Schema(

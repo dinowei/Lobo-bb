@@ -1,4 +1,4 @@
-// Diagnóstico do erro (PLANO-MESTRE 5.3) — funções puras usadas pelo servidor e pelo modo demo
+// Diagnóstico do erro (por que errou → ação) — funções puras usadas pelo servidor e pelo modo demo
 import { DISCIPLINAS, MOTIVOS_ERRO, type CalibragemDTO, type Disciplina, type MotivoErro, type MotivosDisciplinaDTO, type TentativaBruta } from "./tipos.js";
 
 export const REVISAO_CHUTE_MIN = 10; // chutei → a questão volta ainda nesta sessão
@@ -60,7 +60,7 @@ export function motivosPorDisciplina(tents: TentativaBruta[], disciplinaDo: Map<
   return DISCIPLINAS.flatMap((d) => (porDisc.has(d) ? [porDisc.get(d)!] : []));
 }
 
-// ---------- Calibragem da confiança (PLANO-MESTRE 5.4) ----------
+// ---------- Calibragem da confiança (acerto por nível de certeza) ----------
 export const CERTEZA_MINIMA = 0.85; // certeza abaixo disso = ilusão de domínio
 export const AMOSTRA_ILUSAO = 10; // só alerta com pelo menos 10 respostas "certeza" na disciplina
 export const CHUTE_ESPERADO = 0.2; // 1 em 5 alternativas
@@ -94,7 +94,7 @@ export function calibragem(tents: TentativaBruta[], disciplinaDo: Map<string, Di
   return linhas;
 }
 
-// ---------- Horas líquidas (PLANO-MESTRE 5.5) ----------
+// ---------- Horas líquidas (só com a aba visível, teto por questão) ----------
 // Só o tempo ativo em cada questão (aba visível, contado no site); uma questão vale no máximo 10 min,
 // para uma aba esquecida aberta não virar "estudo".
 export const TEMPO_MAX_QUESTAO_SEG = 600;

@@ -893,7 +893,7 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .lista-mudancas li > button { margin-left: 26px; }
 .lista-mudancas input { margin-top: 3px; accent-color: var(--laranja); }
 
-/* bloco "Fontes" embaixo da explicação (ADENDO-FONTES-ATUAIS) */
+/* bloco "Fontes" embaixo da explicação: de onde veio e se ainda vale hoje */
 .fontes-questao { display: grid; gap: 6px; margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--painel); border: 1px solid var(--linha); font-size: 13px; }
 .fontes-questao b { color: var(--texto); }
 .fontes-questao .mudou { color: var(--amarelo); }

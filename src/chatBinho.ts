@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — "Pergunte ao Binho" por tópico (ADENDO-BINHO-VOZ, Parte 2)
+// BB Estudos — "Pergunte ao Binho" por tópico (invenção zero: sem trecho que sustente, "não achei")
 // Contexto: a aula conferida do tópico + os trechos de fonte mais ligados à pergunta (RAG simples por
 // palavras). O tutor responde (corrente "tutor"); um auditor de OUTRA família confere; em Conhecimentos
 // Bancários, Atualidades e Vendas, resposta sobre norma só sai com citação literal conferida por código.

@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Catálogo de cenários (PLANO-MESTRE 5.8, item 19)
+// BB Estudos — Catálogo de cenários (anti-repetição: perfil + situação, o menos usado no tópico)
 // Quem aparece na questão (perfil) e por quê (situação), por grupo de disciplinas.
 // O código sorteia o MENOS usado no tópico, nunca um dos 15 últimos; o gerador recebe
 // os 15 últimos como proibidos. Sem números e sem produto (o produto vem do contexto).
