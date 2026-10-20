@@ -53,6 +53,24 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 - **Como aprovar:** tela Benchmark → "Aprovar corrente" (com confirmação e "Desfazer"), ou
   `CORRENTE_ATIVA=1` + `CORRENTE_<FUNÇÃO>` no `.env`.
 
+## 13. Bancários: 11 oficiais sem base atual (média) — PROPOSTA (20/10/2026, F3)
+
+- **Situação** (`npm run bb -- fontes-atuais relatorio --disciplina conhecimentos_bancarios`): das 20 oficiais, 8 confirmadas, 1 "mudou" (BB 2023 Q40, esperando seu OK em Admin → Pendências) e 11 pendentes. Motivo do conferente em todas: "sem fonte atual ingerida sobre o assunto".
+- **Feito no F3:**
+  - Res. BCB 61/2021 (Copom), 519/2025, 521/2025 (originais nunca alterados) e 520/2025 (compilada v2, 30/9/2026) vieram da API pública do BCB e foram ingeridas: +201 trechos, Atlas 191,4 → 198,8 MB.
+  - Elas reforçam Copom e Atualidades (criptoativos), não os tópicos das 11.
+  - MCR consolidado **não existe** na API (ver `data/fontes-oficiais.json`, `mcr-pronaf-2026`).
+- **Proposta por tópico** (só planalto.gov.br, bcb.gov.br, in.gov.br; nada baixado sem o seu OK):
+
+| Tópico (questões pendentes) | Proposta |
+|---|---|
+| Mercados financeiros: monetário, de crédito, de capitais e de câmbio (BB 2021 Q32, Q38, Q39; BB 2023 Q34, Q35, Q36, Q39) | Na maioria é conceito de mercado (doutrina), não norma: marcar "não se aplica", como Informática. As de câmbio: ligar a Lei 14.286/2021 (já ingerida) ao tópico |
+| Mercado de capitais e fundos de investimento (BB 2021 Q35, Q40) | Resolução CVM nº 175/2022 (fundos), publicada no DOU (in.gov.br); a Lei 6.385/1976 já está ingerida |
+| Títulos públicos e Tesouro Direto (BB 2021 Q33) | Conceito de mercado: "não se aplica" (o regulamento do Tesouro Direto não está nos domínios permitidos) |
+| Produtos bancários (BB 2021 Q36) | Conferir a questão; se for tarifa, já há a Res. CMN 3.919 (ingerida); senão, "não se aplica" |
+| Autorregulação bancária e ética (BB 2023 Q32) | Autorregulação é norma privada (FEBRABAN), fora dos domínios oficiais: "não se aplica" |
+| MCR (recortes 3-5 e 10-6) | Abrir o MCR no site do BCB e importar só esses recortes (`fonte <arquivo> --tipo norma_bacen_cmn`) |
+
 ## 12. Fontes atuais de Vendas e Negociação e Segurança da informação — RESOLVIDO por decisão do dono (18/10/2026)
 
 - **Decisão do dono:** Informática é conceito técnico → "não se aplica". A exceção é Segurança da informação / proteção de dados: vincular a LGPD (Lei 13.709/2018) e às Resoluções CMN 4.893/2021 e 5.274/2025. Essas fontes também podem fundamentar geração de questões e aulas desse tópico. Conferir as 12 questões pendentes de Segurança da informação.

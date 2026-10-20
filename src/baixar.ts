@@ -86,13 +86,20 @@ async function baixar(url: string): Promise<{ html: string; bytes: number; urlFi
   return { html: decodificar(r.dados, r.contentType), bytes: r.bytes, urlFinal: r.urlFinal };
 }
 
-export function extrairHtmlCompiladoBcb(json: string): { html: string; versao: string; data: string } {
-  const resposta = JSON.parse(json) as { conteudo?: { Texto?: unknown; TipoTexto?: unknown; VersaoNormativo?: unknown; DataTexto?: unknown }[] };
+type DocumentoBcb = { Texto?: unknown; TipoTexto?: unknown; VersaoNormativo?: unknown; DataTexto?: unknown; Atualizacoes?: unknown; Revogado?: unknown; Cancelado?: unknown };
+const semAtualizacao = (v: unknown) => v == null || v === "" || v === "None";
+const falso = (v: unknown) => v === false || v === "False" || v === "false";
+
+// O texto vigente pela API pública do BCB: a versão "Compilado" (norma alterada) OU o texto original de uma norma
+// que NUNCA foi alterada, nem revogada, nem cancelada (exibenormativo; não existe compilado para ela)
+export function extrairHtmlCompiladoBcb(json: string): { html: string; versao: string; data: string; original?: true } {
+  const resposta = JSON.parse(json) as { conteudo?: DocumentoBcb[] };
   const documento = resposta.conteudo?.[0];
-  if (documento?.TipoTexto !== "Compilado") throw new Error("a API do BCB não retornou uma versão compilada");
+  const originalSemAlteracao = !!documento && documento.TipoTexto !== "Compilado" && semAtualizacao(documento.Atualizacoes) && falso(documento.Revogado) && falso(documento.Cancelado);
+  if (documento?.TipoTexto !== "Compilado" && !originalSemAlteracao) throw new Error("a API do BCB não retornou uma versão compilada (e a norma tem alteração, revogação ou cancelamento)");
   if (typeof documento.Texto !== "string" || documento.Texto.length < 800) throw new Error("texto compilado ausente ou curto na API do BCB");
   if (documento.VersaoNormativo == null || !documento.DataTexto) throw new Error("versão/data ausente na resposta compilada do BCB");
-  return { html: documento.Texto, versao: String(documento.VersaoNormativo), data: String(documento.DataTexto) };
+  return { html: documento.Texto, versao: String(documento.VersaoNormativo), data: String(documento.DataTexto), ...(originalSemAlteracao ? { original: true } : {}) };
 }
 
 export function selecionarArtigos(texto: string, artigos: string[]): string {
@@ -205,7 +212,9 @@ export async function baixarFontes(apenas: string[] = [], pasta = "fontes"): Pro
         } else if (/application\/json/i.test(resposta.contentType)) {
           const compilado = extrairHtmlCompiladoBcb(decodificar(resposta.dados, resposta.contentType));
           html = compilado.html;
-          vigenciaOficial = `texto vigente compilado no BCB, versão ${compilado.versao} (${compilado.data})`;
+          vigenciaOficial = compilado.original
+            ? `texto vigente no BCB: original, nunca alterado, versão ${compilado.versao} (${compilado.data})`
+            : `texto vigente compilado no BCB, versão ${compilado.versao} (${compilado.data})`;
         } else {
           html = decodificar(resposta.dados, resposta.contentType);
         }

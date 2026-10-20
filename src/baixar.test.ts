@@ -29,3 +29,12 @@ test("accepts only a compiled dated response from BCB", () => {
   assert.throws(() => extrairHtmlCompiladoBcb(JSON.stringify({ conteudo: [{ ...doc, TipoTexto: "Vigente" }] })), /compilada/);
   assert.throws(() => extrairHtmlCompiladoBcb(JSON.stringify({ conteudo: [{ ...doc, Texto: "short" }] })), /curto/);
 });
+
+test("norma do BCB nunca alterada: o original é o texto vigente; alterada, revogada ou cancelada exige compilado", () => {
+  const html = "<p>" + "texto oficial ".repeat(60) + "</p>";
+  const original = { TipoTexto: "None", VersaoNormativo: "1.0", DataTexto: "13/1/2021 18:01", Texto: html, Atualizacoes: "None", Revogado: "False", Cancelado: "False" };
+  assert.deepEqual(extrairHtmlCompiladoBcb(JSON.stringify({ conteudo: [original] })), { html, versao: "1.0", data: "13/1/2021 18:01", original: true });
+  assert.throws(() => extrairHtmlCompiladoBcb(JSON.stringify({ conteudo: [{ ...original, Atualizacoes: "Resolução BCB nº 589/2026 - Alteração" }] })), /compilada/);
+  assert.throws(() => extrairHtmlCompiladoBcb(JSON.stringify({ conteudo: [{ ...original, Revogado: "True" }] })), /compilada/);
+  assert.throws(() => extrairHtmlCompiladoBcb(JSON.stringify({ conteudo: [{ ...original, Cancelado: "True" }] })), /compilada/);
+});

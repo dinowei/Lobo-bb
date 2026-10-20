@@ -721,6 +721,39 @@ RETOMAR AQUI: F2 — Chat do Binho sem invenção (golden set completo de 12; me
 - Limite: o golden tem só 1 caso sem base/pegadinha; a meta "100% sem base" vale sobre 1 caso.
 - Testes: chat 8/8, eval 4/4.
 
+## 20/10/2026 — F3: Bancários com base atual
+
+- **(a) MCR consolidado** [CONFIRMADO, não existe]:
+  - `www3.bcb.gov.br/mcr/completo` agora redireciona (302) para a página inicial do BCB.
+  - A busca da API pública (`/api/search/app/normativos/buscanormativos`) só traz as resoluções que ALTERAM o MCR (ex.: Res. CMN 5.323/2026, 5.270/2025), sem texto consolidado com versão e data.
+  - Não ingeri alteração como se fosse texto vigente. Fica pendente, com o motivo no `data/fontes-oficiais.json`.
+- **Achado no caminho:**
+  - A mesma API (`/api/conteudo/app/normativos/exibenormativo?p1=<tipo>&p2=<número>`) entrega as Res. BCB 61, 519 e 521 como versão 1 **nunca alterada** (`Atualizacoes` vazio, não revogada nem cancelada): o original é o vigente.
+  - A 520 tem compilado v2 de 30/9/2026, já com a Res. 589/2026.
+  - `extrairHtmlCompiladoBcb` agora aceita o original só nesse caso (alterada, revogada ou cancelada continua exigindo o compilado; teste novo, `baixar` 5/5).
+  - O registro diz "original, nunca alterado" ou "compilado", com versão e data, em `fontes/LEIAME.json`.
+- **Ingestão** (risco ALTO, aditiva):
+  - Simulação antes, uma por vez: 61 → 8 trechos; 519 → 29; 520 → 143; 521 → 21. Nenhuma já existia.
+  - Atlas antes **191,43 MB** (37%, 1.359 chunks); depois **198,82 MB** (39%, 1.560 chunks).
+  - Rollback: apagar a fonte nova e seus chunks pelo `sourceId` (títulos "Resolução BCB nº 61/2021…", "519/2025…", "520/2025…", "521/2025…").
+- **(b) Conferência serial** (`fontes-atuais conferir --n 17 --disciplina conhecimentos_bancarios`, duas passadas: antes e depois das 4 normas):
+  - 1ª passada: 1 nova confirmada; 2ª passada: 0.
+  - As oficiais de Bancários são **20** (o "17" do P1.1 era o recorte daquele dia).
+
+  | Situação | Antes do F3 (oficiais) | Depois |
+  |---|---|---|
+  | confirmada | 7 | **8** |
+  | mudou (esperando o OK do dono) | 1 (BB 2023 Q40) | 1 |
+  | pendente | 12 | **11** |
+
+  - Pendentes:
+    - BB 2021: Q32, Q33, Q35, Q36, Q38, Q39, Q40.
+    - BB 2023: Q32, Q34, Q35, Q36, Q39. A BB 2023 Q39 aparece duas vezes no relatório: dois registros com o mesmo número em tópicos diferentes.
+    - Motivo: "sem fonte atual ingerida sobre o assunto". Proposta por tópico, com a fonte oficial que falta ou "não se aplica", em DECISOES nº 13.
+  - Nada foi ao aluno: "mudou" só com o OK do dono.
+- Também a totalidade de Bancários subiu para 32 confirmadas: as geradas da noite de 20/10 ganharam a camada de fontes na migração que roda antes da conferência (já vinham com `trechoFonte` literal).
+- `fontes-atuais relatorio --disciplina X` agora lista as oficiais, uma por linha (prova, nº, situação, tópico), só leitura.
+
 ## 20/10/2026 — F5: aulas no noturno
 
 - [CONFIRMADO] A fila roda na ordem de criação (`sort proximaEm, createdAt`), então a ordem do plano é a ordem da noite.
