@@ -173,7 +173,7 @@ export function AjustesTela() {
           </div>
           <label htmlFor="voz-lo">
             Voz
-            <select id="voz-lo" value={form.vozLo} onChange={(e) => setForm({ ...form, vozLo: e.target.value as Ajustes["vozLo"] })}>
+            <select id="voz-lo" value={form.vozLo} onChange={(e) => setForm({ ...form, vozLo: e.target.value as Ajustes["vozLo"], vozLoManual: true })}>
               <option value="Louise">Louise (padrão)</option>
               <option value="Diego">Diego</option>
               <option value="Isabela">Isabela</option>

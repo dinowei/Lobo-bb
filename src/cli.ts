@@ -56,7 +56,7 @@ import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { gerarAulas, planejarAulas } from "./aulas.js";
 import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
 import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, reclassificarSemFonte, relatorioFontesAtuais } from "./fontesAtuais.js";
-import { limparAudios, limparCacheDeOutrasVozes, planejarVoz, tetoAudioMB, vozPadrao } from "./voz.js";
+import { limparAudios, limparCacheDeOutrasVozes, planejarVoz, tetoAudioMB } from "./voz.js";
 import { perguntarAoBinho } from "./chatBinho.js";
 import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
@@ -305,9 +305,9 @@ async function main() {
       }
 
       case "voz": {
-        // voz limpar: tira do cache o áudio de vozes que não são a padrão (NVIDIA_TTS_VOZ)
+        // voz limpar: só remove IDs fora da lista aprovada; preserva cache de escolhas explícitas.
         if (args[0] !== "limpar") throw new Error('Use "voz limpar".');
-        return console.log(`✔ ${await limparCacheDeOutrasVozes()} áudio(s) de outras vozes removido(s) do cache; o noturno regera com ${vozPadrao()}.`);
+        return console.log(`✔ ${await limparCacheDeOutrasVozes()} áudio(s) de vozes desconhecidas removido(s); cache de Louise, Diego e Isabela preservado.`);
       }
 
       case "fontes-atuais": {

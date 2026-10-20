@@ -43,6 +43,7 @@ Plano B mais barato: Railway Hobby (US$ 5 com US$ 5 de uso incluso; o site com 5
 |---|---|
 | `MONGODB_URI` | banco no Atlas (segredo) |
 | `GERADOR_API_KEY`, `AUDITOR_API_KEY`, `EMBED_API_KEY` | chave da NVIDIA (segredo; pode ser a mesma) |
+| `NVIDIA_TTS_VOZ` | ID da voz Magpie; ausente/inválido usa `Magpie-Multilingual.PT-BR.Louise` |
 | `ALUNO_ID` | seu progresso de antes do login |
 | `*_BASE_URL`, `*_MODEL`, `*_MODEL_RESERVA`, `EMBED_DIM`, `EMBED_INPUT_TYPE`, `VECTOR_INDEX` | modelos (já no `render.yaml`) |
 | `LLM_*`, `*_PENSAR`, `*_RACIOCINIO` | limites de raciocínio e timeout |

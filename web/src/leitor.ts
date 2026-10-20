@@ -1,6 +1,7 @@
 // Leitor da Lo (a assistente do Binho é a voz da narração): um áudio por vez. Primeiro tenta o MP3 da voz da NVIDIA (servidor, pré-gerado);
 // sem ele (demo, offline, cota, falha), usa a voz do navegador em pt-BR. Sempre com paraFala.
 import { paraFala, frasesParaFala } from "../../shared/fala";
+import { escolherVozNavegador } from "../../shared/voz";
 
 type Estado = "parado" | "carregando" | "tocando" | "pausado";
 type Ouvinte = (e: { id: string | null; estado: Estado; titulo?: string }) => void;
@@ -39,7 +40,7 @@ function vozDoNavegador(texto: string, velocidade: number, fim: () => void) {
   if (!("speechSynthesis" in window)) return fim();
   speechSynthesis.cancel();
   const frases = frasesParaFala(paraFala(texto));
-  const vozPt = speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith("pt-br")) ?? speechSynthesis.getVoices().find((v) => v.lang?.toLowerCase().startsWith("pt"));
+  const vozPt = escolherVozNavegador(speechSynthesis.getVoices());
   frases.forEach((f, i) => {
     const u = new SpeechSynthesisUtterance(f);
     u.lang = "pt-BR";

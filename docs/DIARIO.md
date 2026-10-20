@@ -644,3 +644,12 @@ RETOMAR AQUI: P0.4 — implementar `scripts/smoke-prod.ts` com checks de saúde/
 - `/manifest` devolve HTTP 200 como fallback da SPA; o arquivo PWA vinculado no HTML e usado para validar ícones é `/manifest.webmanifest`. `npx tsc --noEmit` passou. Nenhum endpoint de escrita foi chamado.
 
 RETOMAR AQUI: P0.5 — investigar e corrigir a escolha/migração/cache da voz Louise e o fallback pt-BR do navegador; provar com testes automatizados.
+
+## 19/10/2026 — P0.5: voz da Lo (Louise)
+
+- ID exato confirmado no `.env` e no catálogo de código: `Magpie-Multilingual.PT-BR.Louise`. O `.env` local já era válido; `vozPadrao` agora valida contra a allowlist e usa Louise quando a variável falta, está vazia ou tem ID inválido. `.env.example` traz o ID explícito.
+- Preferência local antiga sem marcador migra para Louise. A tela grava `vozLoManual=true` quando o aluno muda o seletor; preferências explícitas de Diego/Louise/Isabela permanecem após reload. Cache usa hash e filtro com a voz; limpeza automática agora remove só IDs fora das três opções válidas, preservando cache de quem escolheu Diego ou Isabela.
+- Fallback do navegador seleciona idioma pt-BR, depois qualquer pt disponível; sem voz pt, deixa o navegador decidir. A seleção não grava nem altera preferência local.
+- Testes automatizados: **5/5** passaram (env ausente/inválido, preferência herdada e explícita, fallback pt-BR/pt/padrão sem mutação e chave do cache isolada por voz). `npm run typecheck` passou para servidor e web. Não houve chamada ao serviço TTS.
+
+RETOMAR AQUI: P1.1 — ingerir uma fonte aprovada de Conhecimentos Bancários por vez nos domínios permitidos, depois conferir as 17 questões e registrar antes/depois sem aprovar automaticamente mudanças legais.

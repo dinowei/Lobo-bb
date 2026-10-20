@@ -4,6 +4,7 @@ import type { Api, Disciplina, PainelDTO } from "../../shared/tipos";
 import { apiHttp, servidorDisponivel } from "./api/http";
 import { conta, EVENTO_SESSAO, type UsuarioDTO } from "./api/conta";
 import { Entrar } from "./telas/Entrar";
+import { preferenciaVozLoSalva, type VozLo } from "../../shared/voz";
 
 export type Tela = "painel" | "plano" | "praticar" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin";
 export const TELAS: Tela[] = ["painel", "plano", "praticar", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin"];
@@ -28,16 +29,18 @@ export interface Ajustes {
   diasSemana: number[]; // 0 = domingo … 6 = sábado
   inicioPlano: string; // quando a data da prova foi definida (Semana X de Y)
   velocidadeVoz: number; // 🔊 do Binho
-  vozLo: "Louise" | "Diego" | "Isabela"; // a narração é da Lo (assistente do Binho)
+  vozLo: VozLo; // a narração é da Lo (assistente do Binho)
+  vozLoManual: boolean; // distingue preferência explícita do padrão herdado
 }
 const AJUSTES_PADRAO: Ajustes = {
   nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70, linhasRedacaoMax: 30, cicloFoco: "25/5",
-  horasPorDia: 2, diasSemana: [1, 2, 3, 4, 5, 6], inicioPlano: "", velocidadeVoz: 1, vozLo: "Louise",
+  horasPorDia: 2, diasSemana: [1, 2, 3, 4, 5, 6], inicioPlano: "", velocidadeVoz: 1, vozLo: "Louise", vozLoManual: false,
 };
 const CHAVE_AJUSTES = "lobo-ajustes";
 function lerAjustes(): Ajustes {
   try {
-    return { ...AJUSTES_PADRAO, ...JSON.parse(localStorage.getItem(CHAVE_AJUSTES) ?? "{}") };
+    const salvo = JSON.parse(localStorage.getItem(CHAVE_AJUSTES) ?? "{}") as Partial<Ajustes>;
+    return { ...AJUSTES_PADRAO, ...salvo, ...preferenciaVozLoSalva(salvo.vozLo, salvo.vozLoManual) };
   } catch {
     return AJUSTES_PADRAO;
   }

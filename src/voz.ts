@@ -4,20 +4,22 @@
 // cache no Mongo pelo hash do texto falado + voz. Falhou: devolve null e o site usa a voz do navegador.
 // ============================================================
 import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
 import { Attempt, Audio, Aula, ChamadaModelo, Question, Tarefa, Topic } from "./models.js";
 import type { VozIADTO } from "../shared/tipos.js";
+import { VOZES_NVIDIA, vozTtsPadrao } from "../shared/voz.js";
+import { filtroCacheFala, hashFala } from "./vozCache.js";
 import { registrarChamada } from "./telemetria.js";
 import { pregeracoes } from "./noturno.js";
 import { frasesParaFala, paraFala, textoDaAula } from "../shared/fala.js";
 
 // A narração é da Lo (assistente do Binho), voz Louise; Diego e Isabela ficam como opção em Ajustes
-export const VOZES_PT = ["Magpie-Multilingual.PT-BR.Louise", "Magpie-Multilingual.PT-BR.Diego", "Magpie-Multilingual.PT-BR.Isabela"] as const;
-export const vozPadrao = () => process.env.NVIDIA_TTS_VOZ || VOZES_PT[0];
+export const VOZES_PT = VOZES_NVIDIA;
+export { hashFala };
+export const vozPadrao = (): string => vozTtsPadrao(process.env.NVIDIA_TTS_VOZ);
 
-// Troca de voz padrão: o áudio de outras vozes sai do cache (o noturno regera com a voz nova)
+// Mantém cache de todas as vozes da lista, inclusive as escolhidas explicitamente por alunos.
 export async function limparCacheDeOutrasVozes() {
-  const r = await Audio.deleteMany({ voz: { $ne: vozPadrao() } });
+  const r = await Audio.deleteMany({ voz: { $nin: [...VOZES_PT] } });
   return r.deletedCount ?? 0;
 }
 const TAXA_HZ = 22050;
@@ -30,8 +32,6 @@ const bytesDe = (d: unknown): Buffer => {
   const b = d as { buffer?: Uint8Array } | Uint8Array;
   return Buffer.from(b instanceof Uint8Array ? b : (b.buffer ?? new Uint8Array()));
 };
-export const hashFala =(textoFalado: string, voz: string) => createHash("sha256").update(`${voz}\n${textoFalado}`).digest("hex");
-
 // 429/5xx (limite do plano grátis): espera e tenta de novo, até 3 vezes (Retry-After manda, até 60 s)
 const ESPERAS_MS = [2000, 6000, 18000];
 async function sintetizarFrase(frase: string, voz: string): Promise<Buffer> {
@@ -91,8 +91,9 @@ function paraMp3(pcm: Buffer): Promise<Buffer> {
 export async function audioDe(textoTela: string, voz = vozPadrao()): Promise<{ hash: string; mp3: Buffer } | null> {
   const falado = paraFala(textoTela);
   if (!falado.trim()) return null;
-  const hash = hashFala(falado, voz);
-  const pronto = await Audio.findOne({ hash, voz }).select("dados").lean();
+  const filtro = filtroCacheFala(falado, voz);
+  const { hash } = filtro;
+  const pronto = await Audio.findOne(filtro).select("dados").lean();
   if (pronto) return { hash, mp3: bytesDe(pronto.dados) };
   if (!vozConfigurada()) return null;
   try {
@@ -101,7 +102,7 @@ export async function audioDe(textoTela: string, voz = vozPadrao()): Promise<{ h
     for (const frase of frasesParaFala(falado)) partes.push(pcmDe(await sintetizarFrase(frase, voz)), pausa);
     const pcm = Buffer.concat(partes);
     const mp3 = await paraMp3(pcm);
-    await Audio.updateOne({ hash, voz }, { $setOnInsert: { hash, voz, dados: mp3, bytes: mp3.length, segundos: pcm.length / 2 / TAXA_HZ, ouvidas: 0 } }, { upsert: true });
+    await Audio.updateOne(filtro, { $setOnInsert: { hash, voz, dados: mp3, bytes: mp3.length, segundos: pcm.length / 2 / TAXA_HZ, ouvidas: 0 } }, { upsert: true });
     return { hash, mp3 };
   } catch (e) {
     console.warn(`[voz] ${String(e instanceof Error ? e.message : e).slice(0, 200)}`);
@@ -155,7 +156,7 @@ export async function limparAudios(tetoMB = tetoAudioMB()) {
 }
 // cada vez que o aluno ouve (não conta a pré-geração)
 export async function marcarOuvida(textoTela: string, voz = vozPadrao()) {
-  await Audio.updateOne({ hash: hashFala(paraFala(textoTela), voz), voz }, { $inc: { ouvidas: 1 }, $set: { ultimaVez: new Date() } });
+  await Audio.updateOne(filtroCacheFala(paraFala(textoTela), voz), { $inc: { ouvidas: 1 }, $set: { ultimaVez: new Date() } });
 }
 
 export async function planejarVoz(lote: string, max = Number(process.env.VOZ_NOITE) || 40) {
@@ -226,7 +227,6 @@ export async function resumoVoz(): Promise<VozIADTO> {
 // Só o que já está pronto (de dia não se chama a NVIDIA para explicação: vem da pré-geração)
 export async function audioPronto(textoTela: string, voz = vozPadrao()) {
   const falado = paraFala(textoTela);
-  const hash = hashFala(falado, voz);
-  const a = await Audio.findOne({ hash, voz }).select("dados").lean();
+  const a = await Audio.findOne(filtroCacheFala(falado, voz)).select("dados").lean();
   return a ? bytesDe(a.dados) : null;
 }
