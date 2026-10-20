@@ -976,6 +976,22 @@ button { cursor: pointer; background: none; border: 0; padding: 0; }
 .abas { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 18px; }
 .abas .chip[aria-selected="true"] { border-color: var(--laranja); color: var(--texto); background: rgba(255,91,31,.1); }
 .admin-pilha { display: flex; flex-direction: column; gap: 16px; }
+/* Admin → Convites e Contas */
+.convite-novo { display: grid; gap: 8px; margin-top: 14px; padding: 12px; border: 1px solid var(--laranja); border-radius: 12px; background: var(--cartao); }
+.convite-novo label { font-size: 13px; font-weight: 600; }
+.convite-novo input { width: 100%; padding: 10px; border: 1px solid var(--linha); border-radius: 8px; background: var(--bg); color: var(--texto); font: inherit; font-size: 13px; }
+.tabela-rolavel { overflow-x: auto; max-width: 100%; }
+.tabela-rolavel .quebra { overflow-wrap: anywhere; min-width: 110px; }
+.tabela-rolavel .tabela td .link { min-height: 32px; text-align: left; }
+/* menu da conta (avatar) */
+.menu-conta { position: relative; }
+.menu-conta-lista {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 50; min-width: 220px; padding: 6px;
+  border-radius: var(--raio); background: var(--cartao); border: 1px solid var(--linha); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+}
+.menu-conta-email { padding: 8px 10px 10px; font-size: 12px; color: var(--suave); border-bottom: 1px solid var(--linha); margin-bottom: 4px; overflow-wrap: anywhere; }
+.menu-conta-lista [role="menuitem"] { display: block; width: 100%; text-align: left; padding: 10px; min-height: 40px; border-radius: 8px; font-size: 14px; color: var(--texto); }
+.menu-conta-lista [role="menuitem"]:hover, .menu-conta-lista [role="menuitem"]:focus-visible { background: var(--cartao-2); }
 .admin-pilha h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
 .admin-pilha h3 { margin: 0; font-size: 14px; font-weight: 600; }
 .admin-pilha h4 { margin: 14px 0 4px; font-size: 13px; }

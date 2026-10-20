@@ -349,6 +349,17 @@ export interface AdminIADTO {
   voz?: VozIADTO; // a narração da Lo (Magpie TTS)
   banco?: UsoBancoDTO & { audioMB: number; tetoAudioMB: number; colecoes: { nome: string; mb: number }[] };
 }
+// Admin → Convites e Contas (só admin)
+export interface ConviteDTO {
+  id: string;
+  codigo: string;
+  criadoEm: string;
+  expiraEm: string;
+  situacao: "valido" | "usado" | "expirado" | "cancelado";
+  usadoPor?: string; // nome de quem usou
+}
+export interface ContaDTO { id: string; nome: string; email: string; papel: "admin" | "aluno"; ultimoAcesso?: string; criadoEm?: string }
+
 // espaço do banco (Atlas grátis): alerta a partir de 80% do limite
   export interface UsoBancoDTO {
     usadoMB: number; limiteMB: number; fracao: number; alerta: boolean; dadosMB: number; indicesMB: number; discoMB: number;

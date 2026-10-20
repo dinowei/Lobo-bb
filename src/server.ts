@@ -8,14 +8,14 @@ import express, { type NextFunction, type Request, type Response } from "express
 import mongoose, { Types } from "mongoose";
 import helmet from "helmet";
 import compression from "compression";
-import { listarFiguras, decidirFigura, contextoDaFigura, amostrasDeFiguras, type AcaoFigura } from "./admin.js";
+import { listarFiguras, decidirFigura, contextoDaFigura, amostrasDeFiguras, type AcaoFigura, listarConvites, gerarConvite, cancelarConvite, listarContas, senhaProvisoriaDaConta } from "./admin.js";
 import { painelIA, painelFila, painelBenchmark, pendencias, lerDoc, DOCS_LIBERADOS } from "./adminTelas.js";
 import { aprovarCorrentes, desfazerCorrentes } from "./corrente.js";
 import { aprovarMudancas, manterQuestoes, relatorioFontesAtuais } from "./fontesAtuais.js";
 import { audioDe, audioPronto, marcarOuvida, VOZES_PT, vozPadrao } from "./voz.js";
 import { tentarDeNovoAgora } from "./noturno.js";
 import { FUNCOES, type Correntes } from "./catalogo.js";
-import { autenticar, usuarioAtualId } from "./auth.js";
+import { autenticar, usuarioAtual, usuarioAtualId } from "./auth.js";
 import { registrarRotasDeLogin } from "./rotasLogin.js";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -257,6 +257,41 @@ app.post(
 );
 app.post("/api/admin/correntes/desfazer", rota(async (_req, res) => res.json(await desfazerCorrentes())));
 app.get("/api/admin/pendencias", rota(async (_req, res) => res.json(await pendencias())));
+// Convites e Contas: só com admin LOGADO. No modo dono único (sem conta) a trava de /api/admin não liga, e
+// gerar convite pelo site abriria cadastro para qualquer visitante: lá a resposta é 403 com o passo a seguir.
+const soAdminLogado = (res: Response) => {
+  if (usuarioAtual()?.papel === "admin") return true;
+  res.status(403).json({ erro: "Crie sua conta de admin primeiro: npm run bb -- criar-admin <seu-email>." });
+  return false;
+};
+app.get("/api/admin/convites", rota(async (_req, res) => { if (soAdminLogado(res)) res.json(await listarConvites()); }));
+app.post(
+  "/api/admin/convites",
+  rota(async (req, res) => {
+    if (!soAdminLogado(res)) return;
+    const dias = Number(req.body?.dias);
+    if (dias !== 7 && dias !== 30) return res.status(400).json({ erro: "O convite vale 7 ou 30 dias." });
+    res.status(201).json(await gerarConvite(usuarioAtual()!.id, dias));
+  })
+);
+app.post(
+  "/api/admin/convites/:id/cancelar",
+  rota(async (req, res) => {
+    if (!soAdminLogado(res)) return;
+    res.json({ cancelado: await cancelarConvite(String(req.params.id)) });
+  })
+);
+app.get("/api/admin/contas", rota(async (_req, res) => { if (soAdminLogado(res)) res.json(await listarContas()); }));
+app.post(
+  "/api/admin/contas/:id/senha",
+  rota(async (req, res) => {
+    if (!soAdminLogado(res)) return;
+    const r = await senhaProvisoriaDaConta(String(req.params.id));
+    if (!r) return res.status(404).json({ erro: "Conta não encontrada." });
+    res.setHeader("Cache-Control", "no-store"); // a senha aparece uma vez só
+    res.json({ provisoria: r.provisoria });
+  })
+);
 // ADENDO-FONTES-ATUAIS: relatório e aprovação (em lote) das mudanças de norma antes de irem ao aluno
 app.get("/api/admin/fontes-atuais", rota(async (_req, res) => res.json(await relatorioFontesAtuais())));
 app.post(

@@ -749,6 +749,27 @@ RETOMAR AQUI: F2 — Chat do Binho sem invenção (golden set completo de 12; me
   2. **Revisão quebrada:** a 2ª resposta à mesma questão (revisão, ou simulado com questão já vista) dava 500 "Updating the path '__v' would create a conflict". O `registrar` espalhava o documento inteiro do `ReviewState` no `$set`. Correção: só os 3 campos do SM-2 (`src/estudo.ts`). [PENDENTE] não medi quantas revisões falharam em produção.
 - Resultado: **0 vazamentos** depois das correções; teste 3/3; suíte completa 185 ok, 3 pulados.
 
+## 20/10/2026 — F6: conta, convites e contas pela tela
+
+- **Menu da conta** (avatar no topo, no PC e no celular):
+  - Itens: e-mail, "Minha conta" (Ajustes), "Convidar amigo" (só admin, abre Admin → Convites) e "Sair".
+  - Teclado: Enter abre com foco no 1º item; setas, Home e End andam entre os itens; Esc fecha e devolve o foco; clique fora fecha.
+  - Sem conta (modo dono único), o menu mostra "Sem conta: progresso deste aparelho".
+- **Admin → Convites:**
+  - "Gerar convite (7 dias)" e "(30 dias)" mostram o link `https://<site>/?convite=CODIGO`, com "Copiar link" e "Compartilhar". Compartilhar usa a folha do sistema no celular; no PC, copia a mensagem "Bora estudar pro BB comigo no Lobo Binho? Cria sua conta por este link: <link>".
+  - Lista com código, criado, expira, situação (válido / usado por <nome> / expirado / cancelado) e "Cancelar".
+  - Convite cancelado é recusado no cadastro, também na baixa atômica do uso.
+- **Admin → Contas:**
+  - Nome, e-mail e último acesso (o maior entre o último uso de sessão e o último login).
+  - "Nova senha" gera a senha provisória, igual à `bb -- senha`, que agora usa a mesma função (`gerarSenhaProvisoria`). Ela aparece uma única vez (`Cache-Control: no-store`) e derruba as sessões abertas da conta.
+- **Segurança:**
+  - As rotas novas exigem admin **logado**. No modo dono único a trava de `/api/admin` não liga, e gerar convite pelo site abriria cadastro para qualquer visitante: lá a resposta é 403 com o passo `criar-admin`.
+  - Não criei a conta do dono.
+- **Provas:**
+  - `src/isolamento.test.ts` (F6): aluno recebe 403 nas 5 rotas novas; só 7 ou 30 dias; convite gerado é aceito no cadastro (código em minúsculas) e aparece "usado por Carla"; cancelado é recusado; com senha provisória, a sessão antiga cai, a senha velha não entra e a nova entra. 4/4.
+  - `scripts/e2e-conta.ts`, Edge, app real em MongoDB em memória: menu pelo teclado e Esc; "Convidar amigo" → gerar → link; Contas; o link do convite gerado pela tela abre "Criar conta" com o código, cadastra e entra; aluno não vê "Convidar amigo". Passou.
+  - Prints em 1440 e 360 px: `docs/telas/conta/` (menu, convites, contas).
+
 ## 20/10/2026 — F8: site acordado nos horários de estudo
 
 - `.github/workflows/acordar.yml`: `GET https://lobo-binho.onrender.com/api/saude` a cada 10 min.

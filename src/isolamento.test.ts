@@ -25,6 +25,7 @@ let A: Sessao, B: Sessao;
 let ids: { a: Types.ObjectId; b: Types.ObjectId };
 let q1: { _id: Types.ObjectId; gabarito: string; topicId: Types.ObjectId }, q2: { _id: Types.ObjectId; gabarito: string };
 let cartaoId = "", temaId = "";
+let senhaTeste = "";
 let M: typeof import("./models.js");
 
 const errada = (g: string) => (["A", "B", "C", "D", "E"].find((l) => l !== g) as string);
@@ -78,6 +79,8 @@ before(async () => {
   const ua = await M.User.create({ nome: "Aluno A", email: "aluno.a@teste.local", senhaHash: await hashSenha(senha), papel: "aluno" });
   const ub = await M.User.create({ nome: "Aluno B", email: "aluno.b@teste.local", senhaHash: await hashSenha(senha), papel: "aluno" });
   ids = { a: ua._id, b: ub._id };
+  await M.User.create({ nome: "Admin Teste", email: "admin@teste.local", senhaHash: await hashSenha(senha), papel: "admin" });
+  senhaTeste = senha;
   const { app } = await import("./server.js");
   const srv = app.listen(0);
   await new Promise((ok) => srv.once("listening", ok));
@@ -183,4 +186,35 @@ test("isolamento: o que A faz não aparece para B, e B não altera nada de A", {
   assert.equal(q!.gabarito, q1.gabarito, "gabarito intocado");
   assert.equal(q!.status, "aprovada", "status intocado");
   assert.equal((await M.User.findById(ids.b).select("papel").lean())!.papel, "aluno", "papel intocado");
+});
+
+test("F6: Convites e Contas só para admin; convite gerado é aceito no cadastro, cancelado não", { skip: !ligado }, async () => {
+  // aluno: 403 em todas as rotas novas
+  for (const [m, c] of [["GET", "/api/admin/convites"], ["POST", "/api/admin/convites"], ["POST", "/api/admin/convites/000000000000000000000000/cancelar"], ["GET", "/api/admin/contas"], ["POST", `/api/admin/contas/${ids.a}/senha`]] as const) {
+    assert.equal((await chamar(B, m, c, m === "POST" ? { dias: 7 } : undefined)).status, 403, `${m} ${c}`);
+  }
+  const ADM = await entrar("admin@teste.local", senhaTeste);
+  assert.equal((await chamar(ADM, "POST", "/api/admin/convites", { dias: 3 })).status, 400, "só 7 ou 30 dias");
+  // gera, usa no cadastro, aparece como usado
+  const conv = (await chamar(ADM, "POST", "/api/admin/convites", { dias: 7 })).json as { codigo: string };
+  const cad = await fetch(`${base}/api/auth/cadastro`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome: "Carla", email: "carla@teste.local", senha: senhaTeste, convite: conv.codigo.toLowerCase(), lembrar: false }) });
+  assert.equal(cad.status, 201, "convite aceito no cadastro");
+  const lista = (await chamar(ADM, "GET", "/api/admin/convites")).json as { codigo: string; situacao: string; usadoPor?: string; id: string }[];
+  assert.deepEqual(lista.find((c) => c.codigo === conv.codigo)?.situacao, "usado");
+  assert.equal(lista.find((c) => c.codigo === conv.codigo)?.usadoPor, "Carla");
+  // cancelado não entra
+  const outro = (await chamar(ADM, "POST", "/api/admin/convites", { dias: 30 })).json as { codigo: string };
+  const idOutro = ((await chamar(ADM, "GET", "/api/admin/convites")).json as { codigo: string; id: string }[]).find((c) => c.codigo === outro.codigo)!.id;
+  assert.equal(((await chamar(ADM, "POST", `/api/admin/convites/${idOutro}/cancelar`)).json as { cancelado: boolean }).cancelado, true);
+  const negado = await fetch(`${base}/api/auth/cadastro`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome: "Davi", email: "davi@teste.local", senha: senhaTeste, convite: outro.codigo, lembrar: false }) });
+  assert.equal(negado.status, 400, "convite cancelado é recusado");
+  // contas e senha provisória: a antiga deixa de valer, a sessão aberta cai, a nova entra
+  const contas = (await chamar(ADM, "GET", "/api/admin/contas")).json as { id: string; email: string; ultimoAcesso?: string }[];
+  assert.ok(contas.some((c) => c.email === "aluno.b@teste.local" && c.ultimoAcesso), "lista com último acesso");
+  const prov = (await chamar(ADM, "POST", `/api/admin/contas/${ids.b}/senha`)).json as { provisoria: string };
+  assert.ok(prov.provisoria.length >= 10);
+  assert.equal((await chamar(B, "GET", "/api/painel")).status, 401, "sessão antiga de B caiu");
+  const velha = await fetch(`${base}/api/auth/entrar`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: "aluno.b@teste.local", senha: senhaTeste }) });
+  assert.equal(velha.status, 401, "senha antiga não vale");
+  B = await entrar("aluno.b@teste.local", prov.provisoria);
 });

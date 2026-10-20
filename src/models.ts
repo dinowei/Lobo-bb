@@ -632,6 +632,7 @@ const ConviteSchema = new Schema({
   expiraEm: { type: Date, required: true },
   usadoEm: Date,
   usadoPor: { type: Schema.Types.ObjectId, ref: "User" },
+  canceladoEm: Date, // Admin → Convites → "Cancelar"
   criadoEm: { type: Date, default: Date.now },
 });
 export const Convite = model("Convite", ConviteSchema, "convites");

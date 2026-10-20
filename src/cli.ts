@@ -20,10 +20,9 @@ import {
   type MetaFonte,
 } from "./ingestao.js";
 import { gerarQuestao, reabastecerEstoque } from "./pipeline.js";
-import { Topic, Source, Chunk, User, Sessao, Question, Relatorio, Aula, Tarefa, Cartao } from "./models.js";
-import { randomBytes } from "node:crypto";
+import { Topic, Source, Chunk, User, Question, Relatorio, Aula, Tarefa, Cartao } from "./models.js";
 import { createInterface } from "node:readline";
-import { hashSenha, migrarProgresso, donoAntigoId, criarConvite } from "./auth.js";
+import { hashSenha, migrarProgresso, donoAntigoId, criarConvite, gerarSenhaProvisoria } from "./auth.js";
 import { forcaSenha, NOTA_MINIMA, emailValido, normalizarEmail } from "../shared/senha.js";
 
 // pergunta no terminal; com "oculto", não ecoa o que é digitado (senha)
@@ -497,13 +496,10 @@ async function main() {
       case "senha": {
         // esqueci a senha (sem serviço de e-mail): senha provisória para o dono repassar
         const email = normalizarEmail(exigir(args[0], "o e-mail da conta"));
-        const u = await User.findOne({ email });
+        const u = await User.findOne({ email }).select("_id").lean();
         if (!u) throw new Error("Não existe conta com esse e-mail.");
-        const provisoria = `${randomBytes(6).toString("base64url")}-${randomBytes(3).toString("hex")}`;
-        u.senhaHash = await hashSenha(provisoria);
-        await u.save();
-        await Sessao.deleteMany({ userId: u._id });
-        return console.log(`Senha provisória de ${email}: ${provisoria}\n(passe para a pessoa; ela troca em Ajustes → Minha conta)`);
+        const r = await gerarSenhaProvisoria(u._id);
+        return console.log(`Senha provisória de ${email}: ${r!.provisoria}\n(passe para a pessoa; ela troca em Ajustes → Minha conta)`);
       }
 
       case "liberar-fonte": {

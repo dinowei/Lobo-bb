@@ -6,6 +6,8 @@ import type {
   AdminFilaDTO,
   AdminIADTO,
   BenchmarkLinhaDTO,
+  ContaDTO,
+  ConviteDTO,
   ModeloIADTO,
   VozIADTO,
   PendenciaDTO,
@@ -19,12 +21,14 @@ import { useApp } from "../estado";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
 
-type Aba = "ia" | "fila" | "benchmark" | "pendencias";
+type Aba = "ia" | "fila" | "benchmark" | "pendencias" | "convites" | "contas";
 const ABAS: { id: Aba; rotulo: string }[] = [
   { id: "ia", rotulo: "IA" },
   { id: "fila", rotulo: "Fila" },
   { id: "benchmark", rotulo: "Benchmark" },
   { id: "pendencias", rotulo: "Pendências" },
+  { id: "convites", rotulo: "Convites" },
+  { id: "contas", rotulo: "Contas" },
 ];
 // "#admin?aba=benchmark" abre direto numa aba (links das pendências e prints automáticos)
 const abaDoHash = (): Aba => {
@@ -143,8 +147,155 @@ export function Admin() {
         {aba === "fila" && <AbaFila />}
         {aba === "benchmark" && <AbaBenchmark />}
         {aba === "pendencias" && <AbaPendencias irPara={escolher} />}
+        {aba === "convites" && <AbaConvites />}
+        {aba === "contas" && <AbaContas />}
       </section>
     </div>
+  );
+}
+
+// ---------- Convites: gerar (7 ou 30 dias), copiar/compartilhar o link, cancelar ----------
+const SITUACAO_CONVITE: Record<ConviteDTO["situacao"], string> = { valido: "Válido", usado: "Usado", expirado: "Expirado", cancelado: "Cancelado" };
+const linkDoConvite = (codigo: string) => `${location.origin}/?convite=${codigo}`;
+const mensagemDoConvite = (link: string) => `Bora estudar pro BB comigo no Lobo Binho? Cria sua conta por este link: ${link}`;
+
+function AbaConvites() {
+  const { avisar } = useApp();
+  const { dados, erro, recarregar } = useDados(adminTelas.convites);
+  const [novo, setNovo] = useState<{ link: string; expiraEm: string } | null>(null);
+  const [gerando, setGerando] = useState(false);
+  const gerar = async (dias: 7 | 30) => {
+    setGerando(true);
+    try {
+      const c = await adminTelas.gerarConvite(dias);
+      await recarregar(); // a lista já aparece com o convite novo junto com o link
+      setNovo({ link: linkDoConvite(c.codigo), expiraEm: c.expiraEm });
+    } catch (e) {
+      avisar((e as Error).message);
+    } finally {
+      setGerando(false);
+    }
+  };
+  const copiar = async (texto: string) => {
+    try {
+      await navigator.clipboard.writeText(texto);
+      avisar("Link copiado.");
+    } catch {
+      avisar("Não deu para copiar: selecione o link e copie.");
+    }
+  };
+  // celular: folha de compartilhar do sistema; no PC (sem Web Share) copia a mensagem
+  const compartilhar = async (link: string) => {
+    const texto = mensagemDoConvite(link);
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Lobo Binho", text: texto });
+        return;
+      } catch (e) {
+        if ((e as Error).name === "AbortError") return;
+      }
+    }
+    await copiar(texto);
+  };
+  const cancelar = async (id: string) => {
+    try {
+      await adminTelas.cancelarConvite(id);
+      await recarregar();
+    } catch (e) {
+      avisar((e as Error).message);
+    }
+  };
+  return (
+    <Estado erro={erro} carregando={!dados} tentar={recarregar}>
+      <div className="admin-pilha">
+        <div className="secao">
+          <div className="linha-titulo"><h2>Convidar amigo</h2></div>
+          <p className="suave">Cada convite cria uma conta só. Quem entra vê só o próprio progresso.</p>
+          <div className="acoes">
+            <button className="botao-laranja" disabled={gerando} onClick={() => gerar(7)}>Gerar convite (7 dias)</button>
+            <button className="botao-linha" disabled={gerando} onClick={() => gerar(30)}>Gerar convite (30 dias)</button>
+          </div>
+          {novo && (
+            <div className="convite-novo" role="status">
+              <label htmlFor="link-convite">Link do convite (vale até {quando(novo.expiraEm)})</label>
+              <input id="link-convite" readOnly value={novo.link} onFocus={(e) => e.currentTarget.select()} />
+              <div className="acoes">
+                <button className="botao-linha" onClick={() => copiar(novo.link)}>Copiar link</button>
+                <button className="botao-linha" onClick={() => compartilhar(novo.link)}>Compartilhar</button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="secao">
+          <div className="linha-titulo"><h2>Convites</h2></div>
+          {dados && !dados.length ? (
+            <p className="suave">Nenhum convite ainda.</p>
+          ) : (
+            <div className="tabela-rolavel">
+              <table className="tabela">
+                <thead><tr><th>Código</th><th>Criado</th><th>Expira</th><th>Situação</th><th><span className="sr-only">Ações</span></th></tr></thead>
+                <tbody>
+                  {dados?.map((c) => (
+                    <tr key={c.id}>
+                      <td className="num">{c.codigo}</td>
+                      <td>{quando(c.criadoEm)}</td>
+                      <td>{quando(c.expiraEm)}</td>
+                      <td>{c.situacao === "usado" ? `Usado por ${c.usadoPor ?? "alguém"}` : SITUACAO_CONVITE[c.situacao]}</td>
+                      <td>{c.situacao === "valido" && <button className="link" onClick={() => cancelar(c.id)}>Cancelar</button>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </Estado>
+  );
+}
+
+// ---------- Contas: nome, e-mail, último acesso e senha provisória (aparece uma vez) ----------
+function AbaContas() {
+  const { avisar } = useApp();
+  const { dados, erro, recarregar } = useDados(adminTelas.contas);
+  const [provisoria, setProvisoria] = useState<{ id: string; nome: string; senha: string } | null>(null);
+  const gerar = async (c: ContaDTO) => {
+    if (!window.confirm(`Gerar uma senha provisória para ${c.nome}? A senha atual deixa de valer e a pessoa sai de todos os aparelhos.`)) return;
+    try {
+      const r = await adminTelas.senhaProvisoria(c.id);
+      setProvisoria({ id: c.id, nome: c.nome, senha: r.provisoria });
+    } catch (e) {
+      avisar((e as Error).message);
+    }
+  };
+  return (
+    <Estado erro={erro} carregando={!dados} tentar={recarregar}>
+      <div className="secao">
+        <div className="linha-titulo"><h2>Contas</h2></div>
+        {provisoria && (
+          <div className="convite-novo" role="alert">
+            <label htmlFor="senha-provisoria">Senha provisória de {provisoria.nome} (aparece só agora: passe para a pessoa trocar em Ajustes)</label>
+            <input id="senha-provisoria" readOnly value={provisoria.senha} onFocus={(e) => e.currentTarget.select()} />
+            <div className="acoes"><button className="botao-linha" onClick={() => setProvisoria(null)}>Já passei, esconder</button></div>
+          </div>
+        )}
+        <div className="tabela-rolavel">
+          <table className="tabela">
+            <thead><tr><th>Nome</th><th>E-mail</th><th>Último acesso</th><th><span className="sr-only">Ações</span></th></tr></thead>
+            <tbody>
+              {dados?.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.nome}{c.papel === "admin" && <span className="selo" style={{ marginLeft: 6 }}>admin</span>}</td>
+                  <td className="quebra">{c.email}</td>
+                  <td>{haQuanto(c.ultimoAcesso)}</td>
+                  <td><button className="link" onClick={() => gerar(c)} aria-label={`Nova senha: gerar senha provisória para ${c.nome}`}>Nova senha</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </Estado>
   );
 }
 

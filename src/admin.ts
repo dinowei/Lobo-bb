@@ -1,14 +1,67 @@
 // ============================================================
-// BB Estudos — Conferência do dono (tela "Figuras")
+// BB Estudos — Conferência do dono (tela "Figuras") e Admin → Convites e Contas
 // Código extrai, o dono confirma: figura só vai ao treino com OK.
 // ============================================================
 import { Types } from "mongoose";
-import { Question } from "./models.js";
+import { Convite, Question, Sessao, User } from "./models.js";
 import { arquivoDaProva, recortarDeNovo } from "./figuras.js";
 import { construir } from "./construcao.js";
 import { CATALOGO_FIGURAS } from "./construcaoFiguras.js";
+import { criarConvite, gerarSenhaProvisoria } from "./auth.js";
 
-import type { AmostraFiguraDTO, FiguraConferenciaDTO as FiguraConferencia, Letra, PosicaoFigura, QuestaoComFigurasDTO as QuestaoComFiguras, TipoFigura } from "../shared/tipos.js";
+import type { AmostraFiguraDTO, ContaDTO, ConviteDTO, FiguraConferenciaDTO as FiguraConferencia, Letra, PosicaoFigura, QuestaoComFigurasDTO as QuestaoComFiguras, TipoFigura } from "../shared/tipos.js";
+
+// ---------- Convites (uso único, 7 ou 30 dias) ----------
+export function situacaoConvite(c: { usadoEm?: Date | null; canceladoEm?: Date | null; expiraEm: Date }, agora = Date.now()): ConviteDTO["situacao"] {
+  if (c.usadoEm) return "usado";
+  if (c.canceladoEm) return "cancelado";
+  return +c.expiraEm < agora ? "expirado" : "valido";
+}
+export async function listarConvites(): Promise<ConviteDTO[]> {
+  const cs = await Convite.find().sort({ criadoEm: -1 }).limit(100).lean();
+  const nomes = new Map((await User.find({ _id: { $in: cs.map((c) => c.usadoPor).filter(Boolean) } }).select("nome").lean()).map((u) => [String(u._id), u.nome]));
+  return cs.map((c) => ({
+    id: String(c._id),
+    codigo: c.codigo,
+    criadoEm: new Date(c.criadoEm ?? (c._id as Types.ObjectId).getTimestamp()).toISOString(),
+    expiraEm: new Date(c.expiraEm).toISOString(),
+    situacao: situacaoConvite(c),
+    ...(c.usadoPor ? { usadoPor: nomes.get(String(c.usadoPor)) ?? "conta apagada" } : {}),
+  }));
+}
+export async function gerarConvite(criadoPor: Types.ObjectId | undefined, dias: number) {
+  if (dias !== 7 && dias !== 30) throw new Error("O convite vale 7 ou 30 dias.");
+  return criarConvite(criadoPor, dias);
+}
+export async function cancelarConvite(id: string) {
+  if (!Types.ObjectId.isValid(id)) return false;
+  // só o que ainda não foi usado; cancelar de novo não muda nada
+  const r = await Convite.updateOne({ _id: id, usadoEm: null, canceladoEm: null }, { $set: { canceladoEm: new Date() } });
+  return r.modifiedCount === 1;
+}
+
+// ---------- Contas: nome, e-mail, último acesso e senha provisória (mostrada uma vez) ----------
+export async function listarContas(): Promise<ContaDTO[]> {
+  const us = await User.find().sort({ criadoEm: 1 }).select("nome email papel ultimoLogin criadoEm").lean();
+  const ultimos = new Map(
+    (await Sessao.aggregate<{ _id: Types.ObjectId; ultimo: Date }>([{ $group: { _id: "$userId", ultimo: { $max: "$ultimoUso" } } }])).map((s) => [String(s._id), s.ultimo])
+  );
+  return us.map((u) => {
+    const datas = [ultimos.get(String(u._id)), u.ultimoLogin].filter(Boolean).map((d) => +new Date(d!));
+    return {
+      id: String(u._id),
+      nome: u.nome,
+      email: u.email,
+      papel: u.papel as ContaDTO["papel"],
+      ...(datas.length ? { ultimoAcesso: new Date(Math.max(...datas)).toISOString() } : {}),
+      ...(u.criadoEm ? { criadoEm: new Date(u.criadoEm).toISOString() } : {}),
+    };
+  });
+}
+export async function senhaProvisoriaDaConta(id: string) {
+  if (!Types.ObjectId.isValid(id)) return null;
+  return gerarSenhaProvisoria(new Types.ObjectId(id));
+}
 
 // Amostras das figuras que o código gera (sem IA, nada é salvo): n por tipo, uma por letra
 export function amostrasDeFiguras(n = 5): AmostraFiguraDTO[] {

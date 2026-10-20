@@ -93,7 +93,7 @@ export function registrarRotasDeLogin(app: Express) {
       }
       if (await User.exists({ email })) return falha(res, 409, "Já existe conta com esse e-mail. Tente entrar.", "email");
       // o convite é gasto antes de criar a conta (uso único, mesmo com dois cadastros ao mesmo tempo)
-      const gasto = await Convite.findOneAndUpdate({ codigo: normalizarConvite(p.data.convite), usadoEm: null }, { usadoEm: new Date() });
+      const gasto = await Convite.findOneAndUpdate({ codigo: normalizarConvite(p.data.convite), usadoEm: null, canceladoEm: null, expiraEm: { $gt: new Date() } }, { usadoEm: new Date() });
       if (!gasto) return falha(res, 400, "Esse convite acabou de ser usado.", "convite");
       const u = await User.create({ nome: nome.trim(), email, senhaHash: await hashSenha(senha), papel: "aluno", ultimoLogin: new Date() });
       await Convite.updateOne({ _id: gasto._id }, { usadoPor: u._id });

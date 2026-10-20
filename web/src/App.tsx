@@ -194,12 +194,61 @@ export function App() {
   );
 }
 
+// Menu da conta (avatar no topo, no PC e no celular): e-mail, Minha conta, Convidar amigo (admin), Sair.
+// Esc ou clique fora fecha; setas andam entre os itens; o foco volta para o avatar.
 function Avatar() {
-  const { ajustes, ir } = useApp();
+  const { ajustes, ir, usuario, ehAdmin, sair } = useApp();
+  const [aberto, setAberto] = useState(false);
+  const caixa = useRef<HTMLDivElement>(null);
+  const botao = useRef<HTMLButtonElement>(null);
+  const itens = () => [...(caixa.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])];
+  const fechar = (devolverFoco = true) => {
+    setAberto(false);
+    if (devolverFoco) botao.current?.focus();
+  };
+  useEffect(() => {
+    if (!aberto) return;
+    itens()[0]?.focus();
+    const fora = (e: PointerEvent) => { if (!caixa.current?.contains(e.target as Node)) fechar(false); };
+    document.addEventListener("pointerdown", fora);
+    return () => document.removeEventListener("pointerdown", fora);
+  }, [aberto]); // eslint-disable-line react-hooks/exhaustive-deps
+  const teclas = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") return fechar();
+    const lista = itens();
+    const i = lista.indexOf(document.activeElement as HTMLButtonElement);
+    const alvo = { ArrowDown: (i + 1) % lista.length, ArrowUp: (i - 1 + lista.length) % lista.length, Home: 0, End: lista.length - 1 }[e.key];
+    if (alvo === undefined) return;
+    e.preventDefault();
+    lista[alvo]?.focus();
+  };
+  const escolher = (acao: () => void) => () => { fechar(false); acao(); };
+  const convidar = () => {
+    ir("admin");
+    try { history.replaceState(null, "", "#admin?aba=convites"); } catch { /* ok */ }
+  };
   return (
-    <button className="avatar" onClick={() => ir("ajustes")} aria-label="Ajustes do perfil">
-      {(ajustes.nome || "?").trim().charAt(0).toUpperCase()}
-    </button>
+    <div className="menu-conta" ref={caixa} onKeyDown={teclas}>
+      <button
+        ref={botao}
+        className="avatar"
+        aria-haspopup="menu"
+        aria-expanded={aberto}
+        aria-controls="menu-conta"
+        aria-label={`Conta${usuario ? `: ${usuario.nome}` : ""}`}
+        onClick={() => setAberto((v) => !v)}
+      >
+        {(usuario?.nome || ajustes.nome || "?").trim().charAt(0).toUpperCase()}
+      </button>
+      {aberto && (
+        <div id="menu-conta" className="menu-conta-lista" role="menu" aria-label="Conta">
+          <div className="menu-conta-email">{usuario ? usuario.email : "Sem conta: progresso deste aparelho"}</div>
+          <button role="menuitem" onClick={escolher(() => ir("ajustes"))}>Minha conta</button>
+          {ehAdmin && usuario && <button role="menuitem" onClick={escolher(convidar)}>Convidar amigo</button>}
+          {usuario && <button role="menuitem" onClick={escolher(() => void sair())}>Sair</button>}
+        </div>
+      )}
+    </div>
   );
 }
 

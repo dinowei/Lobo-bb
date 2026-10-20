@@ -5,6 +5,8 @@ import type {
   AdminFilaDTO,
   AdminIADTO,
   AmostraFiguraDTO,
+  ContaDTO,
+  ConviteDTO,
   PendenciaDTO,
   QuestaoComFigurasDTO,
   RegiaoPdf,
@@ -40,6 +42,12 @@ export const adminTelas = {
   aprovarMudancas: (ids: string[]) => req<{ aprovadas: number }>("/fontes-atuais/aprovar", { method: "POST", body: JSON.stringify({ ids }) }),
   manterQuestoes: (ids: string[], motivo: string) => req<{ mantidas: number }>("/fontes-atuais/manter", { method: "POST", body: JSON.stringify({ ids, motivo }) }),
   doc: (nome: string) => req<{ nome: string; markdown: string }>(`/doc?nome=${encodeURIComponent(nome)}`),
+  // Convites e Contas (só admin logado)
+  convites: () => req<ConviteDTO[]>("/convites"),
+  gerarConvite: (dias: 7 | 30) => req<{ codigo: string; expiraEm: string }>("/convites", { method: "POST", body: JSON.stringify({ dias }) }),
+  cancelarConvite: (id: string) => req<{ cancelado: boolean }>(`/convites/${id}/cancelar`, { method: "POST" }),
+  contas: () => req<ContaDTO[]>("/contas"),
+  senhaProvisoria: (id: string) => req<{ provisoria: string }>(`/contas/${id}/senha`, { method: "POST" }),
 };
 
 export const adminFiguras = {

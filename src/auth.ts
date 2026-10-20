@@ -134,8 +134,20 @@ export async function situacaoDoConvite(codigo: string): Promise<{ valido: boole
   const c = await Convite.findOne({ codigo: normalizarConvite(codigo) }).lean();
   if (!c) return { valido: false, motivo: "Esse código não existe. Confira com quem te convidou." };
   if (c.usadoEm) return { valido: false, motivo: "Esse convite já foi usado." };
+  if (c.canceladoEm) return { valido: false, motivo: "Esse convite foi cancelado. Peça um novo." };
   if (+c.expiraEm < Date.now()) return { valido: false, motivo: "Esse convite venceu. Peça um novo." };
   return { valido: true };
+}
+
+// Esqueci a senha (sem e-mail): senha provisória que o dono repassa; derruba as sessões abertas da conta.
+// Usada pela CLI ("bb -- senha") e por Admin → Contas (mostrada uma única vez, nunca guardada em claro).
+export async function gerarSenhaProvisoria(userId: Types.ObjectId) {
+  const u = await User.findById(userId).select("_id email");
+  if (!u) return null;
+  const provisoria = `${randomBytes(6).toString("base64url")}-${randomBytes(3).toString("hex")}`;
+  await User.updateOne({ _id: u._id }, { $set: { senhaHash: await hashSenha(provisoria) } });
+  await Sessao.deleteMany({ userId: u._id });
+  return { email: u.email, provisoria };
 }
 
 // ---------- migração: o progresso do modo dono único vai para a conta do admin ----------
