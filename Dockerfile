@@ -6,6 +6,8 @@ ENV NODE_ENV=production
 
 # dependências primeiro (cache de camada). O tsx é dependência de PRODUÇÃO (roda o TypeScript direto):
 # fica na imagem depois do prune e nada é baixado na partida (antes o "npx tsx" baixava a cada início).
+# mongodb-memory-server (só testes) baixaria o binário do mongod no postinstall: na imagem, não
+ENV MONGOMS_DISABLE_POSTINSTALL=1
 COPY package.json package-lock.json ./
 COPY web/package.json web/package-lock.json web/
 RUN npm ci --include=dev --no-audit --no-fund \
