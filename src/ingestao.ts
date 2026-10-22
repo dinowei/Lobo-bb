@@ -923,4 +923,12 @@ export async function mostrarStatus() {
     (await Question.aggregate<{ _id: string; n: number }>([{ $group: { _id: `$${campo}`, n: { $sum: 1 } } }, { $sort: { n: -1 } }])).map((g) => `${g._id} ${g.n}`).join(" · ");
   console.log(`Questões por status: ${await contar("status")}`);
   console.log(`Questões por origem: ${await contar("origem")}`);
+  // aprovadas por disciplina (pelo tópico)
+  const porDisc = await Question.aggregate<{ _id: string; n: number }>([
+    { $match: { status: "aprovada" } },
+    { $lookup: { from: Topic.collection.name, localField: "topicId", foreignField: "_id", as: "t" } },
+    { $group: { _id: { $first: "$t.disciplina" }, n: { $sum: 1 } } },
+    { $sort: { n: -1 } },
+  ]);
+  console.log(`Aprovadas por disciplina: ${porDisc.map((g) => `${g._id} ${g.n}`).join(" · ")}`);
 }

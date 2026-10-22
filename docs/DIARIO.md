@@ -18,4 +18,30 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - F9: figura fora do texto, duplicada contestada, audit 0.
   - F10: documentação única (este arquivo, `docs/MESTRE.md`, `AGENTS.md`).
 
-RETOMAR AQUI: conferir a noite de 21/10 (relatório + backup automático); ver `docs/MESTRE.md`, seção 9.
+## 22/10/2026 — PROMPT-LOBO-BB-BACEN, F1: partida
+
+- **Ambiente:** Windows 11, `C:\projetos\Lobo-bb` em `8d74bb0`, node v24.21.0, npm 11.19.0, gh 2.90.0, repositório privado, Atlas ok.
+- **Acervo:**
+  - Caminho em `ACERVO_DIR` no `.env` (com aspas e barras normais; também no `.env.example`), nunca fixo no código. Só leitura.
+  - 358 arquivos (356 PDFs, 449 MB), 0 só na nuvem do OneDrive. Leitura testada: edital BB 2021, 39 páginas.
+- **Contradições** [CONFIRMADO]:
+  - O "FECHAMENTO 2" e o conserto do menu da conta citados no prompt não estão no GitHub: nada depois de `8d74bb0`.
+  - As noites de 21/10 e 22/10 **não rodaram**: não há log. O Agendador perdeu 01:00 e partiu às 05:46 de 22/10 (`StartWhenAvailable`), terminando com `0xC000013A` (processo interrompido). Precisa do PC ligado ou em suspensão com a conta logada.
+- **Backup provado** (o da noite não existe):
+  - O backup agora inclui `questions`, `topics`, `cartoes_revisao` e `reports` (a migração da F2 mexe neles); testes `backup` 4/4.
+  - `bb -- backup` em 22/10: 10 coleções, 471 documentos. SHA-256 de cada arquivo igual ao do manifest; nº de documentos de cada arquivo igual ao declarado.
+  - `restaurar backups/2026-10-22 --simular`: atual = backup em todas as coleções.
+- **Usuário único:**
+  - Convites válidos: 0 (1 usado), conferido com o novo `bb -- convites [cancelar-validos --simular|--confirmar]`.
+  - Há 3 contas no banco: nenhuma criada nem apagada (não é decisão minha).
+- **Isolamento entre contas:** 4/4.
+- **Fotografia do Atlas** (só leitura):
+
+  | Item | Valor |
+  |---|---|
+  | Atlas | 199,67 / 512 MB (39%), 1.560 trechos |
+  | Questões | 390: aprovada 298, rejeitada 85, desatualizada 4, precisa_imagem 2, contestada 1 |
+  | Origem | gerada 253, oficial 137 |
+  | Aprovadas por disciplina | informática 65, português 64, mat. financeira 45, bancários 31, vendas 31, atualidades 21, inglês 18, matemática 17, probabilidade 6 |
+
+RETOMAR AQUI: PROMPT-LOBO-BB-BACEN, F2 (concurso e banca como dado; migração com backup 2026-10-22).

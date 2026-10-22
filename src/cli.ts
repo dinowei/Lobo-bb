@@ -60,6 +60,7 @@ import { executarEvalChat } from "./evalChat.js";
 import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
 import type { Disciplina, MotivoContestacao } from "../shared/tipos.js";
 import { executarEvalGerador } from "./evalGerador.js";
+import { cancelarConvite, listarConvites } from "./admin.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -228,6 +229,20 @@ async function main() {
         return await naFila(rotulo, () =>
           recuperarQuestao(exigir(args[0], "o PDF da prova"), exigir(o.gabarito, "--gabarito"), exigir(o.nome, "--nome"), numero)
         );
+      }
+
+      case "convites": {
+        // usuário único: lista os convites e cancela os que ainda valem (--simular mostra, --confirmar cancela)
+        const lista = await listarConvites();
+        const validos = lista.filter((c) => c.situacao === "valido");
+        console.log(`Convites: ${lista.length} (${["valido", "usado", "expirado", "cancelado"].map((s) => `${s} ${lista.filter((c) => c.situacao === s).length}`).join(" · ")})`);
+        if (args[0] !== "cancelar-validos") return;
+        if (o.simular === o.confirmar) throw new Error("Escolha exatamente uma opção: --simular ou --confirmar.");
+        for (const c of validos) console.log(`  ${c.codigo} · criado ${c.criadoEm.slice(0, 10)} · expira ${c.expiraEm.slice(0, 10)}`);
+        if (o.simular) return console.log(`Simulação: ${validos.length} convite(s) válido(s) seriam cancelados.`);
+        let n = 0;
+        for (const c of validos) n += (await cancelarConvite(c.id)) ? 1 : 0;
+        return console.log(`✔ ${n} convite(s) cancelado(s).`);
       }
 
       case "eval-gerador": {

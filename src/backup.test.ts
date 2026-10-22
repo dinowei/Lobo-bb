@@ -8,9 +8,10 @@ import { EJSON, ObjectId } from "bson";
 import type { Db, Document } from "mongodb";
 import { gunzipSync } from "node:zlib";
 import { Attempt, Config, RatingAluno, Redacao, ReviewState, User } from "./models.js";
-import { criarBackupAtlas, restaurarBackupAtlas, simularRestauracao } from "./backup.js";
+import { COLECOES_BACKUP, criarBackupAtlas, restaurarBackupAtlas, simularRestauracao } from "./backup.js";
 
-const nomes = [User, Attempt, ReviewState, Redacao, RatingAluno, Config].map((m) => m.collection.name);
+// as coleções do banco falso seguem a lista do backup (questões e tópicos entraram antes da migração BB + BACEN)
+const nomes = COLECOES_BACKUP;
 const copiar = <T>(v: T): T => EJSON.parse(EJSON.stringify(v, { relaxed: false }), { relaxed: false }) as T;
 
 class ColecaoFalsa {
@@ -87,7 +88,7 @@ test("exporta gzip íntegro, manifest com hashes e simulação com as mesmas con
   try {
     const db = bancoComDados();
     const backup = await criarBackupAtlas(db as unknown as Db, opcoes(root));
-    assert.equal(backup.manifesto.colecoes.length, 6);
+    assert.equal(backup.manifesto.colecoes.length, COLECOES_BACKUP.length); // inclui questões e tópicos (vazios aqui)
     assert.equal(backup.manifesto.colecoes.reduce((s, c) => s + c.quantidade, 0), 6);
 
     const config = backup.manifesto.colecoes.find((c) => c.nome === Config.collection.name)!;

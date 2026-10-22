@@ -10,7 +10,7 @@ import { Transform, Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { FUNCOES } from "./catalogo.js";
-import { Attempt, Config, Redacao, ReviewState, RatingAluno, User } from "./models.js";
+import { Attempt, CartaoRevisao, Config, Question, Redacao, Report, ReviewState, RatingAluno, Topic, User } from "./models.js";
 
 const RETENCAO_PADRAO = 14;
 const specColecoes: { nome: string; filtro: Filter<any>; sanitizar?: (doc: Document) => Document | null }[] = [
@@ -20,6 +20,11 @@ const specColecoes: { nome: string; filtro: Filter<any>; sanitizar?: (doc: Docum
   { nome: Redacao.collection.name, filtro: {} },
   { nome: RatingAluno.collection.name, filtro: {} },
   { nome: Config.collection.name, filtro: { _id: "correntes" }, sanitizar: configCorrenteSegura },
+  // banco de questões e árvore de tópicos: a migração para BB + BACEN mexe neles (backup antes de migrar)
+  { nome: Question.collection.name, filtro: {} },
+  { nome: Topic.collection.name, filtro: {} },
+  { nome: CartaoRevisao.collection.name, filtro: {} },
+  { nome: Report.collection.name, filtro: {} },
 ];
 
 export const COLECOES_BACKUP = specColecoes.map((c) => c.nome);
