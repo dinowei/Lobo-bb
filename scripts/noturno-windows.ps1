@@ -1,18 +1,28 @@
-param([switch]$SmokeTest)
+﻿param([switch]$SmokeTest, [switch]$TestarTrava)
 
-$ErrorActionPreference = "Stop"
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$logDir = Join-Path $repoRoot "logs\noturno"
-$timezoneId = "E. South America Standard Time"
-$timezoneBrt = [System.TimeZoneInfo]::FindSystemTimeZoneById($timezoneId)
+# LOG PRIMEIRO: nas noites de 21 e 22/10 o processo morreu sem deixar nenhuma linha. Agora a 1ª coisa é
+# abrir o log (com reserva em %TEMP% se logs\ falhar), antes de fuso, trava ou Node.
 $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
-$nowBrt = [System.TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $timezoneBrt)
-New-Item -ItemType Directory -Path $logDir -Force | Out-Null
-$logFile = Join-Path $logDir ("{0}.log" -f $nowBrt.ToString("yyyy-MM-dd"))
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$logDir = Join-Path $repoRoot "logs\noturno"
+$timezoneBrt = $null
+try { $timezoneBrt = [System.TimeZoneInfo]::FindSystemTimeZoneById("E. South America Standard Time") } catch { $timezoneBrt = $null }
 
 function Get-BrasiliaNow {
-  return [System.TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $timezoneBrt)
+  if ($timezoneBrt) { return [System.TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $timezoneBrt) }
+  return [DateTime]::Now
 }
+
+try {
+  New-Item -ItemType Directory -Path $logDir -Force | Out-Null
+  $logFile = Join-Path $logDir ("{0}.log" -f (Get-BrasiliaNow).ToString("yyyy-MM-dd"))
+  [System.IO.File]::AppendAllText($logFile, "", $utf8NoBom)
+} catch {
+  $logFile = Join-Path $env:TEMP ("lobo-noturno-{0}.log" -f (Get-BrasiliaNow).ToString("yyyy-MM-dd"))
+}
+[System.IO.File]::AppendAllText($logFile, ("[{0} BRT] Wrapper iniciado: PID {1}, usuário {2}, sessão {3}, fuso {4}.`r`n" -f (Get-BrasiliaNow).ToString("yyyy-MM-dd HH:mm:ss"), $PID, $env:USERNAME, [System.Diagnostics.Process]::GetCurrentProcess().SessionId, $(if ($timezoneBrt) { "BRT" } else { "local (BRT indisponível)" })), $utf8NoBom)
+
+$ErrorActionPreference = "Stop"
 
 function Protect-LogLine {
   param([string]$Text)
@@ -110,17 +120,101 @@ function Invoke-LoggedProcess {
   return [pscustomobject]@{ ExitCode = $code; TimedOut = $timedOut; Pid = $processId }
 }
 
+# ---------- trava com dono e validade ----------
+# O arquivo fica aberto (o SO solta sozinho se o processo morrer) e guarda o dono em JSON: PID, início, host.
+# Quem não consegue abrir lê o dono: vivo e com menos de 6 h = em andamento (sai limpo); PID morto ou mais
+# velho que 6 h = órfã (o noturno dura no máximo 4h30): encerra só o wrapper travado deste script e assume.
+$VALIDADE_TRAVA_HORAS = 6
+function Get-SituacaoTrava {
+  param($Dono, [datetime]$Agora, [bool]$PidVivo)
+  if ($null -eq $Dono -or -not $Dono.inicio) { return "orfa" }
+  if (-not $PidVivo) { return "orfa" }
+  if (($Agora - [datetime]$Dono.inicio).TotalHours -ge $VALIDADE_TRAVA_HORAS) { return "orfa" }
+  return "ativa"
+}
+function Read-DonoTrava {
+  param([string]$Caminho)
+  try {
+    $fs = [System.IO.File]::Open($Caminho, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::ReadWrite)
+    try { $txt = (New-Object System.IO.StreamReader($fs, $utf8NoBom)).ReadToEnd() } finally { $fs.Dispose() }
+    if ($txt.Trim()) { return ($txt | ConvertFrom-Json) }
+  } catch { }
+  return $null
+}
+function Open-Trava {
+  param([string]$Caminho)
+  $fs = [System.IO.File]::Open($Caminho, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::Read)
+  $dono = @{ pid = $PID; inicio = (Get-Date).ToString("o"); host = $env:COMPUTERNAME } | ConvertTo-Json -Compress
+  $bytes = $utf8NoBom.GetBytes($dono)
+  $fs.SetLength(0); $fs.Write($bytes, 0, $bytes.Length); $fs.Flush()
+  return $fs
+}
+function Get-Trava {
+  param([string]$Caminho)
+  try { return Open-Trava $Caminho } catch [System.IO.IOException] { }
+  $dono = Read-DonoTrava $Caminho
+  $vivo = $false
+  if ($dono -and $dono.pid) { $vivo = [bool](Get-Process -Id ([int]$dono.pid) -ErrorAction SilentlyContinue) }
+  $situacao = Get-SituacaoTrava -Dono $dono -Agora (Get-Date) -PidVivo $vivo
+  if ($situacao -eq "ativa") {
+    ("Execução ignorada: já existe um noturno em andamento (PID {0} desde {1})." -f $dono.pid, $dono.inicio) | Write-SafeLog
+    return $null
+  }
+  ("Trava órfã encontrada (PID {0}, desde {1}, processo {2}): liberando." -f $dono.pid, $dono.inicio, $(if ($vivo) { "vivo há mais de $VALIDADE_TRAVA_HORAS h" } else { "morto" })) | Write-SafeLog
+  if ($vivo) {
+    # só encerra se for mesmo um wrapper deste script (nunca outro programa com o mesmo PID)
+    $cmd = (Get-CimInstance Win32_Process -Filter "ProcessId=$([int]$dono.pid)" -ErrorAction SilentlyContinue).CommandLine
+    if ($cmd -and $cmd -like "*noturno-windows.ps1*") {
+      Stop-Process -Id ([int]$dono.pid) -Force -ErrorAction SilentlyContinue
+      Start-Sleep -Seconds 2
+      "Wrapper travado encerrado." | Write-SafeLog
+    } else {
+      "O PID da trava não é um wrapper do noturno; não encerro nada e saio." | Write-SafeLog
+      return $null
+    }
+  }
+  try { return Open-Trava $Caminho } catch [System.IO.IOException] {
+    "Não consegui assumir a trava depois de liberar a órfã; saio sem rodar." | Write-SafeLog
+    return $null
+  }
+}
+
 $lockPath = Join-Path $logDir "noturno.lock"
 $runLock = $null
 $codigoSaida = 1
 $workersAnterior = $env:NOTURNO_TRABALHADORES
 $processoNoturno = $null
 try {
-  try {
-    $runLock = [System.IO.File]::Open($lockPath, [System.IO.FileMode]::OpenOrCreate, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
-  } catch [System.IO.IOException] {
-    "Execução ignorada: já existe um noturno em andamento." | Write-SafeLog
+  if ($TestarTrava) {
+    # teste da regra da trava (sem Atlas, sem Node): casos de dono e validade
+    $agora = Get-Date
+    $casos = @(
+      @{ nome = "sem dono"; dono = $null; vivo = $false; esperado = "orfa" },
+      @{ nome = "PID morto"; dono = @{ pid = 1; inicio = $agora.AddMinutes(-10).ToString("o") }; vivo = $false; esperado = "orfa" },
+      @{ nome = "vivo e recente"; dono = @{ pid = 1; inicio = $agora.AddHours(-2).ToString("o") }; vivo = $true; esperado = "ativa" },
+      @{ nome = "vivo há 6 h"; dono = @{ pid = 1; inicio = $agora.AddHours(-6).ToString("o") }; vivo = $true; esperado = "orfa" }
+    )
+    foreach ($c in $casos) {
+      $obtido = Get-SituacaoTrava -Dono $c.dono -Agora $agora -PidVivo $c.vivo
+      if ($obtido -ne $c.esperado) { throw "Teste da trava falhou em '$($c.nome)': $obtido (esperado $($c.esperado))." }
+    }
+    # trava real: a 1ª pega e grava o dono; a 2ª (outra abertura) vê "em andamento" e sai limpa
+    $teste = Join-Path $env:TEMP ("lobo-trava-teste-{0}.lock" -f $PID)
+    $a = Get-Trava $teste
+    if (-not $a) { throw "Teste da trava falhou: não pegou a trava livre." }
+    $dono = Read-DonoTrava $teste
+    if ([int]$dono.pid -ne $PID) { throw "Teste da trava falhou: dono gravado errado." }
+    $b = Get-Trava $teste
+    if ($b) { throw "Teste da trava falhou: pegou a trava ocupada." }
+    $a.Dispose()
+    $c2 = Get-Trava $teste
+    if (-not $c2) { throw "Teste da trava falhou: não retomou depois de solta." }
+    $c2.Dispose(); Remove-Item $teste -Force
+    "Teste da trava ok: 4 casos de dono/validade, trava ocupada sai limpa, trava solta é retomada." | Write-SafeLog
     $codigoSaida = 0
+  } else {
+    $runLock = Get-Trava $lockPath
+    if (-not $runLock) { $codigoSaida = 0 }
   }
 
   if ($runLock) {

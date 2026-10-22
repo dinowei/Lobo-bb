@@ -8,7 +8,16 @@ import { hostname } from "node:os";
 
 type Trava = { _id: string; pid: number; host: string; comando: string; desde: Date };
 const ID = "job_de_ia";
-const VENCE_EM_MS = 12 * 60 * 60 * 1000; // trava esquecida (máquina desligou) vence em 12 h
+// trava esquecida (máquina desligou, processo travou): vence em 6 h; o noturno inteiro dura no máximo 4h30
+export const VENCE_EM_MS = 6 * 60 * 60 * 1000;
+
+// Órfã = dono morto nesta máquina, ou trava mais velha que a validade (em qualquer máquina)
+export function travaOrfa(atual: { pid: number; host: string; desde: Date | string } | null, agora: number, host: string, vivo: (pid: number) => boolean): string | null {
+  if (!atual) return null;
+  if (atual.host === host && !vivo(atual.pid)) return `processo ${atual.pid} já terminou`;
+  if (agora - new Date(atual.desde).getTime() > VENCE_EM_MS) return `mais velha que ${VENCE_EM_MS / 3_600_000} h`;
+  return null;
+}
 
 const colecao = () => mongoose.connection.db!.collection<Trava>("fila_jobs");
 
@@ -51,9 +60,10 @@ async function pegar(comando: string): Promise<{ ok: true } | { ok: false; atual
     if ((e as { code?: number }).code !== 11000) throw e;
   }
   const atual = await col.findOne({ _id: ID });
-  const morta = atual && atual.host === hostname() && !processoVivo(atual.pid);
-  const vencida = atual && Date.now() - new Date(atual.desde).getTime() > VENCE_EM_MS;
-  if (atual && (morta || vencida)) {
+  const motivo = travaOrfa(atual, Date.now(), hostname(), processoVivo);
+  if (atual && motivo) {
+    // liberada com registro (o log do noturno guarda esta linha)
+    console.warn(`Trava de IA órfã liberada: "${atual.comando}" (PID ${atual.pid}, ${atual.host}, desde ${new Date(atual.desde).toISOString()}): ${motivo}.`);
     await col.deleteOne({ _id: ID, pid: atual.pid, host: atual.host });
     return pegar(comando);
   }

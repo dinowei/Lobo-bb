@@ -150,7 +150,7 @@ Resolvidas (uma linha cada):
   2. Abra `/api/saude`: 503 = sem banco; confira a `MONGODB_URI` e o *Network Access* do Atlas.
   3. Nos logs do Render: "API ouvindo na porta" e depois "Banco conectado".
 - **O noturno não rodou:**
-  1. `schtasks /query /tn "Lobo Binho - Noturno Local" /v /fo LIST`: veja "Last Result"; o PC precisa estar ligado ou em suspensão, com a conta logada.
+  1. `schtasks /query /tn "Lobo Binho - Noturno Local" /v /fo LIST`: veja "Last Result". O PC precisa estar ligado ou em **suspensão** (não "Desligar"), na tomada, com a conta logada e "Permitir temporizadores de ativação" habilitado (21 e 22/10 falharam porque o PC estava desligado/hibernado às 01:00).
   2. Leia `logs\noturno\<data>.log`.
   3. Trava presa: `npm run bb -- limpar-trava-orfa <pid>`, só com o processo morto.
 - **A IA está fora:**

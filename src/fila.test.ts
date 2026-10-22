@@ -1,6 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { comandoBloqueadoNaJanelaNoturna } from "./fila.js";
+import { comandoBloqueadoNaJanelaNoturna, travaOrfa, VENCE_EM_MS } from "./fila.js";
+
+test("trava de IA com dono e validade: PID morto nesta máquina ou mais de 6 h = órfã; viva e recente fica", () => {
+  const agora = Date.UTC(2026, 9, 22, 12);
+  const vivo = (pid: number) => pid === 100;
+  const desde = (h: number) => new Date(agora - h * 3_600_000);
+  assert.equal(VENCE_EM_MS, 6 * 3_600_000);
+  assert.equal(travaOrfa(null, agora, "R0", vivo), null);
+  assert.equal(travaOrfa({ pid: 100, host: "R0", desde: desde(1) }, agora, "R0", vivo), null, "viva e recente");
+  assert.match(travaOrfa({ pid: 200, host: "R0", desde: desde(1) }, agora, "R0", vivo)!, /já terminou/);
+  // outra máquina: não dá para saber se o PID vive; só a validade conta
+  assert.equal(travaOrfa({ pid: 200, host: "OUTRA", desde: desde(5) }, agora, "R0", vivo), null);
+  assert.match(travaOrfa({ pid: 100, host: "R0", desde: desde(6.1) }, agora, "R0", vivo)!, /mais velha que 6 h/);
+});
 
 const instanteBrt = (hora: number, minuto: number) =>
   new Date(Date.UTC(2026, 9, 20, hora + 3, minuto));
