@@ -1,0 +1,35 @@
+{
+  "id": "bacen",
+  "nome": "Banco Central do Brasil",
+  "cargo": "Técnico",
+  "bancaPadrao": "a_definir",
+  "bancaReferencia": "cebraspe",
+  "bancasPossiveis": ["cebraspe", "fgv", "cesgranrio", "fcc", "vunesp"],
+  "areas": [
+    { "id": "suporte_tecnico_administrativo", "nome": "Suporte Técnico-Administrativo" },
+    { "id": "seguranca_institucional", "nome": "Segurança Institucional" }
+  ],
+  "situacaoEdital": "a_definir: edital do Técnico não publicado; estrutura de referência = conhecimentos básicos do BACEN 2024 Analista (Cebraspe)",
+  "fonte": "[CONFIRMADO] Edital nº 1 BACEN 2024 Analista (Cebraspe), item 7.1 (quadro das etapas) e 11.4 (eliminação); acervo 01_BACEN/Editais. Técnico: [PENDENTE] edital novo",
+  "conferido": false,
+  "referenciaBasicos": {
+    "prova": "P1 Objetiva — Conhecimentos básicos (BACEN 2024 Analista, Cebraspe, itens Certo/Errado)",
+    "itens": { "lingua_portuguesa": 25, "raciocinio_logico": 10, "direito_administrativo": 5, "economia": 10 },
+    "notaMinimaP1": 10,
+    "notaMinimaObjetivas": 36
+  },
+  "disciplinas": [
+    "lingua_portuguesa",
+    "raciocinio_logico",
+    "matematica",
+    "probabilidade_estatistica",
+    "informatica",
+    "direito_constitucional",
+    "direito_administrativo",
+    "gestao_publica",
+    "conhecimentos_bancarios",
+    "atualidades_mercado_financeiro",
+    "suporte_tecnico_administrativo"
+  ],
+  "disciplinasComuns": ["lingua_portuguesa", "matematica", "informatica", "conhecimentos_bancarios", "atualidades_mercado_financeiro", "probabilidade_estatistica"]
+}

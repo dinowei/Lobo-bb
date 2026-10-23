@@ -1,0 +1,19 @@
+{
+  "id": "cesgranrio",
+  "nome": "Fundação Cesgranrio",
+  "formato": "multipla",
+  "nAlternativas": 5,
+  "nota": { "acerto": 1, "erro": 0, "branco": 0 },
+  "tempoPorItemSeg": 180,
+  "estilo": [
+    "Caso prático de agência, cliente ou notícia antes da pergunta.",
+    "Uma única alternativa correta; distratores com troca de órgão, prazo ou conceito vizinho.",
+    "Português com textos de imprensa e reescrita; Matemática Financeira com conta curta e contextualizada."
+  ],
+  "estrategia": [
+    "Sem penalidade: nunca deixe em branco.",
+    "Leia a pergunta antes do caso para saber o que procurar.",
+    "Elimine os extremos (sempre, somente, vedado) antes de comparar as duas que sobrarem."
+  ],
+  "fonte": "[CONFIRMADO] provas BB 2021 e 2023 (5 alternativas, sem penalidade); tempo por item = 300 min do edital BB 2022 ÷ 70 itens + redação, arredondado"
+}

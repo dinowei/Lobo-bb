@@ -21,6 +21,7 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { apiServidor } from "./estudo.js";
+import { garantirIndiceElo } from "./migracaoConcursos.js";
 import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro, type NotaCartao } from "../shared/tipos.js";
 
 const app = express();
@@ -377,6 +378,7 @@ async function iniciar() {
   console.log(`✔ API ouvindo na porta ${porta}${existsSync(site) ? " (site incluído)" : ""}; conectando ao banco…`);
   await mongoose.connect(uri);
   console.log("✔ Banco conectado");
+  if (await garantirIndiceElo().catch(() => false)) console.log("✔ Índice antigo do Elo (aluno + disciplina) removido");
 }
 // só sobe quando é o processo principal; o teste de isolamento importa o app sem abrir porta nem banco
 export { app };

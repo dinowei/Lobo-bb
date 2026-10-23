@@ -9,20 +9,21 @@ import type { Confianca, Disciplina } from "../shared/tipos.js";
 // Recalcula tudo a partir das tentativas (idempotente: grava valores absolutos, não soma)
 export async function migrarRatings() {
   const disciplinaDo = new Map((await Topic.find().select("disciplina").lean()).map((t) => [String(t._id), t.disciplina]));
-  const tents = await Attempt.find().sort({ createdAt: 1 }).select("userId questionId topicId acertou confianca").lean();
+  const tents = await Attempt.find().sort({ createdAt: 1 }).select("userId questionId topicId acertou confianca concurso banca").lean();
   const difs = new Map((await Question.find({ _id: { $in: [...new Set(tents.map((t) => String(t.questionId)))] } }).select("dificuldade").lean()).map((q) => [String(q._id), q.dificuldade ?? 3]));
   // questões: um replay global (todas as pessoas, na ordem); alunos: um replay por pessoa, com o rating da questão daquele momento
   const global = reprocessar(
-    tents.map((t) => ({ questaoId: String(t.questionId), disciplina: `${t.userId}|${disciplinaDo.get(String(t.topicId)) ?? "?"}`, acertou: t.acertou, confianca: (t.confianca ?? undefined) as Confianca | undefined })),
+    // chave do aluno: usuário | concurso | banca | disciplina (tentativa antiga = BB no estilo Cesgranrio)
+    tents.map((t) => ({ questaoId: String(t.questionId), disciplina: `${t.userId}|${t.concurso ?? "bb"}|${t.banca ?? "cesgranrio"}|${disciplinaDo.get(String(t.topicId)) ?? "?"}`, acertou: t.acertou, confianca: (t.confianca ?? undefined) as Confianca | undefined })),
     (id) => difs.get(id) ?? 3
   );
   for (const [id, q] of global.questoes) await Question.updateOne({ _id: new Types.ObjectId(id) }, { $set: { rating: q.rating, ratingN: q.n } });
   let alunos = 0;
   for (const [chave, a] of global.alunos) {
-    const [userId, d] = chave.split("|");
+    const [userId, concurso, banca, d] = chave.split("|");
     if (d === "?") continue;
     const disciplina = d as Disciplina;
-    await RatingAluno.updateOne({ userId: new Types.ObjectId(userId), disciplina }, { $set: { rating: a.rating, n: a.n } }, { upsert: true });
+    await RatingAluno.updateOne({ userId: new Types.ObjectId(userId), concurso: concurso as "bb" | "bacen", banca, disciplina }, { $set: { rating: a.rating, n: a.n } }, { upsert: true });
     alunos++;
   }
   return { tentativas: tents.length, questoes: global.questoes.size, alunos };

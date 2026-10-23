@@ -1,0 +1,24 @@
+{
+  "id": "bb",
+  "nome": "Banco do Brasil",
+  "cargo": "Escriturário — Agente Comercial",
+  "bancaPadrao": "cesgranrio",
+  "bancasPossiveis": ["cesgranrio"],
+  "areas": [],
+  "situacaoEdital": "Edital nº 01 – 2022/001 (prova de 23/04/2023); novo edital pendente",
+  "fonte": "Edital nº 01 – 2022/001 do Banco do Brasil (Cesgranrio), itens 7.2.2, 7.2.4, 7.3 e 8.1",
+  "conferido": true,
+  "totalQuestoes": 70,
+  "blocos": [
+    { "nome": "Conhecimentos Básicos", "cotas": { "lingua_portuguesa": 10, "lingua_inglesa": 5, "matematica": 5, "atualidades_mercado_financeiro": 5 } },
+    { "nome": "Conhecimentos Específicos", "cotas": { "matematica_financeira": 5, "conhecimentos_bancarios": 10, "informatica": 15, "vendas_negociacao": 15 } }
+  ],
+  "valorQuestao": {
+    "lingua_portuguesa": 1.5, "lingua_inglesa": 1, "matematica": 1.5, "atualidades_mercado_financeiro": 1,
+    "matematica_financeira": 1.5, "conhecimentos_bancarios": 1.5, "informatica": 1.5, "vendas_negociacao": 1.5
+  },
+  "corteObjetivas": 0.5,
+  "redacao": { "tipo": "dissertativo-argumentativo", "pontos": 100, "minimo": 70 },
+  "duracaoMin": 300,
+  "foraDoEdital": ["probabilidade_estatistica"]
+}

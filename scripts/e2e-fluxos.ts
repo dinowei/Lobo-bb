@@ -75,7 +75,8 @@ try {
       localStorage.setItem("lobo-demo-v1", JSON.stringify(e));
     });
     await p.goto(`${DEMO}/#painel`);
-    await p.locator(".evento", { hasText: "Revisão espaçada" }).first().click();
+    // o cartão cujo TÍTULO é "Revisão espaçada" (o "Plano de hoje" também cita "Revisão espaçada (24 min)")
+    await p.locator(".evento", { has: p.locator("strong", { hasText: /^Revisão espaçada$/ }) }).first().click();
     await irParaQuestao(p);
     await p.locator(".selo", { hasText: "Revisão espaçada" }).first().waitFor();
     await p.context().close();

@@ -1,0 +1,17 @@
+{
+  "id": "vunesp",
+  "nome": "Fundação Vunesp",
+  "formato": "multipla",
+  "nAlternativas": 5,
+  "nota": { "acerto": 1, "erro": 0, "branco": 0 },
+  "tempoPorItemSeg": 180,
+  "estilo": [
+    "Questões objetivas e diretas; Português com texto curto e gramática aplicada.",
+    "Raciocínio lógico com problemas do cotidiano."
+  ],
+  "estrategia": [
+    "Sem penalidade: nunca deixe em branco.",
+    "Questões mais curtas: ganhe tempo para revisar as de cálculo."
+  ],
+  "fonte": "[DECLARADO] padrão geral das provas Vunesp; confirmar no edital de cada concurso"
+}

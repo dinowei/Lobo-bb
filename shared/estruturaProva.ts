@@ -2,28 +2,24 @@
 // noturno, no servidor E no modo demo. Conferida no EDITAL Nº 01 – 2022/001 (Cesgranrio, prova de
 // 23/04/2023), itens 7.2.2 a 7.2.4, 7.3 e 8.1; bate com as capas das provas BB 2021 e 2023.
 import type { Disciplina } from "./tipos.js";
+import { CONCURSOS } from "./concursos.js";
 
+// O dado mora em data/concursos/bb.json (concurso como dado). Mesma forma de antes:
+// - valorQuestao (7.2.2.1 e 7.2.2.2): 32,5 pontos em Básicos + 67,5 em Específicos = 100
+// - corteObjetivas (7.2.4): elimina abaixo de 50% no total, em Básicos ou em Específicos, ou com zero numa disciplina
+// - redacao (7.3): 100 pontos, elimina abaixo de 70; zero só no 7.3.5 (e abaixo de 25 linhas, decisão do dono)
+// - duracaoMin (8.1): objetivas + redação em 5 horas; foraDoEdital: praticável, fora dos simulados
+const bb = CONCURSOS.bb;
 export const ESTRUTURA_PROVA = {
-  fonte: "Edital nº 01 – 2022/001 do Banco do Brasil (Cesgranrio), itens 7.2.2, 7.2.4, 7.3 e 8.1",
-  conferido: true,
-  totalQuestoes: 70,
-  blocos: [
-    { nome: "Conhecimentos Básicos", cotas: { lingua_portuguesa: 10, lingua_inglesa: 5, matematica: 5, atualidades_mercado_financeiro: 5 } },
-    { nome: "Conhecimentos Específicos", cotas: { matematica_financeira: 5, conhecimentos_bancarios: 10, informatica: 15, vendas_negociacao: 15 } },
-  ] as { nome: string; cotas: Partial<Record<Disciplina, number>> }[],
-  // valor de cada questão (7.2.2.1 e 7.2.2.2): 32,5 pontos em Básicos + 67,5 em Específicos = 100
-  valorQuestao: {
-    lingua_portuguesa: 1.5, lingua_inglesa: 1, matematica: 1.5, atualidades_mercado_financeiro: 1,
-    matematica_financeira: 1.5, conhecimentos_bancarios: 1.5, informatica: 1.5, vendas_negociacao: 1.5,
-  } as Partial<Record<Disciplina, number>>,
-  // 7.2.4: elimina abaixo de 50% no total, em Básicos ou em Específicos, ou com zero numa disciplina
-  corteObjetivas: 0.5,
-  // 7.3: dissertativo-argumentativo, 100 pontos, elimina abaixo de 70; nota zero só nos casos do 7.3.5
-  // (a regra de 25 a 30 linhas vem do caderno da prova; decisão do dono: zero abaixo de 25)
-  redacao: { tipo: "dissertativo-argumentativo", pontos: 100, minimo: 70 },
-  duracaoMin: 300, // 8.1: objetivas + redação em 5 horas
-  // praticável no treino, mas fora dos simulados e com prioridade baixa
-  foraDoEdital: ["probabilidade_estatistica"] as Disciplina[],
+  fonte: bb.fonte,
+  conferido: bb.conferido,
+  totalQuestoes: bb.totalQuestoes,
+  blocos: bb.blocos as { nome: string; cotas: Partial<Record<Disciplina, number>> }[],
+  valorQuestao: bb.valorQuestao as Partial<Record<Disciplina, number>>,
+  corteObjetivas: bb.corteObjetivas,
+  redacao: bb.redacao,
+  duracaoMin: bb.duracaoMin,
+  foraDoEdital: bb.foraDoEdital as Disciplina[],
 };
 
 export const COTAS_PROVA: Partial<Record<Disciplina, number>> = Object.assign({}, ...ESTRUTURA_PROVA.blocos.map((b) => b.cotas));

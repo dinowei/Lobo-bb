@@ -30,6 +30,8 @@ const TopicSchema = new Schema(
     // "volátil" = muda com norma nova (Pix, Open Finance...) → exige fonte atualizada
     volatil: { type: Boolean, default: false },
     ativo: { type: Boolean, default: true },
+    // disciplina compartilhada = um tópico só, ligado aos dois concursos (a migração põe ["bb"] nos atuais)
+    concursos: { type: [{ type: String, enum: ["bb", "bacen"] }], default: undefined, index: true },
     embedding: { type: [Number], select: false }, // usado para classificar trechos e questões
   },
   { timestamps: true }
@@ -107,6 +109,13 @@ const QuestionSchema = new Schema(
     topicId: { type: Schema.Types.ObjectId, ref: "Topic", required: true, index: true },
     origem: { type: String, enum: ["oficial", "gerada"], required: true },
     estiloBanca: { type: String, default: "cesgranrio" },
+    // concurso e banca como dado (BB + BACEN): a migração preenche as antigas (BB, Cesgranrio, múltipla escolha)
+    concursos: { type: [{ type: String, enum: ["bb", "bacen"] }], default: undefined, index: true },
+    banca: { type: String, enum: ["cesgranrio", "cebraspe", "fgv", "fcc", "vunesp"] }, // oficial: a banca da prova
+    formato: { type: String, enum: ["multipla", "certo_errado"] },
+    derivadaDe: { type: Schema.Types.ObjectId, ref: "Question" }, // item C/E montado de uma múltipla escolha
+    camada: { type: String, enum: ["A", "B", "C"] }, // material: A oficial/lei, B material oficial, C cursinho
+    subtopico: { type: String, index: true },
     prova: String, // ex.: "BB 2023 — Escriturário Agente Comercial" (só oficiais)
     numeroOriginal: Number, // número da questão na prova original
     precisaImagem: Boolean, // depende de figura/tabela/tela que não veio no texto (status precisa_imagem)
@@ -278,6 +287,9 @@ const AttemptSchema = new Schema(
     xp: { type: Number, default: 0 }, // calculado em shared/motor.ts no momento da resposta
     simuladoId: String,
     motivoErro: { type: String, enum: MOTIVOS_ERRO }, // informado pelo aluno depois do erro
+    // em que concurso/banca a resposta foi dada (Elo e Desempenho por concurso); antigas = BB/Cesgranrio
+    concurso: { type: String, enum: ["bb", "bacen"] },
+    banca: String,
   },
   { timestamps: true }
 );
@@ -441,13 +453,16 @@ export const Audio = model("Audio", AudioSchema, "audios");
 const RatingAlunoSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    // Elo do aluno por concurso + banca + disciplina (a migração preenche as antigas com BB/Cesgranrio)
+    concurso: { type: String, enum: ["bb", "bacen"], default: "bb" },
+    banca: { type: String, default: "cesgranrio" },
     disciplina: { type: String, enum: DISCIPLINAS, required: true },
     rating: { type: Number, required: true },
     n: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
-RatingAlunoSchema.index({ userId: 1, disciplina: 1 }, { unique: true });
+RatingAlunoSchema.index({ userId: 1, concurso: 1, banca: 1, disciplina: 1 }, { unique: true, name: "aluno_concurso_banca_disciplina" });
 export const RatingAluno = model("RatingAluno", RatingAlunoSchema, "ratings_aluno");
 
 // Cartões (8.6): frente/verso de normas (com trecho literal da fonte) e vocabulário de Inglês (trecho
@@ -611,6 +626,12 @@ const UserSchema = new Schema(
     papel: { type: String, enum: ["admin", "aluno"], default: "aluno" },
     plano: { type: String, default: "gratuito" }, // só o campo, para o futuro
     ultimoLogin: Date,
+    // concurso ativo (abas BB / BACEN) e, por concurso, a banca e a área escolhidas ("a_definir" = referência)
+    preferencias: {
+      concursoAtivo: { type: String, enum: ["bb", "bacen"], default: "bb" },
+      bancas: { type: Map, of: String, default: undefined },
+      areas: { type: Map, of: String, default: undefined },
+    },
     criadoEm: { type: Date, default: Date.now },
   }
 );

@@ -1,0 +1,17 @@
+{
+  "id": "fcc",
+  "nome": "Fundação Carlos Chagas (FCC)",
+  "formato": "multipla",
+  "nAlternativas": 5,
+  "nota": { "acerto": 1, "erro": 0, "branco": 0 },
+  "tempoPorItemSeg": 180,
+  "estilo": [
+    "Cobrança direta da letra da lei e da norma, com pouca contextualização.",
+    "Gramática tradicional em Português; reescrita mantendo o sentido."
+  ],
+  "estrategia": [
+    "Sem penalidade: nunca deixe em branco.",
+    "Decore os artigos mais cobrados: a FCC copia o texto legal e troca uma palavra."
+  ],
+  "fonte": "[DECLARADO] padrão geral das provas FCC; confirmar no edital de cada concurso"
+}

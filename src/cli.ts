@@ -61,6 +61,7 @@ import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "
 import type { Disciplina, MotivoContestacao } from "../shared/tipos.js";
 import { executarEvalGerador } from "./evalGerador.js";
 import { cancelarConvite, listarConvites } from "./admin.js";
+import { migrarConcursos, simularMigracaoConcursos } from "./migracaoConcursos.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -229,6 +230,23 @@ async function main() {
         return await naFila(rotulo, () =>
           recuperarQuestao(exigir(args[0], "o PDF da prova"), exigir(o.gabarito, "--gabarito"), exigir(o.nome, "--nome"), numero)
         );
+      }
+
+      case "migrar-concursos": {
+        // concurso e banca como dado: só preenche o que falta; --simular conta, --confirmar migra e confere
+        if (o.simular === o.confirmar) throw new Error("Escolha exatamente uma opção: --simular ou --confirmar.");
+        if (o.simular) {
+          const s = await simularMigracaoConcursos();
+          console.log(`Contagens: ${Object.entries(s.contagens).map(([c, n]) => `${c} ${n}`).join(" · ")}`);
+          for (const p of s.passos) console.log(`  ${String(p.afetados).padStart(4)} ${p.colecao}: ${p.descricao}`);
+          return console.log(`Índice antigo do Elo (aluno + disciplina): ${s.indiceAntigoElo ? "existe, sai na migração" : "já não existe"}`);
+        }
+        const r = await migrarConcursos();
+        for (const f of r.feitos) console.log(`  ${String(f.alterados).padStart(4)} ${f.colecao}: ${f.descricao}`);
+        console.log(`Antes: ${Object.entries(r.antes).map(([c, n]) => `${c} ${n}`).join(" · ")}`);
+        console.log(`Depois: ${Object.entries(r.depois).map(([c, n]) => `${c} ${n}`).join(" · ")}`);
+        if (!r.iguais) throw new Error("As contagens mudaram: confira com o backup antes de seguir.");
+        return console.log("✔ Migração concluída com as mesmas contagens.");
       }
 
       case "convites": {
@@ -474,6 +492,9 @@ async function main() {
         return await naFila(rotulo, async () => {
           const inicio = new Date();
           const lote = `noite ${inicio.toISOString().slice(0, 10)}`;
+          // questão/tópico novos ganham concurso, banca, formato e camada (idempotente: só o que falta)
+          const preenchidos = (await migrarConcursos()).feitos.reduce((s, f) => s + f.alterados, 0);
+          if (preenchidos) console.log(`✔ Concurso/banca preenchidos em ${preenchidos} registro(s) novo(s).`);
           // ordem da noite: questões → explicações alternativas → aulas → cartões → fontes atuais → temas → áudio
           // (a fila roda na ordem de criação, então esta é também a ordem de execução)
           const { gerar: n, explicar_outro_jeito: extras, aula: aulas, cartoes, fonte_atual: fontesAtuais, tema: temas, voz: audios } = await planejarEtapasDaNoite({

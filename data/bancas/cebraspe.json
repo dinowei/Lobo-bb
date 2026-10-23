@@ -1,0 +1,19 @@
+{
+  "id": "cebraspe",
+  "nome": "Cebraspe",
+  "formato": "certo_errado",
+  "nAlternativas": 2,
+  "nota": { "acerto": 1, "erro": -1, "branco": 0 },
+  "tempoPorItemSeg": 120,
+  "estilo": [
+    "Afirmação autônoma para julgar Certo ou Errado; um único item errado pode estar numa palavra.",
+    "Literalidade da lei e exceções: \"somente\", \"sempre\", \"vedado\", \"salvo\" mudam o gabarito.",
+    "Itens agrupados por texto ou situação-problema; vários itens sobre o mesmo comando."
+  ],
+  "estrategia": [
+    "Cada erro anula um acerto: deixe em branco quando não tiver segurança (o Lobo sugere pela sua confiança histórica no assunto).",
+    "Procure a palavra que torna o item falso antes de julgar o todo.",
+    "Desconfie de generalizações; a exceção da lei costuma ser o item."
+  ],
+  "fonte": "[DECLARADO] regra de nota Certo/Errado com penalidade (um erro anula um acerto) das provas Cebraspe; confirmar no edital do BACEN quando sair"
+}

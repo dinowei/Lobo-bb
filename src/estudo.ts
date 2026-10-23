@@ -45,6 +45,7 @@ import { Geracao } from "./models.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
 import { inicioDaNoite } from "../shared/motor.js";
 import { pesoDoTopico, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PROVA, MISTURA_SIMULADO } from "../shared/estruturaProva.js";
+import { bancaEmUso, CONCURSO_PADRAO, type IdBanca, type IdConcurso } from "../shared/concursos.js";
 import { fatorNaoSabia, palavrasDecisivas, JANELA_NAO_SABIA_DIAS, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../shared/aprendizado.js";
 import type { AcaoMotivoDTO, MotivoErro } from "../shared/tipos.js";
 import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
@@ -56,6 +57,11 @@ import { fontesDaQuestao } from "./fontesAtuais.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
+// em que concurso e banca o aluno está estudando agora (Elo, tentativas e Desempenho por concurso).
+// Por enquanto o BB no estilo Cesgranrio, igual a antes; as abas BB / BACEN mudam isso.
+export function chaveConcurso(): { concurso: IdConcurso; banca: IdBanca } {
+  return { concurso: CONCURSO_PADRAO, banca: bancaEmUso(CONCURSO_PADRAO) };
+}
 const oid = (s: string) => {
   if (!/^[0-9a-f]{24}$/i.test(s)) throw new Error(`id inválido: ${s}`);
   return new Types.ObjectId(s);
@@ -186,15 +192,16 @@ async function registrar(
   const userId = ALUNO();
   const acertou = resposta === q.gabarito;
   const xp = xpDaTentativa({ acertou, dificuldade: q.dificuldade ?? 3, confianca, modo });
+  const ctx = chaveConcurso();
 
-  await Attempt.create({ userId, questionId: q._id, topicId: q.topicId, resposta: resposta ?? undefined, acertou, tempoSeg, confianca, modo, xp, simuladoId });
+  await Attempt.create({ userId, questionId: q._id, topicId: q.topicId, resposta: resposta ?? undefined, acertou, tempoSeg, confianca, modo, xp, simuladoId, ...ctx });
 
-  // rating Elo: aluno (por disciplina) × questão; simulado também conta
+  // rating Elo: aluno (por concurso + banca + disciplina) × questão; simulado também conta
   const disciplina = (await Topic.findById(q.topicId).select("disciplina").lean())?.disciplina;
-  const ra = disciplina ? await RatingAluno.findOne({ userId, disciplina }).lean() : null;
+  const ra = disciplina ? await RatingAluno.findOne({ userId, ...ctx, disciplina }).lean() : null;
   const r = atualizarRatings(ra?.rating ?? RATING_ALUNO_INICIAL, q.rating ?? ratingInicialQuestao(q.dificuldade ?? 3), acertou, confianca);
   await Question.updateOne({ _id: q._id }, { $inc: { "stats.tentativas": 1, "stats.acertos": acertou ? 1 : 0, ratingN: 1 }, $set: { rating: r.questao } });
-  if (disciplina) await RatingAluno.updateOne({ userId, disciplina }, { $set: { rating: r.aluno }, $inc: { n: 1 } }, { upsert: true });
+  if (disciplina) await RatingAluno.updateOne({ userId, ...ctx, disciplina }, { $set: { rating: r.aluno }, $inc: { n: 1 } }, { upsert: true });
 
   // só os 3 campos do SM-2: espalhar o documento inteiro levava _id/__v para o $set e a 2ª resposta à
   // mesma questão (revisão, simulado) quebrava com "Updating the path '__v' would create a conflict"
@@ -290,7 +297,7 @@ export const apiServidor: Omit<Api, "modo"> = {
       new Set(brutas.map((t) => t.questaoId))
     );
     banco.repetidasNoite = await Geracao.countDocuments({ em: { $gte: inicioDaNoite() }, motivo: { $in: MOTIVOS_REPETICAO } });
-    const niveis = (await RatingAluno.find({ userId }).select("disciplina rating n").lean()).map((r) => ({ disciplina: r.disciplina as Disciplina, rating: Math.round(r.rating), n: r.n ?? 0 }));
+    const niveis = (await RatingAluno.find({ userId, ...chaveConcurso() }).select("disciplina rating n").lean()).map((r) => ({ disciplina: r.disciplina as Disciplina, rating: Math.round(r.rating), n: r.n ?? 0 }));
     return { ...painel, banco, alertasAdmin, redacaoCorrigidaPendente: !!redacaoCorrigidaPendente, niveis };
   },
 
@@ -377,7 +384,7 @@ export const apiServidor: Omit<Api, "modo"> = {
       { $sample: { size: 40 } },
       { $project: { rating: 1, dificuldade: 1 } },
     ]);
-    const meu = (await RatingAluno.findOne({ userId, disciplina: escolhido.disciplina }).lean())?.rating ?? RATING_ALUNO_INICIAL;
+    const meu = (await RatingAluno.findOne({ userId, ...chaveConcurso(), disciplina: escolhido.disciplina }).lean())?.rating ?? RATING_ALUNO_INICIAL;
     const alvo = sortearPonderado(candidatas, (c) => pesoPorProximidade(c.rating ?? ratingInicialQuestao(c.dificuldade ?? 3), meu + ALVO_ACIMA))!;
     const q = await Question.findById(alvo._id).lean<QuestaoDoc>();
     if (!q) return { questao: null, modo: "treino", aviso: "Não deu para buscar a questão agora. Tente de novo." };
@@ -510,7 +517,7 @@ export const apiServidor: Omit<Api, "modo"> = {
     if (opcoes?.diagnostico) {
       const userId = ALUNO();
       for (const [disciplina, v] of porDisc)
-        await RatingAluno.updateOne({ userId, disciplina }, { $set: { rating: ratingDoDiagnostico(v.acertos, v.total) }, $setOnInsert: { n: v.total } }, { upsert: true });
+        await RatingAluno.updateOne({ userId, ...chaveConcurso(), disciplina }, { $set: { rating: ratingDoDiagnostico(v.acertos, v.total) }, $setOnInsert: { n: v.total } }, { upsert: true });
     }
     return {
       simuladoId,

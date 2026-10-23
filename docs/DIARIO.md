@@ -73,4 +73,31 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - Opcional, para o próximo diagnóstico: no PowerShell como administrador, `wevtutil sl Microsoft-Windows-TaskScheduler/Operational /e:true` liga o histórico do Agendador.
   - Eu não mudo configuração de energia nem de sistema.
 
-RETOMAR AQUI: PROMPT-LOBO-BB-BACEN, F2 (concurso e banca como dado; migração com backup 2026-10-22). Código da F2 já começado no working tree (shared/concursos.ts, data/bancas, data/concursos, models, migracaoConcursos.ts), ainda sem commit.
+## 22/10/2026 — F2: concurso e banca como dado (sem mudar o BB)
+
+- **Bancas** (`data/bancas/*.json`): cesgranrio, cebraspe, fgv, fcc, vunesp, com formato, nº de alternativas, regra de nota, tempo por item, estilo e estratégia.
+  - Cesgranrio [CONFIRMADO] pelas provas BB.
+  - Cebraspe C/E com penalidade (um erro anula um acerto) [DECLARADO, confirmar no edital].
+  - FGV, FCC e Vunesp [DECLARADO].
+- **Concursos** (`data/concursos/`):
+  - `bb.json` = a estrutura de antes (edital 2022/001). `shared/estruturaProva.ts` agora lê o JSON, e o teste prova as mesmas cotas, os mesmos 100 pontos, corte, duração e redação.
+  - `bacen.json`: Técnico, banca **a_definir** (referência Cebraspe), áreas Suporte Técnico-Administrativo e Segurança Institucional. Conhecimentos básicos de referência lidos do **edital BACEN 2024 Analista** do acervo (p. 16 e 18): Português 25, Lógica e estatística 10, Dir. Administrativo 5, Economia 10; P1 ≥ 10, objetivas ≥ 36.
+- **`shared/concursos.ts`** (servidor e demo): `BANCAS`, `CONCURSOS`, `bancaEmUso` (a definir → referência) e `notaPelaBanca` (penalidade). JSON importado com `with { type: "json" }` (servidor com `resolveJsonModule`; o Vite builda).
+- **Modelos:**
+  - Questão: `concursos[]`, `banca`, `formato`, `derivadaDe`, `camada` (A/B/C), `subtopico`.
+  - Tópico: `concursos[]`. Conta: `preferencias` (concurso ativo; banca e área por concurso). Tentativa: `concurso`, `banca`.
+  - Elo do aluno por **concurso + banca + disciplina**: índice único novo. O antigo `{userId, disciplina}` sai na migração e de novo a cada partida do servidor, porque o servidor antigo o recria.
+  - `chaveConcurso()` = BB/Cesgranrio por enquanto; as abas BB/BACEN (F5) vão mudar.
+- **Migração** (`bb -- migrar-concursos --simular|--confirmar`, risco ALTO). Só preenche campos ausentes; idempotente; o noturno roda o mesmo preenchimento para o que nascer novo.
+  - Backup antes: `backups/2026-10-22` (provado na F1, já com questões e tópicos).
+  - Simulação, depois migração: **contagens iguais antes/depois** (questions 390, topics 58, users 3, attempts 6, ratings_aluno 5).
+  - Preenchidos: 390 questões (concursos e formato), 137 oficiais com banca cesgranrio e camada A, 58 geradas com trecho de fonte oficial com camada A, 58 tópicos, 3 contas, 6 tentativas, 5 Elos.
+  - Nova simulação: 0 pendente; índice antigo removido.
+  - Rollback: `$unset` dos campos novos e recriar `{userId:1, disciplina:1}` único; ou `restaurar backups/2026-10-22 --confirmar`.
+- **Testes:**
+  - `shared/concursos.test.ts` 2/2.
+  - `src/migracaoConcursos.test.ts`, em MongoDB em memória (`ISOLAMENTO=1`): contagens iguais, idempotente, Elo BB e BACEN do mesmo aluno; 1/1.
+  - Suíte 192 ok, 5 pulados; typecheck do servidor e do site ok; `vite build` ok.
+  - **e2e do BB idêntico: 6/6.** Ajustei o seletor do caso "revisão", que pegava o cartão "Plano de hoje" (ele também cita "Revisão espaçada"); não tinha a ver com a F2.
+
+RETOMAR AQUI: PROMPT-LOBO-BB-BACEN, F3 (espinha do edital e subtópicos; classificar o banco por subtópico).

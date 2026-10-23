@@ -1,0 +1,19 @@
+{
+  "id": "fgv",
+  "nome": "Fundação Getulio Vargas (FGV)",
+  "formato": "multipla",
+  "nAlternativas": 5,
+  "nota": { "acerto": 1, "erro": 0, "branco": 0 },
+  "tempoPorItemSeg": 180,
+  "estilo": [
+    "Textos longos e enunciados extensos; interpretação pesa mesmo fora de Português.",
+    "Alternativas parecidas entre si; a diferença está num detalhe do texto.",
+    "Cobra jurisprudência e doutrina além da letra da lei."
+  ],
+  "estrategia": [
+    "Sem penalidade: nunca deixe em branco.",
+    "Grife no texto o trecho que sustenta a resposta antes de marcar.",
+    "Controle o tempo por bloco: textos longos consomem a prova."
+  ],
+  "fonte": "[DECLARADO] padrão das provas FGV (CVM, CGU, IBGE); confirmar no edital de cada concurso"
+}
