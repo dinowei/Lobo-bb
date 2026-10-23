@@ -61,15 +61,21 @@ function porDia(dias: DiaTema[]) {
 
 const diaSemana = (data: string) => new Date(`${data}T12:00:00`).getDay();
 
-export function situacaoTrilha(dias: DiaTema[], hoje: string, temas: TemaTrilha[] = TRILHA): SituacaoTrilha {
+// inicio: o aluno pode pôr a trilha num tema ("Fazer deste o tema do dia"): a partir de `desde`,
+// o ponteiro começa nesse tema; o que veio antes não move a trilha.
+export interface InicioTrilha { n: number; desde: string }
+
+export function situacaoTrilha(dias: DiaTema[], hoje: string, temas: TemaTrilha[] = TRILHA, inicio?: InicioTrilha | null): SituacaoTrilha {
   const estados: Record<string, EstadoTema> = Object.fromEntries(temas.map((t) => [t.subtopico, "novo" as EstadoTema]));
   const acerto: Record<string, number> = {};
   const fila: string[] = [];
   let ordem = [...temas];
   let rodada = 1, i = 0, diasNoTema = 0, refazer = false;
+  if (inicio) i = Math.max(0, ordem.findIndex((t) => t.n >= inicio.n));
 
   for (const d of porDia(dias)) {
     if (d.data >= hoje) continue; // o dia de hoje ainda está em andamento
+    if (inicio && d.data < inicio.desde) continue;
     const v = veredito(d.novas, d.acertos);
     if (v === "incompleto") continue;
     acerto[d.subtopico] = Math.round((d.acertos / d.novas) * 100);

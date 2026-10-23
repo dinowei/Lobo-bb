@@ -175,6 +175,32 @@ try {
     console.log(`✔ ${tela.nome}: painel → tema do dia → revisões → 20 de crase → +5 de Português → resultado → página do tema → desempenho`);
     await ctx.close();
   }
+
+  // busca "crase" → Praticar só de crase; e "Fazer deste o tema do dia" chama a API da trilha
+  {
+    const ctx = await navegador.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "dark", locale: "pt-BR" });
+    const p = await ctx.newPage();
+    p.setDefaultTimeout(30_000);
+    const e: Estado = { pedidos: [], respondidas: [], revisoes: 0 };
+    await servidorFalso(p, e);
+    let inicio: unknown = null;
+    await p.route((u) => u.pathname === "/api/trilha/inicio", (r) => { inicio = r.request().postDataJSON(); return r.fulfill({ json: { ok: true } }); });
+    await p.goto(`${WEB}/#painel`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    await p.locator("#busca").fill("crase");
+    await p.locator("[data-testid=busca-tema-crase]").click();
+    await responder(p);
+    assert.equal(e.pedidos[0]?.tipo, "crase");
+    assert.match(e.pedidos[0].url, /subtopico=crase/);
+    await p.evaluate(() => { location.hash = "#tema?tema=pontuacao"; });
+    await p.route((u) => u.pathname === "/api/tema/pontuacao", (r) => r.fulfill({ json: { subtopico: "pontuacao", nome: "Pontuação", n: 6, disciplina: "lingua_portuguesa", topicoIds: ["t-pont"], concursos: ["bb", "bacen"], aprovadas: 12, poucas: true, estudo: { tempoMin: 45, objetivo: null, pontos: [], lei: null, ficha: null, materiais: [], youtube: "https://www.youtube.com/results?search_query=x", oficiaisNoAcervo: [] }, pratica: { novas: 12, revisoes: 0, erradas: 0, oficiais: 0, geradas: 12, derivadas: 0, cursinho: 0 } } }));
+    await p.reload();
+    await p.locator("[data-testid=fazer-do-dia]").click();
+    await p.waitForTimeout(500);
+    assert.deepEqual(inicio, { subtopico: "pontuacao" });
+    assert.match(await p.locator(".faixa-aviso").innerText(), /Só 12 questões aprovadas/);
+    console.log("✔ busca \"crase\" → Praticar só de crase; \"Fazer deste o tema do dia\" e aviso de < 15 aprovadas");
+    await ctx.close();
+  }
 } catch (e) {
   falhou = true;
   console.log(`✖ ${(e as Error).message.split("\n")[0]}`);

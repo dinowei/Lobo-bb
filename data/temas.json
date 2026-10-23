@@ -1,4 +1,36 @@
 {
-  "_sobre": "Conteúdo de estudo por tema (chave = subtópico): material do acervo (arquivo relativo a ACERVO_DIR, páginas, camada A > B > C), lei vigente, pontos para lembrar, ficha com citação conferida e as questões oficiais do tema. Preenchido pelo mapa do acervo (F7).",
-  "temas": {}
+  "_sobre": "Conteúdo de estudo por tema (chave = subtópico): material do acervo (arquivo relativo a ACERVO_DIR, páginas físicas do PDF, camada A > B > C), lei vigente, pontos para lembrar, ficha com citação conferida (literal no PDF) e as questões oficiais do tema no acervo. Preenchido pelo mapa do acervo (F7); crase antecipada na fatia vertical.",
+  "temas": {
+    "crase": {
+      "tempoMin": 45,
+      "objetivo": "Saber quando o \"a\" leva acento grave (preposição + artigo) e reconhecer na hora os casos em que a crase é proibida, do jeito que a Cesgranrio cobra.",
+      "pontos": [
+        "Crase = preposição \"a\" + artigo \"a\". Faltou um dos dois, não tem crase.",
+        "Teste do masculino: se no masculino vira \"ao\", no feminino é \"à\" (vou à agência / vou ao banco).",
+        "Nunca antes de verbo, de palavra masculina, de pronome pessoal ou de tratamento, de \"uma\" e de \"esta/essa\".",
+        "Locução feminina e hora exata levam crase: às pressas, à noite, às 10h.",
+        "\"a\" sozinho antes de plural não tem crase (obedeci a ordens); com o artigo, vira \"às\" (obedeci às ordens)."
+      ],
+      "lei": null,
+      "materiais": [
+        { "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf", "paginas": "54–63", "pagina": 54, "camada": "C", "titulo": "Português para o CNU (Estratégia): crase em 2 passos, com questões resolvidas" },
+        { "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera Banco do Brasil 2023.pdf", "paginas": "13", "pagina": 13, "camada": "C", "titulo": "Revisão de Véspera BB 2023 (Estratégia): Aposta 11, crase" },
+        { "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - BB 2023 Escriturario Agente Comercial - Prova Comentada.pdf", "paginas": "12–13", "pagina": 12, "camada": "C", "titulo": "Prova comentada BB 2023 (Estratégia): questão 8 da Prova B" }
+      ],
+      "ficha": {
+        "texto": "**Crase** é o encontro da preposição **a** (pedida por um verbo ou nome) com o artigo **a** (da palavra feminina). Dois passos: 1) alguém exige \"a\"? 2) a palavra aceita o artigo \"a\"? Os dois sim → **à**. Um não → sem acento.",
+        "citacao": "A crase é a contração de preposição ‘a’ com artigo ‘a’. E é assinalada pelo acento grave.",
+        "fonte": "Português para o CNU (Estratégia), p. 54"
+      },
+      "oficiais": [
+        "BB 2023 Agente Comercial, Prova A Q8",
+        "BB 2023 Agente Comercial, Prova B Q8",
+        "BB 2023 Agente Comercial, Prova C Q5",
+        "BB 2021 Agente Comercial, Prova A Q9",
+        "BB 2021 Agente Comercial, Prova C Q6",
+        "BB 2023 Agente de Tecnologia Q8",
+        "BB 2021 Agente de Tecnologia Q8"
+      ]
+    }
+  }
 }

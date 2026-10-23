@@ -116,7 +116,11 @@ app.get(
 // praticar por tema, trilha e página do tema (F4)
 app.get("/api/temas/desempenho", rota(async (_req, res) => res.json(await apiServidor.desempenhoTemas())));
 app.get("/api/trilha", rota(async (_req, res) => res.json(await apiServidor.trilha())));
-app.get("/api/simulados", rota(async (_req, res) => res.json(await apiServidor.simulados())));
+app.post("/api/trilha/inicio", rota(async (req, res) => {
+  await apiServidor.definirTemaDoDia(String((req.body as { subtopico?: unknown })?.subtopico ?? ""));
+  res.json({ ok: true });
+}));
+app.get("/api/simulados",rota(async (_req, res) => res.json(await apiServidor.simulados())));
 app.get("/api/tema/:subtopico", rota(async (req, res) => {
   const t = await apiServidor.tema(String(req.params.subtopico));
   return t ? res.json(t) : res.status(404).json({ erro: "Tema não encontrado." });

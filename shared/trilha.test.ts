@@ -67,6 +67,16 @@ test("amanhã: mensagem pela regra (concluído, reforço, refaz, 2º dia, incomp
   assert.match(amanha(crase, 10, 10), /Faltam 5 questões novas/);
 });
 
+test("início escolhido pelo aluno: a trilha começa no tema 22 (Crase) e segue a regra dali", () => {
+  const inicio = { n: 22, desde: "2026-10-22" };
+  assert.equal(situacaoTrilha([], "2026-10-22", TRILHA, inicio).tema?.subtopico, "crase");
+  // dia anterior ao início não move a trilha
+  assert.equal(situacaoTrilha([dia("2026-10-21", "interpretacao", 20, 20)], "2026-10-23", TRILHA, inicio).tema?.subtopico, "crase");
+  const s = situacaoTrilha([dia("2026-10-22", "crase", 20, 15)], "2026-10-23", TRILHA, inicio);
+  assert.equal(s.estados.crase, "concluido");
+  assert.equal(s.tema?.subtopico, "taxas");
+});
+
 test("domingo: sem tema novo", () => {
   const s = situacaoTrilha([], "2026-10-25");
   assert.equal(s.modo, "domingo");

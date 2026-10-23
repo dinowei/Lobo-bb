@@ -72,6 +72,7 @@ export const apiHttp: Api = {
   },
   desempenhoTemas: () => req("/temas/desempenho"),
   simulados: () => req("/simulados"),
+  definirTemaDoDia: (subtopico) => post("/trilha/inicio", { subtopico }),
   trilha: () => req("/trilha"),
   tema: (subtopico) => req(`/tema/${encodeURIComponent(subtopico)}`),
   pedirPrioridadeTema: (subtopico) => post(`/tema/${encodeURIComponent(subtopico)}/prioridade`, {}),

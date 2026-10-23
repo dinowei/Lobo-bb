@@ -611,6 +611,8 @@ export interface Api {
   trilha(): Promise<TrilhaDTO>;
   tema(subtopico: string): Promise<TemaDTO | null>;
   pedirPrioridadeTema(subtopico: string): Promise<void>;
+  // põe a trilha neste tema (ele vira o tema do dia; dali em diante a regra decide)
+  definirTemaDoDia(subtopico: string): Promise<void>;
   // histórico dos simulados com o detalhe guardado (evolução, tabela, CSV)
   simulados(): Promise<ResumoSimulado[]>;
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;

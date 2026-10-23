@@ -1,7 +1,7 @@
 // Página do tema (F4): área de ESTUDO (material do acervo com páginas, lei, ficha, aula, ouvir, YouTube, pontos)
 // e área de PRÁTICA (novas, revisões, erradas, por origem). Sem mapa do acervo ainda, mostra o que existe.
 import { useEffect, useState } from "react";
-import type { AulaDTO, TemaDTO } from "../../../shared/tipos";
+import type { AulaDTO, TemaDTO, TrilhaDTO } from "../../../shared/tipos";
 import { NOME_DISCIPLINA } from "../../../shared/tipos";
 import { textoDaAula } from "../../../shared/fala";
 import { MISTAS_FIM } from "../../../shared/trilha";
@@ -19,11 +19,13 @@ export function Tema() {
   const [t, setT] = useState<TemaDTO | null | undefined>(undefined);
   const [aula, setAula] = useState<AulaDTO | null>(null);
   const [pedido, setPedido] = useState(false);
+  const [trilha, setTrilha] = useState<TrilhaDTO | null>(null);
 
   useEffect(() => {
     if (!sub) return setT(null);
     setT(undefined);
     api.tema(sub).then(setT).catch(() => setT(null));
+    api.trilha().then(setTrilha).catch(() => setTrilha(null));
   }, [api, sub]);
   useEffect(() => {
     const id = t?.topicoIds[0];
@@ -44,6 +46,23 @@ export function Tema() {
   const treinar = (revisoes = false) => ir("praticar", {
     sessao: { subtopico: t.subtopico, nome: t.nome, disciplina: t.disciplina, novas: 20, mistas: MISTAS_FIM, revisoes, trilha: false },
   });
+  const ehDoDia = trilha?.hoje?.subtopico === t.subtopico;
+  // sessão completa do tema do dia (igual ao botão do Painel): revisões → novas do tema → +5 mistas → amanhã
+  const estudarHoje = () => trilha?.hoje && ir("praticar", {
+    sessao: {
+      subtopico: t.subtopico, nome: trilha.hoje.nome, disciplina: t.disciplina, revisoes: true, trilha: true,
+      novas: Math.max(5, trilha.hoje.tamanho - trilha.hoje.novasFeitasHoje), mistas: trilha.hoje.mistas,
+    },
+  });
+  const fazerDoDia = async () => {
+    try {
+      await api.definirTemaDoDia(t.subtopico);
+      setTrilha(await api.trilha());
+      avisar(`${t.nome} agora é o tema do dia. Daqui a trilha segue pela regra.`);
+    } catch (err) {
+      avisar(err instanceof Error ? err.message : "Não deu para mudar a trilha agora.");
+    }
+  };
   const pedirPrioridade = async () => {
     try {
       await api.pedirPrioridadeTema(t.subtopico);
@@ -72,7 +91,14 @@ export function Tema() {
           {e.objetivo && <p className="desc" data-testid="objetivo">{e.objetivo}</p>}
         </div>
         <div className="acoes">
-          <button className="botao-laranja" onClick={() => treinar()} data-testid="treinar-tema">Treinar este tema <ISeta /></button>
+          {ehDoDia ? (
+            <button className="botao-laranja" onClick={estudarHoje} data-testid="estudar-hoje">Estudar o tema do dia <ISeta /></button>
+          ) : (
+            <button className="botao-laranja" onClick={() => treinar()} data-testid="treinar-tema">Treinar este tema <ISeta /></button>
+          )}
+          {t.n && trilha && !ehDoDia && trilha.modo !== "domingo" && (
+            <button className="botao-linha" onClick={fazerDoDia} data-testid="fazer-do-dia" title={`Hoje a trilha está em: ${trilha.hoje?.nome ?? "—"}`}>Fazer deste o tema do dia</button>
+          )}
         </div>
       </header>
 

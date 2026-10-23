@@ -145,4 +145,24 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - provas de outros bancos: F8, só matérias comuns, entram na incidência e no estilo.
 - Prioridade na F8: comentários do BB → Cesgranrio comentadas (Bancários, Mat. Financeira) → outros bancos → resto. Medir o Atlas antes de cada lote; parar em 80%.
 
-RETOMAR AQUI: fatia vertical de Crase (pedido do dono, antes da F5): mapa do acervo só de Crase, página do tema completa, ≥ 15 novas aprovadas, sessão da noite, e2e com prints; avisar o dono. Depois F5.
+## 22–23/10/2026 — Fatia vertical: Crase (tema 22) — PARCIAL (faltam questões novas)
+
+- **Mapa do acervo só de Crase** (`data/temas.json`, lido só para leitura):
+  - Material (C; crase não tem lei nem material oficial):
+    - Português para o CNU (Estratégia), p. 54–63: crase em 2 passos, com questões resolvidas;
+    - Revisão de Véspera BB 2023, p. 13: "Aposta 11";
+    - Prova comentada BB 2023, p. 12–13: Q8 da **Prova B**. Os cadernos A/B/C de 2023 têm questões diferentes, então o comentário precisa ser ligado pelo texto, como o dono pediu.
+  - Oficiais de crase no acervo: BB 2023 AC A Q8, B Q8, C Q5; BB 2021 AC A Q9, C Q6; Agente de Tecnologia 2023 Q8 e 2021 Q8. No banco estão só A/2023 Q8 e A/2021 Q9 (as outras entram na F8).
+  - Ficha com citação **conferida literal** no PDF (p. 54).
+- **Página do tema completa:** 45 min, objetivo, 3 materiais com "Abrir material" (rota só leitura; caminho fora do mapa bloqueado, conferido), pontos para lembrar, ficha, aula do tópico, "Estudar ouvindo", YouTube, "caiu em prova".
+  - Novo: **"Fazer deste o tema do dia"** põe a trilha naquele tema; dali a regra decide (teste novo: início no tema 22 → concluído → tema 23).
+- **Sessão da noite:** revisões → novas de Crase → +5 de Português → resultado → próximo tema pela regra. e2e `scripts/e2e-trilha.ts` ok (1440 e 360, mais busca "crase" e "Fazer deste o tema do dia"); prints em `docs/telas/trilha/`.
+- **Questões novas de Crase: só 2 aprovadas em 30 tentativas** (9 min por tentativa). Crase tem 16 aprovadas no total; a meta era ≥ 15 novas.
+  - Causa principal: o desempate das frases (`juiz_pt`) não tem modelo elegível. A corrente aprovada é [Super, Ultra]: o Super é o auditor das frases (o juiz precisa ser outro) e o Ultra está "fora" (503). Então toda frase errada que o auditor chamou de "correta" (ex.: "Encaminhamos **à** Vossa Senhoria") derrubou a questão.
+  - Outras 6 caíram como duplicadas no filtro de similaridade (regra 16), que não afrouxei.
+  - **Pendência do dono:** autorizar um 3º modelo no `juiz_pt`. O candidato é `stepfun-ai/step-5-preview` (outra família, já marcado juiz_pt no catálogo, mas é preview). A corrente é aprovada pelo dono, então não mexi.
+- **Erro meu (registro):** a geração de Crase (começou 22:14) passou das 00:45 e entrou na janela do noturno. O noturno das 01:00 esperou na fila até 02:36 e perdeu 1h36 da noite. Desliguei meus servidores e não rodei mais nada de IA até 05:30.
+  - Daqui em diante: lote de geração de dia com `--n` que caiba antes das 00:30 (a ~9 min por tentativa) e checagem do relógio antes de lançar.
+- O log do noturno mostra acentos quebrados nas linhas vindas do Node ("Ô£ö"). A saída do processo filho não é lida como UTF-8 pelo wrapper; anotado para a F12.
+
+RETOMAR AQUI: avisar o dono que a fatia de Crase está pronta para testar (com 16 aprovadas; ≥ 15 novas depende do juiz_pt). Depois F5 (abas BB/BACEN e banca).

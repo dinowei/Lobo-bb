@@ -54,7 +54,7 @@ import { explicarSobDemanda } from "./outroJeito.js";
 import { perguntarAoBinho } from "./chatBinho.js";
 import { avaliarCartao, filaCartoes } from "./cartoes.js";
 import { fontesDaQuestao } from "./fontesAtuais.js";
-import { desempenhoTemas, paginaTema, pedirPrioridade, proximaDoTema, trilha } from "./temas.js";
+import { definirTemaDoDia, desempenhoTemas, paginaTema, pedirPrioridade, proximaDoTema, trilha } from "./temas.js";
 import { listarSimulados, salvarSimulado } from "./simulados.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
@@ -265,6 +265,7 @@ export const apiServidor: Omit<Api, "modo"> = {
   trilha,
   tema: paginaTema,
   pedirPrioridadeTema: pedirPrioridade,
+  definirTemaDoDia,
   simulados: () => listarSimulados(ALUNO()),
 
   async painel() {

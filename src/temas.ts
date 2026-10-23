@@ -10,7 +10,7 @@ import { Types } from "mongoose";
 import { Attempt, Config, Question, ReviewState, Topic } from "./models.js";
 import { ALUNO, chaveConcurso } from "./estudo.js";
 import { SUBTOPICO_POR_ID } from "../shared/subtopicos.js";
-import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA } from "../shared/trilha.js";
+import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA, type InicioTrilha } from "../shared/trilha.js";
 import { desempenhoPorTema, diaLocal, diasDaTrilha, type OrigemTema, type TentativaTema } from "../shared/desempenhoTema.js";
 import type { Disciplina, TemaDTO, TrilhaDTO } from "../shared/tipos.js";
 import conteudo from "../data/temas.json" with { type: "json" };
@@ -24,7 +24,7 @@ type ConteudoTema = {
   ficha?: { texto: string; citacao: string; fonte: string };
   oficiais?: string[]; // "BB 2023 Q7" — questões oficiais do tema no acervo
 };
-const CONTEUDO = conteudo.temas as Record<string, ConteudoTema>;
+const CONTEUDO = conteudo.temas as unknown as Record<string, ConteudoTema>; // JSON: camada vem como string
 
 // tópicos do concurso ativo (matéria comum nos dois; tópico antigo sem concurso = BB)
 async function topicosAtivos() {
@@ -69,12 +69,22 @@ export async function pedirPrioridade(subtopico: string) {
   await Config.updateOne({ _id: "prioridade_temas" }, { $set: { [`valor.${subtopico}`]: new Date().toISOString(), em: new Date() } }, { upsert: true });
 }
 
+// onde a trilha começa (por aluno e concurso): "Fazer deste o tema do dia" na página do tema
+const chaveInicio = () => `trilha_inicio:${String(ALUNO())}:${chaveConcurso().concurso}`;
+export async function definirTemaDoDia(subtopico: string) {
+  const t = TRILHA.find((x) => x.subtopico === subtopico);
+  if (!t) throw new Error("Esse tema não está na trilha.");
+  const valor: InicioTrilha = { n: t.n, desde: diaLocal(new Date()) };
+  await Config.updateOne({ _id: chaveInicio() }, { $set: { valor, em: new Date() } }, { upsert: true });
+}
+
 export async function trilha(): Promise<TrilhaDTO> {
   const { ts, aprovadas, discDoSub } = await tentativasPorTema();
   const { concurso } = chaveConcurso();
   const temas = TRILHA.filter((t) => concursosDoTema(t).includes(concurso));
   const hoje = diaLocal(new Date());
-  const s = situacaoTrilha(diasDaTrilha(ts), hoje, temas);
+  const inicio = ((await Config.findById(chaveInicio()).lean())?.valor ?? null) as InicioTrilha | null;
+  const s = situacaoTrilha(diasDaTrilha(ts), hoje, temas, inicio);
   const vencidas = await ReviewState.countDocuments({ userId: ALUNO(), proximaRevisao: { $lte: new Date() } });
   const estado = s.tema ? s.estados[s.tema.subtopico] : "novo";
   const feitasHoje = s.tema ? diasDaTrilha(ts).find((d) => d.data === hoje && d.subtopico === s.tema!.subtopico) : undefined;

@@ -38,11 +38,12 @@ import { ehDiagnostico, MISTURA_DIAGNOSTICO, PREFIXO_DIAGNOSTICO, ratingDoDiagno
 import { reprocessar, type EventoRating, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../../../shared/rating";
 import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../../../shared/aprendizado";
 import { classificarPorCodigo, SUBTOPICO_POR_ID } from "../../../shared/subtopicos";
-import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA } from "../../../shared/trilha";
+import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA, type InicioTrilha } from "../../../shared/trilha";
 import { desempenhoPorTema, diaLocal, diasDaTrilha, type TentativaTema } from "../../../shared/desempenhoTema";
 import { resumirSimulado } from "../../../shared/simulados";
 
 const CHAVE = "lobo-demo-v1";
+const CHAVE_INICIO = "lobo-demo-trilha-inicio";
 const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 // peso no treino: o do edital ou a cota da disciplina na prova ÷ tópicos dela (igual ao servidor)
@@ -239,7 +240,9 @@ export const apiDemo: Api = {
     const ap = aprovadasDemo(e);
     const temas = TRILHA.filter((t) => concursosDoTema(t).includes("bb"));
     const hoje = diaLocal(new Date());
-    const s = situacaoTrilha(diasDaTrilha(ts), hoje, temas);
+    let inicio: InicioTrilha | null = null;
+    try { inicio = JSON.parse(localStorage.getItem(CHAVE_INICIO) ?? "null"); } catch { /* sem storage */ }
+    const s = situacaoTrilha(diasDaTrilha(ts), hoje, temas, inicio);
     const estado = s.tema ? s.estados[s.tema.subtopico] : "novo";
     const feitas = s.tema ? diasDaTrilha(ts).find((d) => d.data === hoje && d.subtopico === s.tema!.subtopico) : undefined;
     const agora = Date.now();
@@ -274,6 +277,12 @@ export const apiDemo: Api = {
   },
 
   pedirPrioridadeTema: () => espera(undefined),
+
+  definirTemaDoDia: (subtopico) => {
+    const t = TRILHA.find((x) => x.subtopico === subtopico);
+    if (t) try { localStorage.setItem(CHAVE_INICIO, JSON.stringify({ n: t.n, desde: diaLocal(new Date()) })); } catch { /* sem storage: fica no tema 1 */ }
+    return espera(undefined);
+  },
 
   // no demo o resumo é recalculado das tentativas (mesma função do servidor)
   simulados: () => {
