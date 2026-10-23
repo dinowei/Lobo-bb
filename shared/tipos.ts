@@ -1,6 +1,9 @@
 // ============================================================
 // Contratos entre front-end e API (usados pelos dois lados)
 // ============================================================
+import type { DesempenhoTemaDTO } from "./desempenhoTema.js";
+import type { ResumoSimulado } from "./simulados.js";
+export type { DesempenhoTemaDTO, ResumoSimulado };
 
 export const DISCIPLINAS = [
   "lingua_portuguesa",
@@ -12,6 +15,12 @@ export const DISCIPLINAS = [
   "matematica_financeira",
   "informatica",
   "vendas_negociacao",
+  // BACEN Técnico (data/concursos/bacen.json); as comuns acima servem aos dois concursos
+  "raciocinio_logico",
+  "direito_constitucional",
+  "direito_administrativo",
+  "gestao_publica",
+  "suporte_tecnico_administrativo",
 ] as const;
 export type Disciplina = (typeof DISCIPLINAS)[number];
 
@@ -25,6 +34,11 @@ export const NOME_DISCIPLINA: Record<Disciplina, string> = {
   matematica_financeira: "Matemática Financeira",
   informatica: "Informática",
   vendas_negociacao: "Vendas e Negociação",
+  raciocinio_logico: "Raciocínio Lógico",
+  direito_constitucional: "Direito Constitucional",
+  direito_administrativo: "Direito Administrativo",
+  gestao_publica: "Gestão Pública",
+  suporte_tecnico_administrativo: "Suporte Técnico-Administrativo",
 };
 
 export const LETRAS = ["A", "B", "C", "D", "E"] as const;
@@ -532,17 +546,73 @@ export interface ExplicacaoMaisDTO {
 
 export type MotivoContestacao = "gabarito_errado" | "duas_corretas" | "desatualizada" | "ambigua" | "explicacao_ruim";
 
+// Trilha de estudos (F4): tema do dia, estados e fila de retomada (regra em shared/trilha.ts)
+export interface TrilhaDTO {
+  rodada: number;
+  modo: "tema" | "sabado" | "domingo" | "prova";
+  concluidos: number;
+  total: number;
+  filaRetomada: string[];
+  hoje: {
+    n: number;
+    subtopico: string;
+    nome: string;
+    disciplina: Disciplina | null;
+    estado: "novo" | "reforco" | "concluido" | "retomada";
+    refazer: boolean;
+    diaNoTema: number;
+    aprovadas: number;
+    novasFeitasHoje: number;
+    acertosHoje: number;
+    tamanho: number; // novas do tema na sessão
+    mistas: number; // +N da matéria inteira no fim
+  } | null;
+  revisoesVencidas: number;
+  temas: { n: number; subtopico: string; nome: string; estado: "novo" | "reforco" | "concluido" | "retomada"; acerto: number | null; aprovadas: number }[];
+}
+
+// Página do tema: área de ESTUDO (acervo, lei, ficha, pontos, YouTube) e de PRÁTICA (contagens)
+export interface TemaDTO {
+  subtopico: string;
+  nome: string;
+  n: number | null; // posição na trilha
+  disciplina: Disciplina | null;
+  topicoIds: string[];
+  concursos: string[];
+  aprovadas: number;
+  poucas: boolean; // < 15 aprovadas
+  estudo: {
+    tempoMin: number;
+    objetivo: string | null;
+    pontos: string[];
+    lei: { nome: string; url: string } | null;
+    ficha: { texto: string; citacao: string; fonte: string } | null;
+    materiais: { arquivo: string; paginas: string; pagina: number; camada: "A" | "B" | "C"; titulo: string; disponivel: boolean }[];
+    youtube: string;
+    oficiaisNoAcervo: string[];
+  };
+  pratica: { novas: number; revisoes: number; erradas: number; oficiais: number; geradas: number; derivadas: number; cursinho: number };
+}
+
 // A mesma interface serve para o modo demo (navegador) e para o servidor de verdade
 export interface Api {
   modo: "demo" | "servidor";
   topicos(): Promise<TopicoDTO[]>;
   painel(): Promise<PainelDTO>;
   // misto: intercala disciplinas no peso da prova; anterior = disciplina da última questão
-  proxima(f: { topicoId?: string; disciplina?: Disciplina; questaoId?: string; revisao?: boolean; misto?: boolean; anterior?: Disciplina }): Promise<{
+  // subtopico: só aquele tema, novas primeiro ("crase só traz crase"); excluir = já vistas nesta sessão
+  proxima(f: { topicoId?: string; disciplina?: Disciplina; questaoId?: string; revisao?: boolean; misto?: boolean; anterior?: Disciplina; subtopico?: string; excluir?: string[] }): Promise<{
     questao: QuestaoDTO | null;
     modo: "treino" | "revisao";
     aviso?: string;
+    repetida?: boolean; // tema sem novas: veio uma já respondida
   }>;
+  desempenhoTemas(): Promise<DesempenhoTemaDTO[]>;
+  trilha(): Promise<TrilhaDTO>;
+  tema(subtopico: string): Promise<TemaDTO | null>;
+  pedirPrioridadeTema(subtopico: string): Promise<void>;
+  // histórico dos simulados com o detalhe guardado (evolução, tabela, CSV)
+  simulados(): Promise<ResumoSimulado[]>;
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;
   aula(topicoId: string): Promise<AulaDTO | null>;
   explicarMais(questaoId: string, duvida?: string): Promise<ExplicacaoMaisDTO>;

@@ -100,4 +100,49 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - Suíte 192 ok, 5 pulados; typecheck do servidor e do site ok; `vite build` ok.
   - **e2e do BB idêntico: 6/6.** Ajustei o seletor do caso "revisão", que pegava o cartão "Plano de hoje" (ele também cita "Revisão espaçada"); não tinha a ver com a F2.
 
-RETOMAR AQUI: PROMPT-LOBO-BB-BACEN, F3 (espinha do edital e subtópicos; classificar o banco por subtópico).
+## 22/10/2026 — F3: espinha do edital e subtópicos (PARCIAL na meta do auditor)
+
+- **Árvore** (`data/subtopicos.json`, `shared/subtopicos.ts`): ~60 subtópicos {id, nome, tópicos, concursos, palavras, tipos}. Todos os temas mínimos do plano do dono + extras para cobrir os 58 tópicos do BB. `data/topicos-bacen.json`: 16 tópicos só do BACEN (Lógica, Dir. Constitucional, Dir. Administrativo, Gestão Pública, Suporte).
+- `bb -- arvore --confirmar`: 74 tópicos, **nenhum sem subtópico**; cada tópico ligado aos concursos dos seus subtópicos (matéria comum = um tópico só, nos dois); 390 questões herdaram os concursos do tópico.
+- **Classificação** (`bb -- classificar-subtopicos`): código primeiro (tópico único 344, construção 18, palavras-chave 19), o resto (9) no modelo rápido, só entre os candidatos. **390/390 com subtópico.**
+- **Auditor de outra família numa amostra de 40:**
+  - 1ª rodada 63%: o auditor julgava o cenário (personagem, profissão) e o nome curto do subtópico. Corrigi o prompt: vai o ESCOPO (tópicos que o subtópico agrupa) e "julgue pelo comando, não pela ambientação".
+  - 2ª rodada 93%. Os erros reais eram das OFICIAIS: o tópico veio aproximado da ingestão (interpretação em "Pontuação", modo verbal em "Regência").
+  - Novo `--oficiais`: o modelo escolhe entre todos os subtópicos da disciplina, pelo comando. **54 de 137 oficiais mudaram de subtópico** (log com cada mudança no scratchpad da sessão). O tópico da questão não foi mexido.
+  - 3ª rodada **93% (37/40)**; nas duas últimas, 74/80 = 92,5%. Dos 6 erros: 2 são do auditor (ex.: busca exata no Google é Internet, está certo), 2 discutíveis e **1 questão gerada aprovada sem sentido** ("participação mínima dos bancos de investimento em seus próprios ativos", 30–70%, tópico Mercado de capitais). Esta vai como pendência do dono, para contestar.
+- `atendimento_relacionamento` passou a se chamar "Atendimento, marketing e relacionamento" (o escopo já tinha marketing).
+- O noturno roda a classificação por código toda noite (questão nova nasce com subtópico).
+- Rollback: `$unset: {subtopico: 1}` em questions; `arvore` só faz `$set` de concursos nos tópicos.
+- Aprovadas por subtópico: crase 14; os menores têm 1–2 (sigilo_fgc, regencia, bcb_autonomia, titulos_tesouro, mercado_monetario_credito).
+
+## 22/10/2026 — F4: praticar por tema, desempenho por tema, trilha e evolução dos simulados
+
+- **Praticar por tema:** `proxima({subtopico})` traz só aquele subtópico, **novas primeiro** e sem repetir as já vistas na sessão. Se acabam as novas, avisa e a sessão do tema fecha.
+  - A busca do topo mostra primeiro "Treinar o tema: Crase" (abre o Praticar só de crase).
+  - Fim da sessão: +5 da matéria inteira.
+  - Tema com < 15 aprovadas: aviso na página do tema e "Pedir prioridade ao noturno" (Config `prioridade_temas`). O plano da noite põe os tópicos desse tema na frente (teste novo em `noturno.test.ts`).
+- **Desempenho por tema** (aba do Painel; `shared/desempenhoTema.ts`): por subtópico, % nas NOVAS hoje / 7 dias / total, respondidas, domínio, última vez, selo (≥70 concluído, 50–69 reforço, <50 retomar), acerto dentro dos simulados, origem (oficial / gerada / derivada / cursinho). Filtro por matéria, CSV.
+- **Trilha** (`data/trilha.json`, 51 temas na ordem do dono; `shared/trilha.ts`):
+  - Regra por código, só as novas do tema, mínimo 15: ≥70% conclui e avança; 50–69% reforço; <50% refaz; 2 dias no tema → avança e o tema vai para a fila de retomada.
+  - Sábado = retomada; domingo = revisões e erros. Rodada 2 = menor acerto primeiro.
+  - Painel: botão principal **"Estudar o tema do dia"**: revisões vencidas → 20 novas do tema (28 em reforço) → +5 mistas da matéria → resultado com **o que acontece amanhã** (mesma regra).
+- **Página do tema** (`#tema?tema=crase`): estudo (tempo sugerido, objetivo, material do acervo com páginas e "Abrir material" — rota `/api/material`, só arquivos do mapa, só leitura —, lei, pontos, ficha com citação, aula do tópico, "Estudar ouvindo", busca no YouTube) e prática (novas, revisões, erradas, por origem). O conteúdo vem de `data/temas.json`, que o mapa do acervo (F7) preenche.
+- **Evolução dos simulados:**
+  - Coleção nova `simulados`: concurso, banca, tamanho, tempo, acertos/erros/brancos, por matéria e por subtópico, nota no critério da prova (pontos do edital BB; nota líquida C/E no Cebraspe), completo × parcial.
+  - Simulados → Evolução: linha do total + uma por matéria (liga/desliga), filtro por concurso, banca e tipo (aviso se misturar completo e parcial), tabela clicável com detalhe (melhor e pior matéria, por tema, brancos, tempo) e +/- contra o anterior do mesmo tipo, CSV.
+  - `bb -- migrar-simulados`: o Atlas não tinha simulados (6 tentativas, 0 de simulado), então nada a migrar; antes = depois. A migração está provada em banco em memória (`src/simulados.test.ts`). A coleção fica fora do backup de propósito (é recalculável das tentativas, e o restaurador exige a lista exata de coleções dos backups antigos).
+  - As cores das matérias no gráfico são as do app (regra 8). O validador de paleta reprova brilho e croma no fundo escuro, mas a separação entre pares passa; a legenda tem nome, os botões ligam e desligam, há tabela, e só o total começa ligado.
+- **Testes:** `shared/trilha.test.ts` 7, `shared/desempenhoTema.test.ts` 2, `shared/simulados.test.ts` 3, `src/simulados.test.ts` 1 (memória), plano da noite +1. **Suíte 214/214.**
+- **e2e:** `scripts/e2e-trilha.ts` (API simulada no teste): Painel → Estudar o tema do dia → 2 revisões → 20 de crase (todas com `subtopico=crase`) → +5 de Português → resultado "Crase concluído! Amanhã: tema 23, Taxas." → página do tema → Desempenho por tema; ok em 1440 e 360. Prints em `docs/telas/trilha/`.
+
+## 22/10/2026 — Acervo atualizado pelo dono
+
+- `ACERVO_DIR` agora aponta para `…/concurso/Materiais de Estudo`: lá estão os **478 PDFs** e o RELATORIO.html novo (21:33). Lido pelo código; nada gravado na pasta.
+- Vale para F7/F8/F10/F11 e o noturno:
+  - provas comentadas: ligar o comentário à questão oficial (sem duplicar), camada C, "comentário do professor"; conflito com o gabarito definitivo é registrado e vale o oficial;
+  - questões Cesgranrio comentadas: prova e gabarito originais (A) se estiverem no acervo; se não, `cesgranrio-via-cursinho`, gabarito lido por código, camada C, fora do simulado fiel, com deduplicação;
+  - resumos e mapas mentais entram no mapa e nas fichas (C, abaixo de lei e material oficial);
+  - provas de outros bancos: F8, só matérias comuns, entram na incidência e no estilo.
+- Prioridade na F8: comentários do BB → Cesgranrio comentadas (Bancários, Mat. Financeira) → outros bancos → resto. Medir o Atlas antes de cada lote; parar em 80%.
+
+RETOMAR AQUI: fatia vertical de Crase (pedido do dono, antes da F5): mapa do acervo só de Crase, página do tema completa, ≥ 15 novas aprovadas, sessão da noite, e2e com prints; avisar o dono. Depois F5.

@@ -22,6 +22,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { apiServidor } from "./estudo.js";
 import { garantirIndiceElo } from "./migracaoConcursos.js";
+import { caminhoMaterial } from "./temas.js";
 import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro, type NotaCartao } from "../shared/tipos.js";
 
 const app = express();
@@ -105,10 +106,31 @@ app.get(
         revisao: req.query.revisao === "1",
         misto: req.query.misto === "1",
         anterior: ehDisciplina(anterior) ? anterior : undefined,
+        subtopico: texto(req.query.subtopico),
+        excluir: texto(req.query.excluir)?.split(",").filter((x) => Types.ObjectId.isValid(x)).slice(0, 60),
       })
     );
   })
 );
+
+// praticar por tema, trilha e página do tema (F4)
+app.get("/api/temas/desempenho", rota(async (_req, res) => res.json(await apiServidor.desempenhoTemas())));
+app.get("/api/trilha", rota(async (_req, res) => res.json(await apiServidor.trilha())));
+app.get("/api/simulados", rota(async (_req, res) => res.json(await apiServidor.simulados())));
+app.get("/api/tema/:subtopico", rota(async (req, res) => {
+  const t = await apiServidor.tema(String(req.params.subtopico));
+  return t ? res.json(t) : res.status(404).json({ erro: "Tema não encontrado." });
+}));
+app.post("/api/tema/:subtopico/prioridade", rota(async (req, res) => {
+  await apiServidor.pedirPrioridadeTema(String(req.params.subtopico));
+  res.json({ ok: true });
+}));
+// material do acervo (só leitura; só arquivos do mapa em data/temas.json; no servidor da nuvem não existe)
+app.get("/api/material", rota(async (req, res) => {
+  const abs = caminhoMaterial(texto(req.query.arquivo) ?? "");
+  if (!abs) return res.status(404).json({ erro: "Material só abre no PC com o acervo." });
+  res.type("application/pdf").sendFile(abs);
+}));
 
 app.post(
   "/api/responder",

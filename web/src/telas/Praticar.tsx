@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AcaoMotivoDTO, AulaDTO, Confianca, CorrecaoDTO, Disciplina, Letra, MotivoContestacao, MotivoErro, QuestaoDTO } from "../../../shared/tipos";
+import type { AcaoMotivoDTO, AulaDTO, Confianca, CorrecaoDTO, Disciplina, Letra, MotivoContestacao, MotivoErro, QuestaoDTO, TrilhaDTO } from "../../../shared/tipos";
 import { LETRAS, MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO } from "../../../shared/tipos";
-import { useApp } from "../estado";
+import { amanha } from "../../../shared/trilha";
+import { useApp, type SessaoTema } from "../estado";
 import { RelogioAtivo } from "../relogio";
 import { RespostaGuardada } from "../api/http";
 import { Ouvir } from "../componentes/Ouvir";
@@ -14,6 +15,39 @@ import { ISeta } from "../componentes/Icones";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
 import { PergunteAoBinho } from "../componentes/PergunteAoBinho";
+
+type Etapa = "revisoes" | "tema" | "mistas" | "fim";
+type Placar = Record<Exclude<Etapa, "fim">, { n: number; a: number }>;
+const placarVazio = (): Placar => ({ revisoes: { n: 0, a: 0 }, tema: { n: 0, a: 0 }, mistas: { n: 0, a: 0 } });
+
+// fim da sessão do tema: placar por etapa e, vindo da trilha, o que acontece amanhã (regra em shared/trilha.ts)
+function ResultadoSessao({ s, placar, xp }: { s: SessaoTema; placar: Placar; xp: number }) {
+  const { api, ir } = useApp();
+  const [trilha, setTrilha] = useState<TrilhaDTO | null>(null);
+  useEffect(() => {
+    if (s.trilha) api.trilha().then(setTrilha).catch(() => setTrilha(null));
+  }, [api, s.trilha]);
+  const linha = (rotulo: string, p: { n: number; a: number }) => (
+    <div className="linha-resultado"><span>{rotulo}</span><b className="num">{p.a}/{p.n}{p.n ? ` · ${pct(p.a / p.n)}` : ""}</b></div>
+  );
+  const hoje = trilha?.hoje?.subtopico === s.subtopico ? trilha.hoje : null;
+  return (
+    <div className="resultado-sessao" data-testid="resultado-sessao">
+      <Pose nome={placar.tema.n && placar.tema.a / placar.tema.n >= 0.7 ? "comemorando" : "apontando"} largura={110} className="adesivo" />
+      <h2>Sessão de {s.nome} fechada</h2>
+      {s.revisoes && linha("Revisões", placar.revisoes)}
+      {linha(`${s.nome} (novas)`, placar.tema)}
+      {linha(`+${s.mistas} da matéria`, placar.mistas)}
+      <p className="num">+{xp} XP na sessão</p>
+      {placar.tema.n < s.novas && <p className="atalho">Acabaram as questões novas deste tema por hoje. O noturno prepara mais.</p>}
+      {hoje && <p className="amanha" data-testid="amanha"><b>E agora?</b> {amanha(hoje, hoje.novasFeitasHoje, hoje.acertosHoje)}</p>}
+      <div className="acoes">
+        <button className="botao-laranja" onClick={() => ir("painel")}>Voltar ao painel <ISeta /></button>
+        <button className="botao-linha" onClick={() => ir("tema", { subtopico: s.subtopico })}>Página do tema</button>
+      </div>
+    </div>
+  );
+}
 
 const CONFIANCAS: { v: Confianca; rotulo: string }[] = [
   { v: 1, rotulo: "Chutei" },
@@ -56,6 +90,36 @@ export function Praticar() {
   const filtroUsado = useRef(filtro);
   const ultimaDisciplina = useRef<Disciplina | undefined>(undefined); // treino misturado não repete a anterior
   const preBusca = useRef<Promise<Awaited<ReturnType<typeof api.proxima>> | null> | null>(null);
+  // sessão do tema: etapa atual, etapa da questão na tela, questões já vistas e placar por etapa
+  const etapa = useRef<Etapa>("tema");
+  const etapaDaQuestao = useRef<Etapa>("tema");
+  const vistas = useRef<string[]>([]);
+  const placarRef = useRef<Placar>(placarVazio());
+  const [placar, setPlacar] = useState<Placar>(placarVazio);
+  const [fimSessao, setFimSessao] = useState(false);
+
+  // próxima da sessão: avança de etapa quando a atual acaba (sem revisão, sem novas do tema, cota cheia)
+  const proximaDaSessao = useCallback(async (s: SessaoTema) => {
+    const excluir = vistas.current;
+    if (etapa.current === "revisoes") {
+      const r = await api.proxima({ revisao: true });
+      if (r.questao && !excluir.includes(r.questao.id)) return r;
+      etapa.current = "tema";
+    }
+    if (etapa.current === "tema") {
+      if (placarRef.current.tema.n < s.novas) {
+        const r = await api.proxima({ subtopico: s.subtopico, excluir });
+        if (r.questao && !r.repetida) return r;
+      }
+      etapa.current = "mistas";
+    }
+    if (etapa.current === "mistas" && placarRef.current.mistas.n < s.mistas) {
+      const r = await api.proxima(s.disciplina ? { disciplina: s.disciplina, excluir } : { misto: true, excluir });
+      if (r.questao) return r;
+    }
+    etapa.current = "fim";
+    return null;
+  }, [api]);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -71,7 +135,18 @@ export function Praticar() {
     preBusca.current = null;
     let r: Awaited<ReturnType<typeof api.proxima>>;
     try {
-      r = (pre && (await pre)) || (await api.proxima(f.misto ? { ...f, anterior: ultimaDisciplina.current } : f));
+      if (f.sessao) {
+        const rs = await proximaDaSessao(f.sessao);
+        if (!rs) {
+          setQ(null);
+          setFimSessao(true);
+          setCarregando(false);
+          return;
+        }
+        r = rs;
+        etapaDaQuestao.current = etapa.current;
+        if (r.questao) vistas.current = [...vistas.current, r.questao.id];
+      } else r = (pre && (await pre)) || (await api.proxima(f.misto ? { ...f, anterior: ultimaDisciplina.current } : f));
     } catch {
       // sem rede ou servidor fora: mensagem humana, e "Tentar de novo" pelo botão da tela vazia
       setQ(null);
@@ -87,11 +162,16 @@ export function Praticar() {
     setCarregando(false);
     inicio.current = Date.now();
     relogio.current.zerar();
-  }, [api]);
+  }, [api, proximaDaSessao]);
 
   useEffect(() => {
     filtroUsado.current = filtro;
     setSessao({ total: 0, acertos: 0, xp: 0 });
+    etapa.current = filtro.sessao?.revisoes ? "revisoes" : "tema";
+    vistas.current = [];
+    placarRef.current = placarVazio();
+    setPlacar(placarVazio());
+    setFimSessao(false);
     carregar();
   }, [filtro, carregar]);
 
@@ -177,6 +257,7 @@ export function Praticar() {
   useEffect(() => {
     if (!correcao) return;
     const f = filtroUsado.current;
+    if (f.sessao) return; // a sessão do tema decide a etapa na hora
     preBusca.current = api.proxima(f.misto ? { ...f, questaoId: undefined, anterior: ultimaDisciplina.current } : { ...f, questaoId: undefined }).catch(() => null);
   }, [correcao, api]);
   useEffect(() => { preBusca.current = null; }, [filtro]);
@@ -211,6 +292,11 @@ export function Praticar() {
       focoRespondido.current += Math.min(TEMPO_MAX_QUESTAO_SEG, relogio.current.segundos());
       setCorrecao(c);
       setSessao((s) => ({ total: s.total + 1, acertos: s.acertos + (c.acertou ? 1 : 0), xp: s.xp + c.xpGanho }));
+      if (filtroUsado.current.sessao) {
+        const e = etapaDaQuestao.current as Exclude<Etapa, "fim">;
+        placarRef.current = { ...placarRef.current, [e]: { n: placarRef.current[e].n + 1, a: placarRef.current[e].a + (c.acertou ? 1 : 0) } };
+        setPlacar(placarRef.current);
+      }
       avisar(<><b>+{c.xpGanho} XP</b> {c.acertou ? "acertou" : "por tentar"}</>);
       recarregar();
     } catch (e) {
@@ -249,7 +335,9 @@ export function Praticar() {
   }, [q, correcao, sessao.total]);
 
   const topico = q && painel?.topicos.find((t) => t.id === q.topicoId);
-  const tituloFoco = filtro.revisao
+  const tituloFoco = filtro.sessao
+    ? filtro.sessao.nome
+    : filtro.revisao
     ? "Revisão espaçada"
     : filtro.topicoId
       ? painel?.topicos.find((t) => t.id === filtro.topicoId)?.assunto ?? "Tópico"
@@ -279,6 +367,8 @@ export function Praticar() {
       <section className="pratica-principal" aria-live="polite">
         {carregando ? (
           <div className="carregando">Buscando a próxima questão…</div>
+        ) : fimSessao && filtro.sessao ? (
+          <ResultadoSessao s={filtro.sessao} placar={placar} xp={sessao.xp} />
         ) : !q ? (
           <>
             <div className="vazio">
@@ -455,7 +545,15 @@ export function Praticar() {
         <div>
           <div className="atalho" style={{ fontSize: 12, color: "var(--suave)" }}>Foco da sessão</div>
           <div style={{ fontSize: 16, fontWeight: 600, letterSpacing: "-0.01em" }}>{tituloFoco}</div>
-          {(filtro.topicoId || filtro.disciplina || filtro.revisao || filtro.misto) && (
+          {filtro.sessao && (
+            <ol className="etapas-sessao" aria-label="Etapas da sessão">
+              {filtro.sessao.revisoes && <li className={etapaDaQuestao.current === "revisoes" && !fimSessao ? "atual" : ""}>Revisões <span className="num">{placar.revisoes.n}</span></li>}
+              <li className={etapaDaQuestao.current === "tema" && !fimSessao ? "atual" : ""}>{filtro.sessao.nome} <span className="num">{placar.tema.n}/{filtro.sessao.novas}</span></li>
+              <li className={etapaDaQuestao.current === "mistas" && !fimSessao ? "atual" : ""}>+{filtro.sessao.mistas} da matéria <span className="num">{placar.mistas.n}/{filtro.sessao.mistas}</span></li>
+            </ol>
+          )}
+          {filtro.sessao && <button className="link" onClick={() => ir("tema", { subtopico: filtro.sessao!.subtopico })}>Página do tema</button>}
+          {(filtro.topicoId || filtro.disciplina || filtro.revisao || filtro.misto || filtro.sessao) && (
             <button className="link" onClick={() => ir("praticar")}>Trocar para treino inteligente</button>
           )}
           {!filtro.misto && (

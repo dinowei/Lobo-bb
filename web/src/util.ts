@@ -13,6 +13,11 @@ export const SIGLA: Record<Disciplina, string> = {
   matematica_financeira: "MF",
   informatica: "IN",
   vendas_negociacao: "VN",
+  raciocinio_logico: "RL",
+  direito_constitucional: "DC",
+  direito_administrativo: "DA",
+  gestao_publica: "GP",
+  suporte_tecnico_administrativo: "ST",
 };
 
 // Nome curto para os cartões (quebra em duas linhas, como no layout)
@@ -26,6 +31,11 @@ export const CURTO: Record<Disciplina, string> = {
   matematica_financeira: "Matemática\nFinanceira",
   informatica: "Informática",
   vendas_negociacao: "Vendas e\nNegociação",
+  raciocinio_logico: "Raciocínio\nLógico",
+  direito_constitucional: "Direito\nConstitucional",
+  direito_administrativo: "Direito\nAdministrativo",
+  gestao_publica: "Gestão\nPública",
+  suporte_tecnico_administrativo: "Suporte\nTéc.-Adm.",
 };
 
 export const COR_DISC: Record<Disciplina, string> = {
@@ -38,6 +48,12 @@ export const COR_DISC: Record<Disciplina, string> = {
   matematica_financeira: "#e6e1d6",
   informatica: "#59d1c4",
   vendas_negociacao: "#f05a9a",
+  // matérias do BACEN: cores já existentes na paleta (regra 8: nada de cor nova)
+  raciocinio_logico: "#4fc98a",
+  direito_constitucional: "#8b7cf6",
+  direito_administrativo: "#5ab4f0",
+  gestao_publica: "#f5c542",
+  suporte_tecnico_administrativo: "#e6e1d6",
 };
 
 export const pct = (x: number) => `${Math.round(x * 100)}%`;

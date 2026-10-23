@@ -62,6 +62,8 @@ import type { Disciplina, MotivoContestacao } from "../shared/tipos.js";
 import { executarEvalGerador } from "./evalGerador.js";
 import { cancelarConvite, listarConvites } from "./admin.js";
 import { migrarConcursos, simularMigracaoConcursos } from "./migracaoConcursos.js";
+import { migrarSimulados, simularMigracaoSimulados } from "./simulados.js";
+import { aplicarArvore, auditarAmostra, classificarBanco, itensClassificados, reclassificarOficiais, simularArvore } from "./subtopicos.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -119,6 +121,11 @@ BB Estudos — comandos (npm run bb -- <comando>)
   status                        raio-x: trechos, questões, cenários e descartes por repetição por tópico
   similaridade indexar          calcula o embedding das questões que ainda não têm (filtro anti-repetição)
   similaridade calibrar         gera docs/CALIBRAGEM-SIMILARIDADE.md com os pares perto dos limites
+  convites [cancelar-validos --simular|--confirmar]   lista os convites; usuário único cancela os válidos
+  migrar-concursos --simular|--confirmar   concurso e banca como dado (contagens iguais antes e depois)
+  arvore --simular|--confirmar  árvore de subtópicos: tópicos do BACEN e concursos de cada tópico
+  classificar-subtopicos --simular|--confirmar [--ia] [--oficiais] [--n 40]   subtópico de cada questão; --n audita amostra
+  migrar-simulados --simular|--confirmar   simulados antigos ganham o resumo recalculado das tentativas
 `;
 
 function exigir(v: string | undefined, nome: string): string {
@@ -141,6 +148,8 @@ async function main() {
       casos: { type: "string" },
       motivo: { type: "string" },
       assuntos: { type: "string" },
+      ia: { type: "boolean" },
+      oficiais: { type: "boolean" },
       comentario: { type: "string" },
       tipo: { type: "string" },
       titulo: { type: "string" },
@@ -232,6 +241,20 @@ async function main() {
         );
       }
 
+      case "migrar-simulados": {
+        // simulados antigos ganham o resumo recalculado das tentativas (nada é apagado)
+        if (o.simular === o.confirmar) throw new Error("Escolha exatamente uma opção: --simular ou --confirmar.");
+        if (o.simular) {
+          const s = await simularMigracaoSimulados();
+          return console.log(`Tentativas ${s.tentativas} (${s.tentativasSimulado} de simulado) · simulados ${s.simulados} · com resumo ${s.comResumo} · faltam ${s.faltam}`);
+        }
+        const r = await migrarSimulados();
+        console.log(`Antes: tentativas ${r.antes.tentativas} · simulados ${r.antes.simulados} · com resumo ${r.antes.comResumo}`);
+        console.log(`Depois: tentativas ${r.depois.tentativas} · simulados ${r.depois.simulados} · com resumo ${r.depois.comResumo} · criados ${r.criados}`);
+        if (!r.ok) throw new Error("As contagens não bateram: confira antes de seguir.");
+        return console.log("✔ Simulados com resumo; tentativas intactas.");
+      }
+
       case "migrar-concursos": {
         // concurso e banca como dado: só preenche o que falta; --simular conta, --confirmar migra e confere
         if (o.simular === o.confirmar) throw new Error("Escolha exatamente uma opção: --simular ou --confirmar.");
@@ -247,6 +270,38 @@ async function main() {
         console.log(`Depois: ${Object.entries(r.depois).map(([c, n]) => `${c} ${n}`).join(" · ")}`);
         if (!r.iguais) throw new Error("As contagens mudaram: confira com o backup antes de seguir.");
         return console.log("✔ Migração concluída com as mesmas contagens.");
+      }
+
+      case "arvore": {
+        // árvore de subtópicos: --simular mostra; --confirmar cria os tópicos do BACEN e liga os concursos
+        if (o.simular === o.confirmar) throw new Error("Escolha exatamente uma opção: --simular ou --confirmar.");
+        const r: Awaited<ReturnType<typeof simularArvore>> & { ligados?: number; questoes?: number } = o.simular ? await simularArvore() : await naFila(rotulo, () => aplicarArvore());
+        console.log(`Tópicos: ${r.topicos}; sem subtópico: ${r.semSubtopico.length ? r.semSubtopico.join(", ") : "nenhum"}`);
+        for (const m of r.mudancas.slice(0, 80)) console.log(`  ${m.assunto}: [${m.antes}] → [${m.depois}]`);
+        if (r.ligados !== undefined) console.log(`✔ ${r.ligados} tópico(s) ligados aos concursos; ${r.questoes} questão(ões) herdaram os concursos do tópico.`);
+        return;
+      }
+
+      case "classificar-subtopicos": {
+        // código primeiro; --ia manda os ambíguos ao modelo; --confirmar grava; --auditar N confere amostra
+        if (o.simular === o.confirmar) throw new Error("Escolha exatamente uma opção: --simular ou --confirmar.");
+        const ia = !!o.ia;
+        const rodar = async () => {
+          if (o.oficiais) {
+            const ro = await reclassificarOficiais(!!o.confirmar);
+            console.log(`Oficiais: ${ro.total}; iguais ${ro.iguais}; mudaram ${ro.mudaram}; falhou ${ro.falhou}${o.confirmar ? " (gravado)" : " (simulação)"}`);
+            for (const m of ro.mudancas) console.log(`  ↻ ${m}`);
+          }
+          const r = await classificarBanco({ ia, gravar: !!o.confirmar });
+          console.log(`Sem subtópico: ${r.total}; por método: ${Object.entries(r.porMetodo).map(([m, n]) => `${m} ${n}`).join(" · ")}; ambíguas restantes: ${r.ambiguas}; modelo falhou: ${r.iaFalhou}; gravadas: ${r.gravadas}`);
+          if (o.n) {
+            // nada novo para classificar → audita o que já está classificado
+            const a = await auditarAmostra(r.classificadas.length ? r.classificadas : await itensClassificados(), Number(o.n));
+            console.log(`Auditoria da amostra: ${a.ok}/${a.julgadas} = ${Math.round(a.taxa * 100)}%`);
+            for (const e of a.erros) console.log(`  ✖ ${e}`);
+          }
+        };
+        return ia || o.n || o.oficiais ? await naFila(rotulo, rodar) : await rodar();
       }
 
       case "convites": {
@@ -495,6 +550,9 @@ async function main() {
           // questão/tópico novos ganham concurso, banca, formato e camada (idempotente: só o que falta)
           const preenchidos = (await migrarConcursos()).feitos.reduce((s, f) => s + f.alterados, 0);
           if (preenchidos) console.log(`✔ Concurso/banca preenchidos em ${preenchidos} registro(s) novo(s).`);
+          // subtópico das questões novas: só por código (o que ficar ambíguo espera a classificação com modelo)
+          const sub = await classificarBanco({ ia: false, gravar: true });
+          if (sub.gravadas) console.log(`✔ Subtópico em ${sub.gravadas} questão(ões) nova(s)${sub.ambiguas ? `; ${sub.ambiguas} ambígua(s) esperam o modelo` : ""}.`);
           // ordem da noite: questões → explicações alternativas → aulas → cartões → fontes atuais → temas → áudio
           // (a fila roda na ordem de criação, então esta é também a ordem de execução)
           const { gerar: n, explicar_outro_jeito: extras, aula: aulas, cartoes, fonte_atual: fontesAtuais, tema: temas, voz: audios } = await planejarEtapasDaNoite({

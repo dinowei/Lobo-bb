@@ -102,6 +102,7 @@ const TopicoItemZ = z.object({
   descricao: z.string().optional(),
   questoesNaProva: z.number().int().positive().nullish(),
   volatil: z.boolean().default(false),
+  concursos: z.array(z.enum(["bb", "bacen"])).optional(), // ausente = não mexe (a árvore de subtópicos liga)
 });
 const ArquivoTopicosZ = z.object({ disciplinas: z.record(z.string(), z.array(TopicoItemZ)) });
 
@@ -129,6 +130,7 @@ export async function semearTopicos(caminho: string) {
             volatil: t.volatil,
             ativo: true,
             embedding: vetores[i],
+            ...(t.concursos ? { concursos: t.concursos } : {}),
           },
         },
         upsert: true,

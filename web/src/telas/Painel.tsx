@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
 import { PESO_PADRAO } from "../../../shared/motor";
-import { MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO, type BancoDTO, type Disciplina, type MotivoErro, type MotivosDisciplinaDTO, type TopicoProgresso } from "../../../shared/tipos";
+import { MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO, type BancoDTO, type DesempenhoTemaDTO, type Disciplina, type MotivoErro, type MotivosDisciplinaDTO, type TopicoProgresso, type TrilhaDTO } from "../../../shared/tipos";
+import { csvDesempenho, NOME_SELO } from "../../../shared/desempenhoTema";
 import { useApp } from "../estado";
 import { CartaoCalibragem } from "../componentes/Calibragem";
 import { dificuldadeDoRating } from "../../../shared/rating";
@@ -14,7 +15,7 @@ import { COR_DISC, CURTO, SIGLA, diasAte, pct } from "../util";
 import { Pose } from "../componentes/Pose";
 
 export function Painel() {
-  const { painel, ajustes, ir, usuario } = useApp();
+  const { painel, ajustes, ir, usuario, api } = useApp();
   // 1ª visita depois de entrar (por conta; sem conta, por navegador): o Binho acena uma vez
   const chaveVisita = `lobo-boas-vindas-${usuario?.email ?? "local"}`;
   const [primeiraVisita] = useState(() => {
@@ -40,7 +41,20 @@ export function Painel() {
 
   const [foco, setFoco] = useState<number>(0);
   const plano = usePlano(1);
+  const [aba, setAba] = useState<"geral" | "temas">(() => (location.hash.includes("aba=temas") ? "temas" : "geral"));
+  const [trilha, setTrilha] = useState<TrilhaDTO | null>(null);
+  useEffect(() => {
+    api.trilha().then(setTrilha).catch(() => setTrilha(null));
+  }, [api, painel?.totalRespondidas]);
   if (!painel) return <div className="carregando">Carregando painel…</div>;
+  const temaHoje = trilha?.hoje ?? null;
+  // sessão do tema do dia: revisões → novas do tema (já descontadas as de hoje) → +5 mistas da matéria
+  const estudarTemaDoDia = () => temaHoje && ir("praticar", {
+    sessao: {
+      subtopico: temaHoje.subtopico, nome: temaHoje.nome, disciplina: temaHoje.disciplina,
+      novas: Math.max(5, temaHoje.tamanho - temaHoje.novasFeitasHoje), mistas: temaHoje.mistas, revisoes: true, trilha: true,
+    },
+  });
   const deHoje = plano ? planoDeHoje(plano, hojeLocal()) : null;
 
   // banco recém-criado: ainda sem tópicos (npm run bb -- topicos)
@@ -50,6 +64,12 @@ export function Painel() {
   const n = painel.semana.respondidas;
 
   return (
+    <>
+    <div className="abas-painel" role="tablist" aria-label="Painel">
+      <button role="tab" aria-selected={aba === "geral"} className={aba === "geral" ? "ativa" : ""} onClick={() => setAba("geral")}>Visão geral</button>
+      <button role="tab" aria-selected={aba === "temas"} className={aba === "temas" ? "ativa" : ""} onClick={() => setAba("temas")}>Desempenho por tema</button>
+    </div>
+    {aba === "temas" ? <DesempenhoTemas /> : (
     <div className="painel-grade">
       <section className="area-hero">
         <div className="hero">
@@ -69,9 +89,22 @@ export function Painel() {
               </h1>
             </div>
             <div className="hero-acao">
-              <button className="botao-laranja" onClick={() => ir("praticar")}>
-                {n > 0 ? "Continuar estudando" : "Começar agora"} <ISeta />
-              </button>
+              {temaHoje ? (
+                <div className="acao-trilha">
+                  <button className="botao-laranja" onClick={estudarTemaDoDia} data-testid="tema-do-dia">
+                    Estudar o tema do dia <ISeta />
+                  </button>
+                  <small>
+                    {trilha?.modo === "sabado" ? "Sábado: retomada · " : ""}Tema {temaHoje.n}: <b>{temaHoje.nome}</b>
+                    {temaHoje.estado === "reforco" ? ` · ${temaHoje.refazer ? "refazer" : "reforço"}` : ""}
+                  </small>
+                  <button className="link" onClick={() => ir("tema", { subtopico: temaHoje.subtopico })}>Ver o tema</button>
+                </div>
+              ) : (
+                <button className="botao-laranja" onClick={() => ir("praticar", trilha?.modo === "domingo" ? { revisao: true } : {})}>
+                  {trilha?.modo === "domingo" ? "Domingo: revisões e erros" : n > 0 ? "Continuar estudando" : "Começar agora"} <ISeta />
+                </button>
+              )}
               {/* uma pose só: acenando na 1ª visita, lendo na hora de estudar, andando para a próxima tarefa */}
               <Pose nome={primeiraVisita ? "acenando" : n > 0 ? "andando" : "lendo"} largura={84} carregar="eager" />
             </div>
@@ -124,6 +157,15 @@ export function Painel() {
         </div>
 
         <div className="grupo-dia">Hoje</div>
+        {trilha && (
+          <button className="evento" onClick={temaHoje ? estudarTemaDoDia : () => ir("praticar", { revisao: true })}>
+            <strong>Trilha · Rodada {trilha.rodada}</strong>
+            <span className="sub num">
+              {temaHoje ? `Tema ${temaHoje.n} de ${trilha.total}: ${temaHoje.nome}${temaHoje.novasFeitasHoje ? ` · ${temaHoje.novasFeitasHoje} novas hoje` : ""}` : trilha.modo === "domingo" ? "Domingo: revisões e erros, sem tema novo" : "Sem tema hoje"}
+            </span>
+            <div className="rodape"><span className="sub num">{trilha.concluidos} concluídos{trilha.filaRetomada.length ? ` · ${trilha.filaRetomada.length} na retomada` : ""}</span><span className="tag"><i />Trilha</span></div>
+          </button>
+        )}
         {deHoje && deHoje.itens.length > 0 && (
           <button className="evento" onClick={() => ir("plano")}>
             <strong>Plano de hoje</strong>
@@ -194,6 +236,68 @@ export function Painel() {
         )}
       </aside>
     </div>
+    )}
+    </>
+  );
+}
+
+// Desempenho por tema: % nas questões NOVAS (hoje / 7 dias / total), selo, simulado; filtro por matéria; CSV
+function DesempenhoTemas() {
+  const { api, ir } = useApp();
+  const [linhas, setLinhas] = useState<DesempenhoTemaDTO[] | null>(null);
+  const [disc, setDisc] = useState<string>("");
+  useEffect(() => {
+    api.desempenhoTemas().then(setLinhas).catch(() => setLinhas([]));
+  }, [api]);
+  if (!linhas) return <div className="carregando">Carregando desempenho…</div>;
+  const discs = [...new Set(linhas.map((l) => l.disciplina).filter(Boolean))] as Disciplina[];
+  const vis = linhas.filter((l) => !disc || l.disciplina === disc);
+  const p = (x: { n: number; a: number }) => (x.n ? pct(x.a / x.n) : "–");
+  const baixar = () => {
+    const url = URL.createObjectURL(new Blob(["﻿" + csvDesempenho(vis)], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `desempenho-por-tema-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  return (
+    <section className="secao desempenho-temas" aria-labelledby="titulo-temas">
+      <div className="agenda-cabeca">
+        <h2 id="titulo-temas">Desempenho por tema</h2>
+        <div className="acoes">
+          <select aria-label="Filtrar por matéria" value={disc} onChange={(e) => setDisc(e.target.value)}>
+            <option value="">Todas as matérias</option>
+            {discs.map((d) => <option key={d} value={d}>{NOME_DISCIPLINA[d]}</option>)}
+          </select>
+          <button className="botao-linha" onClick={baixar}>Exportar CSV</button>
+        </div>
+      </div>
+      <p className="atalho">Só conta a primeira vez em cada questão (novas). ≥70% concluído · 50–69% reforço · &lt;50% retomar.</p>
+      <div className="tabela-rolavel">
+        <table className="tabela">
+          <thead>
+            <tr><th>Tema</th><th>Hoje</th><th>7 dias</th><th>Total</th><th>Resp.</th><th>Domínio</th><th>Simulado</th><th>Última</th><th>Selo</th><th /></tr>
+          </thead>
+          <tbody>
+            {vis.map((l) => (
+              <tr key={l.subtopico}>
+                <td><button className="link" onClick={() => ir("tema", { subtopico: l.subtopico })}>{l.nome}</button>{l.aprovadas < 15 && <small className="aviso-poucas"> · {l.aprovadas} no banco</small>}</td>
+                <td className="num">{p(l.novasHoje)}</td>
+                <td className="num">{p(l.novas7d)}</td>
+                <td className="num">{p(l.novasTotal)} <small>({l.novasTotal.n})</small></td>
+                <td className="num">{l.respondidas}</td>
+                <td className="num">{l.respondidas ? pct(l.dominio) : "–"}</td>
+                <td className="num">{p(l.simulado)}</td>
+                <td className="num">{l.ultima ? new Date(l.ultima).toLocaleDateString("pt-BR") : "–"}</td>
+                <td><span className={`selo selo-${l.selo}`}>{NOME_SELO[l.selo]}</span></td>
+                <td><button className="link" onClick={() => ir("tema", { subtopico: l.subtopico })}>Treinar</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 

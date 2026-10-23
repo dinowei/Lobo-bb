@@ -66,8 +66,15 @@ export const apiHttp: Api = {
     if (f.revisao) p.set("revisao", "1");
     if (f.misto) p.set("misto", "1");
     if (f.anterior) p.set("anterior", f.anterior);
+    if (f.subtopico) p.set("subtopico", f.subtopico);
+    if (f.excluir?.length) p.set("excluir", f.excluir.slice(-60).join(","));
     return req(`/proxima?${p}`);
   },
+  desempenhoTemas: () => req("/temas/desempenho"),
+  simulados: () => req("/simulados"),
+  trilha: () => req("/trilha"),
+  tema: (subtopico) => req(`/tema/${encodeURIComponent(subtopico)}`),
+  pedirPrioridadeTema: (subtopico) => post(`/tema/${encodeURIComponent(subtopico)}/prioridade`, {}),
   responder: async (r) => {
     try {
       return await post("/responder", r);

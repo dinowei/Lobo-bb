@@ -1,0 +1,157 @@
+// Página do tema (F4): área de ESTUDO (material do acervo com páginas, lei, ficha, aula, ouvir, YouTube, pontos)
+// e área de PRÁTICA (novas, revisões, erradas, por origem). Sem mapa do acervo ainda, mostra o que existe.
+import { useEffect, useState } from "react";
+import type { AulaDTO, TemaDTO } from "../../../shared/tipos";
+import { NOME_DISCIPLINA } from "../../../shared/tipos";
+import { textoDaAula } from "../../../shared/fala";
+import { MISTAS_FIM } from "../../../shared/trilha";
+import { useApp } from "../estado";
+import { Ouvir } from "../componentes/Ouvir";
+import { Markdown } from "../componentes/Markdown";
+import { ISeta } from "../componentes/Icones";
+import { Pose } from "../componentes/Pose";
+
+const NOME_CAMADA = { A: "oficial", B: "material oficial", C: "cursinho" } as const;
+
+export function Tema() {
+  const { api, filtro, ir, avisar } = useApp();
+  const sub = filtro.subtopico;
+  const [t, setT] = useState<TemaDTO | null | undefined>(undefined);
+  const [aula, setAula] = useState<AulaDTO | null>(null);
+  const [pedido, setPedido] = useState(false);
+
+  useEffect(() => {
+    if (!sub) return setT(null);
+    setT(undefined);
+    api.tema(sub).then(setT).catch(() => setT(null));
+  }, [api, sub]);
+  useEffect(() => {
+    const id = t?.topicoIds[0];
+    if (!id) return setAula(null);
+    api.aula(id).then(setAula).catch(() => setAula(null));
+  }, [api, t?.topicoIds]);
+  useEffect(() => { if (t) document.title = `${t.nome} · Lobo Binho`; }, [t]);
+
+  if (t === undefined) return <div className="carregando">Carregando o tema…</div>;
+  if (!t) return (
+    <div className="vazio">
+      <Pose nome="pensativo" largura={70} />
+      <div><strong>Tema não encontrado</strong><div className="acoes"><button className="botao-linha" onClick={() => ir("painel")}>Voltar ao painel</button></div></div>
+    </div>
+  );
+
+  const e = t.estudo;
+  const treinar = (revisoes = false) => ir("praticar", {
+    sessao: { subtopico: t.subtopico, nome: t.nome, disciplina: t.disciplina, novas: 20, mistas: MISTAS_FIM, revisoes, trilha: false },
+  });
+  const pedirPrioridade = async () => {
+    try {
+      await api.pedirPrioridadeTema(t.subtopico);
+      setPedido(true);
+      avisar("Pedido anotado: o noturno prioriza este tema.");
+    } catch (err) {
+      avisar(err instanceof Error ? err.message : "Não deu para pedir agora.");
+    }
+  };
+  const textoOuvir = [
+    `Tema: ${t.nome}.`,
+    e.objetivo ?? "",
+    e.pontos.length ? `Pontos para lembrar: ${e.pontos.join(". ")}.` : "",
+    e.ficha ? `Ficha: ${e.ficha.texto}` : "",
+    aula ? textoDaAula(aula) : "",
+  ].filter(Boolean).join("\n");
+
+  return (
+    <div className="pagina pagina-tema">
+      <header className="pagina-cabeca">
+        <div>
+          <div className="eyebrow num">
+            {t.n ? `Trilha · tema ${t.n}` : "Tema"}{t.disciplina ? ` · ${NOME_DISCIPLINA[t.disciplina]}` : ""} · {t.concursos.map((c) => c.toUpperCase()).join(" e ")}
+          </div>
+          <h1>{t.nome}</h1>
+          {e.objetivo && <p className="desc" data-testid="objetivo">{e.objetivo}</p>}
+        </div>
+        <div className="acoes">
+          <button className="botao-laranja" onClick={() => treinar()} data-testid="treinar-tema">Treinar este tema <ISeta /></button>
+        </div>
+      </header>
+
+      {t.poucas && (
+        <div className="faixa-aviso" role="status">
+          Só {t.aprovadas} {t.aprovadas === 1 ? "questão aprovada" : "questões aprovadas"} neste tema (o ideal é 15+).{" "}
+          {pedido ? "Pedido feito: o noturno prioriza este tema." : <button className="link" onClick={pedirPrioridade}>Pedir prioridade ao noturno</button>}
+        </div>
+      )}
+
+      <div className="tema-grade">
+        <section className="secao" aria-labelledby="titulo-estudo">
+          <h2 id="titulo-estudo">Estudo <small className="num">· {e.tempoMin} min sugeridos</small></h2>
+
+          <h3>Material</h3>
+          {e.materiais.length ? (
+            <ul className="lista-material">
+              {e.materiais.map((m) => (
+                <li key={`${m.arquivo}-${m.paginas}`}>
+                  <span className={`selo camada-${m.camada}`}>{m.camada} · {NOME_CAMADA[m.camada]}</span>
+                  <span><b>{m.titulo}</b> <span className="num">· p. {m.paginas}</span></span>
+                  {m.disponivel ? (
+                    <a className="botao-linha" href={`/api/material?arquivo=${encodeURIComponent(m.arquivo)}#page=${m.pagina}`} target="_blank" rel="noopener">Abrir material</a>
+                  ) : <small>só abre no PC com o acervo</small>}
+                </li>
+              ))}
+            </ul>
+          ) : <p className="atalho">O mapa do acervo deste tema ainda não foi feito.</p>}
+
+          {e.lei && (<><h3>Lei / regra</h3><p><a href={e.lei.url} target="_blank" rel="noopener">{e.lei.nome}</a></p></>)}
+
+          {!!e.pontos.length && (
+            <>
+              <h3>Pontos para lembrar</h3>
+              <ul data-testid="pontos">{e.pontos.map((p) => <li key={p}>{p}</li>)}</ul>
+            </>
+          )}
+
+          {e.ficha && (
+            <>
+              <h3>Ficha</h3>
+              <div className="ficha-tema">
+                <Markdown texto={e.ficha.texto} />
+                <blockquote>“{e.ficha.citacao}”<cite> — {e.ficha.fonte}</cite></blockquote>
+              </div>
+            </>
+          )}
+
+          {aula && (
+            <details>
+              <summary>Aula do tópico ({aula.assunto})</summary>
+              <Markdown texto={aula.conteudo} />
+            </details>
+          )}
+
+          <div className="acoes">
+            <Ouvir texto={textoOuvir} titulo={t.nome} rotulo="Estudar ouvindo" />
+            <a className="botao-linha" href={e.youtube} target="_blank" rel="noopener" data-testid="youtube">Buscar aula no YouTube</a>
+          </div>
+          {!!e.oficiaisNoAcervo.length && <p className="atalho">Caiu em prova: {e.oficiaisNoAcervo.join(" · ")}</p>}
+        </section>
+
+        <section className="secao" aria-labelledby="titulo-pratica">
+          <h2 id="titulo-pratica">Prática</h2>
+          <div className="mini-stats">
+            <div><b className="num">{t.pratica.novas}</b><span>novas para você</span></div>
+            <div><b className="num">{t.pratica.revisoes}</b><span>revisões vencidas</span></div>
+            <div><b className="num">{t.pratica.erradas}</b><span>que você já errou</span></div>
+          </div>
+          <p className="atalho num">
+            No banco: {t.aprovadas} aprovadas · {t.pratica.oficiais} oficiais · {t.pratica.geradas} geradas{t.pratica.derivadas ? ` · ${t.pratica.derivadas} derivadas` : ""}{t.pratica.cursinho ? ` · ${t.pratica.cursinho} de cursinho` : ""}
+          </p>
+          <div className="acoes">
+            <button className="botao-laranja" onClick={() => treinar()}>Treinar este tema <ISeta /></button>
+            {t.pratica.revisoes > 0 && <button className="botao-linha" onClick={() => treinar(true)}>Revisões + tema</button>}
+            {t.pratica.erradas > 0 && <button className="botao-linha" onClick={() => ir("erros")}>Caderno de erros</button>}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}

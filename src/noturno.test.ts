@@ -82,6 +82,14 @@ test("plano: estudado nos últimos 7 dias passa na frente; meta batida só volta
   assert.ok(dominou.length === 2 && dominou.every((i) => i.motivo === "dominado" && (i.dificuldade ?? 0) >= 4));
 });
 
+test("plano: tema pedido pelo aluno (página do tema) vai na frente, mesmo com a meta batida", () => {
+  const cheio = new Map([["inf1", 200], ["inf2", 200], ["ing1", 200]]);
+  const p = planoDaNoite({ topicos: TOP, aprovadas: cheio, alunos: [aluno()], cotas: COTAS, totalQuestoes: 70, metaBanco: 1200, max: 10, pedidos: new Set(["ing1"]) });
+  assert.ok(p.length > 0 && p.every((i) => i.topicId === "ing1"));
+  const vazio = planoDaNoite({ topicos: TOP, aprovadas: new Map(), alunos: [aluno()], cotas: COTAS, totalQuestoes: 70, metaBanco: 1200, max: 1, pedidos: new Set(["inf2"]) });
+  assert.equal(vazio[0].topicId, "inf2");
+});
+
 test("trava por tópico: dois trabalhadores nunca no mesmo tópico", () => {
   const t = new TravaTopicos();
   assert.equal(t.pegar("inf1"), true);

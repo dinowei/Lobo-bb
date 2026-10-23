@@ -9,8 +9,9 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Types } from "mongoose";
-import { Tarefa, Topic, Question, Chunk, Source, Attempt, DISCIPLINAS_COM_FONTE_OBRIGATORIA, type Disciplina } from "./models.js";
+import { Tarefa, Topic, Question, Chunk, Source, Attempt, Config, DISCIPLINAS_COM_FONTE_OBRIGATORIA, type Disciplina } from "./models.js";
 import { statusDe, dominioDe } from "../shared/motor.js";
+import { SUBTOPICO_POR_ID } from "../shared/subtopicos.js";
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
 import { gerarQuestao, MOTIVOS_INFRA, tetoDiario, geracoesHoje } from "./pipeline.js";
@@ -62,6 +63,13 @@ export function metaDoTopico(disciplina: string, topicosNaDisciplina: number, co
   return Math.ceil(((meta * (cotas[disciplina] ?? 0)) / total) / Math.max(1, topicosNaDisciplina));
 }
 
+// temas pedidos na página do tema (Config "prioridade_temas") → tópicos que os contêm
+async function topicosPedidos(topicos: { _id: unknown; assunto: string }[]) {
+  const subs = Object.keys(((await Config.findById("prioridade_temas").lean())?.valor ?? {}) as Record<string, string>);
+  const assuntos = new Set(subs.flatMap((s) => SUBTOPICO_POR_ID.get(s)?.topicos ?? []));
+  return new Set(topicos.filter((t) => assuntos.has(t.assunto)).map((t) => String(t._id)));
+}
+
 export function planoDaNoite(p: {
   topicos: TopicoPlano[];
   aprovadas: Map<string, number>;
@@ -70,6 +78,7 @@ export function planoDaNoite(p: {
   totalQuestoes: number;
   metaBanco: number;
   max: number;
+  pedidos?: Set<string>; // tópicos de temas com < 15 aprovadas que o aluno pediu (página do tema): vão na frente
 }): ItemPlano[] {
   const porDisciplina = new Map<string, number>();
   for (const t of p.topicos) porDisciplina.set(t.disciplina, (porDisciplina.get(t.disciplina) ?? 0) + 1);
@@ -97,10 +106,15 @@ export function planoDaNoite(p: {
         quantas = 2;
       }
     }
+    const pedido = !!p.pedidos?.has(t.id);
+    if (!item && pedido) {
+      item = { topicId: t.id, assunto: t.assunto, motivo: "poucas_ineditas" };
+      quantas = 3;
+    }
     if (!item) continue;
     if (item.motivo !== "meta" && alunos.some((a) => a.dominados.has(t.id))) item.dificuldade = 4;
-    // estudado nos últimos 7 dias > peso na prova > tamanho da falta
-    const prioridade = (recente ? 1000 : 0) + peso * 10 + Math.min(9, (quantas / meta) * 10);
+    // pedido do aluno > estudado nos últimos 7 dias > peso na prova > tamanho da falta
+    const prioridade = (pedido ? 2000 : 0) + (recente ? 1000 : 0) + peso * 10 + Math.min(9, (quantas / meta) * 10);
     necessidades.push({ item, quantas, prioridade });
   }
   necessidades.sort((a, b) => b.prioridade - a.prioridade);
@@ -184,6 +198,7 @@ export async function planejarNoite(lote: string, opcoes: { max?: number } = {})
     totalQuestoes: estrutura.totalQuestoes,
     metaBanco: Number(process.env.META_BANCO) || estrutura.metaBanco,
     max,
+    pedidos: await topicosPedidos(topicos),
   });
   const novas = itens.map((i) => ({ tipo: "gerar" as const, params: i, lote }));
   if (await verificacaoVencida()) await Tarefa.create({ tipo: "verificar_modelos", lote });

@@ -7,6 +7,7 @@ import { IEsq, IDir, ISeta } from "../componentes/Icones";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
 import { RelogioAtivo } from "../relogio";
+import { EvolucaoSimulados } from "../componentes/EvolucaoSimulados";
 import { COTAS_PROVA, ESTRUTURA_PROVA, resumoPorBloco, pontuacaoProva, type Mistura } from "../../../shared/estruturaProva";
 
 // prova completa = exatamente as cotas do edital (soma dos blocos)
@@ -293,6 +294,12 @@ export function Simulados() {
           </div>
         )}
       </div>
+      {!!painel?.simulados.length && (
+        <div className="secao" style={{ marginTop: 16 }}>
+          <h2>Evolução</h2>
+          <EvolucaoSimulados />
+        </div>
+      )}
     </div>
   );
 }

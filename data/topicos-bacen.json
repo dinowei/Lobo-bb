@@ -1,0 +1,31 @@
+{
+  "_aviso": "Tópicos das matérias do BACEN Técnico que o BB não tem. Edital do Técnico a definir: base nos conhecimentos básicos do BACEN 2024 Analista (Cebraspe) e no plano de estudo do dono. As matérias comuns (Português, Matemática, Informática, Bancários, Atualidades, Probabilidade) usam os tópicos do BB, ligados aos dois concursos pela árvore de subtópicos (data/subtopicos.json).",
+  "disciplinas": {
+    "raciocinio_logico": [
+      { "assunto": "Proposições e conectivos", "subtopicos": ["proposições simples e compostas", "conectivos", "valor lógico"], "concursos": ["bacen"] },
+      { "assunto": "Negação e equivalências lógicas", "subtopicos": ["negação", "equivalências", "leis de De Morgan", "contrapositiva"], "concursos": ["bacen"] },
+      { "assunto": "Tabela-verdade e diagramas lógicos", "subtopicos": ["tabela-verdade", "tautologia e contradição", "diagramas de Venn", "quantificadores"], "concursos": ["bacen"] }
+    ],
+    "direito_constitucional": [
+      { "assunto": "Princípios fundamentais da Constituição", "subtopicos": ["fundamentos", "objetivos", "separação de poderes", "relações internacionais"], "concursos": ["bacen"] },
+      { "assunto": "Direitos e garantias fundamentais (art. 5º)", "subtopicos": ["direitos individuais e coletivos", "remédios constitucionais"], "concursos": ["bacen"] },
+      { "assunto": "Administração pública na Constituição (arts. 37 a 41)", "subtopicos": ["princípios do art. 37", "servidores públicos", "estabilidade"], "concursos": ["bacen"] }
+    ],
+    "direito_administrativo": [
+      { "assunto": "Princípios da administração pública", "subtopicos": ["legalidade", "impessoalidade", "moralidade", "publicidade", "eficiência"], "concursos": ["bacen"] },
+      { "assunto": "Atos administrativos e processo administrativo (Lei 9.784/1999)", "subtopicos": ["atributos e elementos do ato", "anulação e revogação", "processo administrativo federal"], "concursos": ["bacen"] },
+      { "assunto": "Agentes públicos (Lei 8.112/1990)", "subtopicos": ["provimento e vacância", "direitos e vantagens", "deveres e proibições", "regime disciplinar"], "concursos": ["bacen"] },
+      { "assunto": "Licitações e contratos (Lei 14.133/2021)", "subtopicos": ["modalidades", "contratação direta", "contratos administrativos"], "concursos": ["bacen"] },
+      { "assunto": "Improbidade administrativa (Lei 8.429/1992)", "subtopicos": ["atos de improbidade", "sanções", "dolo"], "concursos": ["bacen"] }
+    ],
+    "gestao_publica": [
+      { "assunto": "Ética no serviço público e transparência", "subtopicos": ["Decreto 1.171/1994", "Lei de Acesso à Informação (12.527/2011)"], "concursos": ["bacen"] },
+      { "assunto": "Administração pública federal", "subtopicos": ["administração direta e indireta", "autarquias", "Banco Central como autarquia"], "concursos": ["bacen"] }
+    ],
+    "suporte_tecnico_administrativo": [
+      { "assunto": "Noções de contabilidade", "subtopicos": ["patrimônio", "lançamentos", "demonstrações contábeis"], "concursos": ["bacen"] },
+      { "assunto": "Gestão de pessoas", "subtopicos": ["recrutamento e seleção", "treinamento", "avaliação de desempenho"], "concursos": ["bacen"] },
+      { "assunto": "Administração de recursos materiais", "subtopicos": ["compras", "estoques", "almoxarifado e patrimônio"], "concursos": ["bacen"] }
+    ]
+  }
+}

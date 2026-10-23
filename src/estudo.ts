@@ -54,6 +54,8 @@ import { explicarSobDemanda } from "./outroJeito.js";
 import { perguntarAoBinho } from "./chatBinho.js";
 import { avaliarCartao, filaCartoes } from "./cartoes.js";
 import { fontesDaQuestao } from "./fontesAtuais.js";
+import { desempenhoTemas, paginaTema, pedirPrioridade, proximaDoTema, trilha } from "./temas.js";
+import { listarSimulados, salvarSimulado } from "./simulados.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
@@ -70,8 +72,10 @@ const oid = (s: string) => {
 // ------------------------------------------------------------
 // Conversões
 // ------------------------------------------------------------
+// só os tópicos do concurso ativo (matéria comum aparece nos dois); tópico antigo sem concurso = BB
 async function mapaTopicos() {
-  const ts = await Topic.find({ ativo: true }).lean();
+  const { concurso } = chaveConcurso();
+  const ts = await Topic.find({ ativo: true, $or: [{ concursos: concurso }, ...(concurso === "bb" ? [{ concursos: { $exists: false } }] : [])] }).lean();
   return new Map(ts.map((t) => [String(t._id), t]));
 }
 
@@ -257,6 +261,11 @@ export const apiServidor: Omit<Api, "modo"> = {
   perguntarBinho: (topicoId, pergunta) => perguntarAoBinho(topicoId, String(ALUNO()), pergunta),
   cartoes: filaCartoes,
   avaliarCartao,
+  desempenhoTemas,
+  trilha,
+  tema: paginaTema,
+  pedirPrioridadeTema: pedirPrioridade,
+  simulados: () => listarSimulados(ALUNO()),
 
   async painel() {
     const userId = ALUNO();
@@ -308,6 +317,19 @@ export const apiServidor: Omit<Api, "modo"> = {
     if (f.questaoId) {
       const q = await Question.findById(oid(f.questaoId)).lean<QuestaoDoc>();
       return { questao: q ? paraDTO(q, topicos) : null, modo: "treino" };
+    }
+
+    // praticar por TEMA: só o subtópico, novas primeiro ("crase só traz crase")
+    if (f.subtopico) {
+      const r = await proximaDoTema(f.subtopico, f.excluir);
+      if (!r) return { questao: null, modo: "treino", aviso: "Este tema ainda não tem questões aprovadas. Pedi prioridade ao noturno." };
+      const q = await Question.findById(r.id).lean<QuestaoDoc>();
+      return {
+        questao: q ? paraDTO(q, topicos) : null,
+        modo: "treino",
+        aviso: r.nova ? undefined : "Acabaram as novas deste tema; repetindo uma. O noturno prepara mais.",
+        repetida: !r.nova,
+      };
     }
 
     // treino misturado: sorteia a disciplina desta questão no peso da prova (nunca a da anterior)
@@ -513,6 +535,8 @@ export const apiServidor: Omit<Api, "modo"> = {
       porDisc.set(disc, d);
       correcoes.push({ ...(await correcaoDe(q, r.resposta, xp, dias)), questaoId: String(q._id), enunciado: q.enunciado, resposta: r.resposta });
     }
+    // guarda o resumo (concurso, banca, tempo, matérias, subtópicos, nota no critério da prova)
+    if (correcoes.length) await salvarSimulado(ALUNO(), simuladoId, chaveConcurso(), respostas.length);
     // Raio-X: o resultado vira o nível inicial (rating) de cada disciplina medida
     if (opcoes?.diagnostico) {
       const userId = ALUNO();

@@ -37,6 +37,10 @@ import { pesoDoTopico, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PRO
 import { ehDiagnostico, MISTURA_DIAGNOSTICO, PREFIXO_DIAGNOSTICO, ratingDoDiagnostico } from "../../../shared/diagnostico";
 import { reprocessar, type EventoRating, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../../../shared/rating";
 import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../../../shared/aprendizado";
+import { classificarPorCodigo, SUBTOPICO_POR_ID } from "../../../shared/subtopicos";
+import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA } from "../../../shared/trilha";
+import { desempenhoPorTema, diaLocal, diasDaTrilha, type TentativaTema } from "../../../shared/desempenhoTema";
+import { resumirSimulado } from "../../../shared/simulados";
 
 const CHAVE = "lobo-demo-v1";
 const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -201,10 +205,89 @@ const TEMA_REDACAO_DEMO: TemaRedacaoDTO = {
   ],
 };
 
+// subtópico da questão demo pela mesma classificação por código do servidor (sem IA no navegador)
+const subDe = (q: QuestaoDemo) => {
+  const c = classificarPorCodigo({ assunto: q.assunto, texto: `${q.textoBase ?? ""}\n${q.enunciado}` });
+  return c.subtopico ?? ("candidatos" in c ? c.candidatos[0] : undefined) ?? "";
+};
+function tentativasTema(e: Estado): TentativaTema[] {
+  return e.tentativas.flatMap((t) => {
+    const q = porId.get(t.questaoId);
+    return q ? [{ questaoId: t.questaoId, subtopico: subDe(q), acertou: t.acertou, data: t.data, simulado: t.modo === "simulado", origem: "gerada" as const }] : [];
+  });
+}
+const aprovadasDemo = (e: Estado) => {
+  const m = new Map<string, number>();
+  for (const q of QUESTOES_DEMO) if (!e.contestadas.includes(q.id)) m.set(subDe(q), (m.get(subDe(q)) ?? 0) + 1);
+  return m;
+};
+const discDoSubDemo = (s: string) => QUESTOES_DEMO.find((q) => subDe(q) === s)?.disciplina ?? null;
+
 export const apiDemo: Api = {
   modo: "demo",
 
   topicos: () => espera(TOPICOS),
+
+  desempenhoTemas: () => {
+    const e = ler();
+    return espera(desempenhoPorTema(tentativasTema(e), aprovadasDemo(e), discDoSubDemo).filter((d) => d.concursos.includes("bb")));
+  },
+
+  trilha: () => {
+    const e = ler();
+    const ts = tentativasTema(e);
+    const ap = aprovadasDemo(e);
+    const temas = TRILHA.filter((t) => concursosDoTema(t).includes("bb"));
+    const hoje = diaLocal(new Date());
+    const s = situacaoTrilha(diasDaTrilha(ts), hoje, temas);
+    const estado = s.tema ? s.estados[s.tema.subtopico] : "novo";
+    const feitas = s.tema ? diasDaTrilha(ts).find((d) => d.data === hoje && d.subtopico === s.tema!.subtopico) : undefined;
+    const agora = Date.now();
+    return espera({
+      rodada: s.rodada, modo: s.modo, concluidos: s.concluidos, total: temas.length,
+      filaRetomada: s.filaRetomada.map((x) => SUBTOPICO_POR_ID.get(x)?.nome ?? x),
+      hoje: s.tema ? {
+        n: s.tema.n, subtopico: s.tema.subtopico, nome: s.tema.nome, disciplina: discDoSubDemo(s.tema.subtopico), estado, refazer: s.refazer,
+        diaNoTema: s.diasNoTema + 1, aprovadas: ap.get(s.tema.subtopico) ?? 0, novasFeitasHoje: feitas?.novas ?? 0, acertosHoje: feitas?.acertos ?? 0,
+        tamanho: tamanhoSessao(estado), mistas: MISTAS_FIM,
+      } : null,
+      revisoesVencidas: Object.values(e.revisoes).filter((r) => new Date(r.proxima).getTime() <= agora).length,
+      temas: temas.map((t) => ({ n: t.n, subtopico: t.subtopico, nome: t.nome, estado: s.estados[t.subtopico], acerto: s.acerto[t.subtopico] ?? null, aprovadas: ap.get(t.subtopico) ?? 0 })),
+    });
+  },
+
+  tema: (subtopico) => {
+    const s = SUBTOPICO_POR_ID.get(subtopico);
+    if (!s) return espera(null);
+    const e = ler();
+    const qs = QUESTOES_DEMO.filter((q) => subDe(q) === subtopico && !e.contestadas.includes(q.id));
+    const vistas = new Set(e.tentativas.map((t) => t.questaoId));
+    const erradas = new Set(e.tentativas.filter((t) => !t.acertou).map((t) => t.questaoId));
+    const t = TRILHA.find((x) => x.subtopico === subtopico);
+    return espera({
+      subtopico, nome: s.nome, n: t?.n ?? null, disciplina: discDoSubDemo(subtopico),
+      topicoIds: TOPICOS.filter((x) => s.topicos.includes(x.assunto)).map((x) => x.id),
+      concursos: s.concursos, aprovadas: qs.length, poucas: qs.length < MINIMO_NOVAS,
+      estudo: { tempoMin: 45, objetivo: null, pontos: [], lei: null, ficha: null, materiais: [], youtube: linkYoutube(s.nome, "bb"), oficiaisNoAcervo: [] },
+      pratica: { novas: qs.filter((q) => !vistas.has(q.id)).length, revisoes: 0, erradas: qs.filter((q) => erradas.has(q.id)).length, oficiais: 0, geradas: qs.length, derivadas: 0, cursinho: 0 },
+    });
+  },
+
+  pedirPrioridadeTema: () => espera(undefined),
+
+  // no demo o resumo é recalculado das tentativas (mesma função do servidor)
+  simulados: () => {
+    const e = ler();
+    const ids = [...new Set(e.tentativas.filter((t) => t.modo === "simulado" && t.simuladoId).map((t) => t.simuladoId!))];
+    return espera(ids.map((id) => {
+      const ts = e.tentativas.filter((t) => t.simuladoId === id).sort((a, b) => a.data.localeCompare(b.data));
+      const itens = ts.flatMap((t) => {
+        const q = porId.get(t.questaoId);
+        return q ? [{ disciplina: q.disciplina, subtopico: subDe(q), acertou: t.acertou, branco: t.resposta === null, tempoSeg: t.tempoSeg ?? 0 }] : [];
+      });
+      return resumirSimulado({ id, data: ts[0].data, concurso: "bb", banca: "cesgranrio", diagnostico: ehDiagnostico(id) }, itens);
+    }));
+  },
 
   painel: () => {
     const e = ler();
@@ -225,6 +308,16 @@ export const apiDemo: Api = {
     if (f.questaoId) {
       const q = porId.get(f.questaoId);
       return espera({ questao: q ? paraDTO(q) : null, modo: "treino" as const });
+    }
+
+    // praticar por tema: só o subtópico, novas primeiro (igual ao servidor)
+    if (f.subtopico) {
+      const doTema = ativas.filter((q) => subDe(q) === f.subtopico && !(f.excluir ?? []).includes(q.id));
+      const vistas = new Set(e.tentativas.map((t) => t.questaoId));
+      const nova = doTema.find((q) => !vistas.has(q.id));
+      const q = nova ?? doTema[0];
+      if (!q) return espera({ questao: null, modo: "treino" as const, aviso: "Este tema ainda não tem questões no modo demo." });
+      return espera({ questao: paraDTO(q), modo: "treino" as const, aviso: nova ? undefined : "Acabaram as novas deste tema; repetindo uma.", repetida: !nova });
     }
 
     // treino misturado (mesma regra do servidor)
@@ -392,6 +485,7 @@ export const apiDemo: Api = {
       const xp = xpDaTentativa({ acertou, dificuldade: q.dificuldade, confianca: 2, modo: "simulado" });
       const dias = registrar(e, q, acertou, notaSM2(acertou, 2), xp, "simulado", simuladoId);
       e.tentativas[e.tentativas.length - 1].tempoSeg = r.tempoSeg;
+      e.tentativas[e.tentativas.length - 1].resposta = r.resposta; // null = em branco (evolução dos simulados)
       if (acertou) acertos++;
       xpTotal += xp;
       const d = porDisc.get(q.disciplina) ?? { total: 0, acertos: 0 };

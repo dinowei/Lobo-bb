@@ -6,14 +6,27 @@ import { conta, EVENTO_SESSAO, type UsuarioDTO } from "./api/conta";
 import { Entrar } from "./telas/Entrar";
 import { preferenciaVozLoSalva, type VozLo } from "../../shared/voz";
 
-export type Tela = "painel" | "plano" | "praticar" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin";
-export const TELAS: Tela[] = ["painel", "plano", "praticar", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin"];
+export type Tela = "painel" | "plano" | "praticar" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin" | "tema";
+export const TELAS: Tela[] = ["painel", "plano", "praticar", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin", "tema"];
+// sessão montada pela trilha ("Estudar o tema do dia") ou por "Treinar este tema":
+// revisões vencidas → N novas do tema → +M mistas da matéria → resultado
+export interface SessaoTema {
+  subtopico: string;
+  nome: string;
+  disciplina: Disciplina | null;
+  novas: number;
+  mistas: number;
+  revisoes: boolean;
+  trilha: boolean; // veio da trilha: o resultado diz o que acontece amanhã
+}
 export interface FiltroPratica {
   topicoId?: string;
   disciplina?: Disciplina;
   questaoId?: string;
   revisao?: boolean;
   misto?: boolean; // treino misturado (8.6)
+  subtopico?: string; // tela "tema" e praticar só um tema
+  sessao?: SessaoTema;
 }
 import type { CicloFoco } from "../../shared/aprendizado";
 
@@ -82,8 +95,10 @@ const telaDoHash = (): Tela => {
   return TELAS.includes(h) ? h : "painel";
 };
 const filtroDoHash = (): FiltroPratica => {
-  const q = new URLSearchParams(location.hash.split("?")[1] ?? "").get("q");
-  return q && /^[0-9a-f]{24}$/i.test(q) ? { questaoId: q } : {};
+  const p = new URLSearchParams(location.hash.split("?")[1] ?? "");
+  const q = p.get("q");
+  const s = p.get("tema");
+  return q && /^[0-9a-f]{24}$/i.test(q) ? { questaoId: q } : s && /^[a-z0-9_]{2,40}$/.test(s) ? { subtopico: s } : {};
 };
 
 export function Provedor({ children }: { children: ReactNode }) {
@@ -187,7 +202,7 @@ export function Provedor({ children }: { children: ReactNode }) {
     const f = () => {
       setTela(telaDoHash());
       const fh = filtroDoHash();
-      if (fh.questaoId) setFiltro(fh);
+      if (fh.questaoId || fh.subtopico) setFiltro(fh);
     };
     window.addEventListener("hashchange", f);
     return () => window.removeEventListener("hashchange", f);
@@ -200,7 +215,7 @@ export function Provedor({ children }: { children: ReactNode }) {
     setFiltro(f);
     setTela(t);
     try {
-      history.replaceState(null, "", `#${t}`);
+      history.replaceState(null, "", `#${t}${t === "tema" && f.subtopico ? `?tema=${f.subtopico}` : ""}`);
     } catch {
       /* ambiente sem history */
     }

@@ -3,7 +3,7 @@ import type { Disciplina } from "../../../shared/tipos";
 
 const s = { fill: "none", stroke: "currentColor", strokeWidth: 2.2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
 
-const desenhos: Record<Disciplina, JSX.Element> = {
+const desenhos: Partial<Record<Disciplina, JSX.Element>> = {
   conhecimentos_bancarios: (
     <g {...s}>
       <path d="M18 62 80 30l62 32z" />
@@ -87,10 +87,19 @@ const desenhos: Record<Disciplina, JSX.Element> = {
   ),
 };
 
+// matérias do BACEN reaproveitam um desenho que já existe (nada de estilo novo, regra 8)
+const REUSO: Partial<Record<Disciplina, Disciplina>> = {
+  raciocinio_logico: "matematica",
+  direito_constitucional: "conhecimentos_bancarios",
+  direito_administrativo: "conhecimentos_bancarios",
+  gestao_publica: "vendas_negociacao",
+  suporte_tecnico_administrativo: "matematica_financeira",
+};
+
 export function Ilustracao({ disciplina }: { disciplina: Disciplina }) {
   return (
     <svg viewBox="0 0 160 150" aria-hidden="true">
-      {desenhos[disciplina]}
+      {desenhos[disciplina] ?? desenhos[REUSO[disciplina] ?? "conhecimentos_bancarios"]}
     </svg>
   );
 }

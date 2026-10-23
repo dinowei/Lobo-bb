@@ -8,6 +8,8 @@ import {
 import { ErroTela, Esqueleto } from "./componentes/ErroTela";
 import { MiniLo } from "./componentes/MiniLo";
 import { Painel } from "./telas/Painel";
+import { SUBTOPICOS } from "../../shared/subtopicos";
+import { MISTAS_FIM } from "../../shared/trilha";
 
 // cada tela num pedaço próprio do bundle (o painel vem junto: é a primeira que aparece)
 const carregar = <K extends string>(imp: () => Promise<Record<K, ComponentType>>, nome: K) => lazy(() => imp().then((m) => ({ default: m[nome] })));
@@ -23,10 +25,11 @@ const Conquistas = carregar(() => import("./telas/Conquistas"), "Conquistas");
 const AjustesTela = carregar(() => import("./telas/Ajustes"), "AjustesTela");
 const Figuras = carregar(() => import("./telas/Figuras"), "Figuras");
 const Admin = carregar(() => import("./telas/Admin"), "Admin");
+const Tema = carregar(() => import("./telas/Tema"), "Tema");
 
 const TITULO: Record<Tela, string> = {
   painel: "Painel", plano: "Plano", praticar: "Praticar", revisoes: "Revisões", cartoes: "Cartões", simulados: "Simulados",
-  diagnostico: "Raio-X", erros: "Caderno de erros", redacao: "Redação", conquistas: "Conquistas", ajustes: "Ajustes", figuras: "Figuras", admin: "Admin",
+  diagnostico: "Raio-X", erros: "Caderno de erros", redacao: "Redação", conquistas: "Conquistas", ajustes: "Ajustes", figuras: "Figuras", admin: "Admin", tema: "Tema",
 };
 
 function useOnline() {
@@ -138,6 +141,7 @@ export function App() {
               {tela === "ajustes" && <AjustesTela />}
               {tela === "figuras" && (ehAdmin ? <Figuras /> : <Painel />)}
               {tela === "admin" && (ehAdmin ? <Admin /> : <Painel />)}
+              {tela === "tema" && <Tema />}
             </Suspense>
           </ErroTela>
         </main>
@@ -265,6 +269,19 @@ function Busca() {
       .filter((t) => norm(`${t.assunto} ${t.subtopicos.join(" ")}`).includes(termo))
       .slice(0, 6);
   }, [q, painel]);
+  // temas (subtópicos) primeiro: "crase" abre o Praticar SÓ de crase
+  const temas = useMemo(() => {
+    if (!q.trim() || !painel) return [];
+    const termo = norm(q);
+    const assuntos = new Set(painel.topicos.map((t) => t.assunto));
+    return SUBTOPICOS.filter((s) => s.topicos.some((a) => assuntos.has(a)) && norm(s.nome).includes(termo)).slice(0, 4);
+  }, [q, painel]);
+  const treinarTema = (s: (typeof SUBTOPICOS)[number]) => {
+    setQ("");
+    setAberto(false);
+    const disciplina = painel?.topicos.find((t) => s.topicos.includes(t.assunto))?.disciplina ?? null;
+    ir("praticar", { sessao: { subtopico: s.id, nome: s.nome, disciplina, novas: 20, mistas: MISTAS_FIM, revisoes: false, trilha: false } });
+  };
 
   return (
     <div
@@ -290,6 +307,12 @@ function Busca() {
       />
       {aberto && q && (
         <div className="resultados">
+          {temas.map((s) => (
+            <button key={s.id} onClick={() => treinarTema(s)} data-testid={`busca-tema-${s.id}`}>
+              Treinar o tema: {s.nome}
+              <small>só questões de {s.nome}, novas primeiro</small>
+            </button>
+          ))}
           {achados.length ? (
             achados.map((t) => (
               <button
@@ -304,7 +327,7 @@ function Busca() {
                 <small>{t.subtopicos.slice(0, 3).join(" · ")}</small>
               </button>
             ))
-          ) : (
+          ) : !temas.length && (
             <small style={{ display: "block", padding: "8px 10px" }}>Nenhum tópico com “{q}”.</small>
           )}
         </div>

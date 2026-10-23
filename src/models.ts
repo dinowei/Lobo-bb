@@ -465,6 +465,33 @@ const RatingAlunoSchema = new Schema(
 RatingAlunoSchema.index({ userId: 1, concurso: 1, banca: 1, disciplina: 1 }, { unique: true, name: "aluno_concurso_banca_disciplina" });
 export const RatingAluno = model("RatingAluno", RatingAlunoSchema, "ratings_aluno");
 
+// Simulado (F4): o resumo guardado (antes só sobrava data, total e acertos; o detalhe se perdia).
+// _id = simuladoId das tentativas. Os antigos são recalculados das tentativas (migrar-simulados).
+const PlacarSchema = { total: Number, acertos: Number };
+const SimuladoSchema = new Schema(
+  {
+    _id: { type: String, required: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    data: { type: Date, required: true },
+    concurso: { type: String, enum: ["bb", "bacen"], default: "bb" },
+    banca: { type: String, default: "cesgranrio" },
+    diagnostico: { type: Boolean, default: false },
+    tamanho: Number,
+    total: Number,
+    acertos: Number,
+    erros: Number,
+    brancos: Number,
+    tempoSeg: Number,
+    completo: Boolean,
+    porDisciplina: [{ _id: false, disciplina: String, ...PlacarSchema }],
+    porSubtopico: [{ _id: false, subtopico: String, ...PlacarSchema }],
+    nota: { valor: Number, maximo: Number, criterio: { type: String, enum: ["pontos", "liquida"] } },
+    recalculado: Boolean, // veio da migração (tentativas antigas)
+  },
+  { timestamps: true }
+);
+export const Simulado = model("Simulado", SimuladoSchema, "simulados");
+
 // Cartões (8.6): frente/verso de normas (com trecho literal da fonte) e vocabulário de Inglês (trecho
 // literal da prova oficial). Só "aprovado" (auditor de outra família) aparece para o aluno.
 const CartaoSchema = new Schema(
