@@ -273,4 +273,22 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - Nenhuma corrente mudou.
 - Segurança: um comentário do `.env` contém a chave da NVIDIA e apareceu na saída de um comando meu (eu não filtrei as linhas de comentário). O `.env` nunca foi para o Git. Recomendei ao dono trocar a chave.
 
-RETOMAR AQUI: F8 ingestão das provas na ordem (Cesgranrio BB/BNDES/CNU → Cebraspe BACEN 2024 → FGV), com o Atlas medido antes de cada uma e parada em 80%. Depois, V2 passo 2, o que falta das interseções: F12 estilo por banca (3 oficiais da mesma banca e subtópico como exemplo) e "uma noite real com todas as etapas no relatório"; fichas no noturno (gancho), depois das questões. Depois V2 passo 3 (Janela B: auditoria e recuperação, incluindo as pendentes aguardando juiz; orquestração por contrato nos outros fluxos).
+- **Decisões do dono (25/10, tarde):**
+  - Crase: `erro_tratamento` fora do sorteio (`FORA_DO_SORTEIO`), com pendência de benchmark próprio (≥ 95%, 20 frases). Novas 20 Crase rodando.
+  - OCR: `nemotron-parse` v1 ativo, só para páginas sem texto.
+  - Classificador e embedding de 1024 dimensões seguem como candidatos.
+  - BNB 2024, item 17: o dono vai conferir no PDF.
+  - Chave da NVIDIA trocada. Regra: nunca imprimir o `.env`, nem as linhas de comentário.
+- **F8 (código):** `ingerirProva` aceita `--caderno` e `--questoes 1-35`. Grava `banca`. Recusa gabarito só com C/E lido como múltipla escolha. Atlas em 40% (203,7 MB).
+- **F10 (código):**
+  - Motor em `shared/certoErrado.ts`: nota com penalidade, "em branco" e derivação.
+  - Coleções `itens_ce` e `respostas_ce`. Comando `bb -- derivar-ce` (ainda não rodado).
+  - Tela "Certo ou Errado" (servidor + demo + `scripts/e2e-ce.ts`), com filtro por tema.
+
+RETOMAR AQUI — ordem do dono (25/10/2026), nesta sequência:
+1. FEITO: visual da madrugada testado, com prints, commitado (`14834cb`).
+2. AGORA: PROMPT-LOBO-BB-BACEN de F8 até F14. Toda tela nova já nasce no estilo novo (cores, barra lateral, cartões do mockup).
+   - F8: ingerir as Cesgranrio, uma por vez, com o Atlas medido antes e parada em 80%: BB Agente de Tecnologia 2021/2023 (`--caderno 1 --questoes 1-35`), BNDES 2024 (só as matérias do BB) e CNU 2024. Depois `classificar-subtopicos --ia` e `incidencia`.
+   - F10: rodar `derivar-ce --n 6` (meta: 30 itens com taxa de aprovação). Ingestão das provas C/E da Cebraspe (BACEN 2024): o número e o gabarito vêm do código (`lerGabaritoOficial(..., "certo_errado")`); a IA só copia o texto, que o código confere literalmente; item com símbolo de fórmula ilegível (ᡈ, 㐈) fica para conferir. Importar as questões de cursinho (origem "cursinho", camada C).
+   - Depois F9, F11, F12 (estilo por banca; uma noite real com todas as etapas; fichas no noturno), F13 e F14, intercalando o que falta da V2 (Janela B, orquestração por contrato).
+3. POR ÚLTIMO: voltar ao PROMPT-VISUAL-FASE-FINAL e terminar Plano, Cartões, Raio-X, Conquistas, Tema, login e player da Lo. Mesma trava: sem mexer em lógica.
