@@ -1,0 +1,30 @@
+{
+  "em": "2026-10-25T13:38:52.796Z",
+  "modelo": "nvidia/nemotron-parse",
+  "resultados": [
+    {
+      "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio de Politica Monetaria 2025-03.pdf",
+      "pagina": 3,
+      "palavras": 99,
+      "http": 200,
+      "kb": 253,
+      "fidelidade": 65.5,
+      "inverso": 64.9,
+      "refChars": 1230,
+      "ocrChars": 1242,
+      "ms": 6571
+    },
+    {
+      "arquivo": "11_TSE Unificado - Justica Eleitoral/Legislacao/Lei 9.504-1997 - Lei das Eleicoes.pdf",
+      "pagina": 39,
+      "palavras": 95,
+      "http": 200,
+      "kb": 241,
+      "fidelidade": 81.1,
+      "inverso": 69.4,
+      "refChars": 1291,
+      "ocrChars": 1508,
+      "ms": 5722
+    }
+  ]
+}

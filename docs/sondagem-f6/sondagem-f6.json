@@ -1,0 +1,83 @@
+{
+  "em": "2026-10-25T13:32:22.833Z",
+  "resultados": [
+    {
+      "nome": "chat nvidia/nemotron-3.5-bolt-e4b",
+      "http": 200,
+      "ms": 857,
+      "saida": "{\"subtopico\": \"crase\"}"
+    },
+    {
+      "nome": "chat nvidia/nemotron-3.5-bolt-e4b sem pensar",
+      "http": 200,
+      "ms": 887,
+      "saida": "{\"subtopico\": \"crase\"}"
+    },
+    {
+      "nome": "embed nvidia/nemotron-3.5-embed-1b",
+      "http": 200,
+      "ms": 718,
+      "saida": {
+        "dim": 2048
+      }
+    },
+    {
+      "nome": "embed nvidia/nemotron-3.5-embed-8b",
+      "http": 200,
+      "ms": 11857,
+      "saida": {
+        "dim": 4096
+      }
+    },
+    {
+      "nome": "embed nvidia/nemotron-3-embed-1b",
+      "http": 200,
+      "ms": 615,
+      "saida": {
+        "dim": 2048
+      }
+    },
+    {
+      "nome": "rerank nvidia/llama-3.2-nv-rerankqa-1b-v2",
+      "http": 410,
+      "ms": 539,
+      "saida": "{\"type\":\"about:blank\",\"title\":\"Gone\",\"status\":410,\"detail\":\"This endpoint has reached its end of life on 2026-05-18T00:00:00Z and is no longer available.\"}\n"
+    },
+    {
+      "nome": "rerank nvidia/llama-nemotron-rerank-1b-v2",
+      "http": 410,
+      "ms": 483,
+      "saida": "{\"type\":\"about:blank\",\"title\":\"Gone\",\"status\":410,\"detail\":\"This endpoint has reached its end of life on 2026-08-25T09:00:00Z and is no longer available.\"}\n"
+    },
+    {
+      "nome": "rerank nv-rerank-qa-mistral-4b:1",
+      "http": 404,
+      "ms": 397,
+      "saida": "404 page not found\n"
+    },
+    {
+      "nome": "visao meta/llama-3.2-11b-vision-instruct",
+      "http": 500,
+      "ms": 513,
+      "saida": "Internal Server Error"
+    },
+    {
+      "nome": "visao nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "http": 500,
+      "ms": 559,
+      "saida": "{\"message\":\"Failed to generate completions\",\"type\":\"Internal Server Error\",\"code\":500}"
+    },
+    {
+      "nome": "ocr nvidia/nemotron-parse-2.0",
+      "http": 500,
+      "ms": 661,
+      "saida": "{\"error\":{\"message\":\"EngineCore encountered an issue. See stack trace (above) for the root cause.\",\"type\":\"InternalServerError\",\"param\":null,\"code\":500}}"
+    },
+    {
+      "nome": "ocr nvidia/nemotron-parse",
+      "http": 500,
+      "ms": 488,
+      "saida": "{\"object\":\"error\",\"message\":\"broken data stream when reading image file\",\"type\":\"InternalServerError\",\"param\":null,\"code\":500}"
+    }
+  ]
+}

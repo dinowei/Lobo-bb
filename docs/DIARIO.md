@@ -264,4 +264,13 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
     - Acervo: "PROVA A - GABARITO 1" é caderno, não gabarito.
   - Incidência (`bb -- incidencia`, `docs/INCIDENCIA.md`) e peso no noturno: peso × (1 + incidência na banca).
 
-RETOMAR AQUI: F6 (sondar reranker, extrator de PDF/OCR, modelo pequeno de triagem, visão e embedding menor → tabela modelo → função → status → medição). Depois, F8 ingestão das provas na ordem (Cesgranrio BB/BNDES/CNU → Cebraspe BACEN 2024 → FGV), com o Atlas medido antes de cada uma e parada em 80%. Depois, V2 passo 2, o que falta das interseções: F12 estilo por banca (3 oficiais da mesma banca e subtópico como exemplo) e "uma noite real com todas as etapas no relatório"; fichas no noturno (gancho), depois das questões. Depois V2 passo 3 (Janela B: auditoria e recuperação, incluindo as pendentes aguardando juiz; orquestração por contrato nos outros fluxos).
+- **F6 (tabela em `docs/CATALOGO-MODELOS.md`, evidência em `docs/sondagem-f6/`):**
+  - Reranker: não há grátis (os dois endpoints deram 410, fim de vida).
+  - OCR: `nemotron-parse` v1 passou no aceite: 10/10 páginas do acervo com ≥ 95% das palavras, 2–7 s cada. O 2.0 está "DEGRADED".
+  - Classificador: `bolt-e4b` ficou abaixo do aceite (92,3% × 94,9% do tutor, em 39 casos ambíguos), mas é 5× mais rápido.
+  - Visão: `llama-3.2-11b` como candidato. O 90b alterou o texto e foi descartado.
+  - Embedding: `3.5-embed-1b` aceita 1024 dimensões (metade do espaço). A troca é do dono.
+  - Nenhuma corrente mudou.
+- Segurança: um comentário do `.env` contém a chave da NVIDIA e apareceu na saída de um comando meu (eu não filtrei as linhas de comentário). O `.env` nunca foi para o Git. Recomendei ao dono trocar a chave.
+
+RETOMAR AQUI: F8 ingestão das provas na ordem (Cesgranrio BB/BNDES/CNU → Cebraspe BACEN 2024 → FGV), com o Atlas medido antes de cada uma e parada em 80%. Depois, V2 passo 2, o que falta das interseções: F12 estilo por banca (3 oficiais da mesma banca e subtópico como exemplo) e "uma noite real com todas as etapas no relatório"; fichas no noturno (gancho), depois das questões. Depois V2 passo 3 (Janela B: auditoria e recuperação, incluindo as pendentes aguardando juiz; orquestração por contrato nos outros fluxos).

@@ -58,6 +58,22 @@ Aparecem para a chave e como "Free Endpoint", fora do escopo do pedido: `nvidia/
 | `openai/gpt-oss-120b` | endpoint grátis descontinuado: **proibido** (não aparece mais para a chave) |
 | `z-ai/glm-5.3` (sem flash) | build.nvidia.com: **"Deprecation in 11d"** (≈ 28/10/2026). **Não afeta o `glm-5.3-flash`**, que é outra página, "Free Endpoint", sem aviso |
 
+## F6 — funções novas (sondagem e aceite em 25/10/2026)
+
+Sondas fora do repositório, poucas chamadas, 4 s entre elas; nenhuma muda corrente (promover é decisão do dono).
+
+| função | modelo | status | medição |
+|---|---|---|---|
+| (a) reranker | `llama-3.2-nv-rerankqa-1b-v2`, `llama-nemotron-rerank-1b-v2` | **sem endpoint grátis** | 410 "end of life" (18/05 e 25/08/2026). A busca segue só por embedding; a F11 usa A > B > C sem reranker |
+| (b) OCR e layout | `nemotron-parse` (v1) | candidato aprovado na sonda | 10 páginas do acervo: 10/10 com ≥ 95% das palavras do texto embutido; 8/10 ≥ 96,7% também na ordem; 2–7 s por página; caixas de layout |
+| (b) OCR e layout | `nemotron-parse-2.0` | fora | 400 "DEGRADED function"; contexto de 4096 tokens |
+| (c) triagem/classificação em JSON | `nemotron-3.5-bolt-e4b` | candidato, abaixo do aceite | 39 questões ambíguas: 92,3% de acordo (tutor atual 94,9%); 0,46 s × 2,3 s. Aceite ≥ 95% |
+| (d) visão (classificar figura) | `llama-3.2-11b-vision-instruct` | candidato | transcreveu 100% de uma página com tabela; 19 s |
+| (d) visão | `llama-3.2-90b-vision-instruct` | descartado | 97%, mas **trocou o texto** ("Parágrafo único" virou "Para isso"); 61 s |
+| (d) visão | `nemotron-3.5-super-vl-120b-a12b` | fora (preview) | cortou a resposta (34%) |
+| (e) embedding menor | `nemotron-3.5-embed-1b` | candidato | aceita `dimensions=1024` (o atual só 2048): metade do espaço dos vetores. Troca exige recall@5 + reindexar + rollback |
+| (e) embedding | `nemotron-3.5-embed-8b` | descartado | 4096 dimensões, 12 s |
+
 ## Limitações das correntes (3 opções por função)
 
 - **Escritor de Português:** só 2 opções fora de preview que escrevem bem em português hoje (GLM-5.3-flash e

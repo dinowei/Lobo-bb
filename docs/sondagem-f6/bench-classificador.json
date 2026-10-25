@@ -1,0 +1,26 @@
+{
+  "em": "2026-10-25T13:43:02.884Z",
+  "resumo": {
+    "n": 39,
+    "bolt": {
+      "acordo": 0.9230769230769231,
+      "invalido": 0,
+      "msMediana": 458
+    },
+    "tutor": {
+      "acordo": 0.9487179487179487,
+      "invalido": 0,
+      "msMediana": 2264,
+      "modelos": {
+        "openai/gpt-oss-20b": 39
+      }
+    }
+  },
+  "erros": [
+    "bolt: internet_email → nuvem_redes",
+    "tutor: nuvem_redes → internet_email",
+    "tutor: internet_email → nuvem_redes",
+    "bolt: mercado_capitais_cvm → cambio_seguros_prev",
+    "bolt: crase → regencia"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "em": "2026-10-25T13:35:37.166Z",
+  "resultados": [
+    {
+      "nome": "visao meta/llama-3.2-11b-vision-instruct",
+      "http": 200,
+      "ms": 19199,
+      "fidelidade": 100,
+      "amostra": "Art. 1º O Banco Central do Brasil tem por objetivo fundamental assegurar a estabilidade de preços. Parágrafo único. Sem prejuízo de seu objetivo fundamental, o Banco Central também tem por objetivos zelar pela estabilidade e pela eficiência do sistema financei"
+    },
+    {
+      "nome": "visao meta/llama-3.2-90b-vision-instruct",
+      "http": 200,
+      "ms": 61175,
+      "fidelidade": 97.2,
+      "amostra": "Art. 1º O Banco Central do Brasil tem por objetivo fundamental assegurar a estabilidade de preços. Para isso, sem prejuízo de seu objetivo fundamental, o Banco Central também tem por objetivos zelar pela estabilidade e pela eficiência do sistema financeiro.\n\n|"
+    },
+    {
+      "nome": "visao nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "http": 200,
+      "ms": 4474,
+      "fidelidade": 33.6,
+      "amostra": "Art. 1º O Banco Central do Brasil tem por objetivo fundamental assegurar a estabilidade de preços. Parágrafo único. Sem"
+    },
+    {
+      "nome": "ocr nvidia/nemotron-parse-2.0",
+      "http": 400,
+      "ms": 516,
+      "fidelidade": null,
+      "amostra": "{\"status\":400,\"title\":\"Bad Request\",\"detail\":\"Function id '7a0655e9-0b6e-4741-a2a5-b6c2eeb96cca': DEGRADED function cannot be invoked\"}"
+    },
+    {
+      "nome": "ocr nvidia/nemotron-parse-2.0 (tag img)",
+      "http": 400,
+      "ms": 856,
+      "fidelidade": null,
+      "amostra": "{\"error\":{\"message\":\"This model's maximum context length is 4096 tokens. However, you requested 1500 output tokens and your prompt contains at least 2597 input tokens, for a total of at least 4097 tokens. Please reduce the length of the input prompt or the num"
+    },
+    {
+      "nome": "ocr nvidia/nemotron-parse",
+      "http": 200,
+      "ms": 2189,
+      "fidelidade": 98.6,
+      "amostra": "[{\"id\":\"chatcmpl-tool-0c44518ee02443f0b1c323dc229bb9e9\",\"type\":\"function\",\"function\":{\"name\":\"markdown_bbox\",\"arguments\":\"[[{\\\"bbox\\\": {\\\"xmin\\\": 0.03890333333333332, \\\"ymin\\\": 0.08844952380952394, \\\"xmax\\\": 0.9509683333333335, \\\"ymax\\\": 0.24497523809523802}, "
+    },
+    {
+      "nome": "ocr nvidia/nemotron-parse (tag img)",
+      "http": 200,
+      "ms": 1647,
+      "fidelidade": 98.6,
+      "amostra": "[{\"id\":\"chatcmpl-tool-a9f31b6ed1fd4ff698227eedb53baafb\",\"type\":\"function\",\"function\":{\"name\":\"markdown_bbox\",\"arguments\":\"[[{\\\"bbox\\\": {\\\"xmin\\\": 0.03890333333333332, \\\"ymin\\\": 0.08844952380952394, \\\"xmax\\\": 0.9509683333333335, \\\"ymax\\\": 0.24838857142857154}, "
+    }
+  ]
+}

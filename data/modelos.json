@@ -128,8 +128,28 @@
       "gratis": true,
       "preview": false,
       "parametros": [],
+      "status": "fora",
+      "nota": "F6 25/10/2026: 400 'DEGRADED function cannot be invoked' (e contexto de 4096 tokens). Usar o nemotron-parse (v1) enquanto isso. Aceite original: 10 páginas com texto embutido, ≥ 95% iguais; texto de OCR entra como 'incerto' (V2)"
+    },
+    {
+      "id": "nvidia/nemotron-parse",
+      "familia": "nvidia",
+      "funcoes": ["ocr_layout"],
+      "gratis": true,
+      "preview": false,
+      "parametros": [],
       "status": "nao_testado",
-      "nota": "CANDIDATO (F6/F7, 24/10/2026): OCR e layout de página escaneada, tabela e figura do acervo. Entrada é imagem (renderizar a página). Aceite: em 10 páginas do acervo que também têm texto embutido, ≥ 95% dos caracteres iguais e tabelas com as mesmas células. Texto de OCR entra como 'incerto' até conferido (V2)"
+      "nota": "CANDIDATO APROVADO NA SONDA (F6 25/10/2026): 10 páginas do acervo (leis, provas, livros BCB/CVM, cursinho) renderizadas a 1240 px. 10/10 com ≥ 95% das palavras do texto embutido (8/10 ≥ 96,7% também na ordem dos caracteres; os 2 restantes trocam a ordem das colunas). 2–7 s por página, devolve caixas de layout (markdown_bbox). Fica fora da corrente até ter consumidor (triagem de página escaneada na F7); texto de OCR entra como 'incerto'"
+    },
+    {
+      "id": "meta/llama-3.2-11b-vision-instruct",
+      "familia": "meta",
+      "funcoes": ["visao"],
+      "gratis": true,
+      "preview": false,
+      "parametros": [],
+      "status": "nao_testado",
+      "nota": "CANDIDATO (F6 25/10/2026): só para CLASSIFICAR figura de prova (regra 15: figura no treino é desenhada por código ou oficial com OK do dono). Transcreveu 100% de uma página com tabela, 19 s. O 90b trocou o texto e foi descartado"
     },
     {
       "id": "nvidia/nemotron-3.5-embed-1b",
@@ -139,7 +159,7 @@
       "preview": false,
       "parametros": [],
       "status": "nao_testado",
-      "nota": "CANDIDATO (F6, 24/10/2026): embedding menor/mais novo. V2: o atual fica até o benchmark de recuperação provar ganho (recall@5 dos trechos que fundamentam questões aprovadas). Trocar exige reindexar e rollback do índice"
+      "nota": "CANDIDATO (F6, 25/10/2026): 200, 2048 dimensões por padrão e ACEITA dimensions=1024 (o atual só aceita 2048): metade do espaço dos vetores no Atlas. V2: o atual fica até o benchmark de recuperação provar que não perde (recall@5 dos trechos que fundamentam questões aprovadas). Trocar exige reindexar e rollback do índice; decisão do dono. Não confundir com o 3.5-embed-8b (4096 dimensões, 12 s: descartado)"
     },
     {
       "id": "nvidia/nemotron-3.5-bolt-e4b",
@@ -149,7 +169,7 @@
       "preview": false,
       "parametros": [],
       "status": "nao_testado",
-      "nota": "CANDIDATO (F6, 24/10/2026): classificador barato e rápido (subtópico, tipo de material na triagem do acervo, motivo de rejeição). Aceite: ≥ 95% de acordo com a classificação auditada em 80 questões, com latência menor que a do tutor atual. Só classifica; o código decide"
+      "nota": "CANDIDATO ABAIXO DO ACEITE (F6 25/10/2026): no banco só há 39 questões com 2+ subtópicos possíveis (não 80). Acordo com a classificação auditada: bolt 92,3% (36/39), mediana 0,46 s; tutor atual (gpt-oss-20b) 94,9% (37/39), 2,3 s. Aceite: ≥ 95% com latência menor. Fica fora; refazer quando o banco tiver 80+ casos ambíguos. Só classifica; o código decide"
     }
   ]
 }
