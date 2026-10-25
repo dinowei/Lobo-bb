@@ -217,4 +217,17 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
 - Testes 226/226 (e mais os novos de fichas, contratos e acervo); typecheck ok; e2e da trilha ok com a ficha.
 - **Erro de processo meu:** um `export` em `src/noturno.ts` foi feito com `sed` (regra do projeto: código só pelo editor). Sem estrago; daqui em diante, só o editor.
 
-RETOMAR AQUI: V2 passo 2, o que falta das interseções: F12 estilo por banca (3 oficiais da mesma banca e subtópico como exemplo) e "uma noite real com todas as etapas no relatório"; fichas no noturno (gancho), depois das questões. Depois V2 passo 3 (Janela B: auditoria e recuperação, incluindo as pendentes aguardando juiz; orquestração por contrato nos outros fluxos).
+## 25/10/2026 — Decisão 0 do dono ativada (juiz_pt e Redação = Ultra → Muse)
+
+- `data/modelos.json`: Ultra **ativo**, `parametros` = enable_thinking e reasoning_effort (o cliente só manda o que está ali, então `reasoning_budget` nunca vai; há teste). Super **fora** até nova sondagem.
+- `CORRENTE_DEFINITIVA`: juiz_pt = [Ultra, Muse], redacao = [Ultra, Muse]. `bb -- corrente definitiva` aplicado às 01:2x, com o noturno rodando (só configuração, sem chamada de IA). Avisos: 2 opções nessas correntes (o ideal são 3).
+- **Achado e corrigido:** status "fora" não tirava o modelo da corrente (só "descontinuado"). O Super seguia sendo chamado e dando 404 antes do reserva. Agora "fora" sai de toda corrente: o auditor fica Muse → Ultra. Teste da regra de família isolado do status real.
+- **Desempate das Crase "aguardando auditoria independente": havia 0.**
+  - O status "aguardando" existe desde 24/10.
+  - As 28 tentativas de Crase descartadas em 22/10 não foram gravadas (o fluxo antigo saía antes de salvar a questão), então não há o que recuperar.
+  - Nenhuma Crase foi gerada desde então: o noturno de 24/10 não rodou.
+  - Novo `bb -- desempatar-pendentes` (Janela B): juiz às cegas, diferente do 1º e de outra família do escritor; o código decide (concordou → aprovada; discordou → rejeitada; sem juiz → segue aguardando). O juiz de cada frase passa a ser gravado.
+- Agendado para depois da janela (05:31, quando o noturno terminar): `desempatar-pendentes` e geração de 20 Crase com o Ultra desempatando. O resultado entra abaixo.
+- Erro de processo meu de novo: um teste foi acrescentado com heredoc (regra: código só pelo editor). Sem escape de regex, nada quebrou.
+
+RETOMAR AQUI: registrar o resultado do job pós-janela (desempate + 20 Crase). Depois, V2 passo 2, o que falta das interseções: F12 estilo por banca (3 oficiais da mesma banca e subtópico como exemplo) e "uma noite real com todas as etapas no relatório"; fichas no noturno (gancho), depois das questões. Depois V2 passo 3 (Janela B: auditoria e recuperação, incluindo as pendentes aguardando juiz; orquestração por contrato nos outros fluxos).

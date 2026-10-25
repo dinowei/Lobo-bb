@@ -5,7 +5,9 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ---
 
-## Decisão 0 — Juiz de Português sem modelo funcionando (24/10/2026) — PRECISA DE VOCÊ
+## Decisão 0 — Juiz de Português sem modelo funcionando (24/10/2026) — RESOLVIDO 25/10/2026
+
+> **Decisão do dono (25/10):** `juiz_pt` e Redação = Ultra → Muse, sem `reasoning_budget` no Ultra; Super fora até nova sondagem provar estabilidade. Ativo com `npm run bb -- corrente definitiva` (commit `02e5e4d`); reverter com `corrente desfazer`. O texto abaixo é o histórico da proposta.
 
 - **Fato:** o `nemotron-3-super` (1º do `juiz_pt` e da Redação na corrente definitiva) responde 404 "Function not found for account" desde 22/10. Sondado de novo em 24/10: 404 nos 4 modos. O 2º, Ultra, está marcado "fora" desde 17/10 (503).
 - **Efeito:** a Crase e as outras de Português por construção não têm desempate. Desde 24/10 elas ficam `pendente / aguardando_auditoria_independente` (antes eram descartadas). A Redação está caindo no Muse (3º da corrente).
