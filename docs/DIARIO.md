@@ -191,4 +191,30 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - F3 com auditoria em 92,5%.
   - Próximo: interseção F6 (sondar modelos, catálogo com evidência, benchmark por função).
 
-RETOMAR AQUI: V2 passo 2 (interseções): F6 — sondar de novo os modelos (404/503/timeout), catálogo com evidência sem ativar nada, `juiz_pt` sem independência → aguardando, especialistas NVIDIA (OCR, reranker, embed menor) com função e aceite.
+## 24/10/2026 — V2 passo 2 (interseções F6, F11, F12)
+
+- **F6, modelos** (sondagem dos 36 casos, `docs/sondagem-modelos.json`):
+  - **nemotron-3-super: 404 "not found for account"** em tudo (já desde 22/10). É o 1º do juiz_pt e da Redação e o 2º auditor.
+  - Ultra responde 200 (só recusa `reasoning_budget`); glm-5.3-flash e deepseek em timeout. gpt-oss, Muse, Lightning e super-vl ok.
+  - Catálogo com a evidência, **sem mudar status nem corrente**.
+  - Candidatos `nao_testado` com função e aceite: `nemotron-parse-2.0` (OCR e layout), `nemotron-3.5-embed-1b` (embed), `bolt-e4b` (classificador). Guardas de conteúdo (nemoguard, llama-guard) não entraram: detectam conteúdo inseguro, não prompt injection, e não têm função concreta aqui hoje.
+  - **Benchmark do juiz_pt** (46 frases): Ultra 96% (6 s), Muse 96% (27 s), step-5-preview 93%, gpt-oss 87%, glm 100% mas lento. Sem vencedor claro. Proposta em DECISOES-PENDENTES, Decisão 0 (Ultra → Muse); **depende do dono**.
+- **Crase sem juiz independente:** a questão passa pela revisão e fica `pendente / aguardando_auditoria_independente` (antes: descartada). Teste `fechaComRegraNasPendentes`.
+- **Contratos V2** (`shared/contratos.ts`): contrato JSON por etapa e afirmação verificável; `decidirEstado` é puro e testado. O código manda: checagem do código reprova; trecho fora da fonte vira aguardando_fonte; sem revisor de outra família vira aguardando_auditoria_independente.
+- **F7/F11, acervo:**
+  - `bb -- acervo indexar`: 478 PDFs, **17.327 páginas**, 0 na nuvem, 0 erro. `acervo-indice/` (41 MB) fica fora do Git; por SHA-256, o que já foi indexado não é reprocessado. Nada gravado no OneDrive.
+  - `bb -- acervo mapa`: **61 de 63 temas com material** em `docs/CRONOGRAMA-MATERIAL.md` e `data/temas.json` (marcado "automático"; Crase conferida à mão, mantida).
+  - Conferi o 1º mapa e corrigi: casar só no início de palavra; Português/Inglês/Matemática/Lógica/Informática só com cursinho; edital e prova solta pelo nome; lei do tema pelo número ou pelo campo `leis`.
+  - Inglês fica sem material: o acervo não tem material de estudo de Inglês. Ainda há trechos fracos (ex.: 2º trecho de LGPD e de Porcentagem); o rótulo "automático" fica até conferir.
+- **F11, fichas pela rede** (`bb -- fichas --tema x`): gerador (gpt-oss) → código confere cada trecho literal na página → auditor de outra família (Muse) → `decidirEstado`.
+  - **Aprovadas: BCB e autonomia (6 afirmações, LC 179 e Lei 4.595) e Crase (4).** Pix reprovada pelo auditor (afirmações além do trecho).
+  - Corrigido no caminho: hifenização do PDF na comparação; conserto do JSON; mesmas classes para gerador e auditor; classe errada vira o rótulo sugerido pelo revisor, e o código recalcula.
+  - Página do tema mostra "Ficha do acervo" com fonte (arquivo, página, camada) e o trecho (e2e).
+- **F12, noturno:**
+  - Tema de amanhã na trilha vem primeiro até ter 15 novas para o aluno: campo `prioridade` na tarefa (padrão 0, a fila antiga não muda); tipo forçado quando o tópico mistura subtópicos (crase). Domingo não pede tema.
+  - Simulação para segunda 26/10: 2 tarefas de Interpretação.
+  - Log do wrapper em UTF-8 (fim do "Ô£ö", provado simulando cp850).
+- Testes 226/226 (e mais os novos de fichas, contratos e acervo); typecheck ok; e2e da trilha ok com a ficha.
+- **Erro de processo meu:** um `export` em `src/noturno.ts` foi feito com `sed` (regra do projeto: código só pelo editor). Sem estrago; daqui em diante, só o editor.
+
+RETOMAR AQUI: V2 passo 2, o que falta das interseções: F12 estilo por banca (3 oficiais da mesma banca e subtópico como exemplo) e "uma noite real com todas as etapas no relatório"; fichas no noturno (gancho), depois das questões. Depois V2 passo 3 (Janela B: auditoria e recuperação, incluindo as pendentes aguardando juiz; orquestração por contrato nos outros fluxos).
