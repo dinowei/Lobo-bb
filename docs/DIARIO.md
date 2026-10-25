@@ -313,10 +313,25 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - Causa de fundo: a extração usa o auditor do `.env`, que ainda aponta para o Super (fora pela Decisão 0, dá 404) e cai sempre na reserva Ultra. Trocar no `.env` é decisão do dono.
 - **TJ-SP Vunesp:** o acervo só tem o caderno de 2023, sem o gabarito. O leitor de gabarito Vunesp fica para quando o gabarito chegar (o formato de pares/grade já é lido pelo `lerGabaritoOficial`).
 
-RETOMAR AQUI — ordem do dono (25/10/2026), nesta sequência:
-1. FEITO: visual da madrugada testado, com prints, commitado (`14834cb`).
-2. AGORA: PROMPT-LOBO-BB-BACEN de F8 até F14. Toda tela nova já nasce no estilo novo (cores, barra lateral, cartões do mockup).
-   - F8: ingerir as Cesgranrio, uma por vez, com o Atlas medido antes e parada em 80%: BB Agente de Tecnologia 2021/2023 (`--caderno 1 --questoes 1-35`), BNDES 2024 (só as matérias do BB) e CNU 2024. Depois `classificar-subtopicos --ia` e `incidencia`.
-   - F10: rodar `derivar-ce --n 6` (meta: 30 itens com taxa de aprovação). Ingestão das provas C/E da Cebraspe (BACEN 2024): o número e o gabarito vêm do código (`lerGabaritoOficial(..., "certo_errado")`); a IA só copia o texto, que o código confere literalmente; item com símbolo de fórmula ilegível (ᡈ, 㐈) fica para conferir. Importar as questões de cursinho (origem "cursinho", camada C).
-   - Depois F9, F11, F12 (estilo por banca; uma noite real com todas as etapas; fichas no noturno), F13 e F14, intercalando o que falta da V2 (Janela B, orquestração por contrato).
-3. POR ÚLTIMO: voltar ao PROMPT-VISUAL-FASE-FINAL e terminar Plano, Cartões, Raio-X, Conquistas, Tema, login e player da Lo. Mesma trava: sem mexer em lógica.
+## 25/10/2026 (tarde) — PROMPT-FECHAMENTO, E1–E14 (substitui a ordem anterior)
+
+- Etapa 1: SIM. Backup verificado antes. Tópicos 74 → 85 (11 novos do TJ-SP e da CVM); por concurso bb 58 → 58, tjsp 0 → 36, bacen 59 → 59, cvm 0 → 23; questões 521 → 521 (iguais). 52 questões sem o campo `concursos` passaram a contar no BB (469 → 521).
+- Etapa 2: SIM (`ffede37`). Auditor = Muse → Ultra (`corrente definitiva`; `.env` trocado sem imprimir). A extração passa pela corrente (`auditorJSON`); JSON com barra inválida é reparado (`parseTolerante`); janela que falha é refeita página a página. BB Tecnologia 2021 refeita: 37 extraídas, 33 salvas, 2 não bateram com o PDF (nº 18 e 29, fórmula), 2 sem gabarito. BNDES 2024 rodando na cadeia 2.
+- Etapa 3: em andamento. A amostra auditada de 80 roda no fim da cadeia 4, depois da classificação com IA.
+- Etapa 4: código SIM (`baf7ba1`): 10 contextos de escrita e 8 estruturas de enunciado em `variacoes.json`, sorteados pelo código (regra 11). As 20 Crase novas rodam na cadeia 2; o resultado entra aqui.
+- Etapa 5: SIM (`f8f66fb`). Os 20 primeiros temas da trilha estão conferidos à mão. Ortografia e Números e operações ficam "sem material", com o motivo registrado. Inglês também fica sem material.
+- Etapa 6: código SIM (`f1ad12a`, `10310fc`). Estilo por banca: o JSON da banca mais 3 oficiais reais da banca no tema. O noturno roda backup → acervo → ingestão → classificação → fila (com reserva de 45 min) → derivação C/E → fichas → relatório com as etapas → backup. A noite real é a de hoje; o relatório entra amanhã.
+- Etapa 7: código SIM (`cad6ac3`). Derivação: 30 itens, 27 aprovados (90%). BACEN 2024 C/E repetido na cadeia 2. Cursinho: na cadeia 4, entram 3 livros Cesgranrio (88 + 66 + 103 gabaritos lidos no ensaio) e as 100 Inéditas BB (C/E, 100 itens).
+- Etapa 8: SIM (`0480720`). A Janela B tem horário configurável (18:00–19:00 por padrão), teto próprio de chamadas e tela em Admin → Janelas, com e2e e prints. Agendar no Windows é do dono.
+- Etapa 9: código SIM (`c0d8cf4`). 12 leis baixadas só de fonte oficial (~2,4 M caracteres, todas vigentes). A ingestão roda uma por vez na cadeia 3, com o Atlas medido. A tabela fonte → trechos → temas entra quando a cadeia terminar.
+- Etapa 12: SIM (`0e3ad53`). `web/vercel.json` faz o rewrite de /api para o Render. O site abre na hora com o Painel guardado e mostra a faixa "acordando o servidor" (e2e: 1,0 s no celular). PWA com versão. O passo a passo está em `docs/VERCEL.md`; o projeto não foi criado e o DNS não foi tocado.
+- Backup: um segundo backup no mesmo dia ganha o sufixo `-HHmm` (antes era recusado e parava a cadeia). A retenção é por dia. Tem teste.
+
+RETOMAR AQUI — PROMPT-FECHAMENTO (25/10/2026):
+1. Cadeias em fila (um job de IA por vez; nada entre 00:45 e 05:30):
+   - 2: BNDES, BACEN C/E, explicar, classificar, incidência, 20 Crase, derivar-ce, Janela B.
+   - 3: 12 leis.
+   - 4: cursinho, explicar, classificar e a amostra de 80 (E3).
+   - Os logs ficam no scratchpad da sessão (`cadeia2..4.log`).
+2. Depois: E10 (lotes de provas, com incidência após cada lote), E11 (fichas dos 74 temas, golden set do chat com 30 perguntas, áudio), E13 (visual final; Espaço/Áudios da Lo BLOQUEADO, sem especificação) e E14 (fechamento).
+3. BLOQUEADO pelo dono: BNB 2024 item 17; gabarito TJ-SP 2023; cotas TJ-SP.
