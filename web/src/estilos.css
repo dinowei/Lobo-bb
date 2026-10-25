@@ -1316,6 +1316,21 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 .ce-recomendacao-depois { margin: -6px 0 14px; color: var(--suave); font-size: 13px; max-width: 68ch; }
 .resultado-faixa.branco { background: var(--atencao-fundo); color: var(--atencao-texto); box-shadow: inset 4px 0 0 var(--lo); }
 .ce-filtro { margin: 6px 0 0; font-size: 14px; }
+/* Prontidão (trilha única): resultado = verde institucional; barras finas, número grande */
+.prontidao-cartao { margin: 14px 0 0; padding: 14px 16px; border-radius: 16px; max-width: 620px; background: var(--verde-fundo); border: 1px solid var(--linha); }
+.prontidao-cabeca { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.prontidao-cabeca > span:first-child { font-weight: 600; }
+.prontidao-cabeca b { font-size: 26px; color: var(--verde-texto); letter-spacing: -0.02em; }
+.prontidao-cabeca small { color: var(--suave); }
+.barra-prontidao { height: 8px; border-radius: 999px; background: var(--linha); overflow: hidden; flex: 1; min-width: 60px; }
+.barra-prontidao i { display: block; height: 100%; border-radius: inherit; background: var(--verde); }
+.prontidao-cartao > .barra-prontidao { margin: 8px 0 10px; }
+.lista-prontidao { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.lista-prontidao li { display: flex; align-items: center; gap: 10px; }
+.lista-prontidao li > .link { min-width: 52px; text-align: left; font-weight: 600; }
+.lista-prontidao .num { min-width: 38px; text-align: right; }
+.lista-fracos { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 4px; }
+.lista-fracos .num { color: var(--suave); }
 /* aba de concurso ainda sem matérias (TJ-SP e CVM até o material chegar) */
 .aviso-concurso-vazio { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; max-width: 68ch; background: var(--binho-fundo); box-shadow: inset 4px 0 0 var(--binho); }
 .aviso-concurso-vazio b { color: var(--binho-texto); }

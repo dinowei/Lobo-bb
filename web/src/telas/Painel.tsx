@@ -14,6 +14,49 @@ import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
 import { COR_DISC, CURTO, SIGLA, diasAte, pct } from "../util";
 import { Pose } from "../componentes/Pose";
 import { CONCURSOS, SIGLA_CONCURSO } from "../../../shared/concursos";
+import type { ProntidaoDTO } from "../../../shared/prontidao";
+
+// Prontidão (trilha única): na aba Geral, um número por concurso; na aba do concurso, a lente dele com os
+// temas mais fracos de maior peso. O domínio é um só: estudar um tema comum sobe todos os que o cobram.
+function Prontidao() {
+  const { api, concurso, ir, trocarConcurso } = useApp();
+  const [lista, setLista] = useState<ProntidaoDTO[] | null>(null);
+  useEffect(() => { api.prontidao().then(setLista).catch(() => setLista([])); }, [api]);
+  if (!lista?.length) return null;
+  const doConcurso = concurso === "geral" ? null : lista.find((p) => p.concurso === concurso);
+  if (doConcurso)
+    return (
+      <div className="prontidao-cartao" data-testid="prontidao-lente">
+        <div className="prontidao-cabeca">
+          <span>Prontidão para {doConcurso.sigla}</span>
+          <b className="num">{pct(doConcurso.prontidao)}</b>
+          {doConcurso.aConfirmar && <span className="selo alerta" title="Edital pendente: pesos de referência">pesos a confirmar</span>}
+        </div>
+        <div className="barra-prontidao" aria-hidden="true"><i style={{ width: pct(doConcurso.prontidao) }} /></div>
+        <p className="sub">Temas que mais pesam e ainda estão fracos:</p>
+        <ul className="lista-fracos">
+          {doConcurso.fracos.map((f) => (
+            <li key={f.subtopico}><button className="link" onClick={() => ir("tema", { subtopico: f.subtopico })}>{f.nome}</button> <span className="num">{pct(f.dominio)}</span></li>
+          ))}
+        </ul>
+      </div>
+    );
+  return (
+    <div className="prontidao-cartao" data-testid="prontidao-geral">
+      <div className="prontidao-cabeca"><span>Prontidão por concurso</span><small>um domínio só: um tema comum sobe todos</small></div>
+      <ul className="lista-prontidao">
+        {lista.map((p) => (
+          <li key={p.concurso}>
+            <button className="link" onClick={() => trocarConcurso(p.concurso)} title={p.nome}>{p.sigla}</button>
+            <div className="barra-prontidao" aria-hidden="true"><i style={{ width: pct(p.prontidao) }} /></div>
+            <span className="num">{pct(p.prontidao)}</span>
+            {p.aConfirmar && <span className="selo alerta" title="Edital pendente: pesos de referência">a confirmar</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function Painel() {
   const { painel, ajustes, ir, usuario, api, concurso } = useApp();
@@ -82,11 +125,12 @@ export function Painel() {
             {faltam !== null && faltam >= 0 && <> Faltam <b className="num">{faltam}</b> dias para a prova.</>}
             {plano?.totalSemanas && <> <button className="link" onClick={() => ir("plano")}>Semana <b className="num">{plano.semanaAtual}</b> de <b className="num">{plano.totalSemanas}</b></button></>}
           </p>
-          {!painel.topicos.length && (
+          {concurso !== "geral" && !painel.topicos.length && (
             <p className="aviso-concurso-vazio" role="note" data-testid="concurso-sem-conteudo">
-              <b>{SIGLA_CONCURSO[concurso]}: as matérias ainda estão chegando.</b> O {CONCURSOS[concurso].nome} ({CONCURSOS[concurso].cargo}) entra com o material de estudo; enquanto isso, as outras abas seguem normais.
+              <b>{SIGLA_CONCURSO[concurso]}: as questões ainda estão chegando.</b> O {CONCURSOS[concurso].nome} ({CONCURSOS[concurso].cargo}) entra com o material de estudo; a trilha única já inclui os temas dele.
             </p>
           )}
+          <Prontidao />
         </div>
         <button className="botao-laranja botao-grande" onClick={() => (temaHoje ? estudarTemaDoDia() : ir("praticar", trilha?.modo === "domingo" ? { revisao: true } : {}))}>
           <span aria-hidden="true">▶</span> {trilha?.modo === "domingo" && !temaHoje ? "Domingo: revisões e erros" : n > 0 ? "Continuar estudando" : "Começar agora"}

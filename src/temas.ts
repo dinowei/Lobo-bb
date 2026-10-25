@@ -8,7 +8,10 @@ import { existsSync } from "node:fs";
 import { isAbsolute, join, normalize, relative } from "node:path";
 import { Types } from "mongoose";
 import { Attempt, Config, Question, ReviewState, Topic } from "./models.js";
-import { ALUNO, chaveConcurso } from "./estudo.js";
+import { ALUNO, chaveConcurso, lenteAtiva } from "./estudo.js";
+import { disciplinaDoTema } from "../shared/trilhaUnica.js";
+import { prontidaoDeTodos } from "../shared/prontidao.js";
+import type { ProntidaoDTO } from "../shared/prontidao.js";
 import { fichaAprovada } from "./fichas.js";
 import { SUBTOPICO_POR_ID } from "../shared/subtopicos.js";
 import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA, type InicioTrilha } from "../shared/trilha.js";
@@ -28,11 +31,9 @@ type ConteudoTema = {
 };
 const CONTEUDO = conteudo.temas as unknown as Record<string, ConteudoTema>; // JSON: camada vem como string
 
-// tópicos do concurso ativo (matéria comum nos dois; tópico antigo sem concurso = BB)
+// trilha única: o domínio por tema é UM número, com as tentativas de todos os tópicos (a lente filtra depois)
 async function topicosAtivos() {
-  const { concurso } = chaveConcurso();
-  return Topic.find({ ativo: true, $or: [{ concursos: concurso }, ...(concurso === "bb" ? [{ concursos: { $exists: false } }] : [])] })
-    .select("_id disciplina assunto").lean();
+  return Topic.find({ ativo: true }).select("_id disciplina assunto").lean();
 }
 
 const origemDe = (q: { origem?: string | null; derivadaDe?: unknown; camada?: string | null }): OrigemTema =>
@@ -59,10 +60,17 @@ async function tentativasPorTema() {
 
 export async function desempenhoTemas() {
   const { ts, aprovadas, discDoSub } = await tentativasPorTema();
-  const { concurso } = chaveConcurso();
+  const lente = lenteAtiva();
   return desempenhoPorTema(ts, aprovadas, (s) => discDoSub.get(s) ?? null)
-    .filter((d) => d.concursos.includes(concurso))
+    .filter((d) => !lente || d.concursos.includes(lente))
     .sort((a, b) => (a.disciplina ?? "").localeCompare(b.disciplina ?? "") || a.nome.localeCompare(b.nome));
+}
+
+// "Prontidão para X" de todos os concursos, do MESMO domínio por tema (a aba escolhe qual mostrar)
+export async function prontidao(): Promise<ProntidaoDTO[]> {
+  const { ts, aprovadas, discDoSub } = await tentativasPorTema();
+  const dominio = new Map(desempenhoPorTema(ts, aprovadas, (s) => discDoSub.get(s) ?? null).filter((d) => d.respondidas > 0).map((d) => [d.subtopico, d.dominio]));
+  return prontidaoDeTodos(dominio);
 }
 
 // noturno: tema com < 15 aprovadas ganha prioridade (o noturno lê Config "prioridade_temas")
@@ -71,19 +79,42 @@ export async function pedirPrioridade(subtopico: string) {
   await Config.updateOne({ _id: "prioridade_temas" }, { $set: { [`valor.${subtopico}`]: new Date().toISOString(), em: new Date() } }, { upsert: true });
 }
 
-// onde a trilha começa (por aluno e concurso): "Fazer deste o tema do dia" na página do tema
-const chaveInicio = () => `trilha_inicio:${String(ALUNO())}:${chaveConcurso().concurso}`;
+// onde a trilha começa (por aluno; a trilha é única): "Fazer deste o tema do dia" na página do tema.
+// Grava o SUBTÓPICO, que não muda quando a ordem da trilha muda.
+const chaveInicio = (userId: unknown = ALUNO()) => `trilha_inicio:${String(userId)}`;
 export async function definirTemaDoDia(subtopico: string) {
-  const t = TRILHA.find((x) => x.subtopico === subtopico);
-  if (!t) throw new Error("Esse tema não está na trilha.");
-  const valor: InicioTrilha = { n: t.n, desde: diaLocal(new Date()) };
+  if (!TRILHA.some((x) => x.subtopico === subtopico)) throw new Error("Esse tema não está na trilha.");
+  const valor: InicioTrilha = { subtopico, desde: diaLocal(new Date()) };
   await Config.updateOne({ _id: chaveInicio() }, { $set: { valor, em: new Date() } }, { upsert: true });
+}
+
+// Migração da trilha única: "trilha_inicio:<aluno>:<concurso>" com o NÚMERO do tema (ordem antiga) vira
+// "trilha_inicio:<aluno>" com o SUBTÓPICO. Precisa rodar com a trilha antiga em data/trilha.json (antes do
+// trilha-ordenar --confirmar). Os registros antigos ficam (nada é apagado). Vale o do BB; senão, o mais recente.
+export async function migrarInicioTrilha(gravar: boolean) {
+  if (TRILHA.some((t) => "concursos" in t)) throw new Error("data/trilha.json já está no formato novo: a migração precisa da ordem antiga.");
+  const antigos = await Config.find({ _id: /^trilha_inicio:[^:]+:[a-z]+$/ }).lean();
+  const porAluno = new Map<string, { concurso: string; valor: InicioTrilha; em?: Date }[]>();
+  for (const c of antigos) {
+    const [, aluno, concurso] = String(c._id).split(":");
+    porAluno.set(aluno, [...(porAluno.get(aluno) ?? []), { concurso, valor: c.valor as InicioTrilha, em: c.em as Date | undefined }]);
+  }
+  const plano: { aluno: string; de: string; para: InicioTrilha }[] = [];
+  for (const [aluno, lista] of porAluno) {
+    const escolhido = lista.find((x) => x.concurso === "bb") ?? lista.sort((a, b) => +(b.em ?? 0) - +(a.em ?? 0))[0];
+    const sub = escolhido.valor.subtopico ?? TRILHA.find((t) => t.n === escolhido.valor.n)?.subtopico;
+    if (!sub) throw new Error(`aluno ${aluno}: tema nº ${escolhido.valor.n} não existe na trilha antiga`);
+    plano.push({ aluno, de: `${escolhido.concurso} nº ${escolhido.valor.n ?? "-"}`, para: { subtopico: sub, desde: escolhido.valor.desde } });
+  }
+  const jaNovos = await Config.countDocuments({ _id: /^trilha_inicio:[^:]+$/ });
+  if (gravar) for (const p of plano) await Config.updateOne({ _id: chaveInicio(p.aluno) }, { $set: { valor: p.para, em: new Date() } }, { upsert: true });
+  const depois = await Config.countDocuments({ _id: /^trilha_inicio:[^:]+$/ });
+  return { antigos: antigos.length, alunos: porAluno.size, jaNovos, depois, plano };
 }
 
 export async function trilha(): Promise<TrilhaDTO> {
   const { ts, aprovadas, discDoSub } = await tentativasPorTema();
-  const { concurso } = chaveConcurso();
-  const temas = TRILHA.filter((t) => concursosDoTema(t).includes(concurso));
+  const temas = TRILHA; // trilha ÚNICA: a mesma em qualquer aba
   const hoje = diaLocal(new Date());
   const inicio = ((await Config.findById(chaveInicio()).lean())?.valor ?? null) as InicioTrilha | null;
   const s = situacaoTrilha(diasDaTrilha(ts), hoje, temas, inicio);
@@ -101,7 +132,7 @@ export async function trilha(): Promise<TrilhaDTO> {
           n: s.tema.n,
           subtopico: s.tema.subtopico,
           nome: s.tema.nome,
-          disciplina: discDoSub.get(s.tema.subtopico) ?? null,
+          disciplina: discDoSub.get(s.tema.subtopico) ?? disciplinaDoTema(SUBTOPICO_POR_ID.get(s.tema.subtopico)!) ?? null,
           estado,
           refazer: s.refazer,
           diaNoTema: s.diasNoTema + 1,

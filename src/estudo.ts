@@ -56,18 +56,20 @@ import { explicarSobDemanda } from "./outroJeito.js";
 import { perguntarAoBinho } from "./chatBinho.js";
 import { avaliarCartao, filaCartoes } from "./cartoes.js";
 import { fontesDaQuestao } from "./fontesAtuais.js";
-import { definirTemaDoDia, desempenhoTemas, paginaTema, pedirPrioridade, proximaDoTema, trilha } from "./temas.js";
+import { definirTemaDoDia, desempenhoTemas, paginaTema, pedirPrioridade, prontidao, proximaDoTema, trilha } from "./temas.js";
 import { listarSimulados, salvarSimulado } from "./simulados.js";
 
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
-// em que concurso e banca o aluno está estudando agora (Elo, tentativas e Desempenho por concurso).
+// em que concurso e banca o aluno está estudando agora (Elo, tentativas, simulado e formato da banca).
 // F5: o concurso vem da aba do site (cabeçalho X-Concurso, no contexto da requisição); a banca é a que o
-// admin configurou ou, "a definir", a de referência (BACEN: Cebraspe). Sem aba, o BB de sempre.
+// admin configurou ou, "a definir", a de referência (BACEN: Cebraspe). Aba "Geral": o BB de sempre.
 export function chaveConcurso(): { concurso: IdConcurso; banca: IdBanca } {
   const concurso = (concursoDaRequisicao() ?? CONCURSO_PADRAO) as IdConcurso;
   return { concurso, banca: bancaEmUso(concurso, bancaConfigurada(concurso)) };
 }
+// Trilha única (25/10/2026): a aba do concurso é uma LENTE sobre o mesmo domínio; "Geral" (sem lente) = tudo
+export const lenteAtiva = (): IdConcurso | null => (concursoDaRequisicao() as IdConcurso | undefined) ?? null;
 const oid = (s: string) => {
   if (!/^[0-9a-f]{24}$/i.test(s)) throw new Error(`id inválido: ${s}`);
   return new Types.ObjectId(s);
@@ -76,13 +78,16 @@ const oid = (s: string) => {
 // ------------------------------------------------------------
 // Conversões
 // ------------------------------------------------------------
-// só os tópicos do concurso ativo (matéria comum aparece nos dois); tópico antigo sem concurso = BB
-async function mapaTopicos() {
-  const { concurso } = chaveConcurso();
-  const ts = await Topic.find({ ativo: true, $or: [{ concursos: concurso }, ...(concurso === "bb" ? [{ concursos: { $exists: false } }] : [])] }).lean();
+// lente do concurso: só os tópicos dele (matéria comum aparece em todos; tópico antigo sem concurso = BB).
+// Aba "Geral": todos os tópicos ativos.
+export async function mapaTopicos() {
+  const lente = lenteAtiva();
+  const ts = await Topic.find(
+    lente ? { ativo: true, $or: [{ concursos: lente }, ...(lente === "bb" ? [{ concursos: { $exists: false } }] : [])] } : { ativo: true }
+  ).lean();
   // BACEN: a matéria da área (Suporte Técnico-Administrativo) só entra para quem é dessa área
-  const area = infoConcursos().find((c) => c.id === concurso)?.area;
-  const fora = concurso === "bacen" && area !== "suporte_tecnico_administrativo" ? "suporte_tecnico_administrativo" : null;
+  const area = infoConcursos().find((c) => c.id === "bacen")?.area;
+  const fora = (lente === "bacen" || !lente) && area !== "suporte_tecnico_administrativo" ? "suporte_tecnico_administrativo" : null;
   return new Map(ts.filter((t) => t.disciplina !== fora).map((t) => [String(t._id), t]));
 }
 
@@ -102,8 +107,11 @@ async function historicoCE(subtopico: string | null | undefined) {
   return { acertos: rs.filter((r) => r.acertou).length, total: rs.length };
 }
 
+// banca do Certo/Errado: a da lente; na aba Geral, a Cebraspe (o formato C/E é dela)
+const bancaCE = (): IdBanca => (lenteAtiva() ? chaveConcurso().banca : "cebraspe");
+
 async function proximoItemCE(f: { subtopico?: string; disciplina?: Disciplina; excluir?: string[] }): Promise<ProximoItemCEDTO> {
-  const { banca } = chaveConcurso();
+  const banca = bancaCE();
   const mapa = await mapaTopicos();
   const topicos = [...mapa.values()].filter((t) => !f.disciplina || t.disciplina === f.disciplina);
   const filtro: Record<string, unknown> = { status: "aprovada", topicId: { $in: topicos.map((t) => t._id) } };
@@ -129,7 +137,8 @@ async function proximoItemCE(f: { subtopico?: string; disciplina?: Disciplina; e
 }
 
 async function responderItemCE(r: { itemId: string; resposta: "C" | "E" | null; tempoSeg: number }): Promise<CorrecaoCEDTO> {
-  const { concurso, banca } = chaveConcurso();
+  const { concurso } = chaveConcurso();
+  const banca = bancaCE();
   const item = await ItemCE.findById(oid(r.itemId)).lean();
   if (!item || item.status !== "aprovada") throw new Error("Item fora de circulação.");
   const resposta = r.resposta === "C" || r.resposta === "E" ? r.resposta : null;
@@ -328,6 +337,7 @@ export const apiServidor: Omit<Api, "modo"> = {
   definirTemaDoDia,
   simulados: () => listarSimulados(ALUNO()),
   concursos: async () => infoConcursos() as ConcursoInfoDTO[],
+  prontidao,
   proximoItemCE,
   responderItemCE,
 

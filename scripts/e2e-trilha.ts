@@ -8,6 +8,7 @@ import { mkdirSync } from "node:fs";
 import { chromium, type Page } from "playwright-core";
 import { calcularPainel } from "../shared/motor.js";
 import { desempenhoPorTema } from "../shared/desempenhoTema.js";
+import { TRILHA } from "../shared/trilha.js";
 import type { CorrecaoDTO, QuestaoDTO, TemaDTO, TopicoDTO, TrilhaDTO } from "../shared/tipos.js";
 
 const WEB = process.env.E2E_WEB ?? "http://localhost:5182";
@@ -153,7 +154,9 @@ try {
     assert.ok(e.pedidos.filter((x) => x.tipo === "crase").every((x) => /subtopico=crase/.test(x.url)));
     const res = await p.locator("[data-testid=resultado-sessao]").innerText();
     assert.match(res, /Crase \(novas\)\s*16\/20/);
-    assert.match(await p.locator("[data-testid=amanha]").innerText(), /Crase concluído! Amanhã: tema 23, Taxas\./);
+    // o próximo vem da trilha única real (a ordem pode mudar com temas novos e incidência)
+    const seguinte = TRILHA.find((t) => t.n > 22)!;
+    assert.match(await p.locator("[data-testid=amanha]").innerText(), new RegExp(`Crase concluído! Amanhã: tema ${seguinte.n}, ${seguinte.nome.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\.`));
     await p.screenshot({ path: `${PASTA}/resultado-${tela.nome}.png`, fullPage: true });
 
     // página do tema

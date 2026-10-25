@@ -22,7 +22,8 @@ test("classificação por código: tópico único, construção e palavras; amb�
 });
 
 test("concursos do tópico = união dos subtópicos; tópico sem subtópico é detectado", () => {
-  assert.deepEqual(concursosDoTopico("Pontuação"), ["bacen", "bb"]);
+  // trilha única (25/10/2026): Português é dos quatro concursos
+  assert.deepEqual(concursosDoTopico("Pontuação"), ["bacen", "bb", "cvm", "tjsp"]);
   assert.deepEqual(concursosDoTopico("Juros compostos"), ["bb"]);
   assert.deepEqual(concursosDoTopico("Agentes públicos (Lei 8.112/1990)"), ["bacen"]);
   assert.deepEqual(topicosSemSubtopico(["Pontuação", "Tópico inventado"]), ["Tópico inventado"]);

@@ -1,0 +1,22 @@
+{
+  "_sobre": "Regras da trilha única (decisão do dono, 25/10/2026). Ordem calculada por código (shared/trilhaUnica.ts, comando 'bb -- trilha-ordenar'): matérias comuns primeiro (nº de concursos que cobram o tema), depois peso nos editais × incidência nas provas, respeitando os pré-requisitos abaixo [antes, depois]. Empate: a ordem antiga do plano do dono.",
+  "preRequisitos": [
+    ["porcentagem", "juros_simples"],
+    ["juros_simples", "juros_compostos"],
+    ["juros_compostos", "descontos"],
+    ["juros_compostos", "taxas"],
+    ["taxas", "sac_price"],
+    ["sac_price", "rendas_vpl"],
+    ["proposicoes", "negacao_equivalencias"],
+    ["negacao_equivalencias", "tabela_verdade"],
+    ["combinatoria", "probabilidade"],
+    ["regencia", "crase"],
+    ["estrutura_sfn", "bcb_autonomia"],
+    ["internet_email", "nuvem_redes"],
+    ["ingles_leitura", "ingles_gramatica"],
+    ["principios_fundamentais", "art5"],
+    ["principios_adm", "atos_processo_9784"],
+    ["penal_geral", "penal_adm_publica"],
+    ["principios_adm", "estatuto_servidor_sp"]
+  ]
+}

@@ -6,6 +6,7 @@ import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { IEsq, IDir, ISeta } from "../componentes/Icones";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
+import { IDS_CONCURSO, SIGLA_CONCURSO } from "../../../shared/concursos";
 import { RelogioAtivo } from "../relogio";
 import { EvolucaoSimulados } from "../componentes/EvolucaoSimulados";
 import { COTAS_PROVA, ESTRUTURA_PROVA, resumoPorBloco, pontuacaoProva, type Mistura } from "../../../shared/estruturaProva";
@@ -24,7 +25,7 @@ const COMPOSICAO = ESTRUTURA_PROVA.blocos
 const fmt = (s: number) => `${Math.floor(s / 3600) ? `${Math.floor(s / 3600)}h ` : ""}${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 export function Simulados() {
-  const { api, painel, recarregar, avisar, ajustes, guardarSaida, ir } = useApp();
+  const { api, painel, recarregar, avisar, ajustes, guardarSaida, ir, concurso, trocarConcurso } = useApp();
   const [questoes, setQuestoes] = useState<QuestaoDTO[] | null>(null);
   const [respostas, setRespostas] = useState<Record<string, Letra>>({});
   const [atual, setAtual] = useState(0);
@@ -259,15 +260,27 @@ export function Simulados() {
           : ""}
         {ajustes.duracaoProvaMin > 0 ? ` Tempo: ${ajustes.duracaoProvaMin} min na completa, proporcional nos menores; acabou, entrega.` : " Sem tempo limite (defina a duração em Ajustes)."}
       </p>
-      <div className="opcoes-tamanho" style={{ marginBottom: 22 }}>
-        {TAMANHOS.map((t) => (
-          <button key={t.n} className="opcao" onClick={() => comecar(t.n)}>
-            <b className="num">{t.n}</b>
-            <strong>{t.rotulo}</strong>
-            <span>{t.tempo}</span>
-          </button>
-        ))}
-      </div>
+      {concurso === "geral" ? (
+        // trilha única: o simulado é no formato de UM concurso (cotas e banca dele); a aba escolhe qual
+        <div className="secao escolha-concurso-simulado" style={{ marginBottom: 22 }} data-testid="simulado-escolha-concurso">
+          <p style={{ marginTop: 0 }}><b>Simulado de qual concurso?</b> Ele sai nas cotas e no formato da banca de cada um.</p>
+          <div className="acoes">
+            {IDS_CONCURSO.map((c) => (
+              <button key={c} className="botao-linha" onClick={() => trocarConcurso(c)}>{SIGLA_CONCURSO[c]}</button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="opcoes-tamanho" style={{ marginBottom: 22 }}>
+          {TAMANHOS.map((t) => (
+            <button key={t.n} className="opcao" onClick={() => comecar(t.n)}>
+              <b className="num">{t.n}</b>
+              <strong>{t.rotulo}</strong>
+              <span>{t.tempo}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="secao rolagem historico-resultados">
         <h2>Histórico</h2>
         {painel?.simulados.length ? (

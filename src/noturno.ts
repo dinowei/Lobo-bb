@@ -118,7 +118,7 @@ export async function alvosDaTrilha(topicos: { _id: unknown; assunto: string }[]
   const [qs, tentativas, inicios, abertas] = await Promise.all([
     Question.find({ status: "aprovada", subtopico: { $exists: true } }).select("_id subtopico").lean(),
     Attempt.find({ modo: { $ne: "simulado" } }).select("userId questionId acertou createdAt").lean(),
-    Config.find({ _id: /^trilha_inicio:/ }).lean(),
+    Config.find({ _id: /^trilha_inicio:[^:]+$/ }).lean(), // trilha única: um início por aluno (subtópico)
     Tarefa.aggregate<{ _id: string; n: number }>([
       { $match: { tipo: "gerar", "params.motivo": "trilha", status: { $in: ["pendente", "rodando", "aguardando"] } } },
       { $group: { _id: "$params.subtopico", n: { $sum: 1 } } },
@@ -128,7 +128,7 @@ export async function alvosDaTrilha(topicos: { _id: unknown; assunto: string }[]
   const abertasPor = new Map(abertas.map((a) => [a._id, a.n]));
   const inicioDe = new Map(inicios.map((c) => [String(c._id).split(":")[1], c.valor as InicioTrilha]));
   const alunos = new Set([...tentativas.map((t) => String(t.userId)), ...inicioDe.keys()]);
-  const temas = TRILHA.filter((t) => concursosDoTema(t).includes("bb"));
+  const temas = TRILHA; // trilha única: todos os concursos
   const variacoes = carregarVariacoes();
   const dia = diaDeEstudo(agora);
   const alvos: AlvoTrilha[] = [];

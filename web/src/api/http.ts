@@ -74,6 +74,7 @@ export const apiHttp: Api = {
   desempenhoTemas: () => req("/temas/desempenho"),
   simulados: () => req("/simulados"),
   concursos: () => req("/concursos"),
+  prontidao: () => req("/prontidao"),
   proximoItemCE: (f) => {
     const p = new URLSearchParams();
     if (f.subtopico) p.set("subtopico", f.subtopico);

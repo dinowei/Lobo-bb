@@ -84,6 +84,8 @@ try {
 
   await caso("simulado completo: 10 questões, entrega e resultado por bloco", async () => {
     const p = await novaPagina(`${DEMO}/#simulados`);
+    // trilha única: na aba Geral o simulado pede o concurso (formato e cotas da banca dele)
+    await p.locator("[data-testid=simulado-escolha-concurso] button", { hasText: "BB" }).click();
     await p.locator(".opcao", { hasText: "Relâmpago" }).click();
     await p.waitForSelector(".grade-nav");
     const total = await p.locator(".grade-nav button").count();

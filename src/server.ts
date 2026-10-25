@@ -124,6 +124,7 @@ app.post("/api/trilha/inicio", rota(async (req, res) => {
 }));
 // concursos (F5): banca em uso e área de cada um; o admin troca com registro
 app.get("/api/concursos", (_req, res) => res.json(infoConcursos()));
+app.get("/api/prontidao", rota(async (_req, res) => res.json(await apiServidor.prontidao())));
 // Certo/Errado (F10)
 app.get("/api/ce/proximo", rota(async (req, res) => {
   const q = req.query as Record<string, string | undefined>;

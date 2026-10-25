@@ -13,6 +13,7 @@ export interface Subtopico {
   tipos?: string[];
   extra?: boolean;
   leis?: string[]; // trecho do nome do arquivo da lei no acervo ("13.709", "LC 105") — a lei vai primeiro no mapa
+  provisorio?: boolean; // id provisório (temas da CVM até a pesquisa do dono chegar)
 }
 export const SUBTOPICOS = arvore.subtopicos as Subtopico[];
 export const SUBTOPICO_POR_ID = new Map(SUBTOPICOS.map((s) => [s.id, s]));

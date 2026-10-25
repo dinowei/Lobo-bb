@@ -4,7 +4,8 @@
 import type { DesempenhoTemaDTO } from "./desempenhoTema.js";
 import type { ResumoSimulado } from "./simulados.js";
 import type { IdConcurso } from "./concursos.js";
-export type { DesempenhoTemaDTO, ResumoSimulado };
+import type { ProntidaoDTO } from "./prontidao.js";
+export type { DesempenhoTemaDTO, ProntidaoDTO, ResumoSimulado };
 
 export const DISCIPLINAS = [
   "lingua_portuguesa",
@@ -675,6 +676,8 @@ export interface Api {
   simulados(): Promise<ResumoSimulado[]>;
   // concursos disponíveis (abas BB/BACEN): banca em uso e área
   concursos(): Promise<ConcursoInfoDTO[]>;
+  // "Prontidão para X" de cada concurso, do mesmo domínio por tema (trilha única)
+  prontidao(): Promise<ProntidaoDTO[]>;
   proximoItemCE(f: { subtopico?: string; disciplina?: Disciplina; excluir?: string[] }): Promise<ProximoItemCEDTO>;
   responderItemCE(r: { itemId: string; resposta: "C" | "E" | null; tempoSeg: number }): Promise<CorrecaoCEDTO>;
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;

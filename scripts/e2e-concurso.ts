@@ -1,5 +1,5 @@
 // E2E da F5 (abas BB/BACEN) no Edge, com a API simulada no próprio teste (nada toca no progresso real):
-// a aba BB vem marcada (as abas TJ-SP e CVM também existem) → clica BACEN → os pedidos seguintes vão com X-Concurso: bacen e a lista de tópicos
+// a aba Geral vem marcada (trilha única; prontidão de cada concurso) → clica BACEN (lente) → os pedidos seguintes vão com X-Concurso: bacen e a lista de tópicos
 // muda → recarregar a página mantém o BACEN → Ajustes mostra o BACEN "Em estudo" com o aviso da banca
 // de referência → "Estudar este" no BB volta para o BB. Prints 1440 e 360 em docs/telas/concurso/.
 // uso: npx tsx scripts/e2e-concurso.ts   (com o servidor "bb-web" :5182 de pé)
@@ -8,6 +8,7 @@ import { mkdirSync } from "node:fs";
 import { chromium, type Page } from "playwright-core";
 import { calcularPainel } from "../shared/motor.js";
 import type { ConcursoInfoDTO, TopicoDTO } from "../shared/tipos.js";
+import { prontidaoDeTodos } from "../shared/prontidao.js";
 
 const WEB = process.env.E2E_WEB ?? "http://localhost:5182";
 const PASTA = "docs/telas/concurso";
@@ -23,6 +24,9 @@ const CONCURSOS: ConcursoInfoDTO[] = [
     areas: [{ id: "suporte_tecnico_administrativo", nome: "Suporte Técnico-Administrativo" }], area: "suporte_tecnico_administrativo" },
 ];
 
+// prontidão de verdade (shared/prontidao.ts), com Crase dominada: sobe todos os concursos que cobram Crase
+const PRONTIDAO = prontidaoDeTodos(new Map([["crase", 1]]));
+
 // guarda o X-Concurso de cada pedido e responde conforme ele
 function servidorFalso(p: Page, cabecalhos: { caminho: string; concurso: string }[]) {
   return p.route((u) => u.pathname.startsWith("/api/"), (r) => {
@@ -37,6 +41,7 @@ function servidorFalso(p: Page, cabecalhos: { caminho: string; concurso: string 
       case "/api/painel": return j(calcularPainel({ topicos, tentativas: [], revisoes: [] }));
       case "/api/topicos": return j(topicos);
       case "/api/concursos": return j(CONCURSOS);
+      case "/api/prontidao": return j(PRONTIDAO);
       case "/api/trilha": return j(null);
       default: return j({});
     }
@@ -54,14 +59,16 @@ try {
     await servidorFalso(p, cabecalhos);
     await p.goto(`${WEB}/#painel`, { waitUntil: "domcontentloaded", timeout: 120_000 });
 
-    // começa no BB
-    const bb = p.locator("[data-testid=aba-bb]");
+    // começa na aba Geral (trilha única): prontidão de cada concurso, do mesmo domínio
+    const geral = p.locator("[data-testid=aba-geral]");
     const bacen = p.locator("[data-testid=aba-bacen]");
-    await bb.waitFor();
-    assert.equal(await bb.getAttribute("aria-selected"), "true", "BB marcado de início");
-    assert.deepEqual(await p.locator(".seletor-concurso [role=tab]").allInnerTexts(), ["BB", "TJ-SP", "BACEN", "CVM"], "as quatro abas");
+    await geral.waitFor();
+    assert.equal(await geral.getAttribute("aria-selected"), "true", "Geral marcada de início");
+    assert.deepEqual(await p.locator(".seletor-concurso [role=tab]").allInnerTexts(), ["Geral", "BB", "TJ-SP", "BACEN", "CVM"], "Geral + as quatro lentes");
     await p.waitForFunction(() => document.body.innerText.includes("Vendas"));
-    assert.ok(cabecalhos.some((c) => c.caminho === "/api/painel" && c.concurso === "bb"), "painel pedido com X-Concurso: bb");
+    assert.ok(cabecalhos.some((c) => c.caminho === "/api/painel" && c.concurso === "geral"), "painel pedido sem lente (X-Concurso: geral)");
+    const lista = await p.locator("[data-testid=prontidao-geral]").innerText();
+    for (const s of ["BB", "TJ-SP", "BACEN", "CVM"]) assert.match(lista, new RegExp(`${s}\\s+[1-9]\\d?%`), `Crase dominada sobe ${s}`);
 
     // troca para o BACEN: pedidos novos com bacen e a matéria muda (espera a carga inicial acabar, senão um
     // pedido do BB que começou antes do clique aparece depois dele)
@@ -70,6 +77,9 @@ try {
     await bacen.click();
     await p.waitForFunction(() => document.querySelector("[data-testid=aba-bacen]")?.getAttribute("aria-selected") === "true");
     await p.waitForFunction(() => document.body.innerText.includes("Conhecimentos Bancários"));
+    // lente: prontidão só do BACEN, com os pesos "a confirmar" (edital do Técnico pendente)
+    await p.locator("[data-testid=prontidao-lente]").waitFor();
+    assert.match(await p.locator("[data-testid=prontidao-lente]").innerText(), /Prontidão para BACEN[\s\S]*pesos a confirmar/);
     const depois = cabecalhos.slice(antes).filter((c) => c.caminho !== "/api/saude");
     assert.ok(depois.length > 0, "a troca recarrega os dados");
     assert.ok(depois.every((c) => c.concurso === "bacen"), `depois da troca tudo vai com bacen: ${JSON.stringify(depois)}`);
@@ -93,7 +103,7 @@ try {
     await p.waitForFunction(() => document.querySelector("[data-testid=aba-bb]")?.getAttribute("aria-selected") === "true");
     assert.equal(await p.evaluate(() => localStorage.getItem("lobo-concurso")), "bb");
 
-    console.log(`✔ ${tela.nome}: BB → BACEN (cabeçalho e matérias) → recarrega e mantém → Ajustes volta para o BB`);
+    console.log(`✔ ${tela.nome}: Geral (prontidão dos 4) → lente BACEN (cabeçalho, matérias, prontidão) → recarrega e mantém → Ajustes vai para o BB`);
     await ctx.close();
   }
 } catch (e) {

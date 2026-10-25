@@ -40,7 +40,8 @@ import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, R
 import { classificarPorCodigo, concursosDoTopico, SUBTOPICO_POR_ID } from "../../../shared/subtopicos";
 import { BANCAS, CONCURSOS, IDS_CONCURSO, type IdBanca } from "../../../shared/concursos";
 import { corrigirCE, derivarItens, recomendarBranco } from "../../../shared/certoErrado";
-import { concursoAtivo } from "../concursoAtivo";
+import { lenteAtiva } from "../concursoAtivo";
+import { prontidaoDeTodos } from "../../../shared/prontidao";
 import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA, type InicioTrilha } from "../../../shared/trilha";
 import { desempenhoPorTema, diaLocal, diasDaTrilha, type TentativaTema } from "../../../shared/desempenhoTema";
 import { resumirSimulado } from "../../../shared/simulados";
@@ -64,10 +65,13 @@ export const TOPICOS: TopicoDTO[] = Object.entries(
     }))
   );
 const topicoDe = (q: QuestaoDemo) => `${q.disciplina}:${slug(q.assunto)}`;
-// F5: só os tópicos do concurso ativo (igual ao servidor; tópico sem subtópico mapeado = BB)
+// lente do concurso: só os tópicos dele (igual ao servidor; tópico sem subtópico mapeado = BB); aba Geral: todos
+const lenteDemo = () => lenteAtiva();
 const doConcurso = (assunto: string) => {
+  const lente = lenteDemo();
+  if (!lente) return true;
   const c = concursosDoTopico(assunto);
-  return c.length ? c.includes(concursoAtivo()) : concursoAtivo() === "bb";
+  return c.length ? c.includes(lente) : lente === "bb";
 };
 const topicosAtivos = () => TOPICOS.filter((t) => doConcurso(t.assunto));
 const questaoAtiva = (q: QuestaoDemo) => doConcurso(q.assunto);
@@ -142,8 +146,11 @@ const historicoCEDemo = (e: Estado, sub: string) => {
   const rs = (e.respostasCE ?? []).filter((r) => r.subtopico === sub && r.resposta !== null);
   return { acertos: rs.filter((r) => r.acertou).length, total: rs.length };
 };
+// banca da lente; na aba Geral o Certo/Errado usa a Cebraspe (é o formato dela)
 const bancaDemo = (): IdBanca => {
-  const j = CONCURSOS[concursoAtivo()] as { bancaPadrao: string; bancaReferencia?: string };
+  const lente = lenteDemo();
+  if (!lente) return "cebraspe";
+  const j = CONCURSOS[lente] as { bancaPadrao: string; bancaReferencia?: string };
   return ((j.bancaPadrao === "a_definir" ? j.bancaReferencia : j.bancaPadrao) ?? "cesgranrio") as IdBanca;
 };
 
@@ -298,14 +305,21 @@ export const apiDemo: Api = {
 
   desempenhoTemas: () => {
     const e = ler();
-    return espera(desempenhoPorTema(tentativasTema(e), aprovadasDemo(e), discDoSubDemo).filter((d) => d.concursos.includes(concursoAtivo())));
+    const lente = lenteDemo();
+    return espera(desempenhoPorTema(tentativasTema(e), aprovadasDemo(e), discDoSubDemo).filter((d) => !lente || d.concursos.includes(lente)));
+  },
+
+  prontidao: () => {
+    const e = ler();
+    const dominio = new Map(desempenhoPorTema(tentativasTema(e), aprovadasDemo(e), discDoSubDemo).filter((d) => d.respondidas > 0).map((d) => [d.subtopico, d.dominio]));
+    return espera(prontidaoDeTodos(dominio));
   },
 
   trilha: () => {
     const e = ler();
     const ts = tentativasTema(e);
     const ap = aprovadasDemo(e);
-    const temas = TRILHA.filter((t) => concursosDoTema(t).includes(concursoAtivo()));
+    const temas = TRILHA; // trilha única: a mesma em qualquer aba
     const hoje = diaLocal(new Date());
     let inicio: InicioTrilha | null = null;
     try { inicio = JSON.parse(localStorage.getItem(CHAVE_INICIO) ?? "null"); } catch { /* sem storage */ }
@@ -338,7 +352,7 @@ export const apiDemo: Api = {
       subtopico, nome: s.nome, n: t?.n ?? null, disciplina: discDoSubDemo(subtopico),
       topicoIds: TOPICOS.filter((x) => s.topicos.includes(x.assunto)).map((x) => x.id),
       concursos: s.concursos, aprovadas: qs.length, poucas: qs.length < MINIMO_NOVAS,
-      estudo: { tempoMin: 45, objetivo: null, pontos: [], lei: null, ficha: null, materiais: [], youtube: linkYoutube(s.nome, concursoAtivo()), oficiaisNoAcervo: [] },
+      estudo: { tempoMin: 45, objetivo: null, pontos: [], lei: null, ficha: null, materiais: [], youtube: linkYoutube(s.nome, lenteDemo() ?? s.concursos[0] ?? "bb"), oficiaisNoAcervo: [] },
       pratica: { novas: qs.filter((q) => !vistas.has(q.id)).length, revisoes: 0, erradas: qs.filter((q) => erradas.has(q.id)).length, oficiais: 0, geradas: qs.length, derivadas: 0, cursinho: 0 },
     });
   },
@@ -346,8 +360,8 @@ export const apiDemo: Api = {
   pedirPrioridadeTema: () => espera(undefined),
 
   definirTemaDoDia: (subtopico) => {
-    const t = TRILHA.find((x) => x.subtopico === subtopico);
-    if (t) try { localStorage.setItem(CHAVE_INICIO, JSON.stringify({ n: t.n, desde: diaLocal(new Date()) })); } catch { /* sem storage: fica no tema 1 */ }
+    // grava o subtópico: a ordem da trilha única pode mudar
+    if (TRILHA.some((x) => x.subtopico === subtopico)) try { localStorage.setItem(CHAVE_INICIO, JSON.stringify({ subtopico, desde: diaLocal(new Date()) })); } catch { /* sem storage: fica no tema 1 */ }
     return espera(undefined);
   },
 

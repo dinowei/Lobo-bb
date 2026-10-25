@@ -1,6 +1,6 @@
 // ============================================================
 // BB Estudos — árvore de subtópicos no banco e classificação de TODO o banco por subtópico (F3).
-// 1) arvore: cria os tópicos do BACEN (data/topicos-bacen.json) e liga cada tópico aos concursos dos seus
+// 1) arvore: cria os tópicos exclusivos (data/topicos-bacen|tjsp|cvm.json) e liga cada tópico aos concursos dos seus
 //    subtópicos (matéria comum = um tópico só, nos dois). 2) classificar: código primeiro (tópico único,
 //    construção, palavras); o que sobra ambíguo vai a um modelo rápido em JSON, só entre os candidatos;
 //    um auditor de outra família confere uma amostra (meta ≥ 95%). Só preenche `subtopico` vazio.
@@ -21,7 +21,8 @@ export async function simularArvore() {
 }
 
 export async function aplicarArvore() {
-  await semearTopicos("data/topicos-bacen.json"); // upsert por disciplina + assunto (embeddings dos novos)
+  // upsert por disciplina + assunto (embeddings dos novos); trilha única: tópicos exclusivos de cada concurso
+  for (const arquivo of ["data/topicos-bacen.json", "data/topicos-tjsp.json", "data/topicos-cvm.json"]) await semearTopicos(arquivo);
   const topicos = await Topic.find().select("assunto concursos").lean();
   let ligados = 0;
   for (const t of topicos) {

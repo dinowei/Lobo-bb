@@ -71,7 +71,8 @@ import { desempatarPendentes } from "./desempate.js";
 import { TRILHA } from "../shared/trilha.js";
 import { aplicarArvore, auditarAmostra, classificarBanco, itensClassificados, reclassificarOficiais, simularArvore } from "./subtopicos.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
-import { relatorioIncidencia } from "./incidencia.js";
+import { ordenarTrilhaUnica, relatorioIncidencia } from "./incidencia.js";
+import { migrarInicioTrilha } from "./temas.js";
 import { derivarCE } from "./certoErrado.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
@@ -113,6 +114,8 @@ BB Estudos — comandos (npm run bb -- <comando>)
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
   derivar-ce [--n 6]                             itens Certo/Errado de múltiplas aprovadas (código monta, IA reescreve, auditor julga às cegas)
+  migrar-trilha-unica --simular|--confirmar      início da trilha: nº do tema (por concurso) → subtópico (por aluno); rodar ANTES do trilha-ordenar
+  trilha-ordenar --simular|--confirmar           trilha única: ordem por código (comuns, peso × incidência, pré-requisitos) → data/trilha.json
   incidencia                                     quantas vezes cada subtópico caiu nas oficiais, por banca e ano → docs/INCIDENCIA.md
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
@@ -468,6 +471,26 @@ async function main() {
           console.log(`\nDerivação C/E: ${r.questoes} questão(ões), ${r.itens} itens, ${r.aprovados} aprovados (${r.itens ? Math.round((r.aprovados / r.itens) * 100) : 0}%)`);
           for (const [m, n] of Object.entries(r.motivos)) console.log(`  ✖ ${m}: ${n}`);
         });
+      }
+
+      case "migrar-trilha-unica": {
+        // onde a trilha começa: número do tema (ordem antiga, por concurso) → subtópico (por aluno). Antes do trilha-ordenar.
+        if (o.simular === o.confirmar) throw new Error("Escolha exatamente uma opção: --simular ou --confirmar.");
+        const r = await migrarInicioTrilha(!!o.confirmar);
+        console.log(`Início da trilha: ${r.antigos} registro(s) antigo(s) de ${r.alunos} aluno(s); novos antes ${r.jaNovos}, depois ${r.depois}${o.confirmar ? "" : " (simulação)"}`);
+        for (const p of r.plano) console.log(`  ${p.aluno}: ${p.de} → ${p.para.subtopico} (desde ${p.para.desde})`);
+        if (o.confirmar && r.depois < r.alunos) throw new Error(`Contagem não bate: ${r.alunos} aluno(s) e ${r.depois} registro(s) novo(s)`);
+        return;
+      }
+
+      case "trilha-ordenar": {
+        // trilha única: só lê o banco (incidência); --confirmar reescreve data/trilha.json
+        if (o.simular === o.confirmar) throw new Error("Escolha exatamente uma opção: --simular ou --confirmar.");
+        const r = await ordenarTrilhaUnica(!!o.confirmar);
+        console.log(`Trilha única: ${r.antes} → ${r.nova.length} temas; entram ${r.entram.length}, saem ${r.saem.length}${o.confirmar ? " (gravado em data/trilha.json)" : " (simulação)"}`);
+        if (r.saem.length) console.log(`  ⚠ saem: ${r.saem.join(", ")}`);
+        for (const t of r.nova) console.log(`${String(t.n).padStart(3)}. ${t.nome} [${t.concursos.join(", ")}] · ${t.prioridade}`);
+        return;
       }
 
       case "incidencia": {

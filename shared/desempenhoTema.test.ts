@@ -22,7 +22,7 @@ test("só a 1ª vez de cada questão conta como nova; simulado à parte; selo pe
   assert.equal(d.aprovadas, 18);
   assert.equal(d.selo, "reforco"); // 67%
   assert.match(csvDesempenho([d]), /^tema;disciplina/);
-  assert.match(csvDesempenho([d]).split("\n")[1], /^Crase;lingua_portuguesa;bb,bacen;18;100;67;67;3;3;/);
+  assert.match(csvDesempenho([d]).split("\n")[1], /^Crase;lingua_portuguesa;bb,bacen,tjsp,cvm;18;100;67;67;3;3;/);
 });
 
 test("dias da trilha agrupam as novas por dia local (Brasília)", () => {

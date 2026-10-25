@@ -18,9 +18,7 @@
     "mercado_valores_mobiliarios",
     "fundamentos_direito",
     "fluencia_dados",
-    "raciocinio_logico",
-    "direito_administrativo",
-    "conhecimentos_bancarios"
+    "raciocinio_logico"
   ],
-  "disciplinasComuns": ["lingua_portuguesa", "raciocinio_logico", "direito_administrativo", "conhecimentos_bancarios"]
+  "disciplinasComuns": ["lingua_portuguesa", "raciocinio_logico"]
 }

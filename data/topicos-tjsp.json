@@ -1,0 +1,27 @@
+{
+  "_aviso": "Tópicos exclusivos do TJ-SP Escrevente (Vunesp). Matérias comuns usam os tópicos do BB/BACEN, ligados pela árvore de subtópicos. Cotas por matéria a conferir no edital novo.",
+  "disciplinas": {
+    "direito_penal": [
+      { "assunto": "Direito Penal: parte geral", "subtopicos": ["Direito Penal: parte geral"], "concursos": ["tjsp"], "fontesPermitidas": ["Código Penal (Decreto-Lei 2.848/1940)"] },
+      { "assunto": "Crimes contra a administração pública", "subtopicos": ["Crimes contra a administração pública"], "concursos": ["tjsp"], "fontesPermitidas": ["Código Penal (Decreto-Lei 2.848/1940)"] }
+    ],
+    "direito_processual_penal": [
+      { "assunto": "Direito Processual Penal", "subtopicos": ["Processo penal"], "concursos": ["tjsp"], "fontesPermitidas": ["Código de Processo Penal (Decreto-Lei 3.689/1941)"] }
+    ],
+    "direito_processual_civil": [
+      { "assunto": "Direito Processual Civil", "subtopicos": ["Processo civil"], "concursos": ["tjsp"], "fontesPermitidas": ["Código de Processo Civil (Lei 13.105/2015)"] }
+    ],
+    "normas_corregedoria": [
+      { "assunto": "Normas da Corregedoria Geral da Justiça", "subtopicos": ["Normas da Corregedoria"], "concursos": ["tjsp"], "fontesPermitidas": ["Normas de Serviço da Corregedoria Geral da Justiça (tjsp.jus.br)"] }
+    ],
+    "direito_administrativo": [
+      { "assunto": "Estatuto dos funcionários públicos civis de SP (Lei 10.261/1968)", "subtopicos": ["Estatuto do servidor de SP"], "concursos": ["tjsp"], "fontesPermitidas": ["Lei estadual 10.261/1968 (al.sp.gov.br)"] }
+    ],
+    "atualidades": [
+      { "assunto": "Atualidades", "subtopicos": ["Atualidades"], "concursos": ["tjsp"] }
+    ],
+    "raciocinio_logico": [
+      { "assunto": "Raciocínio lógico: sequências e problemas (Vunesp)", "subtopicos": ["Raciocínio lógico (Vunesp)"], "concursos": ["tjsp"] }
+    ]
+  }
+}

@@ -231,8 +231,11 @@ function SeletorConcurso() {
   const { concurso, trocarConcurso } = useApp();
   return (
     <div className="seletor-concurso" role="tablist" aria-label="Concurso">
+      <button role="tab" aria-selected={concurso === "geral"} className={concurso === "geral" ? "ativo" : ""} onClick={() => trocarConcurso("geral")} data-testid="aba-geral" title="Visão do todo: trilha única e domínio de todos os temas">
+        Geral
+      </button>
       {IDS_CONCURSO.map((c) => (
-        <button key={c} role="tab" aria-selected={concurso === c} className={concurso === c ? "ativo" : ""} onClick={() => trocarConcurso(c)} data-testid={`aba-${c}`} title={`${CONCURSOS[c].nome}: ${CONCURSOS[c].cargo}`}>
+        <button key={c} role="tab" aria-selected={concurso === c} className={concurso === c ? "ativo" : ""} onClick={() => trocarConcurso(c)} data-testid={`aba-${c}`} title={`Lente: ${CONCURSOS[c].nome}: ${CONCURSOS[c].cargo}`}>
           {SIGLA_CONCURSO[c]}
         </button>
       ))}

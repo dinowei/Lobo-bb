@@ -1,0 +1,14 @@
+{
+  "_aviso": "Tópicos exclusivos da CVM Agente Executivo (banca a definir; referência Módulo I CVM 2024, FGV). Ids provisórios.",
+  "disciplinas": {
+    "mercado_valores_mobiliarios": [
+      { "assunto": "Estrutura e regulação do mercado de valores mobiliários", "subtopicos": ["Estrutura do mercado de valores mobiliários"], "concursos": ["cvm"], "fontesPermitidas": ["Lei 6.385/1976"] }
+    ],
+    "fundamentos_direito": [
+      { "assunto": "Fundamentos de Direito (CVM)", "subtopicos": ["Fundamentos de Direito"], "concursos": ["cvm"] }
+    ],
+    "fluencia_dados": [
+      { "assunto": "Fluência em dados", "subtopicos": ["Fluência em dados"], "concursos": ["cvm"] }
+    ]
+  }
+}
