@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useApp, type Tela } from "./estado";
-import { pct } from "./util";
 import { Pose } from "./componentes/Pose";
 import {
   IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
@@ -70,42 +69,44 @@ export function App() {
     <div className="app">
       <a href="#conteudo" className="pular">Pular para o conteúdo</a>
       <aside className="lateral">
-        <div className="marca">lobo</div>
+        <div className="marca" aria-label="lobo">lo</div>
         <nav className="nav" aria-label="Principal">
           {NAV.map(({ tela: t, rotulo, Icone }) => (
-            <button key={t} aria-current={tela === t ? "page" : undefined} onClick={() => ir(t)}>
+            <button key={t} aria-current={tela === t ? "page" : undefined} onClick={() => ir(t)} title={rotulo}>
               <Icone />
-              {rotulo}
+              <span className="rotulo-nav">{rotulo}</span>
               {t === "revisoes" && !!painel?.revisoesHoje && <span className="contador num">{painel.revisoesHoje}</span>}
             </button>
           ))}
           {ehAdmin && (
-            <button aria-current={tela === "admin" ? "page" : undefined} onClick={() => ir("admin")}>
+            <button aria-current={tela === "admin" ? "page" : undefined} onClick={() => ir("admin")} title="Admin">
               <IEscudo />
-              Admin
+              <span className="rotulo-nav">Admin</span>
               {!!painel?.alertasAdmin?.length && <span className="contador num" aria-label={`${painel.alertasAdmin.length} alerta(s)`}>{painel.alertasAdmin.length}</span>}
             </button>
           )}
         </nav>
         {painel && (
-          <div className="cartao-nivel">
-            <Pose nome="em-pe" largura={66} carregar="eager" className="mascote adesivo" />
-            <span className="rotulo">Nível {painel.nivel.numero}</span>
-            <h3>{painel.nivel.titulo}</h3>
-            <div className="barra" role="progressbar" aria-valuenow={Math.round((painel.nivel.xpNoNivel / painel.nivel.xpParaProximo) * 100)} aria-label="Progresso do nível">
-              <i style={{ width: pct(painel.nivel.xpNoNivel / painel.nivel.xpParaProximo) }} />
-            </div>
-            <button className="botao-escuro" onClick={() => ir("praticar")}>
-              Faltam {painel.nivel.xpParaProximo - painel.nivel.xpNoNivel} XP <ISeta />
-            </button>
-          </div>
+          <button
+            className="nivel-mini"
+            onClick={() => ir("praticar")}
+            title={`Nível ${painel.nivel.numero} · ${painel.nivel.titulo} · faltam ${painel.nivel.xpParaProximo - painel.nivel.xpNoNivel} XP`}
+            aria-label={`Nível ${painel.nivel.numero}, ${painel.nivel.titulo}: faltam ${painel.nivel.xpParaProximo - painel.nivel.xpNoNivel} XP`}
+            style={{ ["--progresso" as string]: `${Math.round((painel.nivel.xpNoNivel / painel.nivel.xpParaProximo) * 100)}%` }}
+          >
+            <Pose nome="em-pe" largura={40} carregar="eager" alt="" />
+            <span className="num">{painel.nivel.numero}</span>
+          </button>
         )}
       </aside>
 
       <div className="principal">
         <header className="topo">
+          <h1 className="titulo-tela">{TITULO[tela]}</h1>
           <Busca />
           <div className="pilulas">
+            <SeletorConcurso />
+            <Notificacoes />
             {api.modo === "demo" && <span className="selo-demo" title="Sem servidor: progresso salvo só neste navegador">modo demo</span>}
             <span className="pilula num" title="XP total">
               <span className="bolinha"><IRaio /></span>
@@ -192,6 +193,49 @@ export function App() {
             <p>O Binho tá orgulhoso. Bora pro próximo.</p>
             <button className="botao-escuro" onClick={fecharNivel} autoFocus>Continuar <ISeta /></button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Concurso no cabeçalho (lugar do "Financial" da referência). Só visual por enquanto: trocar de concurso
+// é a F5 (abas BB/BACEN, Elo e tópicos por concurso); até lá o BACEN aparece desabilitado com o aviso.
+function SeletorConcurso() {
+  return (
+    <div className="seletor-concurso" role="group" aria-label="Concurso">
+      <button aria-pressed="true" className="ativo">BB</button>
+      <button disabled title="Chega com as abas BB/BACEN (em preparação)">BACEN</button>
+    </div>
+  );
+}
+
+// Sino: o que já está no painel (revisões vencidas, redação corrigida, alertas do admin). Esc ou clique fora fecha.
+function Notificacoes() {
+  const { painel, ir, ehAdmin } = useApp();
+  const [aberto, setAberto] = useState(false);
+  const caixa = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e: PointerEvent) => { if (!caixa.current?.contains(e.target as Node)) setAberto(false); };
+    document.addEventListener("pointerdown", fora);
+    return () => document.removeEventListener("pointerdown", fora);
+  }, [aberto]);
+  const itens: { texto: string; tela: Tela }[] = [];
+  if (painel?.revisoesHoje) itens.push({ texto: `${painel.revisoesHoje} ${painel.revisoesHoje === 1 ? "revisão vencida" : "revisões vencidas"}: a Lo te espera`, tela: "revisoes" });
+  if (painel?.redacaoCorrigidaPendente) itens.push({ texto: "Sua redação foi corrigida", tela: "redacao" });
+  if (ehAdmin) for (const a of painel?.alertasAdmin ?? []) itens.push({ texto: a, tela: "admin" });
+  return (
+    <div className="notificacoes" ref={caixa} onKeyDown={(e) => e.key === "Escape" && setAberto(false)}>
+      <button className="sino" aria-haspopup="true" aria-expanded={aberto} aria-label={`Notificações${itens.length ? `: ${itens.length}` : ""}`} onClick={() => setAberto((v) => !v)}>
+        <ISino />
+        {!!itens.length && <span className="ponto num" aria-hidden="true">{itens.length}</span>}
+      </button>
+      {aberto && (
+        <div className="notificacoes-lista" role="dialog" aria-label="Notificações">
+          {itens.length ? itens.map((i, k) => (
+            <button key={k} onClick={() => { setAberto(false); ir(i.tela); }}>{i.texto}</button>
+          )) : <p>Nada novo por aqui.</p>}
         </div>
       )}
     </div>

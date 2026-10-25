@@ -1,5 +1,5 @@
-// Mini-player da Lo: aparece só enquanto ela está lendo (qualquer 🔊 ou "Estudar ouvindo").
-// Turquesa só aqui e em "Voz da Lo" (é a cor da blusa dela); o resto segue o visual de sempre.
+// Player da Lo, fixo no rodapé (estilo podcast): aparece só enquanto ela está lendo (qualquer 🔊 ou
+// "Estudar ouvindo"). Turquesa é a cor dela (áudio é da Lo). A lógica é a de sempre (leitor.ts).
 import { useEffect, useState } from "react";
 import { ouvir, parar, pausarOuContinuar } from "../leitor";
 import { Pose } from "./Pose";
@@ -10,14 +10,15 @@ export function MiniLo() {
   if (!e.id || e.estado === "parado") return null;
   const lendo = e.estado === "tocando";
   return (
-    <div className="mini-lo" role="status" aria-live="polite">
-      <Pose nome="lo-narrando" largura={56} carregar="eager" alt="" />
+    <div className={`mini-lo${lendo ? " lendo" : ""}`} role="status" aria-live="polite">
+      <Pose nome="lo-narrando" largura={52} carregar="eager" alt="" />
       <div className="mini-lo-texto">
-        <strong>{e.estado === "carregando" ? "A Lo está se preparando…" : lendo ? "A Lo está lendo…" : "A Lo pausou"}</strong>
+        <strong>{e.estado === "carregando" ? "A Lo está se preparando…" : lendo ? "A Lo está lendo" : "A Lo pausou"}</strong>
         {e.titulo && <span className="sub">{e.titulo}</span>}
       </div>
-      <button className="botao-linha" onClick={() => pausarOuContinuar()} aria-label={lendo ? "Pausar a Lo" : "Continuar com a Lo"}>{lendo ? "⏸" : "▶"}</button>
-      <button className="botao-linha" onClick={() => parar()} aria-label="Parar a Lo">✕</button>
+      <div className="equalizador" aria-hidden="true"><i /><i /><i /><i /><i /></div>
+      <button className="play-lo" onClick={() => pausarOuContinuar()} aria-label={lendo ? "Pausar a Lo" : "Continuar com a Lo"}>{lendo ? "⏸" : "▶"}</button>
+      <button className="parar-lo" onClick={() => parar()} aria-label="Parar a Lo">✕</button>
     </div>
   );
 }

@@ -24,7 +24,7 @@ const COMPOSICAO = ESTRUTURA_PROVA.blocos
 const fmt = (s: number) => `${Math.floor(s / 3600) ? `${Math.floor(s / 3600)}h ` : ""}${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
 export function Simulados() {
-  const { api, painel, recarregar, avisar, ajustes, guardarSaida } = useApp();
+  const { api, painel, recarregar, avisar, ajustes, guardarSaida, ir } = useApp();
   const [questoes, setQuestoes] = useState<QuestaoDTO[] | null>(null);
   const [respostas, setRespostas] = useState<Record<string, Letra>>({});
   const [atual, setAtual] = useState(0);
@@ -103,13 +103,14 @@ export function Simulados() {
     const blocos = resumoPorBloco(resultado.porDisciplina);
     const prova = pontuacaoProva(resultado.porDisciplina);
     return (
-      <div className="pagina">
+      <div className="pagina resultado-simulado">
         <div className="pagina-cabeca">
           <div>
             <h1>Resultado do simulado</h1>
             <p className="num">{resultado.total} questões em {fmt(seg)} · as erradas já entraram na sua revisão espaçada</p>
           </div>
           <div className="cabeca-acoes">
+            {resultado.acertos < resultado.total && <button className="botao-lo" onClick={() => ir("erros")}>Revisar os erros com a Lo <ISeta /></button>}
             <button className="botao-laranja" onClick={() => { setQuestoes(null); setResultado(null); }}>Novo simulado <ISeta /></button>
             {/* bateu o corte: comemora; da metade para cima: confiante; abaixo: aponta para as correções */}
             {nota >= corte ? <Pose nome="comemorando" largura={110} carregar="eager" pular className="cabeca-pose" />
@@ -117,7 +118,7 @@ export function Simulados() {
           </div>
         </div>
         <div style={{ display: "grid", gap: 14, gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", marginBottom: 18 }}>
-          <div className="secao">
+          <div className="secao destaque-verde">
             <div className="placar">
               <b className="num">{pct(nota)}</b>
               <span className="num" style={{ color: "var(--suave)" }}>{resultado.acertos} de {resultado.total} certas</span>
@@ -267,7 +268,7 @@ export function Simulados() {
           </button>
         ))}
       </div>
-      <div className="secao rolagem">
+      <div className="secao rolagem historico-resultados">
         <h2>Histórico</h2>
         {painel?.simulados.length ? (
           <table className="tabela">

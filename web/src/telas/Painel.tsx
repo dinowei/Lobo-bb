@@ -113,6 +113,9 @@ export function Painel() {
         </div>
       </section>
 
+      <RadarDominio linhas={recomendadas} />
+      <SeuDia />
+
       {!disc ? (
         <section className="area-modulo" aria-labelledby="titulo-modulo">
           <div className="cabeca-modulo">
@@ -195,7 +198,7 @@ export function Painel() {
           </span>
           <div className="rodape">
             <Rostos discs={recomendadas.slice(0, 3).map((d) => d.disciplina)} />
-            <span className="tag"><i />Meta</span>
+            <span className="tag verde"><i />Meta</span>
           </div>
         </button>
         <button className="evento" onClick={() => ir("praticar", { revisao: true })}>
@@ -238,6 +241,69 @@ export function Painel() {
     </div>
     )}
     </>
+  );
+}
+
+// Radar de domínio por matéria (verde institucional): "domínio recente" (média dos tópicos, como o painel
+// já calcula) × "acerto geral" (todas as tentativas). Tabela junto: o mesmo dado para leitor de tela.
+function RadarDominio({ linhas }: { linhas: { disciplina: Disciplina; nome: string; dominio: number; tentativas: number; acertos: number }[] }) {
+  if (linhas.length < 3) return null;
+  const L = 300, c = L / 2, r = 118;
+  const ang = (i: number) => -Math.PI / 2 + (i * 2 * Math.PI) / linhas.length;
+  const ponto = (i: number, v: number) => [c + Math.cos(ang(i)) * r * v, c + Math.sin(ang(i)) * r * v] as const;
+  const poligono = (vals: number[]) => vals.map((v, i) => ponto(i, v).map((n) => n.toFixed(1)).join(",")).join(" ");
+  const dominio = linhas.map((l) => l.dominio);
+  const acerto = linhas.map((l) => (l.tentativas ? l.acertos / l.tentativas : 0));
+  return (
+    <section className="cartao-radar" aria-labelledby="titulo-radar">
+      <h2 id="titulo-radar">Domínio por matéria</h2>
+      <p className="sub">Domínio recente × acerto geral, de 0 a 100%</p>
+      <div className="radar">
+        <svg viewBox={`0 0 ${L} ${L}`} role="img" aria-label={`Radar de domínio: ${linhas.map((l, i) => `${l.nome} ${pct(dominio[i])}`).join(", ")}`}>
+          {[0.25, 0.5, 0.75, 1].map((k) => <polygon key={k} className="grade-radar" points={poligono(linhas.map(() => k))} />)}
+          {linhas.map((_, i) => { const [x, y] = ponto(i, 1); return <line key={i} className="eixo-radar" x1={c} y1={c} x2={x} y2={y} />; })}
+          <polygon className="serie-b" points={poligono(acerto)} />
+          <polygon className="serie-a" points={poligono(dominio)} />
+          {dominio.map((v, i) => { const [x, y] = ponto(i, v); return <circle key={i} className="ponto-radar" cx={x} cy={y} r={4} />; })}
+          {linhas.map((l, i) => {
+            const [x, y] = ponto(i, 1.1);
+            return <text key={l.disciplina} className="rotulo-radar" x={x} y={y} textAnchor={Math.abs(x - c) < 8 ? "middle" : x > c ? "start" : "end"} dominantBaseline="middle">{SIGLA[l.disciplina]}</text>;
+          })}
+        </svg>
+        <div>
+          <ul className="legenda-radar">
+            <li><i className="a" />Domínio recente</li>
+            <li><i className="b" />Acerto geral</li>
+          </ul>
+          <table className="tabela-radar">
+            <caption className="so-leitor">Domínio recente e acerto geral por matéria</caption>
+            <tbody>
+              {linhas.map((l, i) => <tr key={l.disciplina}><td>{CURTO[l.disciplina] ?? l.nome}</td><td>{pct(dominio[i])}</td><td>{l.tentativas ? pct(acerto[i]) : "–"}</td></tr>)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// "Seu dia" da Lo (turquesa): revisões vencidas, erros para refazer e o que volta amanhã
+function SeuDia() {
+  const { painel, ir } = useApp();
+  if (!painel) return null;
+  const erros = (painel.motivosErro ?? []).reduce((s, d) => s + d.erros, 0);
+  const amanha = painel.revisoesPorDia[1]?.total ?? 0;
+  return (
+    <section className="seu-dia" aria-labelledby="titulo-seu-dia">
+      <h2 id="titulo-seu-dia">Seu dia com a Lo</h2>
+      <ul>
+        <li><b className="num">{painel.revisoesHoje}</b> {painel.revisoesHoje === 1 ? "revisão vencida" : "revisões vencidas"}</li>
+        <li><b className="num">{erros}</b> {erros === 1 ? "erro para refazer" : "erros para refazer"}</li>
+        <li><b className="num">{amanha}</b> {amanha === 1 ? "volta amanhã" : "voltam amanhã"}</li>
+      </ul>
+      <button className="botao-lo" onClick={() => (painel.revisoesHoje ? ir("praticar", { revisao: true }) : ir("erros"))}>{painel.revisoesHoje ? "Revisar com a Lo" : "Ver o caderno de erros"} <ISeta /></button>
+      <Pose nome="lo-acenando" largura={92} alt="" />
+    </section>
   );
 }
 
@@ -303,7 +369,30 @@ function DesempenhoTemas() {
 
 type DisciplinaHero = { disciplina: Disciplina; nome: string; dominio: number };
 
+// sparkline do cartão de matéria: % de acerto da matéria em cada simulado (do mais antigo ao mais novo)
+function Sparkline({ valores, rotulo }: { valores: number[]; rotulo: string }) {
+  const L = 100, A = 26;
+  const x = (i: number) => (i * L) / (valores.length - 1);
+  const y = (v: number) => 3 + (1 - v / 100) * (A - 6);
+  return (
+    <svg className="spark" viewBox={`0 0 ${L} ${A}`} preserveAspectRatio="none" role="img" aria-label={`${rotulo}: ${valores.map((v) => `${v}%`).join(", ")}`}>
+      <path d={valores.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")} vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
 function CarrosselDisciplinas({ disciplinas, onPraticar }: { disciplinas: DisciplinaHero[]; onPraticar: (disciplina: Disciplina) => void }) {
+  const { api } = useApp();
+  // séries por matéria a partir do histórico de simulados que já existe (api.simulados), sem conta nova
+  const [series, setSeries] = useState<Map<Disciplina, number[]> | null>(null);
+  useEffect(() => {
+    api.simulados().then((sims) => {
+      const m = new Map<Disciplina, number[]>();
+      for (const s of [...sims].filter((x) => !x.diagnostico).sort((a, b) => a.data.localeCompare(b.data)))
+        for (const p of s.porDisciplina) if (p.total) m.set(p.disciplina, [...(m.get(p.disciplina) ?? []), Math.round((p.acertos / p.total) * 100)]);
+      setSeries(m);
+    }).catch(() => setSeries(null));
+  }, [api]);
   const trilho = useRef<HTMLDivElement>(null);
   const ponteiro = useRef({ ativo: false, x: 0, scroll: 0, moveu: false, capturado: false });
   const [posicao, setPosicao] = useState(0);
@@ -412,6 +501,7 @@ function CarrosselDisciplinas({ disciplinas, onPraticar }: { disciplinas: Discip
             <span className="sr-only">Praticar, prioridade </span>
             <span className="n">{String(i + 1).padStart(2, "0")}</span>
             <strong style={{ whiteSpace: "pre-line" }}>{CURTO[d.disciplina]}</strong>
+            {(series?.get(d.disciplina)?.length ?? 0) >= 2 && <Sparkline valores={series!.get(d.disciplina)!} rotulo={`Acerto de ${d.nome} nos simulados`} />}
             <span className="dominio-cartao"><span>Domínio</span><b className="num">{pct(d.dominio)}</b><i><u style={{ width: pct(d.dominio) }} /></i></span>
             <Ilustracao disciplina={d.disciplina} />
           </button>

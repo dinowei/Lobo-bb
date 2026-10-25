@@ -20,20 +20,44 @@ export function EvolucaoSimulados() {
   const [ligadas, setLigadas] = useState<Set<Disciplina>>(new Set());
   const [hover, setHover] = useState<number | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
+  const [periodo, setPeriodo] = useState<"semana" | "mes" | "tudo">("tudo");
   useEffect(() => { api.simulados().then(setSims).catch(() => setSims([])); }, [api]);
 
   const filtrados = useMemo(() => (sims ?? []).filter((s) => tipo === "todos" || (tipo === "completo") === s.completo), [sims, tipo]);
-  const pontos = useMemo(() => evolucao(filtrados, { concurso: (concurso || undefined) as never, banca: (banca || undefined) as never }), [filtrados, concurso, banca]);
+  // período só filtra o que aparece (a série e a comparação vêm de shared/simulados.ts, sem mudança)
+  const pontos = useMemo(() => {
+    const desde = periodo === "tudo" ? 0 : Date.now() - (periodo === "semana" ? 7 : 31) * 86_400_000;
+    return evolucao(filtrados, { concurso: (concurso || undefined) as never, banca: (banca || undefined) as never }).filter((p) => new Date(p.data).getTime() >= desde);
+  }, [filtrados, concurso, banca, periodo]);
   const porId = new Map((sims ?? []).map((s) => [s.id, s]));
   if (!sims) return <p className="atalho">Carregando a evolução…</p>;
-  if (!pontos.length) return <p className="atalho">A evolução aparece depois do primeiro simulado (o Raio-X não entra).</p>;
+  if (!sims.some((s) => !s.diagnostico)) return <p className="atalho">A evolução aparece depois do primeiro simulado (o Raio-X não entra).</p>;
 
   const discs = [...new Set(pontos.flatMap((p) => Object.keys(p.porDisciplina)))] as Disciplina[];
   const misturado = tipo === "todos" && pontos.some((p) => p.completo) && pontos.some((p) => !p.completo);
   const x = (i: number) => M.e + (pontos.length === 1 ? (L - M.e - M.d) / 2 : (i * (L - M.e - M.d)) / (pontos.length - 1));
   const y = (v: number) => M.t + (1 - v / 100) * (A - M.t - M.b);
-  const caminho = (vals: (number | undefined)[]) =>
-    vals.map((v, i) => (v === undefined ? "" : `${i && vals[i - 1] !== undefined ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`)).join(" ");
+  // linha suave (Catmull-Rom → Bézier) em cada trecho contínuo; buraco (matéria fora do simulado) quebra a linha
+  const caminho = (vals: (number | undefined)[]) => {
+    const trechos: [number, number][][] = [];
+    vals.forEach((v, i) => {
+      if (v === undefined) return;
+      if (!i || vals[i - 1] === undefined) trechos.push([]);
+      trechos[trechos.length - 1].push([x(i), y(v)]);
+    });
+    return trechos.map((pt) => pt.map(([px, py], k) => {
+      if (!k) return `M${px.toFixed(1)},${py.toFixed(1)}`;
+      const [x0, y0] = pt[k - 2] ?? pt[k - 1];
+      const [x1, y1] = pt[k - 1];
+      const [x3, y3] = pt[k + 1] ?? [px, py];
+      const c1 = [x1 + (px - x0) / 6, y1 + (py - y0) / 6];
+      const c2 = [px - (x3 - x1) / 6, py - (y3 - y1) / 6];
+      return `C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${px.toFixed(1)},${py.toFixed(1)}`;
+    }).join(" ")).join(" ");
+  };
+  const linhaTotal = caminho(pontos.map((p) => p.pct));
+  const areaTotal = pontos.length > 1 ? `${linhaTotal} L${x(pontos.length - 1).toFixed(1)},${y(0).toFixed(1)} L${x(0).toFixed(1)},${y(0).toFixed(1)} Z` : "";
+  const destaque = hover ?? pontos.length - 1; // ponto com balão: o do mouse ou o último simulado
   const alternar = (d: Disciplina) => setLigadas((s) => { const n = new Set(s); if (n.has(d)) n.delete(d); else n.add(d); return n; });
   const baixar = () => {
     const url = URL.createObjectURL(new Blob(["﻿" + csvSimulados(sims, discs)], { type: "text/csv;charset=utf-8" }));
@@ -50,6 +74,11 @@ export function EvolucaoSimulados() {
   return (
     <div className="evolucao" data-testid="evolucao">
       <div className="filtros-linha">
+        <div className="periodo" role="group" aria-label="Período">
+          {([["semana", "Semana"], ["mes", "Mês"], ["tudo", "Tudo"]] as const).map(([v, r]) => (
+            <button key={v} aria-pressed={periodo === v} onClick={() => setPeriodo(v)}>{r}</button>
+          ))}
+        </div>
         {concursos.length > 1 && (
           <select aria-label="Concurso" value={concurso} onChange={(e) => setConcurso(e.target.value)}>
             <option value="">Todos os concursos</option>
@@ -70,9 +99,10 @@ export function EvolucaoSimulados() {
         <button className="botao-linha" onClick={baixar}>Exportar CSV</button>
       </div>
       {misturado && <p className="atalho">Atenção: completos (●) e parciais (○) na mesma linha. Para comparar de igual para igual, filtre um tipo.</p>}
+      {!pontos.length ? <p className="atalho">Nenhum simulado neste período.</p> : <>
 
       <div className="legenda-evolucao" role="group" aria-label="Linhas do gráfico">
-        <span className="item-legenda fixo"><i style={{ background: "var(--texto)" }} />Total</span>
+        <span className="item-legenda fixo"><i className="cor-total" />Total</span>
         {discs.map((d) => (
           <button key={d} className="item-legenda" aria-pressed={ligadas.has(d)} onClick={() => alternar(d)}>
             <i style={{ background: ligadas.has(d) ? COR_DISC[d] : "transparent", borderColor: COR_DISC[d] }} />{CURTO[d] ?? NOME_DISCIPLINA[d]}
@@ -95,10 +125,17 @@ export function EvolucaoSimulados() {
           {[...ligadas].filter((d) => discs.includes(d)).map((d) => (
             <path key={d} d={caminho(pontos.map((p) => p.porDisciplina[d]))} fill="none" stroke={COR_DISC[d]} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
           ))}
-          <path d={caminho(pontos.map((p) => p.pct))} fill="none" stroke="var(--texto)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+          {areaTotal && <path d={areaTotal} className="area-total" />}
+          <path d={linhaTotal} fill="none" className="linha-total" strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
           {pontos.map((p, i) => (
-            <circle key={p.id} cx={x(i)} cy={y(p.pct)} r={4.5} className={p.completo ? "ponto completo" : "ponto parcial"} />
+            <circle key={p.id} cx={x(i)} cy={y(p.pct)} r={i === destaque ? 7 : 4.5} className={`${p.completo ? "ponto completo" : "ponto parcial"}${i === destaque ? " destacado" : ""}`} />
           ))}
+          {destaque >= 0 && pontos[destaque] && (
+            <g className="balao" transform={`translate(${Math.min(L - M.d - 30, Math.max(M.e + 30, x(destaque)))}, ${Math.max(28, y(pontos[destaque].pct) - 16)})`} aria-hidden="true">
+              <rect x={-30} y={-24} width={60} height={22} rx={11} />
+              <text x={0} y={-9} textAnchor="middle">{pontos[destaque].pct}%</text>
+            </g>
+          )}
           {pontos.map((p, i) => (
             <rect key={`h-${p.id}`} x={x(i) - (L - M.e - M.d) / Math.max(2, pontos.length * 2)} y={0} width={(L - M.e - M.d) / Math.max(1, pontos.length)} height={A} fill="transparent"
               onMouseEnter={() => setHover(i)} onClick={() => setAberto(p.id)} />
@@ -158,6 +195,7 @@ export function EvolucaoSimulados() {
           </tbody>
         </table>
       </div>
+      </>}
     </div>
   );
 }

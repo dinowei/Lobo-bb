@@ -97,7 +97,7 @@ export function AjustesTela() {
   const [confirmarZerar, setConfirmarZerar] = useState(false);
 
   return (
-    <div className="pagina">
+    <div className="pagina tela-institucional">
       <div className="pagina-cabeca">
         <div>
           <h1>Ajustes</h1>
@@ -188,6 +188,24 @@ export function AjustesTela() {
             <option value={1.5}>Bem rápida</option>
           </select>
         </label>
+        </fieldset>
+        <fieldset className="aparencia">
+          <legend>Aparência</legend>
+          <label htmlFor="tema-app">
+            Tema
+            <select id="tema-app" value={form.tema} onChange={(e) => setForm({ ...form, tema: e.target.value as Ajustes["tema"] })}>
+              <option value="escuro">Escuro (padrão)</option>
+              <option value="claro">Claro</option>
+              <option value="sistema">Igual ao do aparelho</option>
+            </select>
+          </label>
+          <label htmlFor="fonte-titulo">
+            Fonte dos títulos (em teste: escolha a que preferir)
+            <select id="fonte-titulo" value={form.fonteTitulo} onChange={(e) => setForm({ ...form, fonteTitulo: e.target.value as Ajustes["fonteTitulo"] })}>
+              <option value="sora">Sora</option>
+              <option value="outfit">Outfit</option>
+            </select>
+          </label>
         </fieldset>
         <label htmlFor="ciclo-foco">
           Ciclo de foco no treino (minutos de foco/pausa)

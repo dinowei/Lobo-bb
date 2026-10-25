@@ -115,7 +115,7 @@ export function Admin() {
     );
 
   return (
-    <div className="pagina">
+    <div className="pagina tela-institucional">
       <div className="pagina-cabeca">
         <div>
           <h1>Admin</h1>

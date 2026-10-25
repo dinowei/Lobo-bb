@@ -401,7 +401,7 @@ export function Praticar() {
           <>
             {modo === "revisao" && (
               <div className="selos">
-                <span className="selo">Revisão espaçada: essa questão voltou para fixar</span>
+                <span className="selo lo">Revisão espaçada: essa questão voltou para fixar</span>
                 {restante !== null && (
                   <span className={`selo num ${restante < 0 ? "alerta" : ""}`}>
                     {restante >= 0 ? `Treino com tempo: ${Math.floor(restante / 60)}:${String(restante % 60).padStart(2, "0")}` : "Tempo-alvo estourado: leia com calma, mas sem enrolar"}
@@ -451,6 +451,11 @@ export function Praticar() {
                   +{correcao.xpGanho} XP · volta em {correcao.proximaRevisaoDias} {correcao.proximaRevisaoDias === 1 ? "dia" : "dias"}
                 </small>
               </div>
+            )}
+            {correcao?.acertou && confianca !== null && confianca < 3 && (
+              <p className="aviso-lo" role="note">
+                <b>Lo:</b> acertou {confianca === 1 ? "no chute" : "na dúvida"}, boa! Por isso ela volta mais cedo na revisão, para virar certeza.
+              </p>
             )}
 
             <Alternativas q={q} marcada={marcada} onMarcar={setMarcada} correcao={correcao} />

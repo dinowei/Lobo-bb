@@ -44,10 +44,13 @@ export interface Ajustes {
   velocidadeVoz: number; // 🔊 do Binho
   vozLo: VozLo; // a narração é da Lo (assistente do Binho)
   vozLoManual: boolean; // distingue preferência explícita do padrão herdado
+  tema: "escuro" | "claro" | "sistema"; // aparência (padrão escuro, como sempre)
+  fonteTitulo: "sora" | "outfit"; // fonte dos títulos em avaliação pelo dono (Inter segue no texto)
 }
 const AJUSTES_PADRAO: Ajustes = {
   nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70, linhasRedacaoMax: 30, cicloFoco: "25/5",
   horasPorDia: 2, diasSemana: [1, 2, 3, 4, 5, 6], inicioPlano: "", velocidadeVoz: 1, vozLo: "Louise", vozLoManual: false,
+  tema: "escuro", fonteTitulo: "sora",
 };
 const CHAVE_AJUSTES = "lobo-ajustes";
 function lerAjustes(): Ajustes {
@@ -107,6 +110,20 @@ export function Provedor({ children }: { children: ReactNode }) {
   const [tela, setTela] = useState<Tela>(telaDoHash);
   const [filtro, setFiltro] = useState<FiltroPratica>(filtroDoHash);
   const [ajustes, setAjustes] = useState<Ajustes>(lerAjustes);
+  // aparência: tema claro/escuro (ou o do sistema) e fonte dos títulos, como atributos no <html>
+  useEffect(() => {
+    const raiz = document.documentElement;
+    const aplicar = () => {
+      const escuro = ajustes.tema === "sistema" ? window.matchMedia("(prefers-color-scheme: dark)").matches : ajustes.tema !== "claro";
+      raiz.dataset.theme = escuro ? "escuro" : "claro";
+    };
+    aplicar();
+    raiz.dataset.fonteTitulo = ajustes.fonteTitulo;
+    if (ajustes.tema !== "sistema") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", aplicar);
+    return () => mq.removeEventListener("change", aplicar);
+  }, [ajustes.tema, ajustes.fonteTitulo]);
   const guarda = useRef<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [subiuNivel, setSubiuNivel] = useState<Ctx["subiuNivel"]>(null);
