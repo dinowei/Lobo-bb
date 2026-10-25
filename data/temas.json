@@ -51,267 +51,155 @@
       ]
     },
     "interpretacao": {
-      "auto": true,
       "materiais": [
         {
-          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Prova PRF 2021 comentada.pdf",
-          "paginas": "13–22",
-          "pagina": 13,
-          "camada": "C",
-          "titulo": "Estrategia - Prova PRF 2021 comentada"
-        },
-        {
           "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
-          "paginas": "7–11",
-          "pagina": 7,
+          "paginas": "9–10",
+          "pagina": 9,
           "camada": "C",
-          "titulo": "Estrategia - Resumao PRF"
-        },
-        {
-          "arquivo": "08_CGU/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera CGU.pdf",
-          "paginas": "94–101",
-          "pagina": 94,
-          "camada": "C",
-          "titulo": "Estrategia - Revisao de Vespera CGU"
+          "titulo": "Resumão PRF (Estratégia): interpretação de textos, recorrência e inferência"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "pontuacao": {
-      "auto": true,
       "materiais": [
         {
           "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book BNB 2024.pdf",
           "paginas": "49–51",
           "pagina": 49,
           "camada": "C",
-          "titulo": "Estrategia - E-book BNB 2024"
+          "titulo": "E-book BNB 2024 (Estratégia): emprego da vírgula em questões Cesgranrio comentadas"
         },
         {
-          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf",
-          "paginas": "50–52",
-          "pagina": 50,
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado BB - Dicas.pdf",
+          "paginas": "3",
+          "pagina": 3,
           "camada": "C",
-          "titulo": "Estrategia - Portugues para o CNU"
-        },
-        {
-          "arquivo": "11_TSE Unificado - Justica Eleitoral/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Analista Judiciario Area Administrativa TSE.pdf",
-          "paginas": "62–63",
-          "pagina": 62,
-          "camada": "C",
-          "titulo": "Estrategia - E-book Analista Judiciario Area Administrativa TSE"
+          "titulo": "Manual do Aprovado BB (Estratégia): dica de emprego da vírgula"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "concordancia": {
-      "auto": true,
       "materiais": [
         {
-          "arquivo": "08_CGU/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera CGU.pdf",
-          "paginas": "94–102",
-          "pagina": 94,
+          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
+          "paginas": "22",
+          "pagina": 22,
           "camada": "C",
-          "titulo": "Estrategia - Revisao de Vespera CGU"
+          "titulo": "Resumão PRF (Estratégia): concordância verbal e nominal"
         },
         {
           "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book BNB 2024.pdf",
           "paginas": "75–77",
           "pagina": 75,
           "camada": "C",
-          "titulo": "Estrategia - E-book BNB 2024"
-        },
-        {
-          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf",
-          "paginas": "76–78",
-          "pagina": 76,
-          "camada": "C",
-          "titulo": "Estrategia - Portugues para o CNU"
+          "titulo": "E-book BNB 2024 (Estratégia): concordância em questões Cesgranrio comentadas"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "regencia": {
-      "auto": true,
       "materiais": [
-        {
-          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Pegadinhas Inteligentes Banco do Brasil.pdf",
-          "paginas": "7–8",
-          "pagina": 7,
-          "camada": "C",
-          "titulo": "Estrategia - Pegadinhas Inteligentes Banco do Brasil"
-        },
         {
           "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera BB 2021 parte 1.pdf",
           "paginas": "19–21",
           "pagina": 19,
           "camada": "C",
-          "titulo": "Estrategia - Revisao de Vespera BB 2021 parte 1"
+          "titulo": "Revisão de Véspera BB 2021 (Estratégia): VII. Regência verbal e nominal"
         },
         {
-          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera BB 2021 parte 2.pdf",
-          "paginas": "19–21",
-          "pagina": 19,
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Pegadinhas Inteligentes Banco do Brasil.pdf",
+          "paginas": "7",
+          "pagina": 7,
           "camada": "C",
-          "titulo": "Estrategia - Revisao de Vespera BB 2021 parte 2"
+          "titulo": "Pegadinhas Inteligentes BB (Estratégia): preposição exigida pelo verbo"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "classes_colocacao": {
-      "auto": true,
       "materiais": [
-        {
-          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book BNB 2024.pdf",
-          "paginas": "20–24",
-          "pagina": 20,
-          "camada": "C",
-          "titulo": "Estrategia - E-book BNB 2024"
-        },
-        {
-          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf",
-          "paginas": "21–25",
-          "pagina": 21,
-          "camada": "C",
-          "titulo": "Estrategia - Portugues para o CNU"
-        },
         {
           "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
           "paginas": "13–14",
           "pagina": 13,
           "camada": "C",
-          "titulo": "Estrategia - Resumao PRF"
+          "titulo": "Resumão PRF (Estratégia): pronomes, classificações e colocação"
+        },
+        {
+          "arquivo": "05_INSS/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera INSS 2022.pdf",
+          "paginas": "10",
+          "pagina": 10,
+          "camada": "C",
+          "titulo": "Revisão de Véspera INSS 2022 (Estratégia): pronome oblíquo com valor possessivo"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "coesao_reescrita": {
-      "auto": true,
       "materiais": [
         {
-          "arquivo": "05_INSS/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado INSS.pdf",
-          "paginas": "39–41",
-          "pagina": 39,
-          "camada": "C",
-          "titulo": "Estrategia - Manual do Aprovado INSS"
-        },
-        {
           "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
-          "paginas": "23–24",
-          "pagina": 23,
+          "paginas": "24–25",
+          "pagina": 24,
           "camada": "C",
-          "titulo": "Estrategia - Resumao PRF"
-        },
-        {
-          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Vade Mecum BB Agente Comercial 2021.pdf",
-          "paginas": "96",
-          "pagina": 96,
-          "camada": "C",
-          "titulo": "Estrategia - Vade Mecum BB Agente Comercial 2021"
+          "titulo": "Resumão PRF (Estratégia): coerência e coesão"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "ortografia": {
-      "auto": true,
-      "materiais": [
-        {
-          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
-          "paginas": "308–309",
-          "pagina": 308,
-          "camada": "C",
-          "titulo": "Estrategia - Resumao PRF"
-        },
-        {
-          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book BNB 2024.pdf",
-          "paginas": "53–55",
-          "pagina": 53,
-          "camada": "C",
-          "titulo": "Estrategia - E-book BNB 2024"
-        },
-        {
-          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf",
-          "paginas": "54–56",
-          "pagina": 54,
-          "camada": "C",
-          "titulo": "Estrategia - Portugues para o CNU"
-        }
-      ],
-      "oficiais": []
+      "materiais": [],
+      "oficiais": [],
+      "conferido": "25/10/2026",
+      "semMaterial": "o acervo não tem página de teoria de ortografia/acentuação em português (o candidato do mapa automático era sobre acentuação em espanhol)"
     },
     "porcentagem": {
-      "auto": true,
       "materiais": [
-        {
-          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - Revisao de Vespera BB Tecnologia e Servicos 2023.pdf",
-          "paginas": "4–5",
-          "pagina": 4,
-          "camada": "C",
-          "titulo": "Estrategia - Revisao de Vespera BB Tecnologia e Servicos 2023"
-        },
-        {
-          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Direito Constitucional para o CNU.pdf",
-          "paginas": "46–47",
-          "pagina": 46,
-          "camada": "C",
-          "titulo": "Estrategia - Direito Constitucional para o CNU"
-        },
-        {
-          "arquivo": "13_TJ-SP/Materiais de Cursinhos (gratuitos)/Estrategia - Raio-X Estrategico TJ-SP Escrevente.pdf",
-          "paginas": "10–11",
-          "pagina": 10,
-          "camada": "C",
-          "titulo": "Estrategia - Raio-X Estrategico TJ-SP Escrevente"
-        }
-      ],
-      "oficiais": []
-    },
-    "numeros_operacoes": {
-      "auto": true,
-      "materiais": [
-        {
-          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Raciocinio Logico para o CNU.pdf",
-          "paginas": "25–26",
-          "pagina": 25,
-          "camada": "C",
-          "titulo": "Estrategia - Raciocinio Logico para o CNU"
-        },
         {
           "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
-          "paginas": "108–109",
-          "pagina": 108,
+          "paginas": "109",
+          "pagina": 109,
           "camada": "C",
-          "titulo": "Estrategia - Resumao PRF"
+          "titulo": "Resumão PRF (Estratégia): porcentagem"
         },
         {
-          "arquivo": "13_TJ-SP/Materiais de Cursinhos (gratuitos)/Estrategia - Raio-X Estrategico TJ-SP Escrevente.pdf",
-          "paginas": "10–11",
-          "pagina": 10,
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Matematica Financeira - Questoes Comentadas Cesgranrio.pdf",
+          "paginas": "24",
+          "pagina": 24,
           "camada": "C",
-          "titulo": "Estrategia - Raio-X Estrategico TJ-SP Escrevente"
+          "titulo": "Matemática Financeira, questões Cesgranrio comentadas (Estratégia): porcentagem"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
+    },
+    "numeros_operacoes": {
+      "materiais": [],
+      "oficiais": [],
+      "conferido": "25/10/2026",
+      "semMaterial": "o acervo não tem página de teoria de números e operações (o mapa automático apontava o CTB)"
     },
     "funcoes_equacoes": {
-      "auto": true,
       "materiais": [
         {
           "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado Banco do Brasil.pdf",
-          "paginas": "35",
-          "pagina": 35,
+          "paginas": "33–35",
+          "pagina": 33,
           "camada": "C",
-          "titulo": "Estrategia - Manual do Aprovado Banco do Brasil"
-        },
-        {
-          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
-          "paginas": "107",
-          "pagina": 107,
-          "camada": "C",
-          "titulo": "Estrategia - Resumao PRF"
+          "titulo": "Manual do Aprovado BB (Estratégia): funções do 1º e do 2º grau, raízes"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "progressoes": {
       "auto": true,
@@ -482,78 +370,50 @@
       "oficiais": []
     },
     "proposicoes": {
-      "auto": true,
       "materiais": [
         {
           "arquivo": "05_INSS/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado INSS.pdf",
-          "paginas": "38–42",
-          "pagina": 38,
+          "paginas": "39–40",
+          "pagina": 39,
           "camada": "C",
-          "titulo": "Estrategia - Manual do Aprovado INSS"
-        },
+          "titulo": "Manual do Aprovado INSS (Estratégia): conectivos e, ou, ou...ou"
+        }
+      ],
+      "oficiais": [],
+      "conferido": "25/10/2026"
+    },
+    "negacao_equivalencias": {
+      "materiais": [
         {
-          "arquivo": "05_INSS/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes de Revisao Ativa Tecnico INSS.pdf",
-          "paginas": "16–20",
-          "pagina": 16,
+          "arquivo": "08_CGU/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado CGU.pdf",
+          "paginas": "72–73",
+          "pagina": 72,
           "camada": "C",
-          "titulo": "Estrategia - Questoes de Revisao Ativa Tecnico INSS"
-        },
+          "titulo": "Manual do Aprovado CGU (Estratégia): negação e valor lógico"
+        }
+      ],
+      "oficiais": [],
+      "conferido": "25/10/2026"
+    },
+    "tabela_verdade": {
+      "materiais": [
         {
           "arquivo": "08_CGU/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado CGU.pdf",
           "paginas": "72–76",
           "pagina": 72,
           "camada": "C",
-          "titulo": "Estrategia - Manual do Aprovado CGU"
-        }
-      ],
-      "oficiais": []
-    },
-    "negacao_equivalencias": {
-      "auto": true,
-      "materiais": [
-        {
-          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - BACEN 2024 Economia e Financas - Prova Comentada.pdf",
-          "paginas": "16–25",
-          "pagina": 16,
-          "camada": "C",
-          "titulo": "Estrategia - BACEN 2024 Economia e Financas - Prova Comentada"
-        },
-        {
-          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - BACEN 2024 Tecnologia da Informacao - Prova Comentada.pdf",
-          "paginas": "17–26",
-          "pagina": 17,
-          "camada": "C",
-          "titulo": "Estrategia - BACEN 2024 Tecnologia da Informacao - Prova Comentada"
-        },
-        {
-          "arquivo": "08_CGU/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado CGU.pdf",
-          "paginas": "76–79",
-          "pagina": 76,
-          "camada": "C",
-          "titulo": "Estrategia - Manual do Aprovado CGU"
-        }
-      ],
-      "oficiais": []
-    },
-    "tabela_verdade": {
-      "auto": true,
-      "materiais": [
-        {
-          "arquivo": "05_INSS/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes de Revisao Ativa Tecnico INSS.pdf",
-          "paginas": "18–19",
-          "pagina": 18,
-          "camada": "C",
-          "titulo": "Estrategia - Questoes de Revisao Ativa Tecnico INSS"
+          "titulo": "Manual do Aprovado CGU (Estratégia): Aposta 1, tabelas-verdade"
         },
         {
           "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - Resumos Estrategicos BACEN Economia e Financas.pdf",
           "paginas": "15",
           "pagina": 15,
           "camada": "C",
-          "titulo": "Estrategia - Resumos Estrategicos BACEN Economia e Financas"
+          "titulo": "Resumos Estratégicos BACEN (Estratégia): precedência dos conectivos"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "combinatoria": {
       "auto": true,
@@ -637,124 +497,117 @@
       "oficiais": []
     },
     "so_atalhos": {
-      "auto": true,
       "materiais": [
         {
           "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Gran - Revisao de Vespera Banco do Brasil 2021.pdf",
-          "paginas": "23–26",
-          "pagina": 23,
+          "paginas": "24–26",
+          "pagina": 24,
           "camada": "C",
-          "titulo": "Gran - Revisao de Vespera Banco do Brasil 2021"
-        },
-        {
-          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera BB 2021 parte 2.pdf",
-          "paginas": "165–170",
-          "pagina": 165,
-          "camada": "C",
-          "titulo": "Estrategia - Revisao de Vespera BB 2021 parte 2"
-        },
-        {
-          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2).pdf",
-          "paginas": "63–64",
-          "pagina": 63,
-          "camada": "C",
-          "titulo": "Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2)"
+          "titulo": "Revisão de Véspera BB 2021 (Gran): atalhos do Windows 10 e permissões no Linux"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "planilhas": {
-      "auto": true,
       "materiais": [
         {
-          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Escriturario Banco do Brasil.pdf",
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao Antecipada Banco do Brasil 2023.pdf",
+          "paginas": "123–124",
+          "pagina": 123,
+          "camada": "C",
+          "titulo": "Revisão Antecipada BB 2023 (Estratégia): planilhas no Office 365"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - Revisao de Vespera BASA 2022.pdf",
+          "paginas": "129",
+          "pagina": 129,
+          "camada": "C",
+          "titulo": "Revisão de Véspera BASA 2022 (Estratégia): Excel, alça de preenchimento"
+        },
+        {
+          "arquivo": "13_TJ-SP/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera TJ-SP.pdf",
+          "paginas": "37",
+          "pagina": 37,
+          "camada": "C",
+          "titulo": "Revisão de Véspera TJ-SP (Estratégia): Excel no estilo Vunesp"
+        }
+      ],
+      "oficiais": [],
+      "conferido": "25/10/2026"
+    },
+    "internet_email": {
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Gran - Revisao de Vespera Banco do Brasil 2021.pdf",
           "paginas": "27",
           "pagina": 27,
           "camada": "C",
-          "titulo": "Estrategia - E-book Escriturario Banco do Brasil"
+          "titulo": "Revisão de Véspera BB 2021 (Gran): redes, internet, intranet e navegador"
         },
         {
-          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
-          "paginas": "199",
-          "pagina": 199,
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - BB 2021 Escriturario Agente Comercial - Prova Comentada.pdf",
+          "paginas": "53",
+          "pagina": 53,
           "camada": "C",
-          "titulo": "Estrategia - Resumao PRF"
+          "titulo": "Prova comentada BB 2021 (Estratégia): cookies e navegadores"
         }
       ],
-      "oficiais": []
-    },
-    "internet_email": {
-      "auto": true,
-      "materiais": [
-        {
-          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2).pdf",
-          "paginas": "65–72",
-          "pagina": 65,
-          "camada": "C",
-          "titulo": "Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2)"
-        }
-      ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "nuvem_redes": {
-      "auto": true,
       "materiais": [
         {
           "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2).pdf",
-          "paginas": "12–21",
+          "paginas": "12",
           "pagina": 12,
           "camada": "C",
-          "titulo": "Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2)"
+          "titulo": "Questões Cesgranrio 2024 (Estratégia): computação em nuvem"
         },
         {
-          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - BACEN 2024 Tecnologia da Informacao - Prova Comentada.pdf",
-          "paginas": "69–72",
-          "pagina": 69,
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Gran - Revisao de Vespera Banco do Brasil 2021.pdf",
+          "paginas": "27",
+          "pagina": 27,
           "camada": "C",
-          "titulo": "Estrategia - BACEN 2024 Tecnologia da Informacao - Prova Comentada"
+          "titulo": "Revisão de Véspera BB 2021 (Gran): redes de computadores"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "seguranca_lgpd": {
-      "auto": true,
-      "materiais": [
-        {
-          "arquivo": "00_Legislacao Comum (todos os concursos)/Lei 13.709-2018 - LGPD.pdf",
-          "paginas": "1–10",
-          "pagina": 1,
-          "camada": "A",
-          "titulo": "Lei 13.709-2018 - LGPD"
-        },
-        {
-          "arquivo": "05_INSS/Legislacao/Lei 8.213-1991 - Planos de Beneficios da Previdencia.pdf",
-          "paginas": "49",
-          "pagina": 49,
-          "camada": "A",
-          "titulo": "Lei 8.213-1991 - Planos de Beneficios da Previdencia"
-        },
-        {
-          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio de Estabilidade Financeira 2024-10.pdf",
-          "paginas": "76",
-          "pagina": 76,
-          "camada": "B",
-          "titulo": "BCB - Relatorio de Estabilidade Financeira 2024-10"
-        }
-      ],
-      "oficiais": []
-    },
-    "dados_bd": {
-      "auto": true,
       "materiais": [
         {
           "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2).pdf",
-          "paginas": "89–94",
-          "pagina": 89,
+          "paginas": "73",
+          "pagina": 73,
           "camada": "C",
-          "titulo": "Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2)"
+          "titulo": "Questões Cesgranrio 2024 (Estratégia): proteção de estações de trabalho (BB 2023)"
+        },
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2).pdf",
+          "paginas": "56",
+          "pagina": 56,
+          "camada": "C",
+          "titulo": "Questões Cesgranrio 2024 (Estratégia): dados sensíveis e proteção de dados"
         }
       ],
-      "oficiais": []
+      "oficiais": [],
+      "conferido": "25/10/2026"
+    },
+    "dados_bd": {
+      "materiais": [
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2).pdf",
+          "paginas": "78–79",
+          "pagina": 78,
+          "camada": "C",
+          "titulo": "Questões Cesgranrio 2024 (Estratégia): banco de dados (BB Agente de Tecnologia 2023)"
+        }
+      ],
+      "oficiais": [],
+      "conferido": "25/10/2026"
     },
     "estrutura_sfn": {
       "auto": true,
