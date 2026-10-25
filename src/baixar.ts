@@ -1,5 +1,5 @@
 // ============================================================
-// BB Estudos — Download de leis e normas SÓ de sites oficiais (planalto.gov.br, bcb.gov.br, in.gov.br)
+// BB Estudos — Download de leis e normas SÓ de sites oficiais (planalto.gov.br, bcb.gov.br, in.gov.br, cvm.gov.br, tjsp.jus.br, al.sp.gov.br)
 // Autorizado pelo dono em 17/10/2026: planalto.gov.br, bcb.gov.br, normativos do CMN/BCB, in.gov.br.
 // Leis: página do Planalto. Resoluções e circulares: texto publicado no DOU (in.gov.br), achado
 // pela busca oficial. Grava em fontes/<id>/ (fora do Git) e registra em fontes/LEIAME.json a data
@@ -11,7 +11,11 @@ import { join } from "node:path";
 import { z } from "zod";
 import { htmlParaTexto, lerArquivo } from "./extrair.js";
 
-const HOSTS_OFICIAIS = new Set(["www.planalto.gov.br", "planalto.gov.br", "www.bcb.gov.br", "bcb.gov.br", "www3.bcb.gov.br", "normativos.bcb.gov.br", "www.in.gov.br", "in.gov.br", "pesquisa.in.gov.br"]);
+// 25/10/2026 (E9): o dono autorizou também cvm.gov.br, tjsp.jus.br (Normas da Corregedoria) e al.sp.gov.br (Lei SP 10.261)
+const HOSTS_OFICIAIS = new Set([
+  "www.planalto.gov.br", "planalto.gov.br", "www.bcb.gov.br", "bcb.gov.br", "www3.bcb.gov.br", "normativos.bcb.gov.br", "www.in.gov.br", "in.gov.br", "pesquisa.in.gov.br",
+  "conteudo.cvm.gov.br", "www.cvm.gov.br", "cvm.gov.br", "www.tjsp.jus.br", "tjsp.jus.br", "www.al.sp.gov.br", "al.sp.gov.br",
+]);
 export function hostOficial(url: string): boolean {
   try {
     const u = new URL(url);
