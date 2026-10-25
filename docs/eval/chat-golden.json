@@ -111,6 +111,168 @@
       "artigoEsperado": null,
       "resultadoEsperado": "resposta_util",
       "indicadoresEsperados": ["2,01%"]
+    },
+    {
+      "id": "adm-lai-publicidade",
+      "disciplina": "direito_administrativo",
+      "topico": "Princípios da administração pública",
+      "pergunta": "Segundo o art. 3º da Lei 12.527/2011 (Lei de Acesso à Informação), qual é a regra geral e qual é a exceção quanto à publicidade das informações?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 3º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "adm-9784-principios",
+      "disciplina": "direito_administrativo",
+      "topico": "Atos administrativos e processo administrativo (Lei 9.784/1999)",
+      "pergunta": "Quais princípios o art. 2º da Lei 9.784/1999 manda a Administração Pública obedecer no processo administrativo?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 2º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "adm-8112-investidura",
+      "disciplina": "direito_administrativo",
+      "topico": "Agentes públicos (Lei 8.112/1990)",
+      "pergunta": "Quais são os requisitos básicos para a investidura em cargo público, segundo o art. 5º da Lei 8.112/1990?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 5º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "adm-14133-modalidades",
+      "disciplina": "direito_administrativo",
+      "topico": "Licitações e contratos (Lei 14.133/2021)",
+      "pergunta": "Quais são as modalidades de licitação previstas no art. 28 da Lei 14.133/2021?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 28",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "adm-8429-dolo",
+      "disciplina": "direito_administrativo",
+      "topico": "Improbidade administrativa (Lei 8.429/1992)",
+      "pergunta": "Depois da Lei 14.230/2021, o art. 1º da Lei 8.429/1992 considera ato de improbidade só a conduta dolosa ou também a culposa?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 1º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "adm-sp-10261-funcionario",
+      "disciplina": "direito_administrativo",
+      "topico": "Estatuto dos funcionários públicos civis de SP (Lei 10.261/1968)",
+      "pergunta": "Como o artigo 3º da Lei estadual 10.261/1968 define funcionário público para os fins do Estatuto paulista?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 3º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "adm-8112-sem-base",
+      "disciplina": "direito_administrativo",
+      "topico": "Agentes públicos (Lei 8.112/1990)",
+      "pergunta": "Qual artigo da Lei 8.112/1990 garante ao servidor federal um 14º salário pago todo mês de março?",
+      "respostaExisteNasFontes": false,
+      "artigoEsperado": null,
+      "resultadoEsperado": "nao_achei"
+    },
+    {
+      "id": "cf-art37-principios",
+      "disciplina": "direito_constitucional",
+      "topico": "Administração pública na Constituição (arts. 37 a 41)",
+      "pergunta": "Quais princípios o caput do art. 37 da Constituição impõe à administração pública direta e indireta?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 37",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "cf-art1-fundamentos",
+      "disciplina": "direito_constitucional",
+      "topico": "Princípios fundamentais da Constituição",
+      "pergunta": "Quais são os fundamentos da República Federativa do Brasil listados no art. 1º da Constituição?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 1º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "penal-peculato",
+      "disciplina": "direito_penal",
+      "topico": "Crimes contra a administração pública",
+      "pergunta": "Como o art. 312 do Código Penal define o crime de peculato?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 312",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "penal-concussao",
+      "disciplina": "direito_penal",
+      "topico": "Crimes contra a administração pública",
+      "pergunta": "Qual conduta caracteriza a concussão no art. 316 do Código Penal?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 316",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "penal-anterioridade",
+      "disciplina": "direito_penal",
+      "topico": "Direito Penal: parte geral",
+      "pergunta": "O que o art. 1º do Código Penal diz sobre crime e lei anterior?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 1º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "penal-atraso-sem-base",
+      "disciplina": "direito_penal",
+      "topico": "Crimes contra a administração pública",
+      "pergunta": "Qual artigo do Código Penal prevê pena de multa para o servidor que chega atrasado ao serviço?",
+      "respostaExisteNasFontes": false,
+      "artigoEsperado": null,
+      "resultadoEsperado": "nao_achei"
+    },
+    {
+      "id": "ppenal-flagrante",
+      "disciplina": "direito_processual_penal",
+      "topico": "Direito Processual Penal",
+      "pergunta": "Em que situações o art. 302 do Código de Processo Penal considera alguém em flagrante delito?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 302",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "pcivil-dias-uteis",
+      "disciplina": "direito_processual_civil",
+      "topico": "Direito Processual Civil",
+      "pergunta": "Segundo o art. 219 do CPC, como se contam os prazos processuais fixados em dias?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 219",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "pcivil-sorteio-sem-base",
+      "disciplina": "direito_processual_civil",
+      "topico": "Direito Processual Civil",
+      "pergunta": "Qual artigo do CPC manda o juiz decidir por sorteio quando as provas das duas partes empatam?",
+      "respostaExisteNasFontes": false,
+      "artigoEsperado": null,
+      "resultadoEsperado": "nao_achei"
+    },
+    {
+      "id": "cvm-6404-companhia",
+      "disciplina": "mercado_valores_mobiliarios",
+      "topico": "Estrutura e regulação do mercado de valores mobiliários",
+      "pergunta": "Segundo o art. 1º da Lei 6.404/1976, como se divide o capital da companhia e até onde vai a responsabilidade dos acionistas?",
+      "respostaExisteNasFontes": true,
+      "artigoEsperado": "art. 1º",
+      "resultadoEsperado": "resposta_com_fonte"
+    },
+    {
+      "id": "cvm-6404-sem-base",
+      "disciplina": "mercado_valores_mobiliarios",
+      "topico": "Estrutura e regulação do mercado de valores mobiliários",
+      "pergunta": "Qual artigo da Lei 6.404/1976 obriga toda sociedade anônima a distribuir 100% do lucro aos acionistas todo mês?",
+      "respostaExisteNasFontes": false,
+      "artigoEsperado": null,
+      "resultadoEsperado": "nao_achei"
     }
   ]
 }

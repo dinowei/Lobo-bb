@@ -377,6 +377,29 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - 20 Crase: só 1 tentativa (duplicada) antes do teto diário de 60 gerações. Refazer amanhã.
   - derivar-ce --n 10: 26 de 50 aprovados (52%); 19 itens saíram por "irmão quase igual" (filtro de repetição) e 5 porque o auditor discordou. No total, 53 itens C/E derivados aprovados.
   - Janela B forçada: backup ok, tema de amanhã com 3 aprovadas, 54 chamadas, dentro do teto.
+- **Cadeia 3 (19:45–19:54), Etapa 9 SIM nas leis:**
+  - As 12 entraram uma por vez, cada uma simulada antes, com o Atlas medido a cada passo.
+  - O Atlas foi de 40% para 57% (291,9 MB; cabem ~3.170 trechos até o alerta de 80%).
+  - Fonte → trechos → temas:
+
+    | Fonte | Temas (trechos) |
+    |---|---|
+    | Dec. 1.171/1994 | Princípios da adm. pública 7 · Agentes públicos 6 · Estatuto SP 1 |
+    | Lei 9.784/1999 | Atos e processo adm. 21 · Princípios 11 · Improbidade 1 |
+    | Lei 12.527/2011 (LAI) | Princípios 20 · Agentes públicos 9 · Atos e processo 9 · Estatuto SP 2 · Improbidade 2 |
+    | Lei 8.429/1992 (com a 14.230) | Improbidade 55 · Agentes públicos 2 · Licitações 1 · Princípios 1 |
+    | CF/88 (títulos do edital + arts. 164 e 192) | Adm. pública na CF 35 · Direitos e garantias 26 · Princípios fundamentais 5 |
+    | Lei 8.112/1990 | Agentes públicos 80 · Estatuto SP 62 · Improbidade 5 · Atos e processo 4 · Licitações 1 |
+    | Lei SP 10.261/1968 | Estatuto SP 68 · Agentes públicos 65 · Improbidade 21 · Atos e processo 14 |
+    | Código Penal | Crimes contra a adm. pública 254 · Parte geral 13 |
+    | Lei 14.133/2021 | Licitações 221 · Improbidade 23 · Princípios 14 · Atos e processo 8 · Agentes públicos 5 |
+    | Lei 6.404/1976 | Mercado de valores mobiliários 297 |
+    | CPP | Direito Processual Penal 377 |
+    | CPC | Direito Processual Civil 585 |
+
+  - Limite conhecido: o Código Penal inteiro foi para "Crimes contra a administração pública" (254 trechos), incluindo crimes que não são do edital. O chat e as aulas citam só trecho literal, mas o tema fica com trechos a mais. Melhorar com `incluirArtigos` (Parte Geral e arts. 312–359) numa próxima ingestão.
+  - Livros da CVM e do BCB por capítulo: não feito (falta escolher os capítulos no acervo).
+- **E11, golden set do chat com 30 casos:** os 12 do BB mais 18 das leis novas (Administrativo 7, Constitucional 2, Penal 4, Processo Penal 1, Processo Civil 2, CVM 2). Cada artigo foi conferido no texto oficial baixado; 5 casos são pegadinhas sem base. A rodada (IA, em série) vai depois das cadeias.
 - Backup: um segundo backup no mesmo dia ganha o sufixo `-HHmm` (antes era recusado e parava a cadeia). A retenção é por dia. Tem teste.
 
 RETOMAR AQUI — PROMPT-FECHAMENTO (25/10/2026):

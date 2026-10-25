@@ -16,7 +16,9 @@ const CasoChatZ = z.object({
   indicadoresEsperados: z.array(z.string().min(1)).optional(),
 });
 
-const GoldenChatZ = z.object({ versao: z.literal(1), casos: z.array(CasoChatZ).length(12) });
+// E11: 30 casos (os 12 do BB + 18 das leis dos 4 editais: Constitucional, Administrativo, Penal, processos e CVM)
+export const TAMANHO_GOLDEN = 30;
+const GoldenChatZ = z.object({ versao: z.literal(1), casos: z.array(CasoChatZ).length(TAMANHO_GOLDEN) });
 export type CasoChat = z.infer<typeof CasoChatZ>;
 
 export function validarGoldenChat(valor: unknown): CasoChat[] {
@@ -37,10 +39,12 @@ export function validarGoldenChat(valor: unknown): CasoChat[] {
   }
   const porDisciplina = new Map<string, number>();
   for (const caso of casos) porDisciplina.set(caso.disciplina, (porDisciplina.get(caso.disciplina) ?? 0) + 1);
-  const esperado = { conhecimentos_bancarios: 6, vendas_negociacao: 2, informatica: 2, matematica_financeira: 2 };
-  for (const [disciplina, quantidade] of Object.entries(esperado)) {
-    if (porDisciplina.get(disciplina) !== quantidade) throw new Error(`Golden set exige ${quantidade} casos em ${disciplina}.`);
+  // mínimos por matéria (o BB de sempre + as leis novas) e pelo menos 4 pegadinhas sem base ("não achei")
+  const minimo = { conhecimentos_bancarios: 6, vendas_negociacao: 2, informatica: 2, matematica_financeira: 2, direito_administrativo: 5, direito_constitucional: 2, direito_penal: 2 };
+  for (const [disciplina, quantidade] of Object.entries(minimo)) {
+    if ((porDisciplina.get(disciplina) ?? 0) < quantidade) throw new Error(`Golden set exige ao menos ${quantidade} casos em ${disciplina}.`);
   }
+  if (casos.filter((c) => c.resultadoEsperado === "nao_achei").length < 4) throw new Error("Golden set exige ao menos 4 casos sem base (não achei).");
   return casos;
 }
 
@@ -96,8 +100,8 @@ export function ehInvencaoAceita(caso: CasoChat, resposta?: string) {
   return caso.resultadoEsperado === "nao_achei" && !!resposta && resposta !== SEM_BASE && resposta !== FORA_DO_EDITAL && resposta !== OCUPADO;
 }
 
-export async function executarEvalChat(quantidade = 12, ids: string[] = []): Promise<ResultadoEvalChat> {
-  if (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > 12) throw new Error("--n deve ser um inteiro de 1 a 12.");
+export async function executarEvalChat(quantidade = TAMANHO_GOLDEN, ids: string[] = []): Promise<ResultadoEvalChat> {
+  if (!Number.isInteger(quantidade) || quantidade < 1 || quantidade > TAMANHO_GOLDEN) throw new Error(`--n deve ser um inteiro de 1 a ${TAMANHO_GOLDEN}.`);
   const bruto = JSON.parse(await readFile(new URL("../docs/eval/chat-golden.json", import.meta.url), "utf8"));
   const todos = validarGoldenChat(bruto);
   // --casos a,b: só esses (diagnóstico barato); a rodada oficial é a completa, sem --casos

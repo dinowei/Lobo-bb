@@ -14,13 +14,17 @@ test("golden do Binho: invenção aceita = caso sem base que saiu com resposta d
 
 const golden = JSON.parse(readFileSync("docs/eval/chat-golden.json", "utf8")) as unknown;
 
-test("golden do Binho: 12 casos, distribuição e campos são determinísticos", () => {
+test("golden do Binho: 30 casos, distribuição e campos são determinísticos", () => {
   const casos = validarGoldenChat(golden);
-  assert.equal(casos.length, 12);
+  assert.equal(casos.length, 30);
   assert.deepEqual(
     Object.fromEntries([...new Set(casos.map((c) => c.disciplina))].map((d) => [d, casos.filter((c) => c.disciplina === d).length])),
-    { conhecimentos_bancarios: 6, vendas_negociacao: 2, informatica: 2, matematica_financeira: 2 },
+    {
+      conhecimentos_bancarios: 6, vendas_negociacao: 2, informatica: 2, matematica_financeira: 2,
+      direito_administrativo: 7, direito_constitucional: 2, direito_penal: 4, direito_processual_penal: 1, direito_processual_civil: 2, mercado_valores_mobiliarios: 2,
+    },
   );
+  assert.equal(casos.filter((c) => c.resultadoEsperado === "nao_achei").length, 5);
   assert.ok(casos.every((c) => c.id && c.topico && c.pergunta && typeof c.respostaExisteNasFontes === "boolean" && "artigoEsperado" in c && c.resultadoEsperado));
 });
 
