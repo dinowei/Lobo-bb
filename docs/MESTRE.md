@@ -1,6 +1,6 @@
 # Lobo Binho: documento mestre
 
-Este é o único documento de estado do projeto. As regras de código e o mapa estão no `CLAUDE.md`. O histórico completo dos docs antigos está na tag git `docs-antes-da-limpeza`.
+Este é o único documento de estado do projeto. As regras de código e o mapa estão no `CLAUDE.md`, e o dia a dia está em `docs/DIARIO.md`. O histórico dos docs antigos fica na tag git `docs-antes-da-limpeza`.
 
 Marcas usadas:
 - [CONFIRMADO]: medido no banco, código, teste ou commit, com data.
@@ -11,165 +11,176 @@ Marcas usadas:
 
 ## 1. O que é + regras de ouro
 
-App de estudo para o concurso de Escriturário do Banco do Brasil, para o dono e alguns amigos. Tem:
-- banco de questões: provas oficiais + geradas e auditadas;
-- explicação de cada alternativa;
-- revisão espaçada;
-- simulado fiel ao edital, redação, aulas, cartões e chat por tópico;
+App de estudo para o dono e alguns amigos. Prepara para **4 concursos**:
+- Escriturário do Banco do Brasil (Cesgranrio);
+- Escrevente Técnico Judiciário do TJ-SP (Vunesp);
+- Técnico do Banco Central (Cebraspe, referência até o edital sair);
+- Agente Executivo da CVM (banca a definir, referência FGV).
+
+O app tem:
+- banco de questões: provas oficiais, questões geradas e auditadas, itens Certo/Errado e questões de cursinho (camada C);
+- explicação de cada alternativa e revisão espaçada;
+- simulado fiel por concurso, Raio-X, plano até a prova, redação, aulas, fichas, cartões e chat por tema;
 - gamificação, com o mascote Binho e a voz da Lo.
 
-Não é produto à venda. A infraestrutura é só a que já existe: Render free, Atlas M0, NVIDIA grátis e o PC do dono à noite.
+Não é produto à venda. A infraestrutura é só a que já existe: Render free (com a Vercel na frente), Atlas M0, NVIDIA grátis e o PC do dono à noite.
 
 Regras de ouro (detalhe no `CLAUDE.md`, regras 1 a 19):
-- Gabarito oficial nunca passa por IA. Questão gerada só é aprovada se o auditor acertar sem ver o gabarito.
-- Quem confere nunca é da família de quem escreveu (regra de família).
-- Bancários, Atualidades e Vendas só com fonte oficial ingerida e citação literal.
-- O chat do Binho diz "não achei" em vez de chutar.
-- Só modelos grátis da NVIDIA.
-- Leis só de planalto.gov.br, bcb.gov.br (inclui a API pública) e in.gov.br.
-- Nunca imprimir nem commitar chave ou `MONGODB_URI`.
-- Push só com o repositório privado.
-- Nunca apagar progresso, tentativas, contas ou redações.
-- Um job de IA por vez; nenhum entre 00:45 e 05:30 fora do noturno.
-- Visual fixo: escuro, laranja #ff5b1f, Inter.
+- **Gabarito**
+  - O gabarito oficial nunca passa por IA, nem o de cursinho: os dois são lidos por código.
+  - Questão gerada só é aprovada se o auditor acertar sem ver o gabarito.
+- **Quem confere** nunca é da família de quem escreveu (regra de família).
+- **Fontes**
+  - Bancários, Atualidades, Vendas, leis e normas só valem com fonte oficial ingerida e citação literal.
+  - Domínios aceitos para leis: planalto.gov.br, bcb.gov.br, in.gov.br, cvm.gov.br, tjsp.jus.br e al.sp.gov.br.
+  - Hierarquia das fontes: A (oficial) > B (material oficial) > C (cursinho). Quando o cursinho diverge da lei, vale a lei.
+- **Chat:** o Binho diz "não achei" em vez de chutar.
+- **Modelos:** só modelos grátis da NVIDIA.
+- **Segurança**
+  - Nunca imprimir o `.env` (nem as linhas de comentário), chave ou `MONGODB_URI`.
+  - Push só com o repositório privado.
+  - Nunca apagar progresso, tentativas, contas ou redações.
+- **Atlas:** escrita só com backup verificado → simular → contar → executar → contar. Parar em 80% de uso.
+- **IA:** um job por vez; nenhum entre 00:45 e 05:30 fora do noturno.
+- **Visual:** regra 8 do `CLAUDE.md`. Binho laranja ensina, Lo turquesa revisa e fala, verde marca resultados e controle. Tema escuro por padrão.
 
 ## 2. Estado em números
 
+[PENDENTE: preencher no fechamento da E14 com `bb -- status`, `bb -- uso-banco` e `provas-no-banco`, depois das cadeias de 25/10.]
+
 | Item | Valor | Marca |
 |---|---|---|
-| Questões | 374: 294 aprovadas, 73 rejeitadas, 4 desatualizadas, 2 `precisa_imagem`, 1 contestada | [CONFIRMADO 20/10/2026, `bb -- status`] |
-| Origem | 137 oficiais, 237 geradas | [CONFIRMADO 20/10/2026] |
-| Meta do banco | 1.200 aprovadas | [HISTÓRICO, decisão do dono] |
-| Atlas | 198,9 de 512 MB (39%), 1.560 trechos, 42 fontes ativas | [CONFIRMADO 20/10/2026, `bb -- uso-banco`] |
-| 1ª noite pelo Agendador (20/10) | 343 tarefas, 100 aprovadas; o backup não rodou (o prazo do wrapper venceu antes) | [CONFIRMADO, DIARIO F1] |
-| Backup no fim da noite | corrigido (`--ate 05:25` + 5 min de folga); ainda não houve noite com backup automático | [PENDENTE: noite de 21/10] |
-| Chat do Binho, golden de 12 | 0 invenções aceitas; "não achei" 1/1; úteis com base 6/8 (meta 7) | [CONFIRMADO 20/10/2026, DIARIO F2] |
-| Bancários (20 oficiais) | 8 confirmadas, 1 "mudou" (esperando OK), 11 pendentes | [CONFIRMADO 20/10/2026, DIARIO F3] |
-| Gerador (8 tópicos de maior peso) | n=1: 1/8; n=2 nos 7 que falharam (prompt novo): 3/14; motivo nº 1 `reprovada_na_revisao` | [CONFIRMADO 20/10/2026, `bb -- eval-gerador`] |
-| Testes | suíte `npm test` sem falhas; isolamento entre contas 4/4 (`ISOLAMENTO=1`) | [CONFIRMADO 20/10/2026] |
-| Lighthouse (celular) | Acessibilidade 100, Boas práticas 100, Desempenho 96 calibrado | [HISTÓRICO 18/10/2026] |
+| Tópicos | 85 no banco; 74 temas na trilha única | [CONFIRMADO 25/10/2026, E1] |
+| Tópicos por concurso | bb 58 · tjsp 36 · bacen 59 · cvm 23 | [CONFIRMADO 25/10/2026, E1] |
+| Questões | 521 antes das cadeias de 25/10 | [CONFIRMADO 25/10/2026] |
+| Oficiais (múltipla escolha) | BB Escriturário 2021 (68) e 2023 (69); Tecnologia 2021 (33) e 2023 (35) | [CONFIRMADO 25/10/2026] |
+| Certo/Errado | 27 derivados aprovados de 30 (90%); oficiais na cadeia 2/5 | [CONFIRMADO / PENDENTE] |
+| Atlas | 40% (203,7 MB) | [CONFIRMADO 25/10/2026] |
+| Testes | 256 ok / 0 falha (7 skip); e2e de fluxos, trilha, concurso, ce, janelas e acordando verdes | [CONFIRMADO 25/10/2026] |
 
-## 3. Funciona / quase / falta
+## 3. Como o app se organiza
+
+- **Trilha única + lentes**
+  - Há um catálogo único de temas (`data/trilha.json`, 74 temas). A ordem vem de `shared/trilhaUnica.ts` (`bb -- trilha-ordenar`):
+    1. nº de concursos que cobram o tema (comuns primeiro);
+    2. peso no edital × (1 + incidência na banca);
+    3. pré-requisitos (`data/trilha-regras.json`).
+  - O domínio é por tema, uma vez só: estudar Crase sobe a prontidão de todos os concursos que cobram Crase.
+  - A aba **Geral** (padrão) mostra o todo e a "Prontidão para X" dos 4 concursos.
+  - As abas **BB / TJ-SP / BACEN / CVM** são lentes. Cada uma filtra temas, revisões, desempenho e simulados pelo cabeçalho `X-Concurso`.
+- **Hierarquia do material**
+  - A = lei, norma ou prova oficial;
+  - B = livro e material oficial (CVM, BCB);
+  - C = cursinho.
+  - Questão de cursinho (`origem: "cursinho"`) fica no treino com o selo "Cursinho · <material>" e nunca entra no simulado fiel.
+- **Acervo:** os PDFs do dono são só leitura (`ACERVO_DIR`). O índice local fica em `acervo-indice/`, fora do Git. Mapa por tema em `data/temas.json`: os 20 primeiros temas da trilha estão conferidos à mão; tema sem material bom fica com `semMaterial` e o motivo.
+- **Janelas de IA**
+  - **A** (noturno): 01:00–05:25, pelo Agendador. Etapas: backup → acervo → ingestão (uma prova da fila por noite) → classificação → fila de geração → derivação C/E → fichas → relatório → backup.
+  - **B**: 18:00–19:00 por padrão, com horário e teto de chamadas em Admin → Janelas. Se a A não rodou, faz o essencial; se rodou, recupera as pendentes. Comando: `bb -- janela-b`.
+  - O relatório de cada janela lista as etapas, com ok, pulada ou falhou.
+- **Formatos:** múltipla escolha (Cesgranrio, FGV, Vunesp) e Certo/Errado (Cebraspe: nota com desconto, "em branco" e recomendação).
+  - Na Geral, o C/E usa a Cebraspe.
+  - Na lente, cada concurso usa a sua banca.
+- **Como adicionar um concurso**
+  1. Uma linha em `IDS_CONCURSO` e `SIGLA_CONCURSO` (`shared/concursos.ts`).
+  2. `data/concursos/<id>.json`: banca, nº de questões, tempo e cota por matéria (do edital).
+  3. Matérias novas em `DISCIPLINAS` e temas com o campo `concursos` em `data/trilha.json`.
+  4. Rodar `bb -- arvore --simular`, depois `--confirmar` (com backup), e depois `bb -- trilha-ordenar`.
+  5. Ingerir as provas da banca e rodar `bb -- incidencia`. A aba aparece sozinha.
+
+## 4. Funciona / quase / falta
 
 **Funciona:**
-- treino, revisão, simulado fiel (cotas exatas, 5 h, pontos da banca), Raio-X e plano até a prova;
-- caderno de erros com "Estudar ouvindo", redação (25 a 30 linhas, nota estimada), cartões, Elo;
-- login com convite, menu da conta, Admin (IA, Fila, Benchmark, Pendências, Convites, Contas);
-- noturno no Agendador, backup e restauração simulada, PWA e modo offline;
-- isolamento entre contas, testado.
+- treino, revisão, simulado fiel, Raio-X, plano, caderno de erros com "Estudar ouvindo", redação, cartões e Elo;
+- trilha única com lentes, prontidão por concurso e Certo/Errado com nota Cebraspe;
+- login com convite, Admin (IA, Fila, Janelas, Concursos, Pendências, Convites, Contas);
+- noturno com etapas e Janela B, backup (o segundo do dia ganha o sufixo `-HHmm`), PWA com versão;
+- abertura instantânea com o Painel guardado enquanto o Render acorda (`web/vercel.json`, `docs/VERCEL.md`).
 
 **Quase:**
-- Chat do Binho: seguro (invenção zero), mas útil em 6 de 8 casos com base.
-- Aulas: poucas aprovadas por noite (DECISOES nº 9).
-- Bancários: 11 oficiais sem base atual (DECISOES nº 13).
-- Site acordado: o workflow existe, mas toda execução do Actions dá `startup_failure` sem job (conta/cobrança do GitHub; ver seção 5).
+- fichas para todos os temas (o noturno faz uma à frente do dono);
+- golden set do chat com 30 casos;
+- provas Cebraspe/FGV em lotes (cadeia 5 de 25/10).
 
-**Falta:**
-- conta de admin do dono;
-- 1ª noite com backup automático confirmado;
-- MCR consolidado (não existe na API do BCB);
-- glossário de Vendas liberado.
+**Falta (do dono):** ver a seção 6.
 
-## 4. Decisões abertas
+## 5. Decisões abertas
 
-Abertas (detalhe em `docs/DECISOES-PENDENTES.md`, que a tela Admin → Pendências lê):
-- **nº 1** Glossário de Vendas: ler e liberar com `bb -- liberar-fonte "Glossário de Vendas"`.
-- **nº 2** Conta de administrador: só o dono cria (senha dele).
-- **nº 3** Classificar os 20 pares de similaridade (`docs/CALIBRAGEM-SIMILARIDADE.md`).
-- **nº 9** Aulas com poucas aprovações: trocar escritor ou restringir a tópicos com fonte curta.
-- **nº 13 / 1d** Bancários: 11 oficiais sem base. Proposta: "não se aplica" para conceito de mercado, CVM 175/2022 para fundos, MCR manual.
-- **1b** BB 2023 Q40 "mudou": a aprovação já está registrada; conferir em Pendências.
+Abertas (detalhe em `docs/DECISOES-PENDENTES.md`, lido pela tela Admin → Pendências):
+- Glossário de Vendas: ler e liberar.
+- Conta de administrador: só o dono cria.
+- Pares de similaridade para classificar.
+- Crase: `erro_tratamento` fica fora do sorteio até um juiz acertar ≥ 95% em 20 frases.
+- Candidatos: classificador `bolt-e4b` e embedding de 1024 dimensões.
+- "Espaço da Lo" e "Áudios da Lo": falta a especificação.
 
 Resolvidas (uma linha cada):
-- corrente definitiva (18/10);
-- Informática "não se aplica" e fontes de Vendas (18/10);
-- voz Louise/Lo e poses (18/10);
-- linhas e aviso da redação (18/10);
-- mistura do simulado 20/50/30 (18/10);
-- Lighthouse (18/10);
-- espaço do Atlas (19/10);
-- matemática por construção (19/10);
-- normas do BCB Pix/PLD/tarifas (19/10);
-- Q51 BB 2021 mantida (19/10);
-- figura no texto e duplicada (20/10, F9).
+- corrente com auditor Muse → Ultra (25/10);
+- trilha única + lentes (25/10);
+- 4 concursos (25/10);
+- OCR `nemotron-parse` v1 só para página sem texto (25/10);
+- identidade visual final (25/10).
 
-## 5. Pendências do dono (passo exato)
+## 6. Pendências do dono (passo exato)
 
-1. **Publicar no Render:** painel do Render → serviço `lobo-binho` → *Manual Deploy* → *Deploy latest commit*. Depois abra `https://lobo-binho.onrender.com/api/saude` e confira `{"ok":true}`.
-2. **Criar sua conta de admin:** no PC, `npm run bb -- criar-admin <seu-email>`. Ela pede a senha e leva o seu progresso. A partir daí o site pede login; convide amigos em Admin → Convites.
-3. **GitHub Actions** (site acordado): abra `https://github.com/dinowei/Lobo-bb/actions` logado e veja o motivo do `startup_failure` em "Acordar o site". Em geral é cobrança ou limite da conta; em *Settings → Billing* confirme os minutos de Actions.
-4. **Glossário de Vendas:** Admin → Pendências → ler; se ok, `npm run bb -- liberar-fonte "Glossário de Vendas"`.
-5. **MCR (recortes 3-5 e 10-6):** abrir o MCR no site do BCB, salvar o recorte vigente e rodar `npm run bb -- fonte <arquivo> --tipo norma_bacen_cmn --titulo "MCR 3-5 e 10-6" --disciplina conhecimentos_bancarios`.
-6. **Pendências da tela Admin:** a mudança "mudou" (BB 2023 Q40) e os 20 pares de similaridade.
+1. **BNB 2024, item 17:** abrir o gabarito oficial (BNB 2024 Cesgranrio, GABARITO FINAL) e dizer a letra do item 17. O PDF traz "1 7- B".
+2. **TJ-SP 2023**
+   - Colocar o gabarito oficial da Vunesp na pasta `13_TJ-SP/Provas e Gabaritos`.
+   - Mandar o edital, para a cota por matéria de `data/concursos/tjsp.json`.
+3. **CNU 2024:** colocar os gabaritos na pasta do CNU (só os cadernos estão lá).
+4. **Janela B no Windows:** criar a tarefa "Lobo Binho - Janela B", diária às 18:00, com `npm run bb -- janela-b` na pasta do projeto. Deixe o noturno rodando oculto ("Executar estando o usuário conectado ou não").
+5. **Publicar**
+   - Seguir `docs/VERCEL.md`: criar o projeto na Vercel apontando para `web/`.
+   - Render: *Manual Deploy* → *Deploy latest commit*. Conferir `/api/saude`.
+6. **Os 72 arquivos por tema:** pôr em `72 FONTES/` e avisar.
+7. **CVM:** os ids `cvm_*` são provisórios até o edital do Agente Executivo.
+8. **"Espaço da Lo" e "Áudios da Lo":** descrever o que cada tela deve ter.
 
-## 6. Rodar, publicar, montar do zero
+## 7. Rodar, publicar, montar do zero
 
-- **Rodar no PC:**
-  - `npm run setup` uma vez;
-  - `npm run dev` (API :3333 + site :5173);
-  - `npm test` e `npm run typecheck`: nunca os dois juntos; tsc com `GOMAXPROCS=2`.
-- **Publicar:**
-  - Render, deploy manual: a imagem do `Dockerfile` roda `node --import tsx src/server.ts` e abre a `PORT` antes de conectar no banco.
-  - Segredos só no painel do Render.
-  - Smoke: `/api/saude` deve devolver 200.
-- **Noturno:**
-  - Agendador do Windows "Lobo Binho - Noturno Local", 01:00, `scripts/noturno-windows.ps1`, que roda até 05:25 e deixa relatório e backup.
-  - Pela manhã: `schtasks /query /tn "Lobo Binho - Noturno Local" /v /fo LIST`, `logs\noturno\AAAA-MM-DD.log` e Admin → Fila.
-- **Montar do zero:**
-  1. Atlas M0: criar o cluster, o usuário e liberar o IP; `npm run bb -- indice`.
-  2. Chave NVIDIA no `.env` (modelo em `.env.example`); `npm run bb -- testar`.
-  3. `npm run bb -- topicos data/topicos.json`.
-  4. Provas: `npm run bb -- prova <pdf> --gabarito <gab> --nome "<nome>"`.
-  5. Leis e normas: `npm run bb -- baixar-fontes` e depois `ingerir-fontes <id> --simular|--confirmar`, uma por vez.
-  6. `npm run bb -- corrente definitiva`.
-  7. O noturno enche o banco.
+- **Rodar no PC:** `npm run setup` uma vez; `npm run dev` (API :3333 + site :5173); `npm test` e `npm run typecheck`, um de cada vez.
+- **Publicar**
+  - Render, deploy manual: o `Dockerfile` roda `node --import tsx src/server.ts`.
+  - A Vercel serve o site e repassa `/api` para o Render (`web/vercel.json`).
+  - Segredos só nos painéis.
+- **Montar do zero**
+  1. Atlas M0 e `bb -- indice`.
+  2. Chave NVIDIA no `.env` (modelo em `.env.example`) e `bb -- testar`.
+  3. `bb -- topicos data/topicos.json`, depois `bb -- arvore --confirmar` e `bb -- trilha-ordenar`.
+  4. Provas: `bb -- prova <pdf> --gabarito <gab> --nome "<nome>" --banca <b> [--caderno X] [--questoes 1-35]`; Cebraspe: `bb -- prova-ce ...`; cursinho: `bb -- importar-cursinho <pdf> --nome ... [--formato ce]`.
+  5. Leis: `bb -- baixar-fontes`, depois `ingerir-fontes <id> --simular|--confirmar`, uma por vez.
+  6. `bb -- corrente definitiva`.
+  7. O noturno enche o banco; fila de provas: `bb -- fila-ingestao --add itens.json`.
 
-## 7. Modelos, fontes, figuras
+## 8. Modelos, fontes, figuras
 
 - **Corrente definitiva** (`CORRENTE_DEFINITIVA`, `src/catalogo.ts`):
   - gerador e tutor: gpt-oss-20b → Muse → Lightning;
-  - auditor: Muse → Super → Ultra;
+  - auditor: Muse → Ultra;
   - escritor PT: GLM-flash → gpt-oss → Muse;
-  - juiz PT: Super → Ultra;
-  - redação: Super → Ultra → Muse.
-  - Modelo com menos de 20% de sucesso em 24 h descansa 1 h. Step 5 Preview fica fora.
-  - Benchmark: `docs/BENCHMARK-MODELOS.md`.
-- **Fontes oficiais:** catálogo em `data/fontes-oficiais.json`.
-  - Texto vigente: Planalto compilado, DOU, ou API pública do BCB (compilado, ou original nunca alterado).
-  - Pendente: o MCR consolidado.
-  - Conferência "fonte atual" das questões: `bb -- fontes-atuais conferir|relatorio`.
-- **Figuras:**
-  - Desenhadas por código (planilha, tabela, sistema linear, série).
-  - As oficiais só entram com o OK do dono (tela Figuras).
-  - 2 questões ainda `precisa_imagem`.
+  - juiz PT e redação: Ultra → Muse.
+  - A extração de provas passa pela corrente do auditor (JSON com conserto e janela refeita página a página).
+  - Modelo com menos de 20% de sucesso em 24 h descansa 1 h.
+- **Estilo por banca:** o gerador recebe o JSON da banca e 3 oficiais reais da banca no tema.
+- **Fontes oficiais:** catálogo em `data/fontes-oficiais.json`. Leis dos 4 editais (CF, 8.112, 9.784, 14.133, 8.429, 12.527, Dec. 1.171, 6.404, CP, CPP, CPC, Lei SP 10.261), além das do BB e do BCB.
+- **Figuras:** desenhadas por código. As oficiais só entram com o OK do dono (tela Figuras).
 
-## 8. E se quebrar
+## 9. E se quebrar
 
 - **O site não abre:**
-  1. Espere ~1 min (o Render free dorme).
-  2. Abra `/api/saude`: 503 = sem banco; confira a `MONGODB_URI` e o *Network Access* do Atlas.
-  3. Nos logs do Render: "API ouvindo na porta" e depois "Banco conectado".
+  1. Na Vercel ele abre na hora com o Painel guardado e a faixa "acordando o servidor"; espere ~1 min.
+  2. `/api/saude` com 503 = sem banco: confira a `MONGODB_URI` e o *Network Access* do Atlas.
+  3. Nos logs do Render: "API ouvindo" e depois "Banco conectado".
 - **O noturno não rodou:**
-  1. `schtasks /query /tn "Lobo Binho - Noturno Local" /v /fo LIST`: veja "Last Result". O PC precisa estar ligado ou em **suspensão** (não "Desligar"), na tomada, com a conta logada e "Permitir temporizadores de ativação" habilitado (21 e 22/10 falharam porque o PC estava desligado/hibernado às 01:00).
-  2. Leia `logs\noturno\<data>.log`.
-  3. Trava presa: `npm run bb -- limpar-trava-orfa <pid>`, só com o processo morto.
-- **A IA está fora:**
-  1. Admin → IA mostra quem caiu (vermelho).
-  2. A corrente pula sozinha: 3 falhas = 10 min fora; menos de 20% em 24 h = 1 h fora.
-  3. Se a corrente inteira cair, as tarefas ficam "aguardando" e voltam na noite seguinte; nada é perdido.
-- **O banco está cheio:**
-  1. Admin → IA → "Uso do banco" (alerta em 80%).
-  2. `npm run bb -- uso-banco` mostra o que pesa.
-  3. `npm run bb -- uso-banco ajustar`: telemetria de 30 dias e teto de áudio (`AUDIO_MAX_MB`).
-- **Restaurar um backup:**
-  1. `npm run bb -- restaurar backups/<data> --simular` (só confere).
-  2. Leia as contagens.
-  3. `npm run bb -- restaurar backups/<data> --confirmar`: cria o rollback e pede confirmação digitada.
+  1. Abra Admin → Janelas: o relatório mostra as etapas.
+  2. Rode `schtasks /query /tn "Lobo Binho - Noturno Local" /v /fo LIST`. O PC precisa estar ligado ou em suspensão, com a conta logada.
+  3. Se a Janela B estiver agendada, ela recupera às 18:00.
+  4. Trava presa: `bb -- limpar-trava-orfa <pid>`.
+- **Prova travada na fila:** quando uma prova falha, ela vai para a Config `fila_ingestao_falhas`. Corrija e enfileire de novo.
+- **A IA está fora:** a corrente pula sozinha. Se cair inteira, as tarefas esperam a próxima janela.
+- **O banco está cheio:** `bb -- uso-banco` e `bb -- uso-banco ajustar`; alerta em 80%.
+- **Restaurar um backup:** `bb -- restaurar backups/<pasta> --simular`, conferir as contagens, depois `--confirmar`.
 
-## 9. Retomar aqui
+## 10. Retomar aqui
 
-- **Próximo:**
-  - conferir a noite de 21/10 (relatório + backup automático);
-  - aplicar a decisão do dono sobre DECISOES nº 13;
-  - religar o "Acordar o site" quando o Actions voltar a iniciar jobs.
-- **Últimos commits:** ver `git log --oneline -15` (itens F1 a F10 do PROMPT-FECHAMENTO, 20/10/2026).
+Ver o "RETOMAR AQUI" no fim de `docs/DIARIO.md`.
