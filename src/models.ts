@@ -527,6 +527,57 @@ const FichaSchema = new Schema(
 FichaSchema.index({ subtopico: 1, status: 1, createdAt: -1 });
 export const Ficha = model("Ficha", FichaSchema, "fichas");
 
+// Item Certo/Errado (F10). Oficial (Cebraspe), derivado de uma múltipla escolha aprovada (a certa → C,
+// as erradas → E, explicação já auditada) ou de cursinho. Gabarito sempre do código ou do gabarito oficial;
+// a IA só reescreve a afirmação e o auditor julga às cegas (aprova só se bater com o gabarito).
+const ItemCESchema = new Schema(
+  {
+    topicId: { type: Schema.Types.ObjectId, ref: "Topic", required: true, index: true },
+    subtopico: { type: String, index: true },
+    concursos: { type: [{ type: String, enum: ["bb", "bacen"] }], default: undefined, index: true },
+    banca: { type: String, enum: ["cesgranrio", "cebraspe", "fgv", "fcc", "vunesp"] }, // oficial: da prova
+    origem: { type: String, enum: ["oficial", "derivada", "cursinho"], required: true },
+    camada: { type: String, enum: ["A", "B", "C"] },
+    derivadaDe: { type: Schema.Types.ObjectId, ref: "Question", index: true },
+    letraOrigem: { type: String, enum: LETRAS },
+    prova: String,
+    numeroOriginal: Number,
+    textoBase: String,
+    afirmacao: { type: String, required: true },
+    gabarito: { type: String, enum: ["C", "E", "anulada"], required: true },
+    explicacao: { type: String, required: exigeSeAprovada },
+    status: { type: String, enum: ["pendente", "aprovada", "rejeitada", "contestada", "desatualizada", "anulada"], default: "pendente", index: true },
+    escritaPor: String,
+    auditoria: {
+      modelo: String,
+      respostaCega: { type: String, enum: ["C", "E"] },
+      justificativa: String,
+      problemas: [String],
+      _id: false,
+    },
+    hashAfirmacao: { type: String, unique: true, sparse: true },
+  },
+  { timestamps: true }
+);
+export const ItemCE = model("ItemCE", ItemCESchema, "itens_ce");
+
+// resposta a um item C/E (em branco = null: conta para a nota com penalidade e para a recomendação de chute)
+const RespostaCESchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: "User", index: true },
+    itemId: { type: Schema.Types.ObjectId, ref: "ItemCE", required: true, index: true },
+    subtopico: String,
+    resposta: { type: String, enum: ["C", "E", null], default: null },
+    acertou: { type: Boolean, default: null }, // null = em branco
+    concurso: { type: String, enum: ["bb", "bacen"] },
+    banca: String,
+    tempoSeg: Number,
+  },
+  { timestamps: true }
+);
+RespostaCESchema.index({ userId: 1, subtopico: 1, createdAt: -1 });
+export const RespostaCE = model("RespostaCE", RespostaCESchema, "respostas_ce");
+
 // Cartões (8.6): frente/verso de normas (com trecho literal da fonte) e vocabulário de Inglês (trecho
 // literal da prova oficial). Só "aprovado" (auditor de outra família) aparece para o aluno.
 const CartaoSchema = new Schema(

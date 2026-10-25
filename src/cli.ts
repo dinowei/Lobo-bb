@@ -70,6 +70,7 @@ import { TRILHA } from "../shared/trilha.js";
 import { aplicarArvore, auditarAmostra, classificarBanco, itensClassificados, reclassificarOficiais, simularArvore } from "./subtopicos.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioIncidencia } from "./incidencia.js";
+import { derivarCE } from "./certoErrado.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
@@ -107,6 +108,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   voz limpar                    tira do cache o áudio de vozes fora da lista aprovada
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
+  derivar-ce [--n 6]                             itens Certo/Errado de múltiplas aprovadas (código monta, IA reescreve, auditor julga às cegas)
   incidencia                                     quantas vezes cada subtópico caiu nas oficiais, por banca e ano → docs/INCIDENCIA.md
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
@@ -439,6 +441,15 @@ async function main() {
         const r = await migrarRatings();
         console.log(`✔ Ratings recalculados: ${r.tentativas} tentativas, ${r.questoes} questões, ${r.alunos} rating(s) de aluno por disciplina.`);
         return;
+      }
+
+      case "derivar-ce": {
+        // F10: itens Certo/Errado a partir de múltiplas aprovadas (--n = nº de questões; 5 itens cada)
+        return await naFila(rotulo, async () => {
+          const r = await derivarCE({ questoes: o.n ? Number(o.n) : 6 });
+          console.log(`\nDerivação C/E: ${r.questoes} questão(ões), ${r.itens} itens, ${r.aprovados} aprovados (${r.itens ? Math.round((r.aprovados / r.itens) * 100) : 0}%)`);
+          for (const [m, n] of Object.entries(r.motivos)) console.log(`  ✖ ${m}: ${n}`);
+        });
       }
 
       case "incidencia": {
