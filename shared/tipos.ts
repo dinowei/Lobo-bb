@@ -558,6 +558,28 @@ export interface ConcursoInfoDTO {
   areas: { id: string; nome: string }[];
   area: string | null;
 }
+// Certo/Errado (F10): afirmação + Certo / Errado / Em branco, nota com a penalidade da banca do concurso ativo
+export interface ItemCEDTO {
+  id: string;
+  topicoId: string;
+  disciplina: Disciplina | null;
+  assunto: string;
+  subtopico: string | null;
+  afirmacao: string;
+  textoBase?: string;
+  origem: "oficial" | "derivada" | "cursinho";
+  prova?: string;
+}
+export interface RecomendacaoBrancoDTO { recomenda: "responder" | "branco" | "sem_dados"; taxa: number | null; motivo: string }
+export interface ProximoItemCEDTO { item: ItemCEDTO | null; recomendacao: RecomendacaoBrancoDTO | null; banca: string; nomeBanca: string; aviso?: string }
+export interface CorrecaoCEDTO {
+  gabarito: "C" | "E" | "anulada";
+  acertou: boolean | null; // null = em branco
+  pontos: number; // no critério da banca: +1, −1 (Cebraspe) ou 0
+  explicacao: string;
+  recomendacao: RecomendacaoBrancoDTO; // já com esta resposta no histórico
+}
+
 export interface RegistroConcursoDTO { em: string; quem: string; concurso: string; campo: "banca" | "area"; de: string; para: string; motivo: string }
 
 // Trilha de estudos (F4): tema do dia, estados e fila de retomada (regra em shared/trilha.ts)
@@ -634,6 +656,8 @@ export interface Api {
   simulados(): Promise<ResumoSimulado[]>;
   // concursos disponíveis (abas BB/BACEN): banca em uso e área
   concursos(): Promise<ConcursoInfoDTO[]>;
+  proximoItemCE(f: { subtopico?: string; disciplina?: Disciplina; excluir?: string[] }): Promise<ProximoItemCEDTO>;
+  responderItemCE(r: { itemId: string; resposta: "C" | "E" | null; tempoSeg: number }): Promise<CorrecaoCEDTO>;
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;
   aula(topicoId: string): Promise<AulaDTO | null>;
   explicarMais(questaoId: string, duvida?: string): Promise<ExplicacaoMaisDTO>;

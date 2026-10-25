@@ -38,7 +38,8 @@ import { ehDiagnostico, MISTURA_DIAGNOSTICO, PREFIXO_DIAGNOSTICO, ratingDoDiagno
 import { reprocessar, type EventoRating, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../../../shared/rating";
 import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../../../shared/aprendizado";
 import { classificarPorCodigo, concursosDoTopico, SUBTOPICO_POR_ID } from "../../../shared/subtopicos";
-import { BANCAS, CONCURSOS } from "../../../shared/concursos";
+import { BANCAS, CONCURSOS, type IdBanca } from "../../../shared/concursos";
+import { corrigirCE, derivarItens, recomendarBranco } from "../../../shared/certoErrado";
 import { concursoAtivo } from "../concursoAtivo";
 import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA, type InicioTrilha } from "../../../shared/trilha";
 import { desempenhoPorTema, diaLocal, diasDaTrilha, type TentativaTema } from "../../../shared/desempenhoTema";
@@ -122,8 +123,29 @@ interface Estado {
   revisoes: Record<string, EstadoRevisao & { proxima: string; comTempo?: boolean }>;
   cartoes?: Record<string, EstadoRevisao & { proxima: string; desde: string }>;
   contestadas: string[];
+  respostasCE?: { itemId: string; subtopico: string; resposta: "C" | "E" | null; acertou: boolean | null }[];
 }
 const vazio = (): Estado => ({ tentativas: [], revisoes: {}, contestadas: [] });
+
+// Certo/Errado no demo: os itens saem das questões de exemplo pela mesma regra do servidor (a certa → C,
+// as erradas → E); sem IA, a afirmação é o comando + a alternativa
+const ITENS_CE = QUESTOES_DEMO.flatMap((q) =>
+  derivarItens({ enunciado: q.enunciado, alternativas: q.alternativas.map((a) => ({ ...a, correta: a.letra === q.gabarito })) }).map((it) => ({
+    id: `${q.id}-ce-${it.letraOrigem}`,
+    q,
+    afirmacao: `${q.enunciado.trim().replace(/[:?]$/, "")}: ${q.alternativas.find((a) => a.letra === it.letraOrigem)!.texto.trim()}`,
+    gabarito: it.gabarito,
+    explicacao: it.explicacao,
+  }))
+);
+const historicoCEDemo = (e: Estado, sub: string) => {
+  const rs = (e.respostasCE ?? []).filter((r) => r.subtopico === sub && r.resposta !== null);
+  return { acertos: rs.filter((r) => r.acertou).length, total: rs.length };
+};
+const bancaDemo = (): IdBanca => {
+  const j = CONCURSOS[concursoAtivo()] as { bancaPadrao: string; bancaReferencia?: string };
+  return ((j.bancaPadrao === "a_definir" ? j.bancaReferencia : j.bancaPadrao) ?? "cesgranrio") as IdBanca;
+};
 
 function ler(): Estado {
   try {
@@ -244,6 +266,35 @@ export const apiDemo: Api = {
     const emUso = aDefinir ? j.bancaReferencia ?? "cebraspe" : j.bancaPadrao;
     return { id, nome: j.nome, cargo: j.cargo ?? null, banca: j.bancaPadrao, aDefinir, bancaEmUso: emUso, nomeBanca: (BANCAS as Record<string, { nome: string }>)[emUso]?.nome ?? emUso, areas: j.areas ?? [], area: j.areas?.[0]?.id ?? null };
   })),
+
+  proximoItemCE: (f) => {
+    const e = ler();
+    const banca = bancaDemo();
+    const nomeBanca = BANCAS[banca].nome;
+    const ativos = ITENS_CE.filter((i) => questaoAtiva(i.q) && !e.contestadas.includes(i.q.id) && (!f.disciplina || i.q.disciplina === f.disciplina) && (!f.subtopico || subDe(i.q) === f.subtopico) && !f.excluir?.includes(i.id));
+    const ja = new Set((e.respostasCE ?? []).map((r) => r.itemId));
+    const pool = ativos.filter((i) => !ja.has(i.id));
+    const it = (pool.length ? pool : ativos)[Math.floor(Math.random() * (pool.length || ativos.length))];
+    if (!it) return espera({ item: null, recomendacao: null, banca, nomeBanca, aviso: "Sem itens Certo/Errado de exemplo aqui." });
+    return espera({
+      item: { id: it.id, topicoId: topicoDe(it.q), disciplina: it.q.disciplina, assunto: it.q.assunto, subtopico: subDe(it.q), afirmacao: it.afirmacao, ...(it.q.textoBase ? { textoBase: it.q.textoBase } : {}), origem: "derivada" as const },
+      recomendacao: recomendarBranco(historicoCEDemo(e, subDe(it.q)), banca),
+      banca,
+      nomeBanca,
+    });
+  },
+
+  responderItemCE: (r) => {
+    const e = ler();
+    const it = ITENS_CE.find((i) => i.id === r.itemId);
+    if (!it) return Promise.reject(new Error("Item fora de circulação."));
+    const banca = bancaDemo();
+    const resposta = r.resposta === "C" || r.resposta === "E" ? r.resposta : null;
+    const acertou = resposta === null ? null : resposta === it.gabarito;
+    e.respostasCE = [...(e.respostasCE ?? []), { itemId: it.id, subtopico: subDe(it.q), resposta, acertou }];
+    gravar(e);
+    return espera({ gabarito: it.gabarito, acertou, pontos: corrigirCE([{ resposta, gabarito: it.gabarito }], banca).nota, explicacao: it.explicacao, recomendacao: recomendarBranco(historicoCEDemo(e, subDe(it.q)), banca) });
+  },
 
   desempenhoTemas: () => {
     const e = ler();

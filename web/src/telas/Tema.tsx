@@ -192,6 +192,7 @@ export function Tema() {
             <button className="botao-laranja" onClick={() => treinar()}>Treinar este tema <ISeta /></button>
             {t.pratica.revisoes > 0 && <button className="botao-linha" onClick={() => treinar(true)}>Revisões + tema</button>}
             {t.pratica.erradas > 0 && <button className="botao-linha" onClick={() => ir("erros")}>Caderno de erros</button>}
+            <button className="botao-linha" onClick={() => ir("certo-errado", { subtopico: t.subtopico })} data-testid="ce-do-tema">Certo ou Errado deste tema</button>
           </div>
         </section>
       </div>

@@ -123,6 +123,20 @@ app.post("/api/trilha/inicio", rota(async (req, res) => {
 }));
 // concursos (F5): banca em uso e área de cada um; o admin troca com registro
 app.get("/api/concursos", (_req, res) => res.json(infoConcursos()));
+// Certo/Errado (F10)
+app.get("/api/ce/proximo", rota(async (req, res) => {
+  const q = req.query as Record<string, string | undefined>;
+  res.json(await apiServidor.proximoItemCE({
+    subtopico: q.subtopico || undefined,
+    disciplina: q.disciplina && (DISCIPLINAS as readonly string[]).includes(q.disciplina) ? (q.disciplina as Disciplina) : undefined,
+    excluir: q.excluir ? q.excluir.split(",").slice(-60) : [],
+  }));
+}));
+app.post("/api/ce/responder", rota(async (req, res) => {
+  const b = (req.body ?? {}) as { itemId?: unknown; resposta?: unknown; tempoSeg?: unknown };
+  const resposta = b.resposta === "C" || b.resposta === "E" ? b.resposta : null;
+  res.json(await apiServidor.responderItemCE({ itemId: String(b.itemId ?? ""), resposta, tempoSeg: Number(b.tempoSeg) || 0 }));
+}));
 app.get("/api/admin/concursos", (_req, res) => res.json({ concursos: infoConcursos(), historico: historicoConcursos() }));
 app.post("/api/admin/concursos", rota(async (req, res) => {
   const b = (req.body ?? {}) as { concurso?: unknown; campo?: unknown; para?: unknown; motivo?: unknown };

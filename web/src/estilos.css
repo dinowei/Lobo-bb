@@ -1299,6 +1299,27 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 /* Ajustes: dias da semana do plano */
 .dias-semana { display: flex; flex-wrap: wrap; gap: 6px; border: 0; padding: 0; margin: 0; }
 .dias-semana legend { width: 100%; margin-bottom: 6px; font-size: 13px; }
+/* Certo ou Errado (F10): antes da resposta é do Binho; a correção é da Lo (resultado-faixa, aviso-lo) */
+.tela-ce .ce-cartao { max-width: 820px; }
+.ce-afirmacao { margin: 6px 0 18px; font-size: 19px; line-height: 1.55; font-weight: 500; letter-spacing: -0.01em; max-width: 68ch; text-wrap: pretty; }
+.ce-botoes { display: flex; flex-wrap: wrap; gap: 10px; }
+.ce-botoes button { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; border: 2px solid transparent; }
+.ce-botoes kbd { font: 600 12px/1 var(--fonte, inherit); padding: 3px 6px; border-radius: 6px; background: color-mix(in srgb, currentColor 14%, transparent); }
+.ce-botoes .ce-certo { background: var(--binho); color: var(--binho-tinta); }
+.ce-botoes .ce-errado { background: var(--superficie); color: var(--texto); border-color: var(--binho); }
+.ce-botoes .ce-branco { background: transparent; color: var(--suave); border-color: var(--linha); }
+.ce-botoes button:disabled { opacity: .6; cursor: progress; }
+.ce-recomendacao { margin: 0 0 16px; padding: 10px 14px; border-radius: 12px; max-width: 68ch; background: var(--binho-fundo); box-shadow: inset 4px 0 0 var(--binho); }
+.ce-recomendacao b { color: var(--binho-texto); }
+.ce-recomendacao.branco { background: var(--atencao-fundo); }
+.ce-recomendacao.branco b { color: var(--atencao-texto); }
+.ce-recomendacao-depois { margin: -6px 0 14px; color: var(--suave); font-size: 13px; max-width: 68ch; }
+.resultado-faixa.branco { background: var(--atencao-fundo); color: var(--atencao-texto); box-shadow: inset 4px 0 0 var(--lo); }
+.ce-filtro { margin: 6px 0 0; font-size: 14px; }
+.ce-placar { padding: 8px 14px; border-radius: 999px; background: var(--verde-fundo); color: var(--verde-texto); font-size: 14px; }
+.ce-placar b { font-size: 16px; }
+@media (max-width: 520px) { .ce-botoes button { flex: 1 1 100%; justify-content: center; } .ce-afirmacao { font-size: 17px; } }
+
 /* Ajustes → Concurso: um cartão por concurso; o em estudo ganha a borda verde institucional */
 .lista-concursos { display: grid; gap: 10px; }
 .concurso-item { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1px solid var(--linha); border-radius: 14px; }

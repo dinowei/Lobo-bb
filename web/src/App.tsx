@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentTyp
 import { useApp, type Tela } from "./estado";
 import { Pose } from "./componentes/Pose";
 import {
-  IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
+  IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, ICheck, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
 } from "./componentes/Icones";
 import { ErroTela, Esqueleto } from "./componentes/ErroTela";
 import { MiniLo } from "./componentes/MiniLo";
@@ -25,9 +25,10 @@ const AjustesTela = carregar(() => import("./telas/Ajustes"), "AjustesTela");
 const Figuras = carregar(() => import("./telas/Figuras"), "Figuras");
 const Admin = carregar(() => import("./telas/Admin"), "Admin");
 const Tema = carregar(() => import("./telas/Tema"), "Tema");
+const CertoErrado = carregar(() => import("./telas/CertoErrado"), "CertoErrado");
 
 const TITULO: Record<Tela, string> = {
-  painel: "Painel", plano: "Plano", praticar: "Praticar", revisoes: "Revisões", cartoes: "Cartões", simulados: "Simulados",
+  painel: "Painel", plano: "Plano", praticar: "Praticar", "certo-errado": "Certo ou Errado", revisoes: "Revisões", cartoes: "Cartões", simulados: "Simulados",
   diagnostico: "Raio-X", erros: "Caderno de erros", redacao: "Redação", conquistas: "Conquistas", ajustes: "Ajustes", figuras: "Figuras", admin: "Admin", tema: "Tema",
 };
 
@@ -51,6 +52,7 @@ const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa; grupo: Grupo }[] =
   { tela: "praticar", rotulo: "Praticar", Icone: IBalao, grupo: "binho" },
   { tela: "revisoes", rotulo: "Revisões", Icone: ICalendario, grupo: "lo" },
   { tela: "cartoes", rotulo: "Cartões", Icone: ICartoes, grupo: "binho" },
+  { tela: "certo-errado", rotulo: "Certo ou Errado", Icone: ICheck, grupo: "binho" },
   { tela: "simulados", rotulo: "Simulados", Icone: IAlvo, grupo: "binho" },
   { tela: "redacao", rotulo: "Redação", Icone: IRedacao, grupo: "binho" },
   { tela: "erros", rotulo: "Caderno de erros", Icone: ISino, grupo: "lo" },
@@ -153,6 +155,7 @@ export function App() {
             <Suspense fallback={<Esqueleto />} key={concurso}>
               {tela === "painel" && <Painel />}
               {tela === "praticar" && <Praticar />}
+              {tela === "certo-errado" && <CertoErrado />}
               {tela === "revisoes" && <Revisoes />}
               {tela === "cartoes" && <Cartoes />}
               {tela === "plano" && <Plano />}

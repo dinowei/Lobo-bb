@@ -3,7 +3,8 @@
 // As regras (XP, SM-2, prioridade, painel) vêm de shared/motor.ts — as mesmas do modo demo.
 // ============================================================
 import { Types } from "mongoose";
-import { Attempt, Question, RatingAluno, ReviewState, Topic, Report, Source, Redacao } from "./models.js";
+import { Attempt, Question, RatingAluno, ReviewState, Topic, Report, Source, Redacao, ItemCE, RespostaCE } from "./models.js";
+import { corrigirCE, recomendarBranco, type GabaritoCE } from "../shared/certoErrado.js";
 import { MISTURA_DIAGNOSTICO, PREFIXO_DIAGNOSTICO, ratingDoDiagnostico } from "../shared/diagnostico.js";
 import { atualizarRatings, dificuldadeExibida, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../shared/rating.js";
 import {
@@ -46,9 +47,9 @@ import { Geracao } from "./models.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
 import { inicioDaNoite } from "../shared/motor.js";
 import { pesoDoTopico, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PROVA, MISTURA_SIMULADO } from "../shared/estruturaProva.js";
-import { bancaEmUso, CONCURSO_PADRAO, type IdBanca, type IdConcurso } from "../shared/concursos.js";
+import { BANCAS, bancaEmUso, CONCURSO_PADRAO, type IdBanca, type IdConcurso } from "../shared/concursos.js";
 import { fatorNaoSabia, palavrasDecisivas, JANELA_NAO_SABIA_DIAS, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../shared/aprendizado.js";
-import type { AcaoMotivoDTO, ConcursoInfoDTO, MotivoErro } from "../shared/tipos.js";
+import type { AcaoMotivoDTO, ConcursoInfoDTO, CorrecaoCEDTO, MotivoErro, ProximoItemCEDTO } from "../shared/tipos.js";
 import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
 import { aulaDoTopico } from "./aulas.js";
 import { explicarSobDemanda } from "./outroJeito.js";
@@ -90,6 +91,53 @@ async function mapaTopicos() {
 async function questoesDoConcurso(mapa?: Awaited<ReturnType<typeof mapaTopicos>>): Promise<Types.ObjectId[]> {
   const m = mapa ?? (await mapaTopicos());
   return (await Question.distinct("_id", { topicId: { $in: [...m.values()].map((t) => t._id) } })) as Types.ObjectId[];
+}
+
+// ------------------------------------------------------------
+// Certo/Errado (F10): itens aprovados do concurso ativo; recomendação de "em branco" e nota pela banca dele
+// ------------------------------------------------------------
+async function historicoCE(subtopico: string | null | undefined) {
+  if (!subtopico) return { acertos: 0, total: 0 };
+  const rs = await RespostaCE.find({ userId: ALUNO(), subtopico, resposta: { $ne: null } }).select("acertou").lean();
+  return { acertos: rs.filter((r) => r.acertou).length, total: rs.length };
+}
+
+async function proximoItemCE(f: { subtopico?: string; disciplina?: Disciplina; excluir?: string[] }): Promise<ProximoItemCEDTO> {
+  const { banca } = chaveConcurso();
+  const mapa = await mapaTopicos();
+  const topicos = [...mapa.values()].filter((t) => !f.disciplina || t.disciplina === f.disciplina);
+  const filtro: Record<string, unknown> = { status: "aprovada", topicId: { $in: topicos.map((t) => t._id) } };
+  if (f.subtopico) filtro.subtopico = f.subtopico;
+  const excluir = (f.excluir ?? []).filter((x) => /^[0-9a-f]{24}$/i.test(x)).map(oid);
+  // primeiro os que o aluno nunca respondeu; depois qualquer um
+  const respondidos = await RespostaCE.distinct("itemId", { userId: ALUNO() });
+  let [item] = await ItemCE.aggregate([{ $match: { ...filtro, _id: { $nin: [...excluir, ...respondidos] } } }, { $sample: { size: 1 } }]);
+  if (!item) [item] = await ItemCE.aggregate([{ $match: { ...filtro, _id: { $nin: excluir } } }, { $sample: { size: 1 } }]);
+  const nomeBanca = BANCAS[banca].nome;
+  if (!item) return { item: null, recomendacao: null, banca, nomeBanca, aviso: "Ainda não há itens Certo/Errado aprovados aqui. Eles chegam com a derivação noturna e as provas da Cebraspe." };
+  const t = mapa.get(String(item.topicId));
+  return {
+    item: {
+      id: String(item._id), topicoId: String(item.topicId), disciplina: (t?.disciplina as Disciplina) ?? null, assunto: t?.assunto ?? "",
+      subtopico: item.subtopico ?? null, afirmacao: item.afirmacao, ...(item.textoBase ? { textoBase: item.textoBase } : {}),
+      origem: item.origem, ...(item.prova ? { prova: item.prova } : {}),
+    },
+    recomendacao: recomendarBranco(await historicoCE(item.subtopico), banca),
+    banca,
+    nomeBanca,
+  };
+}
+
+async function responderItemCE(r: { itemId: string; resposta: "C" | "E" | null; tempoSeg: number }): Promise<CorrecaoCEDTO> {
+  const { concurso, banca } = chaveConcurso();
+  const item = await ItemCE.findById(oid(r.itemId)).lean();
+  if (!item || item.status !== "aprovada") throw new Error("Item fora de circulação.");
+  const resposta = r.resposta === "C" || r.resposta === "E" ? r.resposta : null;
+  const gabarito = item.gabarito as GabaritoCE;
+  const acertou = resposta === null ? null : gabarito === "anulada" || resposta === gabarito;
+  await RespostaCE.create({ userId: ALUNO(), itemId: item._id, subtopico: item.subtopico, resposta, acertou, concurso, banca, tempoSeg: Math.max(0, Math.min(3600, Math.round(r.tempoSeg || 0))) });
+  const { nota: pontos } = corrigirCE([{ resposta, gabarito }], banca);
+  return { gabarito, acertou, pontos, explicacao: item.explicacao ?? "", recomendacao: recomendarBranco(await historicoCE(item.subtopico), banca) };
 }
 
 // peso no treino: o do edital (questoesNaProva) ou a cota da disciplina na prova ÷ tópicos dela
@@ -280,6 +328,8 @@ export const apiServidor: Omit<Api, "modo"> = {
   definirTemaDoDia,
   simulados: () => listarSimulados(ALUNO()),
   concursos: async () => infoConcursos() as ConcursoInfoDTO[],
+  proximoItemCE,
+  responderItemCE,
 
   async painel() {
     const userId = ALUNO();

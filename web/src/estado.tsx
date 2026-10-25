@@ -7,8 +7,8 @@ import { Entrar } from "./telas/Entrar";
 import { preferenciaVozLoSalva, type VozLo } from "../../shared/voz";
 import { concursoAtivo, guardarConcurso, type IdConcursoAtivo } from "./concursoAtivo";
 
-export type Tela = "painel" | "plano" | "praticar" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin" | "tema";
-export const TELAS: Tela[] = ["painel", "plano", "praticar", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin", "tema"];
+export type Tela = "painel" | "plano" | "praticar" | "certo-errado" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin" | "tema";
+export const TELAS: Tela[] = ["painel", "plano", "praticar", "certo-errado", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin", "tema"];
 // sessão montada pela trilha ("Estudar o tema do dia") ou por "Treinar este tema":
 // revisões vencidas → N novas do tema → +M mistas da matéria → resultado
 export interface SessaoTema {
@@ -237,7 +237,7 @@ export function Provedor({ children }: { children: ReactNode }) {
     setFiltro(f);
     setTela(t);
     try {
-      history.replaceState(null, "", `#${t}${t === "tema" && f.subtopico ? `?tema=${f.subtopico}` : ""}`);
+      history.replaceState(null, "", `#${t}${(t === "tema" || t === "certo-errado") && f.subtopico ? `?tema=${f.subtopico}` : ""}`);
     } catch {
       /* ambiente sem history */
     }

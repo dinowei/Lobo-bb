@@ -74,6 +74,14 @@ export const apiHttp: Api = {
   desempenhoTemas: () => req("/temas/desempenho"),
   simulados: () => req("/simulados"),
   concursos: () => req("/concursos"),
+  proximoItemCE: (f) => {
+    const p = new URLSearchParams();
+    if (f.subtopico) p.set("subtopico", f.subtopico);
+    if (f.disciplina) p.set("disciplina", f.disciplina);
+    if (f.excluir?.length) p.set("excluir", f.excluir.slice(-60).join(","));
+    return req(`/ce/proximo?${p}`);
+  },
+  responderItemCE: (r) => post("/ce/responder", r),
   definirTemaDoDia: (subtopico) => post("/trilha/inicio", { subtopico }),
   trilha: () => req("/trilha"),
   tema: (subtopico) => req(`/tema/${encodeURIComponent(subtopico)}`),
