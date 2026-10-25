@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { lerGabaritoGrade, lerGabaritoOficial, lerGabaritoPares } from "./extrair.js";
+import { escolherGabarito } from "./ingestao.js";
 
 // trechos no layout real do texto extraído dos PDFs oficiais (acervo-indice)
 const ZEROS = Array(20).fill("0").join(" ");
@@ -111,6 +112,25 @@ test("tabela em colunas (BNDES 2024): um caderno por coluna, números repetidos 
   assert.equal(blocos[3].respostas.get(36), "anulada");
   assert.equal(blocos[2].respostas.get(38), "D");
   assert.equal(blocos[1].respostas.size, 3);
+});
+
+test("ingestão: --caderno escolhe o bloco; --questoes corta as matérias comuns; sem --caderno com 2 blocos é erro", () => {
+  const t = [
+    "Prova A – TÉCNICO – Gabarito 1",
+    "1 - D 2 - C 3 - E 4 - C 5 - D",
+    "6 - A 7 - B 8 - E 9 - B 10 - B",
+    "Prova A – TÉCNICO – Gabarito 2",
+    "1 - B 2 - D 3 - A 4 - E 5 - C",
+    "6 - X 7 - A 8 - B 9 - C 10 - D",
+  ].join("\n");
+  assert.throws(() => escolherGabarito(t), /2 cadernos.*--caderno/);
+  const g2 = escolherGabarito(t, { caderno: "2" });
+  assert.equal(g2.get(1), "B");
+  assert.equal(g2.get(6), "anulada");
+  const comuns = escolherGabarito(t, { caderno: "1", questoes: "1-5" });
+  assert.deepEqual([...comuns.keys()], [1, 2, 3, 4, 5]);
+  assert.throws(() => escolherGabarito(t, { caderno: "1", questoes: "1-12" }), /esperava 12/);
+  assert.throws(() => escolherGabarito(CEBRASPE_CE), /parece Certo\/Errado/);
 });
 
 test("prova incompleta não passa: buraco na numeração, linha de respostas curta, letra estranha", () => {

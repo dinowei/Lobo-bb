@@ -24,6 +24,7 @@ import {
   avisarSeEscaneado,
   hashTexto,
   lerGabarito,
+  lerGabaritoOficial,
   lerDistribuicao,
   TextoPdf,
   paginaDaSecao,
@@ -47,6 +48,7 @@ import {
 } from "./prompts.js";
 import { buscarFontesPorConsulta, geracoesHoje, tetoDiario } from "./pipeline.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
+import { BANCAS, type IdBanca } from "../shared/concursos.js";
 
 const ehDisciplina = (s: string): s is Disciplina => (DISCIPLINAS as readonly string[]).includes(s);
 
@@ -503,24 +505,73 @@ async function extrairQuestoes(
   return ordenadas;
 }
 
+// gabarito oficial por banca (F8): um bloco por caderno; com mais de um, --caderno escolhe (nº ou trecho do título).
+// --questoes "1-35" fica só com as matérias comuns (a faixa vem da capa da prova, conferida pelo dono).
+export function escolherGabarito(texto: string, opcoes: { caderno?: string; questoes?: string } = {}): Map<number, RespostaGabarito> {
+  const blocos = lerGabaritoOficial(texto, "multipla");
+  let bloco = blocos[0];
+  if (blocos.length > 1) {
+    const c = opcoes.caderno?.trim();
+    if (!c) throw new Error(`O gabarito tem ${blocos.length} cadernos; escolha com --caderno: ${blocos.map((b, i) => `${i + 1}) ${b.titulo || "sem título"}`).join(" · ")}`);
+    const porTitulo = blocos.filter((b) => new RegExp(`\\b${c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(b.titulo));
+    const porNumero = /^\d+$/.test(c) ? blocos.filter((b) => new RegExp(`(gabarito|tipo|caderno|prova)\\s*${c}\\b`, "i").test(b.titulo)) : [];
+    const achados = porNumero.length ? porNumero : porTitulo;
+    if (achados.length !== 1) throw new Error(`--caderno "${c}" casou com ${achados.length} cadernos: ${blocos.map((b) => b.titulo || "sem título").join(" · ")}`);
+    bloco = achados[0];
+  }
+  // C e E também são letras: gabarito Certo/Errado lido como múltipla escolha passaria calado
+  const letras = [...bloco.respostas.values()].filter((v) => v !== "anulada");
+  if (letras.length >= 10 && letras.every((v) => v === "C" || v === "E"))
+    throw new Error("Gabarito só com C e E: parece Certo/Errado (Cebraspe); a ingestão de itens C/E chega com a F10");
+  let faixa: [number, number] | null = null;
+  if (opcoes.questoes) {
+    const m = opcoes.questoes.match(/^(\d{1,3})\s*-\s*(\d{1,3})$/);
+    if (!m) throw new Error('--questoes no formato "1-35"');
+    faixa = [Number(m[1]), Number(m[2])];
+  }
+  const mapa = new Map<number, RespostaGabarito>();
+  for (const [n, v] of bloco.respostas) {
+    if (faixa && (n < faixa[0] || n > faixa[1])) continue;
+    if (v === "certo" || v === "errado") throw new Error("Gabarito Certo/Errado: a ingestão de itens C/E chega com a F10");
+    mapa.set(n, v);
+  }
+  if (faixa && mapa.size !== faixa[1] - faixa[0] + 1) throw new Error(`A faixa ${opcoes.questoes} tem ${mapa.size} respostas no gabarito (esperava ${faixa[1] - faixa[0] + 1})`);
+  return mapa;
+}
+
+// só as páginas até a questão seguinte à última pedida (não gasta IA com a parte específica)
+function cortarPaginas(paginas: string[], ultima: number): string[] {
+  const marcador = new RegExp(`(^|\\n)\\s*${ultima + 1}\\s*(\\n|$)`);
+  const i = paginas.findIndex((p, k) => k > 0 && marcador.test(p));
+  return i < 0 ? paginas : paginas.slice(0, i + 1);
+}
+
 export async function ingerirProva(
   caminhoProva: string,
   caminhoGabarito: string,
-  meta: { nome: string; banca: string; ano?: number }
+  meta: { nome: string; banca: string; ano?: number; caderno?: string; questoes?: string }
 ) {
-  const { paginas, hash } = await lerArquivo(caminhoProva);
+  const lido = await lerArquivo(caminhoProva);
+  const hash = lido.hash;
   const existente = await Source.findOne({ hashArquivo: hash }).select("titulo");
   if (existente) {
     console.log(`↷ essa prova já foi ingerida como "${existente.titulo}" — pulando`);
     return;
   }
-  avisarSeEscaneado(paginas, caminhoProva);
+  avisarSeEscaneado(lido.paginas, caminhoProva);
 
   // gabarito primeiro: se não der pra ler, nem gasta IA com a extração
   const gab = await lerArquivo(caminhoGabarito);
-  const gabarito = lerGabarito(gab.paginas.join("\n"));
+  let gabarito: Map<number, RespostaGabarito>;
+  try {
+    gabarito = escolherGabarito(gab.paginas.join("\n"), { caderno: meta.caderno, questoes: meta.questoes });
+  } catch (e) {
+    throw new Error(`${(e as Error).message}. ${MSG_GABARITO}`);
+  }
   if (gabarito.size === 0) throw new Error(MSG_GABARITO);
-  console.log(`… gabarito: ${gabarito.size} respostas lidas`);
+  console.log(`… gabarito: ${gabarito.size} respostas lidas${meta.questoes ? ` (só ${meta.questoes})` : ""}`);
+  const paginas = meta.questoes ? cortarPaginas(lido.paginas, Math.max(...gabarito.keys())) : lido.paginas;
+  if (paginas.length < lido.paginas.length) console.log(`… extração só nas páginas 1–${paginas.length} de ${lido.paginas.length}`);
 
   const distribuicao = lerDistribuicao(paginas);
   console.log(
@@ -549,7 +600,7 @@ export async function ingerirProva(
     ano: meta.ano,
     hashArquivo: hash,
     arquivoNome: basename(caminhoProva),
-    paginas: paginas.length,
+    paginas: lido.paginas.length,
     totalChunks: 0,
   });
 
@@ -634,6 +685,7 @@ export async function ingerirProva(
         topicId,
         origem: "oficial",
         estiloBanca: meta.banca,
+        ...(meta.banca in BANCAS ? { banca: meta.banca as IdBanca } : {}), // incidência por banca (F8)
         prova: meta.nome,
         numeroOriginal: q.numero,
         textoBase: q.textoBase ?? undefined,

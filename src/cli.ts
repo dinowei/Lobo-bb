@@ -88,7 +88,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   fonte <arquivo> --tipo <t> --titulo "<título>"
         [--disciplina <d>] [--orgao BACEN] [--ano 2020] [--url ...] [--vigente 2020-11-16]
         tipos: lei | norma_bacen_cmn | edital | material_proprio
-  prova <prova.pdf> --gabarito <gabarito.pdf|txt> --nome "<nome>" [--banca cesgranrio] [--ano 2023]
+  prova <prova.pdf> --gabarito <gabarito.pdf|txt> --nome "<nome>" [--banca cesgranrio] [--ano 2023] [--caderno 1] [--questoes 1-35]
   explicar [--limite 50]        IA escreve as explicações das oficiais pendentes
   anular --prova "<parte do nome>" --numero <n>   oficial anulada no gabarito definitivo sai de circulação
   recuperar <prova.pdf> --gabarito <txt> --nome "<nome exato>" --numero <n>   traz uma oficial que ficou de fora
@@ -172,6 +172,8 @@ async function main() {
       gabarito: { type: "string" },
       nome: { type: "string" },
       banca: { type: "string", default: "cesgranrio" },
+      caderno: { type: "string" },
+      questoes: { type: "string" },
       limite: { type: "string" },
       assunto: { type: "string" },
       n: { type: "string" },
@@ -236,6 +238,8 @@ async function main() {
             nome: exigir(o.nome, "--nome"),
             banca: o.banca!,
             ano: o.ano ? Number(o.ano) : undefined,
+            caderno: o.caderno,
+            questoes: o.questoes,
           })
         );
 
