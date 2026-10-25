@@ -15,17 +15,18 @@ import type {
   StatusTarefa,
   TarefaDTO,
 } from "../../../shared/tipos";
-import { adminTelas } from "../api/admin";
+import { adminJanelas, adminTelas } from "../api/admin";
 import { Markdown } from "../componentes/Markdown";
 import { useApp } from "../estado";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
 import { BANCAS, type IdBanca } from "../../../shared/concursos";
 
-type Aba = "ia" | "fila" | "benchmark" | "pendencias" | "concursos" | "convites" | "contas";
+type Aba = "ia" | "fila" | "janelas" | "benchmark" | "pendencias" | "concursos" | "convites" | "contas";
 const ABAS: { id: Aba; rotulo: string }[] = [
   { id: "ia", rotulo: "IA" },
   { id: "fila", rotulo: "Fila" },
+  { id: "janelas", rotulo: "Janelas" },
   { id: "benchmark", rotulo: "Benchmark" },
   { id: "pendencias", rotulo: "Pendências" },
   { id: "concursos", rotulo: "Concursos" },
@@ -150,6 +151,7 @@ export function Admin() {
         {aba === "benchmark" && <AbaBenchmark />}
         {aba === "pendencias" && <AbaPendencias irPara={escolher} />}
         {aba === "concursos" && <AbaConcursos />}
+        {aba === "janelas" && <AbaJanelas />}
         {aba === "convites" && <AbaConvites />}
         {aba === "contas" && <AbaContas />}
       </section>
@@ -297,6 +299,64 @@ function AbaContas() {
             </tbody>
           </table>
         </div>
+      </div>
+    </Estado>
+  );
+}
+
+// ---------- Janelas (E8): A = noite (01:00–05:30, tarefa do Windows); B = recuperação, horário e teto aqui ----------
+const SIMBOLO_ETAPA = { ok: "✔", pulada: "·", falhou: "✖" } as const;
+
+function AbaJanelas() {
+  const { avisar } = useApp();
+  const { dados, erro, recarregar } = useDados(adminJanelas.ler);
+  const [form, setForm] = useState<{ inicio: string; fim: string; tetoChamadas: number } | null>(null);
+  useEffect(() => { if (dados && !form) setForm(dados.config.janelaB); }, [dados, form]);
+  const salvar = async () => {
+    if (!form) return;
+    try {
+      await adminJanelas.salvar(form);
+      avisar("Janela B salva");
+      await recarregar();
+    } catch (e) {
+      avisar((e as Error).message);
+    }
+  };
+  return (
+    <Estado erro={erro} carregando={!dados} tentar={recarregar}>
+      <div className="secao" data-testid="admin-janelas">
+        <div className="linha-titulo"><h2>Janela B</h2></div>
+        <p className="sub" style={{ marginTop: 0 }}>
+          Se a noite não rodou (PC desligado), faz o essencial: backup e o tema de amanhã com 15 questões aprovadas. Se rodou, recupera o que ficou pendente (desempates, tarefas aguardando) e prepara pistas do tutor.
+        </p>
+        {form && (
+          <div className="form-janela">
+            <label htmlFor="jb-inicio">Começa<input id="jb-inicio" type="time" value={form.inicio} onChange={(e) => setForm({ ...form, inicio: e.target.value })} /></label>
+            <label htmlFor="jb-fim">Termina<input id="jb-fim" type="time" value={form.fim} onChange={(e) => setForm({ ...form, fim: e.target.value })} /></label>
+            <label htmlFor="jb-teto">Teto de chamadas<input id="jb-teto" type="number" min={10} max={500} value={form.tetoChamadas} onChange={(e) => setForm({ ...form, tetoChamadas: Number(e.target.value) })} /></label>
+            <div className="acoes"><button className="botao-laranja" onClick={salvar}>Salvar</button></div>
+          </div>
+        )}
+        <p className="atalho">Rodar à mão: npm run bb -- janela-b (fora do horário: --forcar). No Windows, agende esse comando no horário escolhido.</p>
+      </div>
+      <div className="secao">
+        <div className="linha-titulo"><h2>Últimas janelas</h2></div>
+        {!dados?.relatorios.length ? (
+          <p className="sub">Nenhum relatório ainda.</p>
+        ) : (
+          <ul className="lista-janelas">
+            {dados.relatorios.map((r) => (
+              <li key={`${r.lote}-${r.inicio}`}>
+                <div><span className={`selo ${r.janela === "B" ? "lo" : "laranja"}`}>Janela {r.janela}</span> <b>{quando(r.inicio)}</b> → {quando(r.fim)}{r.aprovadas !== null ? ` · banco: ${r.aprovadas} aprovadas` : ""}</div>
+                {r.etapas.length ? (
+                  <ul className="etapas-janela">
+                    {r.etapas.map((e, i) => <li key={i} className={`etapa-${e.status}`}><span aria-hidden="true">{SIMBOLO_ETAPA[e.status]}</span> <b>{e.etapa}</b>: {e.detalhe}</li>)}
+                  </ul>
+                ) : <p className="sub" style={{ margin: "4px 0 0" }}>Relatório antigo, sem as etapas.</p>}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </Estado>
   );

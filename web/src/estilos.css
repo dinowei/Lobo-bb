@@ -1331,6 +1331,14 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 .lista-prontidao .num { min-width: 38px; text-align: right; }
 .lista-fracos { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 4px; }
 .lista-fracos .num { color: var(--suave); }
+/* Admin → Janelas (E8) */
+.form-janela { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 10px 0; }
+.form-janela label { display: grid; gap: 4px; font-size: 13px; }
+.lista-janelas { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.etapas-janela { list-style: none; margin: 6px 0 0; padding: 0 0 0 4px; display: grid; gap: 3px; font-size: 13px; }
+.etapas-janela .etapa-ok span { color: var(--sucesso-texto); }
+.etapas-janela .etapa-pulada { color: var(--suave); }
+.etapas-janela .etapa-falhou span, .etapas-janela .etapa-falhou b { color: var(--erro-texto); }
 /* sessão do tema: filtro de banca (trilha única: questões de qualquer banca) */
 .filtro-banca { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
 /* aba de concurso ainda sem matérias (TJ-SP e CVM até o material chegar) */

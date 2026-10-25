@@ -51,6 +51,7 @@ import { carregarCatalogo, CORRENTE_DEFINITIVA } from "./catalogo.js";
 import { aprovarCorrentes, desfazerCorrentes, correnteAtiva } from "./corrente.js";
 import { sondarModelos, verificarModelos } from "./sondagem.js";
 import { alvosDaTrilha, calcularAteFila, planejarEtapasDaNoite, planejarNoite, rodarFila } from "./noturno.js";
+import { rodarJanelaB } from "./janelaB.js";
 import { enfileirarIngestao, etapa, etapaAcervo, etapaBackup, etapaClassificacao, etapaDerivacao, etapaFichas, etapaIngestao, filaIngestao, sobraTempo, type EtapaNoite, type ItemIngestao } from "./noiteCompleta.js";
 import { planejarPregeracoes } from "./outroJeito.js";
 import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
@@ -114,6 +115,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   voz limpar                    tira do cache o áudio de vozes fora da lista aprovada
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
+  janela-b [--forcar]                            Janela B (padrão 18:00–19:00): sem noite = essencial; com noite = recupera pendentes
   fila-ingestao [--add itens.json]               provas/leis que o noturno ingere, uma por noite (lista ou acrescenta)
   derivar-ce [--n 6]                             itens Certo/Errado de múltiplas aprovadas (código monta, IA reescreve, auditor julga às cegas)
   migrar-trilha-unica --simular|--confirmar      início da trilha: nº do tema (por concurso) → subtópico (por aluno); rodar ANTES do trilha-ordenar
@@ -173,6 +175,7 @@ async function main() {
       oficiais: { type: "boolean" },
       tema: { type: "string" },
       add: { type: "string" },
+      forcar: { type: "boolean" },
       comentario: { type: "string" },
       tipo: { type: "string" },
       titulo: { type: "string" },
@@ -465,6 +468,14 @@ async function main() {
         const r = await migrarRatings();
         console.log(`✔ Ratings recalculados: ${r.tentativas} tentativas, ${r.questoes} questões, ${r.alunos} rating(s) de aluno por disciplina.`);
         return;
+      }
+
+      case "janela-b": {
+        // E8: recuperação/enriquecimento no horário da Janela B (Config "janelas"); --forcar roda fora do horário
+        return await naFila(rotulo, async () => {
+          const r = await rodarJanelaB({ forcar: !!o.forcar });
+          console.log(`Janela B (${r.rodou ? "a noite rodou: recuperação" : "a noite NÃO rodou: essencial"}): ${r.etapas.map((e) => `${e.etapa} ${e.status}`).join(" · ")} · ${r.chamadas} chamada(s)`);
+        });
       }
 
       case "fila-ingestao": {

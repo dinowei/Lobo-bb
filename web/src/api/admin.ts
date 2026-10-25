@@ -57,6 +57,16 @@ export const adminTelas = {
 };
 type ConcursosAdminDTO = { concursos: ConcursoInfoDTO[]; historico: RegistroConcursoDTO[] };
 
+// Janelas (E8): A = noite, B = recuperação (horário e teto configuráveis)
+export type JanelasDTO = {
+  config: { janelaB: { inicio: string; fim: string; tetoChamadas: number } };
+  relatorios: { lote: string; inicio: string; fim: string; janela: "A" | "B"; aprovadas: number | null; etapas: { etapa: string; status: "ok" | "pulada" | "falhou"; detalhe: string }[] }[];
+};
+export const adminJanelas = {
+  ler: () => req<JanelasDTO>("/janelas"),
+  salvar: (c: JanelasDTO["config"]["janelaB"]) => req<JanelasDTO>("/janelas", { method: "POST", body: JSON.stringify(c) }),
+};
+
 export const adminFiguras = {
   listar: () => req<QuestaoComFigurasDTO[]>("/figuras"),
   amostras: () => req<AmostraFiguraDTO[]>("/figuras/amostras"),
