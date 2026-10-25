@@ -370,6 +370,13 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - Correções nesta etapa:
     - Com `--questoes 21-35`, o que vem antes da faixa sai antes da checagem do gabarito. O BNDES tinha falhado por isso: 15 de 35.
     - Prova que falha na fila do noturno sai da frente e vai para `fila_ingestao_falhas`; antes, ela travava as noites seguintes. Tem teste.
+- **Cadeia 2 (fim 19:44):**
+  - BB Tecnologia 2021: 33 salvas.
+  - BNDES: falhou pela faixa `--questoes` (corrigido, vai na cadeia 5).
+  - BACEN 2024 C/E: 50 lidos, 35 salvos, 1 anulado, 14 com fórmula ilegível (conferir à mão).
+  - 20 Crase: só 1 tentativa (duplicada) antes do teto diário de 60 gerações. Refazer amanhã.
+  - derivar-ce --n 10: 26 de 50 aprovados (52%); 19 itens saíram por "irmão quase igual" (filtro de repetição) e 5 porque o auditor discordou. No total, 53 itens C/E derivados aprovados.
+  - Janela B forçada: backup ok, tema de amanhã com 3 aprovadas, 54 chamadas, dentro do teto.
 - Backup: um segundo backup no mesmo dia ganha o sufixo `-HHmm` (antes era recusado e parava a cadeia). A retenção é por dia. Tem teste.
 
 RETOMAR AQUI — PROMPT-FECHAMENTO (25/10/2026):
