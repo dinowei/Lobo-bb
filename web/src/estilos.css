@@ -1019,6 +1019,13 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 .conquista b { display: block; font-size: 13.5px; }
 .conquista span { display: block; margin: 2px 0 8px; font-size: 12px; color: var(--suave); }
 .conquista:not(.obtida) b { color: var(--suave); }
+/* desbloqueada = fundo do Binho e selo; bloqueada = contorno tracejado e quanto falta */
+.conquista.obtida { background: var(--binho-fundo); border-color: var(--binho); }
+.conquista:not(.obtida) { border-style: dashed; }
+.conquista-feita { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--binho); color: var(--binho-tinta); font-size: 11.5px; font-weight: 600; }
+.conquista-progresso { display: flex; align-items: center; gap: 8px; }
+.conquista-progresso .barra { flex: 1; margin: 0; }
+.conquista-progresso small { font-size: 11.5px; color: var(--texto-2); min-width: 3ch; text-align: right; }
 
 /* ---------- Ajustes ---------- */
 .formulario { display: grid; gap: 16px; max-width: 520px; }
@@ -1153,7 +1160,8 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 .entrar-marca { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 .entrar-marca .pose img { width: 120px; }
 @media (max-width: 760px) { .entrar-marca .pose img { width: 96px; } }
-.entrar-marca .marca { font-size: 26px; font-weight: 700; color: var(--laranja); letter-spacing: -0.04em; }
+.entrar-marca .marca-nome { font-family: var(--fonte-titulo); font-size: 30px; margin-bottom: 6px; }
+.entrar-marca .marca-nome b:first-child { color: var(--texto); } /* a barra lateral é sempre preta; o cartão segue o tema */
 .entrar-marca p { margin: 0; color: var(--suave); font-size: 13px; }
 .abas-entrar { display: flex; gap: 6px; margin-bottom: 18px; }
 .abas-entrar .chip[aria-selected="true"] { border-color: var(--binho); color: var(--texto); background: var(--binho-fundo); }
@@ -1207,7 +1215,8 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 
 /* 🔊 Binho */
 .botao-ouvir { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 8px; padding: 6px 12px; min-height: 36px; border-radius: 99px; font-size: 12.5px; font-weight: 600; color: var(--texto); background: var(--cartao); border: 1px solid var(--linha); }
-.botao-ouvir:hover, .botao-ouvir[aria-pressed="true"] { border-color: var(--laranja); }
+.botao-ouvir:hover, .botao-ouvir[aria-pressed="true"] { border-color: var(--lo); } /* áudio é da Lo */
+.botao-ouvir[aria-pressed="true"] { background: var(--lo-fundo); }
 @media (pointer: coarse) { .botao-ouvir { min-height: 44px; } }
 
 .estudar-ouvindo { margin-bottom: 14px; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-items: center; }
@@ -1281,7 +1290,13 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 .fontes-questao details { color: var(--suave); }
 .fontes-questao .discreto { color: var(--suave); }
 
-/* Raio-X (diagnóstico) */
+/* Raio-X (diagnóstico): o convite é o destaque laranja do Binho, como o "Plano de hoje" */
+.raiox-convite { max-width: 760px; min-height: 0; }
+.raiox-convite .cartao-interno p { margin: 0; color: var(--n-texto-2); font-size: 14.5px; line-height: 1.55; max-width: 52ch; }
+.raiox-convite .cartao-interno .acoes { margin-top: 4px; }
+.cartao-interno .botao-linha { color: var(--n-texto); border-color: var(--n-linha); background: transparent; }
+.cartao-interno .botao-linha:hover { background: var(--n-alt); }
+@media (max-width: 760px) { .raiox-convite .cartao-interno { padding-right: 20px; } .raiox-convite > .pose { display: none; } }
 .convite-raiox { display: flex; gap: 12px; align-items: center; border-color: var(--laranja); }
 .convite-raiox img { width: 46px; flex: none; }
 .convite-raiox > span { display: grid; gap: 4px; }
@@ -1294,6 +1309,27 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 .plano-dias > li { display: grid; grid-template-columns: 84px 1fr; gap: 8px; font-size: 13px; }
 .plano-dias > li.hoje > b { color: var(--laranja); }
 .plano-dias ul, .plano-hoje { margin: 0; padding-left: 16px; display: grid; gap: 3px; }
+/* tipo de atividade por cor de personagem: questões = Binho, revisão e erros = Lo, redação e simulado = verde */
+.plano-dias ul { list-style: none; padding-left: 0; gap: 5px; }
+.plano-dias ul > li, .plano-legenda li { position: relative; padding-left: 16px; }
+.plano-dias ul > li::before, .plano-legenda li::before {
+  content: ""; position: absolute; left: 0; top: 0.45em; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--binho);
+}
+.plano-dias .item-revisao::before, .plano-dias .item-erros::before, .plano-legenda .item-revisao::before { background: var(--lo); }
+.plano-dias .item-redacao::before, .plano-dias .item-simulado::before, .plano-legenda .item-simulado::before { background: var(--verde); box-shadow: 0 0 0 1px var(--verde-escuro); }
+.plano-legenda { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 14px; padding: 0; font-size: 12.5px; color: var(--texto-2); }
+.plano-semana-atual { background: var(--binho); color: var(--binho-tinta); border-color: transparent; }
+.plano-semana-atual h2 { color: var(--binho-tinta); }
+.plano-semana-atual .selo { background: color-mix(in srgb, var(--binho-tinta) 14%, transparent); color: var(--binho-tinta); }
+.plano-interno { padding: 16px 18px; }
+.plano-interno .plano-dias > li > b { color: var(--n-texto); }
+.plano-interno .plano-dias > li { grid-template-columns: 1fr; gap: 4px; color: var(--n-texto-2); } /* data em cima: o cartão branco é mais estreito */
+.plano-interno .plano-dias > li.hoje { margin: -6px -8px; padding: 6px 8px; border-radius: var(--raio-p); background: var(--binho-suave); color: var(--n-texto); }
+.plano-interno .plano-dias > li.hoje > b { color: var(--binho-sobre-branco); }
+.plano-interno .link { color: var(--n-texto); text-decoration: underline; text-underline-offset: 2px; }
+.plano-interno .sub { color: var(--n-texto-2); }
+.plano-interno .cumprido { color: var(--sucesso); }
 .plano-hoje { font-size: 12.5px; color: var(--suave); text-align: left; }
 .cumprido { color: var(--certo); }
 @media (max-width: 480px) { .plano-dias > li { grid-template-columns: 1fr; gap: 2px; } }
@@ -1359,14 +1395,23 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 
 /* tela Cartões */
 .cartao-estudo { max-width: 680px; }
-.cartao-face { display: flex; flex-direction: column; gap: 14px; width: 100%; min-height: 220px; padding: 26px; text-align: left; color: var(--texto); background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio-g); transition: border-color .15s; }
-.cartao-face:not(:disabled):hover, .cartao-face:focus-visible { border-color: var(--laranja); outline: none; }
+/* o cartão é um destaque do Binho: moldura laranja sólida com o "papel" branco por dentro */
+.cartao-face { display: flex; width: 100%; min-height: 260px; padding: 12px; text-align: left; background: var(--binho); border: 0; border-radius: var(--raio-g); transition: transform .15s, box-shadow .15s; }
+.cartao-face:not(:disabled):hover { transform: translateY(-2px); box-shadow: var(--sombra); }
+.cartao-face:focus-visible { outline: 3px solid var(--texto); outline-offset: 3px; }
 .cartao-face:disabled { cursor: default; }
-.cartao-frente { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
-.cartao-face.virado .cartao-frente { font-size: 15px; color: var(--suave); font-weight: 500; }
-.cartao-verso { font-size: 18px; line-height: 1.45; padding-top: 14px; border-top: 1px solid var(--linha); }
-.cartao-fonte { color: var(--suave); font-size: 12.5px; }
-@media (prefers-reduced-motion: reduce) { .cartao-face { transition: none; } }
+.cartao-papel { flex: 1; display: flex; flex-direction: column; gap: 14px; padding: 26px 28px; border-radius: var(--raio); background: var(--n-branco); color: var(--n-texto); }
+.cartao-frente { margin: auto 0; font-family: var(--fonte-titulo); font-size: clamp(24px, 4vw, 34px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.cartao-face.virado .cartao-frente { margin: 0; font-family: var(--fonte); font-size: 15px; color: var(--n-texto-2); font-weight: 500; letter-spacing: 0; }
+.cartao-verso { font-size: 18px; line-height: 1.5; padding-top: 14px; border-top: 1px solid var(--n-linha); }
+.cartao-fonte { color: var(--n-texto-2); font-size: 12.5px; }
+.cartao-dica { color: var(--n-texto-2); font-size: 13px; }
+.cartao-dica kbd { font: 600 12px/1 var(--fonte); padding: 3px 7px; border-radius: 6px; border: 1px solid var(--n-linha); background: var(--n-alt); color: var(--n-texto); }
+.cartoes-numeros { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; padding: 0; font-size: 12.5px; color: var(--texto-2); }
+.cartoes-numeros li { padding: 6px 12px; border-radius: 999px; background: var(--superficie); border: 1px solid var(--linha); }
+.cartoes-numeros b { color: var(--texto); }
+@media (max-width: 760px) { .cartao-face { min-height: 220px; padding: 8px; } .cartao-papel { padding: 20px; } }
+@media (prefers-reduced-motion: reduce) { .cartao-face { transition: none; } .cartao-face:not(:disabled):hover { transform: none; } }
 .redacao-editor { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; min-width: 0; }
 .redacao-editor > *, .redacao-seletor select { min-width: 0; max-width: 100%; }
 .redacao-seletor { display: grid; gap: 6px; color: var(--suave); font-size: 13px; }
@@ -1539,6 +1584,12 @@ h2.inline { display: inline; }
 .tema-grade h3 { margin: 16px 0 8px; font-size: 13px; font-weight: 600; color: var(--suave); text-transform: uppercase; letter-spacing: .04em; }
 .tema-grade ul { margin: 0; padding-left: 18px; line-height: 1.6; }
 .tema-grade .acoes { margin-top: 16px; flex-wrap: wrap; }
+/* números do tema lado a lado: novas = Binho (praticar), revisões e erros = Lo */
+.tema-numeros { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tema-numeros > div { box-shadow: inset 0 3px 0 var(--binho); }
+.tema-numeros > .do-binho { background: var(--binho-fundo); }
+.tema-numeros > .da-lo { background: var(--lo-fundo); box-shadow: inset 0 3px 0 var(--lo); }
+.tema-numeros b { font-size: 26px; }
 .lista-material { list-style: none; padding: 0 !important; display: grid; gap: 8px; }
 .lista-material li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--cartao); }
 .lista-material li > span:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }

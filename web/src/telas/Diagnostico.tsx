@@ -137,10 +137,10 @@ export function Diagnostico() {
   const pendente = diagnosticoPendente(ultimo?.data);
   return (
     <div className="pagina">
-      <div className="vazio" style={{ maxWidth: 680 }}>
-        <Pose nome="confiante" largura={70} carregar="eager" />
-        <div>
-          <strong>Raio-X: descubra seu ponto de partida</strong>
+      <section className="plano-hoje-cartao raiox-convite" aria-labelledby="titulo-raiox">
+        <h2><span aria-hidden="true">◎</span> Raio-X</h2>
+        <div className="cartao-interno">
+          <h3 id="titulo-raiox">Descubra seu ponto de partida</h3>
           <p>
             {QUESTOES_DIAGNOSTICO} questões de dificuldade média, na proporção da prova. Sem correção até o fim e sem relógio.
             No final: seus 3 pontos fortes, seus 3 focos e o nível de cada disciplina, que o treino passa a usar.
@@ -153,7 +153,8 @@ export function Diagnostico() {
             <button className="botao-linha" onClick={() => ir("painel")}>Agora não</button>
           </div>
         </div>
-      </div>
+        <Pose nome="confiante" largura={150} carregar="eager" alt="" />
+      </section>
       {historico.length > 1 && (
         <div className="secao rolagem" style={{ marginTop: 18, maxWidth: 680 }}>
           <h2>Evolução</h2>

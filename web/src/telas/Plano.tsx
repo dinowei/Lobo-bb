@@ -35,14 +35,14 @@ export function Plano() {
           <Pose nome="mesa" largura={90} carregar="eager" className="cabeca-pose" />
         </div>
       </div>
+      <ul className="plano-legenda" aria-label="Legenda">
+        <li className="item-questoes">Questões</li>
+        <li className="item-revisao">Revisão e erros</li>
+        <li className="item-simulado">Redação e simulado</li>
+      </ul>
       <div className="plano-semanas">
-        {plano.semanas.map((s) => (
-          <section key={s.numero} className="secao">
-            <h2>
-              {plano.totalSemanas ? `Semana ${plano.semanaAtual + s.numero - 1}` : s.numero === 1 ? "Esta semana" : `Daqui a ${s.numero - 1} semana${s.numero > 2 ? "s" : ""}`}
-              <span className="selo" style={{ marginLeft: 8 }}>{NOME_FASE[s.fase]}</span>
-            </h2>
-            {s.dias.length ? (
+        {plano.semanas.map((s) => {
+          const dias = s.dias.length ? (
               <ul className="plano-dias">
                 {s.dias.map((d) => (
                   <li key={d.data} className={d.data === hoje ? "hoje" : ""}>
@@ -51,7 +51,7 @@ export function Plano() {
                       {d.itens.map((i, k) => {
                         const feito = d.data === hoje && i.tipo === "questoes" ? feitoHoje(i.disciplina) : null;
                         return (
-                          <li key={k}>
+                          <li key={k} className={`item-${i.tipo}`}>
                             {d.data === hoje ? (
                               <button className="link" onClick={() => ir(...destinoItem(i))}>{textoItem(i)}</button>
                             ) : (
@@ -67,9 +67,19 @@ export function Plano() {
               </ul>
             ) : (
               <p className="sub" style={{ margin: 0 }}>Sem dias de estudo nesta semana.</p>
-            )}
-          </section>
-        ))}
+            );
+          // a semana atual é o destaque laranja (cor sólida com cartão branco por dentro); as outras, cartões comuns
+          const atual = s.numero === 1;
+          return (
+            <section key={s.numero} className={atual ? "secao plano-semana-atual" : "secao"}>
+              <h2>
+                {plano.totalSemanas ? `Semana ${plano.semanaAtual + s.numero - 1}` : atual ? "Esta semana" : `Daqui a ${s.numero - 1} semana${s.numero > 2 ? "s" : ""}`}
+                <span className="selo" style={{ marginLeft: 8 }}>{NOME_FASE[s.fase]}</span>
+              </h2>
+              {atual ? <div className="cartao-interno plano-interno">{dias}</div> : dias}
+            </section>
+          );
+        })}
       </div>
       {!ajustes.dataProva && (
         <p className="atalho" style={{ marginTop: 14 }}>

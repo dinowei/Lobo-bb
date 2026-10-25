@@ -66,8 +66,8 @@ export function Entrar({ aoEntrar }: { aoEntrar: (u: UsuarioDTO) => void }) {
         <div className="entrar-marca">
           <Pose nome="lo-e-binho" largura={120} carregar="eager" />
           <div>
-            <span className="marca">lobo</span>
-            <p>Estudos para o Banco do Brasil</p>
+            <span className="marca-nome"><b>Lobo</b><b>Binho</b></span>
+            <p>Estudo para BB, TJ-SP, BACEN e CVM</p>
           </div>
         </div>
         <div className="abas-entrar" role="tablist" aria-label="Entrar ou criar conta">

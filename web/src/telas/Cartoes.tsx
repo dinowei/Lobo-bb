@@ -94,15 +94,17 @@ export function Cartoes() {
             <span className="selo num">{i + 1} de {fila.cartoes.length}</span>
           </div>
           <button className={`cartao-face${virado ? " virado" : ""}`} onClick={() => setVirado(true)} aria-label={virado ? "Cartão virado" : "Virar o cartão"} disabled={virado}>
-            <span className="cartao-frente">{c.frente}</span>
-            {virado ? (
-              <>
-                <span className="cartao-verso">{c.verso}</span>
-                {c.fonte && <small className="cartao-fonte">{c.fonte.titulo}: “{c.fonte.trecho}”</small>}
-              </>
-            ) : (
-              <small className="atalho">Pense na resposta e toque (ou Espaço) para virar</small>
-            )}
+            <span className="cartao-papel">
+              <span className="cartao-frente">{c.frente}</span>
+              {virado ? (
+                <>
+                  <span className="cartao-verso">{c.verso}</span>
+                  {c.fonte && <small className="cartao-fonte">{c.fonte.titulo}: “{c.fonte.trecho}”</small>}
+                </>
+              ) : (
+                <small className="cartao-dica">Pense na resposta e toque (ou <kbd>Espaço</kbd>) para virar</small>
+              )}
+            </span>
           </button>
           {virado && (
             <div className="acoes" role="group" aria-label="Como foi?">
@@ -113,9 +115,11 @@ export function Cartoes() {
               ))}
             </div>
           )}
-          <p className="atalho num" style={{ marginTop: 14 }}>
-            {fila.vencidos} para revisar hoje · {fila.novosRestantesHoje} novos liberados hoje · {fila.total} no banco
-          </p>
+          <ul className="cartoes-numeros num" aria-label="Seus cartões">
+            <li><b>{fila.vencidos}</b> para revisar hoje</li>
+            <li><b>{fila.novosRestantesHoje}</b> novos liberados hoje</li>
+            <li><b>{fila.total}</b> no banco</li>
+          </ul>
         </div>
       )}
     </div>

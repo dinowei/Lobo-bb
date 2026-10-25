@@ -180,10 +180,10 @@ export function Tema() {
 
         <section className="secao" aria-labelledby="titulo-pratica">
           <h2 id="titulo-pratica">Prática</h2>
-          <div className="mini-stats">
-            <div><b className="num">{t.pratica.novas}</b><span>novas para você</span></div>
-            <div><b className="num">{t.pratica.revisoes}</b><span>revisões vencidas</span></div>
-            <div><b className="num">{t.pratica.erradas}</b><span>que você já errou</span></div>
+          <div className="mini-stats tema-numeros">
+            <div className="do-binho"><b className="num">{t.pratica.novas}</b><span>novas para você</span></div>
+            <div className="da-lo"><b className="num">{t.pratica.revisoes}</b><span>revisões vencidas</span></div>
+            <div className="da-lo"><b className="num">{t.pratica.erradas}</b><span>que você já errou</span></div>
           </div>
           <p className="atalho num">
             No banco: {t.aprovadas} aprovadas · {t.pratica.oficiais} oficiais · {t.pratica.geradas} geradas{t.pratica.derivadas ? ` · ${t.pratica.derivadas} derivadas` : ""}{t.pratica.cursinho ? ` · ${t.pratica.cursinho} de cursinho` : ""}

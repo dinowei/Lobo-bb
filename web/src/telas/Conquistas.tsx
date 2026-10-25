@@ -42,7 +42,14 @@ export function Conquistas() {
             <div style={{ minWidth: 0, flex: 1 }}>
               <b>{c.titulo}</b>
               <span>{c.descricao}</span>
-              {!c.obtida && <div className="barra"><i style={{ width: pct(c.progresso) }} /></div>}
+              {c.obtida ? (
+                <small className="conquista-feita">Desbloqueada</small>
+              ) : (
+                <div className="conquista-progresso">
+                  <div className="barra"><i style={{ width: pct(c.progresso) }} /></div>
+                  <small className="num">{pct(c.progresso)}</small>
+                </div>
+              )}
             </div>
           </div>
         ))}

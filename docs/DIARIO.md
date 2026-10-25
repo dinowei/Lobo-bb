@@ -325,6 +325,28 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
 - Etapa 8: SIM (`0480720`). A Janela B tem horário configurável (18:00–19:00 por padrão), teto próprio de chamadas e tela em Admin → Janelas, com e2e e prints. Agendar no Windows é do dono.
 - Etapa 9: código SIM (`c0d8cf4`). 12 leis baixadas só de fonte oficial (~2,4 M caracteres, todas vigentes). A ingestão roda uma por vez na cadeia 3, com o Atlas medido. A tabela fonte → trechos → temas entra quando a cadeia terminar.
 - Etapa 12: SIM (`0e3ad53`). `web/vercel.json` faz o rewrite de /api para o Render. O site abre na hora com o Painel guardado e mostra a faixa "acordando o servidor" (e2e: 1,0 s no celular). PWA com versão. O passo a passo está em `docs/VERCEL.md`; o projeto não foi criado e o DNS não foi tocado.
+- Etapa 13: PARCIAL (só `web/src`, nada de lógica).
+  - Plano: a semana atual é o destaque laranja com cartão branco por dentro; cada atividade tem um ponto colorido com legenda (questões = Binho, revisão e erros = Lo, redação e simulado = verde).
+  - Cartões: moldura laranja com o "papel" branco, termo grande em Sora, tecla Espaço e números em pílulas.
+  - Raio-X: o convite usa o mesmo destaque do "Plano de hoje"; no celular o mascote sai para não cobrir o título.
+  - Conquistas: desbloqueada tem fundo do Binho e selo; bloqueada tem contorno tracejado e mostra o %.
+  - Tema: os 3 números ficam lado a lado (novas = Binho; revisões e erros = Lo).
+  - Login: marca "Lobo Binho" igual à da barra lateral, com os 4 concursos.
+  - Player da Lo: o botão que está tocando agora é turquesa (era laranja; áudio é da Lo).
+  - Prints antes/depois (claro e escuro, 360 e 1440) em `docs/telas/visual-final/`, gerados por `scripts/prints-visual.ts`.
+  - Mesmos testes, sem alterar nenhum: suíte 256 ok / 0 falha, e2e fluxos, trilha, concurso, ce e janelas verdes.
+  - BLOQUEADO: "Espaço da Lo" e "Áudios da Lo" não têm especificação em lugar nenhum (pergunta ao dono).
+- Etapa 10: em fila (cadeia 5, depois da 4).
+  - Lote 1 BB/BACEN: BB Escriturário 2021/2023 e Tecnologia 2021/2023 já estão no banco; BACEN 2024 C/E roda na cadeia 2.
+  - Lote 2 Cesgranrio: BNDES (de novo), Caixa 2021, Banrisul 2022 e BASA 2022 (16–60, sem Legislação), depois incidência.
+  - Lote 3 Cebraspe C/E (matérias comuns): Banrisul 2022, BNB 2022 e 2018, TCU 2025, INSS 2022, SUSEP 2025 e TSE 2024, mais o Banrisul 2025 (múltipla escolha), depois incidência.
+  - Lote 4 FGV: CVM 2024 (básicos, perfil 4) e CGU técnico, depois incidência.
+  - Todos os gabaritos foram lidos antes por código (sem IA).
+  - BLOQUEADO: CNU (o acervo não tem gabarito), TJ-SP 2023 (sem gabarito), BNB 2024 (item 17) e ESAF 2010 (gabarito não lido).
+  - Fora por pouca relação com os 4 editais: IBGE.
+  - Correções nesta etapa:
+    - Com `--questoes 21-35`, o que vem antes da faixa sai antes da checagem do gabarito. O BNDES tinha falhado por isso: 15 de 35.
+    - Prova que falha na fila do noturno sai da frente e vai para `fila_ingestao_falhas`; antes, ela travava as noites seguintes. Tem teste.
 - Backup: um segundo backup no mesmo dia ganha o sufixo `-HHmm` (antes era recusado e parava a cadeia). A retenção é por dia. Tem teste.
 
 RETOMAR AQUI — PROMPT-FECHAMENTO (25/10/2026):
@@ -332,6 +354,7 @@ RETOMAR AQUI — PROMPT-FECHAMENTO (25/10/2026):
    - 2: BNDES, BACEN C/E, explicar, classificar, incidência, 20 Crase, derivar-ce, Janela B.
    - 3: 12 leis.
    - 4: cursinho, explicar, classificar e a amostra de 80 (E3).
+   - 5: lotes de provas da E10, com incidência depois de cada lote.
    - Os logs ficam no scratchpad da sessão (`cadeia2..4.log`).
-2. Depois: E10 (lotes de provas, com incidência após cada lote), E11 (fichas dos 74 temas, golden set do chat com 30 perguntas, áudio), E13 (visual final; Espaço/Áudios da Lo BLOQUEADO, sem especificação) e E14 (fechamento).
+2. Depois: conferir os resultados das cadeias (E2, E3, E4, E7, E9, E10); E11 (fichas dos 74 temas, golden set do chat com 30 perguntas, áudio); E14 (fechamento).
 3. BLOQUEADO pelo dono: BNB 2024 item 17; gabarito TJ-SP 2023; cotas TJ-SP.
