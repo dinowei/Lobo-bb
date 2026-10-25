@@ -43,6 +43,9 @@ import { ehDisciplinaDeCalculo, verificarConta, numerosDoTexto } from "./verific
 import { sortearVariacao, type Variacao } from "./variacao.js";
 import { filtrarRepeticao, detalheSimilaridade, impressaoEstrutural, pior, comparaveis, textoComparavel } from "./similaridade.js";
 import { carregarCenarios, sortearCenario, descreverCenario, N_PROIBIDOS, type Cenario } from "./cenarios.js";
+import { BANCAS, bancaEmUso, type IdBanca, type IdConcurso } from "../shared/concursos.js";
+import { concursosDoTopico } from "../shared/subtopicos.js";
+import { bancaConfigurada } from "./concursosConfig.js";
 
 const EXPLICACAO_MATEMATICA_CONSTRUIDA = new Set([
   "Juros compostos",
@@ -98,15 +101,28 @@ export async function buscarFontesPorConsulta(
   return vizinhos(topicId, await embed(consulta, "query"), k);
 }
 
-async function exemplosOficiais(topicId: Types.ObjectId, n = 2) {
-  const qs = await Question.aggregate<{ enunciado: string; alternativas: { letra: string; texto: string }[]; gabarito: string }>([
-    { $match: { topicId, origem: "oficial", status: "aprovada" } },
-    { $sample: { size: n } },
-    { $project: { enunciado: 1, alternativas: 1, gabarito: 1 } },
-  ]);
-  return qs.map(
+// E6 (F12, estilo por banca): até 3 itens oficiais REAIS da banca escolhida no mesmo tópico, preferindo o
+// mesmo subtópico; se faltar, completa com oficiais do tópico de qualquer banca. Só para calibrar o ESTILO
+// (o filtro de similaridade, regra 16, descarta paráfrase de oficial).
+type ExemploOficial = { enunciado: string; alternativas: { letra: string; texto: string }[]; gabarito: string };
+async function exemplosOficiais(topicId: Types.ObjectId, banca: IdBanca, n = 3) {
+  const daBanca = { $or: [{ banca }, { banca: { $exists: false }, estiloBanca: banca }] };
+  const base = { topicId, origem: "oficial", status: "aprovada" };
+  const pegar = (filtro: Record<string, unknown>, k: number, fora: unknown[]) =>
+    k <= 0 ? Promise.resolve([] as (ExemploOficial & { _id: unknown })[]) :
+      Question.aggregate<ExemploOficial & { _id: unknown }>([{ $match: { ...filtro, _id: { $nin: fora } } }, { $sample: { size: k } }, { $project: { enunciado: 1, alternativas: 1, gabarito: 1 } }]);
+  const escolhidos = await pegar({ ...base, ...daBanca }, n, []);
+  escolhidos.push(...(await pegar(base, n - escolhidos.length, escolhidos.map((q) => q._id))));
+  return escolhidos.map(
     (q) => `${q.enunciado}\n${q.alternativas.map((a) => `(${a.letra}) ${a.texto}`).join("\n")}\nGabarito: ${q.gabarito}`
   );
+}
+
+// banca do estilo: sorteada pelo código entre as bancas dos concursos que cobram o tópico (trilha única),
+// só as de múltipla escolha (a Cebraspe entra pela derivação Certo/Errado); sem nenhuma, a Cesgranrio
+export function bancasDeEstilo(concursos: IdConcurso[], bancaDe: (c: IdConcurso) => IdBanca = (c) => bancaEmUso(c, bancaConfigurada(c))): IdBanca[] {
+  const bs = [...new Set(concursos.map(bancaDe))].filter((b) => BANCAS[b].formato === "multipla");
+  return bs.length ? bs : ["cesgranrio"];
 }
 
 const letraAleatoria = (): Letra => (["A", "B", "C", "D", "E"] as const)[Math.floor(Math.random() * 5)];
@@ -161,7 +177,7 @@ function descricaoNaturalDadosAmortizacao(dados: string[]): string {
 }
 
 // Nenhuma falha (rede, banco, IA) derruba o lote: vira um Resultado com o motivo
-type EstadoGeracao = { variacao?: Variacao; tipo?: string; cenario?: Cenario | null; evitar: Cenario[]; preferirGerador?: string; noturno?: boolean };
+type EstadoGeracao = { variacao?: Variacao; tipo?: string; cenario?: Cenario | null; evitar: Cenario[]; preferirGerador?: string; noturno?: boolean; banca?: IdBanca };
 
 // noturno: a noite tem os próprios tetos (GERACAO_MAX_TENTATIVAS_NOITE e META_APROVADAS_NOITE), não o diário
 // preferirGerador: cada trabalhador do noturno começa por um gerador diferente da corrente
@@ -252,6 +268,9 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
 
   // 2. Geração
   const gabaritoObrigatorio = letraAleatoria();
+  const opcoesBanca = bancasDeEstilo(concursosDoTopico(topic.assunto));
+  const banca = opcoesBanca[Math.floor(Math.random() * opcoesBanca.length)];
+  estado.banca = banca;
 
   // Por construção (Matemática, figuras): o código fixa números, figura, alternativas e gabarito;
   // a IA só escreve. Vale para todo tipo que tem template (inclusive Informática e Vendas com figura).
@@ -294,7 +313,8 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
         dificuldade,
         gabaritoObrigatorio,
         fontes,
-        exemplosOficiais: await exemplosOficiais(topic._id),
+        exemplosOficiais: await exemplosOficiais(topic._id, banca),
+        banca: { nome: BANCAS[banca].nome, estilo: BANCAS[banca].estilo },
         enunciadosRecentes: recentes.map((r) => r.enunciado),
         variacao,
         cenario,
@@ -452,6 +472,7 @@ async function gerarQuestaoInterna(topicId: string, dificuldadePedida: number, e
   const doc = await Question.create({
     topicId: topic._id,
     origem: "gerada",
+    estiloBanca: banca, // E6: a banca do estilo sorteada pelo código (selo e filtro por banca na trilha única)
     // por construção, a dificuldade vem do template (nº de etapas), nunca da IA
     dificuldade: montada ? montada.dificuldade : variacao.duasEtapas ? Math.max(3, q.dificuldade) : q.dificuldade,
     enunciado: q.enunciado,

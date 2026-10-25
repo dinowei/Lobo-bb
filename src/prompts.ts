@@ -98,9 +98,10 @@ export function geradorUser(p: CenarioPrompt & {
   dificuldade: number;
   gabaritoObrigatorio: string;
   fontes: { titulo: string; texto: string }[];
-  exemplosOficiais: string[]; // 1–2 questões reais da banca, para calibrar o estilo
+  exemplosOficiais: string[]; // até 3 questões reais da banca, para calibrar o estilo
   enunciadosRecentes: string[]; // para não repetir
   variacao: { tipo: string; contexto: string; duasEtapas: boolean }; // sorteada pelo código
+  banca?: { nome: string; estilo: string[] }; // E6: estilo da banca sorteada pelo código (data/bancas/*.json)
 }) {
   return `DISCIPLINA: ${p.disciplina}
 ASSUNTO: ${p.assunto}
@@ -120,7 +121,10 @@ DUAS ETAPAS: a resolução precisa de DOIS cálculos encadeados, em que o result
 === FONTES (única base de verdade) ===
 ${p.fontes.length ? p.fontes.map((f, i) => `[${i + 1}] ${f.titulo}\n${f.texto}`).join("\n\n") : "(vazio)"}
 
-=== EXEMPLOS REAIS DA BANCA (copie o ESTILO, nunca o conteúdo) ===
+${p.banca ? `=== ESTILO DESTA QUESTÃO: ${p.banca.nome} (vale sobre as REGRAS DE ESTILO gerais; não cite a banca no texto) ===
+${p.banca.estilo.map((e) => `- ${e}`).join("\n")}
+
+` : ""}=== EXEMPLOS REAIS DA BANCA (copie o ESTILO, nunca o conteúdo) ===
 ${p.exemplosOficiais.join("\n---\n") || "(nenhum)"}
 
 === NÃO REPITA ESTES ENFOQUES ===
