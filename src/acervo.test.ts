@@ -7,6 +7,10 @@ test("camada pelo caminho do acervo: lei/prova/gabarito/edital = A, livro do BCB
   assert.deepEqual(classificarArquivo("02_Banco do Brasil/Provas e Gabaritos/2023 Cesgranrio - Escriturario Agente Comercial - PROVA A (caderno 1).pdf"), { camada: "A", tipo: "prova" });
   assert.deepEqual(classificarArquivo("02_Banco do Brasil/Provas e Gabaritos/2023 Cesgranrio - Escriturario Agente Comercial - GABARITO PROVA A.pdf"), { camada: "A", tipo: "gabarito" });
   assert.deepEqual(classificarArquivo("01_BACEN - Banco Central/Editais/edital.pdf"), { camada: "A", tipo: "edital" });
+  // caderno nº 1 com "gabarito" no nome é prova; o gabarito de verdade continua gabarito
+  assert.deepEqual(classificarArquivo("05_CNU/Provas e Gabaritos/2024 Cesgranrio - prova-8-gabarito-1-nivel-intermediario-manha.pdf"), { camada: "A", tipo: "prova" });
+  assert.deepEqual(classificarArquivo("02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Provas Cesgranrio/BASA 2025 Cesgranrio - PROVAS - TECNICO BANCARIO - PROVA A - GABARITO 1.pdf"), { camada: "A", tipo: "prova" });
+  assert.deepEqual(classificarArquivo("02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Provas Cesgranrio/Banese 2025 Cesgranrio - GABARITOS - Gabarito Prova A - TECNICO BANCARIO I.pdf"), { camada: "A", tipo: "gabarito" });
   assert.deepEqual(classificarArquivo("04_SUSEP/Apostilas e Livros/Decreto 60.459-1967 (regulamenta DL 73-66).pdf"), { camada: "A", tipo: "lei" });
   assert.deepEqual(classificarArquivo("03_CVM/Apostilas e Livros/CVM - Livro TOP Analise de Investimentos.pdf"), { camada: "B", tipo: "livro_oficial" });
   assert.deepEqual(classificarArquivo("04_SUSEP/Apostilas e Livros/SINDSEG-SP - Indice da Legislacao de Seguros.pdf"), { camada: "C", tipo: "cursinho" });

@@ -28,6 +28,8 @@ export function classificarArquivo(rel: string): { camada: Camada; tipo: TipoMat
   const p = rel.split(/[\\/]/).map((x) => x.toLowerCase());
   const nome = p[p.length - 1];
   const pasta = p.slice(0, -1).join("/");
+  // "PROVA A - GABARITO 1", "prova-3-gabarito-1-...": é o caderno nº 1 da prova, não o gabarito
+  if (/prova.*gabarito[\s_-]*\d/.test(nome)) return { camada: "A", tipo: "prova" };
   if (/gabarito/.test(nome)) return { camada: "A", tipo: "gabarito" };
   if (/editais/.test(pasta) || /\bedital\b/.test(nome)) return { camada: "A", tipo: "edital" };
   if (/provas e gabaritos|provas de outros bancos/.test(pasta)) return { camada: "A", tipo: "prova" };

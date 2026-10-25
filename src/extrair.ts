@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 import { createHash } from "node:crypto";
 import { extractText, getDocumentProxy } from "unpdf";
+import type { FormatoItem } from "../shared/concursos.js";
 
 export const normalizar = (s: string) =>
   s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\W+/g, " ").trim();
@@ -301,4 +302,131 @@ export function lerGabarito(texto: string): Map<number, RespostaGabarito> {
     mapa.set(n, v === "X" || v === "*" || v === "ANULADA" ? "anulada" : (v as RespostaGabarito));
   }
   return mapa;
+}
+
+// ------------------------------------------------------------
+// Gabarito oficial por banca (F8), sem IA: um bloco por caderno/tipo de prova.
+// - grade (Cebraspe e FGV): linha de números seguida da linha de respostas, mesma contagem; "0" é enchimento
+// - pares (Cesgranrio): "1 - D 2 - C ..."
+// A numeração que recomeça abre um bloco novo (arquivo com Gabarito 1, 2, 3 ou Tipo 1..4).
+// Resposta fora do formato, linha de respostas faltando ou numeração com buraco: erro (prova incompleta não entra).
+// ------------------------------------------------------------
+export type RespostaItem = RespostaGabarito | "certo" | "errado";
+export interface BlocoGabarito { titulo: string; respostas: Map<number, RespostaItem> }
+
+const LINHA_NUMEROS = /^\d{1,3}(?:\s+\d{1,3}){4,}$/;
+// par "n - X"; o traço pode faltar ("41 C", erro de digitação no PDF da BASA) quando a resposta é letra ou anulada
+const PAR = /(\d{1,3})\s*(?:[-–.:)=]\s*)?(anulad[ao]|[A-EX*])(?=\s|$)/gi;
+const LINHA_PARES = /^(?:\d{1,3}\s*(?:[-–.:)=]\s*)?(?:anulad[ao]|[A-EX*])(?:\s+|$))+$/i;
+// título do bloco: no trecho de texto antes dele, a linha que nomeia o caderno; senão a última
+const tituloDoTrecho = (trecho: string[]) => trecho.find((l) => /gabarito \d|tipo \d|prova [a-z0-9]\b|caderno/i.test(l)) ?? trecho.at(-1) ?? "";
+
+function valorItem(token: string, formato: FormatoItem): RespostaItem | null {
+  const v = token.toUpperCase();
+  if (v === "X" || v === "*" || v === "ANULADA" || v === "ANULADO") return "anulada";
+  if (formato === "certo_errado") return v === "C" ? "certo" : v === "E" ? "errado" : null;
+  return /^[A-E]$/.test(v) ? (v as RespostaGabarito) : null;
+}
+
+function conferirBlocos(blocos: BlocoGabarito[]): BlocoGabarito[] {
+  // contínuo do 1º ao último item do bloco (Cebraspe: específicos começam em 51, depois dos básicos)
+  for (const b of blocos) {
+    const min = Math.min(...b.respostas.keys());
+    const max = Math.max(...b.respostas.keys());
+    const falta = [...Array(max - min + 1)].map((_, k) => min + k).filter((n) => !b.respostas.has(n));
+    if (falta.length) throw new Error(`Gabarito com buraco em "${b.titulo}": faltam ${falta.slice(0, 5).join(", ")}${falta.length > 5 ? "…" : ""}`);
+  }
+  return blocos;
+}
+
+export function lerGabaritoGrade(texto: string, formato: FormatoItem): BlocoGabarito[] {
+  const linhas = texto.split("\n").map((l) => l.trim());
+  const blocos: BlocoGabarito[] = [];
+  let trecho: string[] = [];
+  let ultimo = 0;
+  for (let i = 0; i < linhas.length; i++) {
+    const l = linhas[i];
+    if (!LINHA_NUMEROS.test(l)) {
+      if (l && !/^[\d\s]+$/.test(l)) trecho.push(l);
+      continue;
+    }
+    const titulo = tituloDoTrecho(trecho);
+    const nums = l.split(/\s+/).map(Number);
+    if (nums.every((n) => n === 0)) {
+      i++; // grade vazia de enchimento (e a linha de "0" embaixo)
+      continue;
+    }
+    const resp = (linhas[i + 1] ?? "").split(/\s+/);
+    if (resp.length !== nums.length) throw new Error(`Linha de respostas não bate com a de números (${nums[0]}–${nums.at(-1)})`);
+    i++;
+    for (let k = 0; k < nums.length; k++) {
+      const n = nums[k];
+      if (n === 0) {
+        if (resp[k] !== "0") throw new Error(`Resposta "${resp[k]}" sem número de item`);
+        continue;
+      }
+      const v = valorItem(resp[k], formato);
+      if (!v) throw new Error(`Resposta "${resp[k]}" fora do formato ${formato} no item ${n}`);
+      if (!blocos.length || n <= ultimo) blocos.push({ titulo, respostas: new Map() });
+      blocos.at(-1)!.respostas.set(n, v);
+      ultimo = n;
+    }
+    trecho = [];
+  }
+  return conferirBlocos(blocos);
+}
+
+export function lerGabaritoPares(texto: string): BlocoGabarito[] {
+  const blocos: BlocoGabarito[] = [];
+  let trecho: string[] = [];
+  let ultimo = 0;
+  // tabela em colunas (BNDES 2024): "36 - B 36 - A 36 - Anulada ...", um caderno por coluna
+  let colunas: BlocoGabarito[] = [];
+  let ultimoColuna = 0;
+  for (const linha of texto.split("\n").map((l) => l.trim())) {
+    if (!LINHA_PARES.test(linha)) {
+      // começa como par mas não fecha ("3 - F", "1 7- B"): erro, para não perder o fim do gabarito calado
+      if (/^\d{1,3}\s*[-–.:)=]\s*\S/.test(linha)) throw new Error(`Linha do gabarito ilegível: "${linha.slice(0, 60)}"`);
+      if (linha) trecho.push(linha);
+      continue;
+    }
+    const titulo = tituloDoTrecho(trecho);
+    const pares = [...linha.matchAll(PAR)];
+    if (pares.length >= 2 && pares.every((m) => m[1] === pares[0][1])) {
+      const n = Number(pares[0][1]);
+      if (colunas.length !== pares.length || n <= ultimoColuna) {
+        const nomes = trecho.find((l) => /^(?:prova \d+\s*){2,}$/i.test(l))?.match(/prova \d+/gi) ?? [];
+        colunas = pares.map((_, k) => ({ titulo: nomes[k] ?? `coluna ${k + 1}`, respostas: new Map() }));
+        blocos.push(...colunas);
+      }
+      pares.forEach((m, k) => {
+        const v = valorItem(m[2], "multipla");
+        if (!v) throw new Error(`Resposta "${m[2]}" fora do formato no item ${n}`);
+        colunas[k].respostas.set(n, v);
+      });
+      ultimoColuna = n;
+      trecho = [];
+      continue;
+    }
+    for (const m of pares) {
+      const n = Number(m[1]);
+      const v = valorItem(m[2], "multipla");
+      if (!v) throw new Error(`Resposta "${m[2]}" fora do formato no item ${n}`);
+      if (!blocos.length || n <= ultimo) blocos.push({ titulo, respostas: new Map() });
+      blocos.at(-1)!.respostas.set(n, v);
+      ultimo = n;
+    }
+    trecho = [];
+  }
+  return conferirBlocos(blocos);
+}
+
+// formato vem da prova (a Cebraspe também faz múltipla escolha, ex.: Banrisul 2025), nunca de adivinhação
+export function lerGabaritoOficial(texto: string, formato: FormatoItem): BlocoGabarito[] {
+  const grade = lerGabaritoGrade(texto, formato);
+  if (grade.length) return grade;
+  if (formato === "certo_errado") throw new Error("Gabarito Certo/Errado sem grade de itens");
+  const pares = lerGabaritoPares(texto);
+  if (!pares.length) throw new Error("Nenhuma resposta reconhecida no gabarito");
+  return pares;
 }
