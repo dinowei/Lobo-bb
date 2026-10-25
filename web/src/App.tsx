@@ -68,7 +68,7 @@ const GRUPOS: { id: Grupo; titulo: string }[] = [
 
 export function App() {
   // aluno nunca vê a tela Admin; sem contas cadastradas, o único usuário do modo servidor é o dono
-  const { tela, ir, painel, api, toasts, subiuNivel, fecharNivel, ehAdmin, concurso } = useApp();
+  const { tela, ir, painel, api, toasts, subiuNivel, fecharNivel, ehAdmin, concurso, acordando } = useApp();
   const online = useOnline();
   const [menuMais, setMenuMais] = useState(false);
   // título da aba por tela (Praticar e Simulados detalham a questão)
@@ -148,6 +148,11 @@ export function App() {
         {!online && (
           <div className="faixa-offline" role="status">
             Você está offline. Suas respostas ficam guardadas e são enviadas sozinhas quando a conexão voltar.
+          </div>
+        )}
+        {acordando && online && (
+          <div className="faixa-offline faixa-acordando" role="status" data-testid="acordando">
+            Acordando o servidor (até 1 minuto). Enquanto isso, você vê o que está guardado neste aparelho.
           </div>
         )}
 

@@ -157,6 +157,20 @@ test("restauração exige dados validados, mostra contagens e preserva rollback 
   }
 });
 
+test("segundo backup no mesmo dia ganha a hora no nome; nada é sobrescrito; retenção é por dia", async () => {
+  const root = await pastaTemporaria();
+  try {
+    const db = bancoComDados() as unknown as Db;
+    const manha = await criarBackupAtlas(db, opcoes(root, new Date("2026-01-16T12:00:00.000Z")));
+    const tarde = await criarBackupAtlas(db, opcoes(root, new Date("2026-01-16T17:45:00.000Z")));
+    assert.match(manha.diretorio, /2026-01-16$/);
+    assert.match(tarde.diretorio, /2026-01-16-1445$/); // 17:45 UTC = 14:45 em Brasília
+    assert.deepEqual((await readdir(root)).filter((n) => n.startsWith("2026-")).sort(), ["2026-01-16", "2026-01-16-1445"]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("retenção mantém os 14 diretórios diários mais recentes", async () => {
   const root = await pastaTemporaria();
   try {

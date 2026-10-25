@@ -1140,6 +1140,8 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 .atalhos-lista dt { font-weight: 700; }
 .atalhos-lista dd { margin: 0; }
 .faixa-offline { margin: 0 0 12px; padding: 8px 14px; border-radius: 10px; font-size: 13px; color: var(--texto); background: var(--marrom); border: 1px solid var(--marrom-2); }
+/* E12: servidor acordando (Render grátis): informação, não erro */
+.faixa-acordando { background: color-mix(in srgb, var(--info) 14%, var(--superficie)); border-color: color-mix(in srgb, var(--info) 40%, transparent); }
 .esqueleto { display: grid; gap: 12px; }
 .esqueleto i { display: block; height: 16px; border-radius: 10px; background: linear-gradient(90deg, var(--cartao) 0%, var(--cartao-2) 50%, var(--cartao) 100%); background-size: 200% 100%; animation: brilho 1.4s ease-in-out infinite; }
 @keyframes brilho { from { background-position: 200% 0; } to { background-position: -200% 0; } }

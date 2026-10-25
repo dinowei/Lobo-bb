@@ -1,7 +1,7 @@
 // Estado global: API ativa, painel, navegação, ajustes, avisos de XP e nível
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Api, Disciplina, PainelDTO } from "../../shared/tipos";
-import { apiHttp, servidorDisponivel } from "./api/http";
+import { apiHttp, esquecerPainel, estadoServidor, painelGuardado } from "./api/http";
 import { conta, EVENTO_SESSAO, type UsuarioDTO } from "./api/conta";
 import { Entrar } from "./telas/Entrar";
 import { preferenciaVozLoSalva, type VozLo } from "../../shared/voz";
@@ -84,6 +84,7 @@ interface Ctx {
   // login (modo servidor com contas): null = modo dono único ou demo
   usuario: UsuarioDTO | null;
   ehAdmin: boolean;
+  acordando: boolean; // E12: servidor ainda acordando; a tela mostra o que está no aparelho
   sair: () => Promise<void>;
   atualizarUsuario: (u: UsuarioDTO) => void;
   // F5: aba BB / BACEN (o servidor recebe no cabeçalho X-Concurso; o demo lê do mesmo lugar)
@@ -157,16 +158,13 @@ export function Provedor({ children }: { children: ReactNode }) {
 
   // login: "verificando" até saber se o servidor pede conta; "pedir" mostra a tela Entrar
   const [usuario, setUsuario] = useState<UsuarioDTO | null>(null);
-  const [login, setLogin] = useState<"verificando" | "livre" | "pedir" | "dentro">("verificando");
+  // "acordando" (E12): o servidor existe mas ainda não respondeu (Render grátis dormindo); o site abre na hora
+  // com o painel guardado no aparelho, sem buscar nada novo, e entra de verdade quando o servidor responder
+  const [login, setLogin] = useState<"verificando" | "acordando" | "livre" | "pedir" | "dentro">("verificando");
 
   useEffect(() => {
-    servidorDisponivel().then(async (ok) => {
-      if (!ok) {
-        // o demo (com as questões de exemplo) só é baixado quando não há servidor
-        const { apiDemo } = await import("./api/demo");
-        setLogin("livre");
-        return setApi(apiDemo);
-      }
+    let vivo = true;
+    const entrarNoServidor = async () => {
       try {
         const eu = await conta.eu();
         setUsuario(eu.usuario);
@@ -175,7 +173,38 @@ export function Provedor({ children }: { children: ReactNode }) {
         setLogin("livre");
       }
       setApi(apiHttp);
+    };
+    const esperarServidor = () => {
+      setTimeout(async () => {
+        if (!vivo) return;
+        if ((await estadoServidor()) === "sim") await entrarNoServidor();
+        else esperarServidor();
+      }, 5000);
+    };
+    // build da Vercel com painel no aparelho: abre na hora (antes até da 1ª resposta do servidor)
+    const guardado = import.meta.env.VITE_SERVIDOR_REMOTO === "1" ? painelGuardado() : null;
+    if (guardado) {
+      setPainel(guardado);
+      setApi(apiHttp);
+      setLogin("acordando");
+    }
+    estadoServidor().then(async (s) => {
+      if (!vivo) return;
+      if (s === "nao") {
+        // o demo (com as questões de exemplo) só é baixado quando não há servidor
+        const { apiDemo } = await import("./api/demo");
+        setLogin("livre");
+        return setApi(apiDemo);
+      }
+      if (s === "dormindo") {
+        setPainel(painelGuardado());
+        setApi(apiHttp);
+        setLogin("acordando");
+        return esperarServidor();
+      }
+      await entrarNoServidor();
     });
+    return () => { vivo = false; };
   }, []);
 
   // sessão que acabou no meio do uso: pede login e, depois, continua na mesma tela
@@ -196,13 +225,14 @@ export function Provedor({ children }: { children: ReactNode }) {
 
   const sair = useCallback(async () => {
     await conta.sair().catch(() => undefined);
+    esquecerPainel(); // o painel guardado é de quem saiu
     setUsuario(null);
     setPainel(null);
     setLogin("pedir");
   }, []);
 
   const recarregar = useCallback(async () => {
-    if (!api || login === "pedir" || login === "verificando") return null;
+    if (!api || login === "pedir" || login === "verificando" || login === "acordando") return null;
     const p = await api.painel();
     const antes = anterior.current;
     if (antes) {
@@ -286,7 +316,7 @@ export function Provedor({ children }: { children: ReactNode }) {
         concurso, trocarConcurso,
         api, painel, recarregar, tela, filtro, ir, guardarSaida, ajustes, salvarAjustes, avisar, desfazivel, toasts, subiuNivel,
         fecharNivel: () => setSubiuNivel(null),
-        usuario, ehAdmin, sair, atualizarUsuario: setUsuario,
+        usuario, ehAdmin, sair, atualizarUsuario: setUsuario, acordando: login === "acordando",
       }}
     >
       {children}

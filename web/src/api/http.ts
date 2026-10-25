@@ -1,7 +1,7 @@
 // ============================================================
 // API do MODO SERVIDOR — conversa com o Express (src/server.ts)
 // ============================================================
-import type { Api } from "../../../shared/tipos";
+import type { Api, PainelDTO } from "../../../shared/tipos";
 import { EVENTO_SESSAO } from "./conta";
 import { concursoAtivo } from "../concursoAtivo";
 
@@ -58,7 +58,11 @@ if (typeof window !== "undefined") {
 export const apiHttp: Api = {
   modo: "servidor",
   topicos: () => req("/topicos"),
-  painel: () => req("/painel"),
+  painel: async () => {
+    const p = await req<PainelDTO>("/painel");
+    try { localStorage.setItem(CHAVE_PAINEL, JSON.stringify(p)); } catch { /* cheio ou bloqueado: só não guarda */ }
+    return p;
+  },
   proxima: (f) => {
     const p = new URLSearchParams();
     if (f.topicoId) p.set("topicoId", f.topicoId);
@@ -118,18 +122,35 @@ export const apiHttp: Api = {
 // O servidor está de pé? (no site publicado sem backend, cai no modo demo)
 // Espera até 5 s e tenta 2 vezes: rede lenta ou servidor ocupado não pode jogar o site no modo demo
 export async function servidorDisponivel(): Promise<boolean> {
-  if (import.meta.env.MODE === "demo") return false;
+  return (await estadoServidor()) === "sim";
+}
+
+// E12 (Vercel na frente do Render): "dormindo" = há servidor, mas ele ainda não respondeu (Render grátis
+// acorda em ~1 min). Só o build da Vercel (VITE_SERVIDOR_REMOTO=1) sabe que o servidor existe; sem isso,
+// demora continua valendo "sem servidor" (modo demo), como antes.
+export async function estadoServidor(): Promise<"sim" | "nao" | "dormindo"> {
+  if (import.meta.env.MODE === "demo") return "nao";
+  const remoto = import.meta.env.VITE_SERVIDOR_REMOTO === "1";
   for (let tentativa = 0; tentativa < 2; tentativa++) {
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 5000);
       const r = await fetch(`${BASE}/api/saude`, { signal: ctrl.signal });
       clearTimeout(t);
-      if (r.ok) return (await r.json()).ok === true;
-      if (r.status === 404) return false; // site estático sem API: modo demo
+      if (r.ok) return (await r.json()).ok === true ? "sim" : remoto ? "dormindo" : "nao";
+      if (r.status === 404 && !remoto) return "nao"; // site estático sem API: modo demo
     } catch {
       /* sem resposta: tenta mais uma vez */
     }
   }
-  return false;
+  return remoto ? "dormindo" : "nao";
+}
+
+// abertura instantânea (E12): o último painel fica no aparelho e aparece enquanto o servidor acorda
+const CHAVE_PAINEL = "lobo-cache-painel";
+export function painelGuardado(): PainelDTO | null {
+  try { return JSON.parse(localStorage.getItem(CHAVE_PAINEL) ?? "null"); } catch { return null; }
+}
+export function esquecerPainel() {
+  try { localStorage.removeItem(CHAVE_PAINEL); } catch { /* sem armazenamento */ }
 }

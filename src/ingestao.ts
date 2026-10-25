@@ -768,8 +768,8 @@ export async function ingerirProvaCE(
   // janelas de 2 páginas com 1 de sobreposição; fica a cópia mais longa de cada número
   const porNumero = new Map<number, ItemCEExtraido>();
   let secao = "desconhecida";
-  for (let ini = 0; ini < lido.paginas.length; ini++) {
-    const fatia = lido.paginas.slice(ini, ini + 2);
+  const extrairCE = async (ini: number, tamanho: number) => {
+    const fatia = lido.paginas.slice(ini, ini + tamanho);
     const texto = fatia.map((p, i) => `=== PÁGINA ${ini + i + 1} ===\n${p}`).join("\n\n");
     console.log(`… extraindo páginas ${ini + 1}–${ini + fatia.length} de ${lido.paginas.length}`);
     try {
@@ -783,9 +783,19 @@ export async function ingerirProvaCE(
         if (ehDisciplina(v.data.disciplina)) secao = v.data.disciplina;
       }
     } catch (e) {
-      console.warn(`⚠ janela ${ini + 1}: ${(e as Error).message.replace(/\s+/g, " ").slice(0, 150)}`);
+      console.warn(`⚠ páginas ${ini + 1}–${ini + fatia.length}: ${(e as Error).message.replace(/\s+/g, " ").slice(0, 150)}`);
     }
+  };
+  for (let ini = 0; ini < lido.paginas.length; ini++) {
+    await extrairCE(ini, 2);
     if (ini + 2 >= lido.paginas.length) break;
+  }
+  // segunda chance (E2): o que faltou volta página a página, só nas páginas onde o número aparece no começo da linha
+  const faltaram = [...gabarito.keys()].filter((n) => !porNumero.has(n));
+  if (faltaram.length) {
+    const paginas = new Set(faltaram.flatMap((n) => lido.paginas.flatMap((p, i) => (new RegExp(`(^|\\n)\\s*${n}\\s`).test(p) ? [i] : []))));
+    console.log(`… faltaram ${faltaram.length} itens; repetindo ${paginas.size} página(s) uma a uma`);
+    for (const i of [...paginas].sort((a, b) => a - b)) await extrairCE(i, 1);
   }
   const faltando = [...gabarito.keys()].filter((n) => !porNumero.has(n));
   if (faltando.length) throw new Error(`Extração incompleta: faltam ${faltando.length} itens (${faltando.join(", ")}). Nada foi salvo.`);

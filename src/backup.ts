@@ -106,6 +106,12 @@ function dataBrt(data: Date): string {
   return `${p.year}-${p.month}-${p.day}`;
 }
 
+function horaBrt(data: Date): string {
+  const partes = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(data);
+  const p = Object.fromEntries(partes.map((x) => [x.type, x.value]));
+  return `${p.hour}${p.minute}`;
+}
+
 function erroSeguro(mensagem: string): Error {
   return new Error(mensagem);
 }
@@ -185,8 +191,11 @@ function dentroDe(raiz: string, destino: string): boolean {
 async function aplicarRetencao(raiz: string, manter: number): Promise<void> {
   if (!Number.isInteger(manter) || manter < 1) throw erroSeguro("A retenção do backup precisa ser um inteiro positivo.");
   const entradas = await readdir(raiz, { withFileTypes: true });
-  const backups = entradas.filter((e) => e.isDirectory() && /^\d{4}-\d{2}-\d{2}$/.test(e.name)).map((e) => e.name).sort().reverse();
-  for (const nome of backups.slice(manter)) {
+  // retenção por DIA: os backups extras do mesmo dia ("AAAA-MM-DD-HHmm") saem junto com o dia
+  const backups = entradas.filter((e) => e.isDirectory() && /^\d{4}-\d{2}-\d{2}(-\d{4})?$/.test(e.name)).map((e) => e.name);
+  const dias = [...new Set(backups.map((n) => n.slice(0, 10)))].sort().reverse();
+  const mantidos = new Set(dias.slice(0, manter));
+  for (const nome of backups.filter((n) => !mantidos.has(n.slice(0, 10)))) {
     const destino = resolve(raiz, nome);
     if (relative(resolve(raiz), destino) !== nome) throw erroSeguro("Destino de retenção inválido.");
     await rm(destino, { recursive: true, force: false });
@@ -194,7 +203,7 @@ async function aplicarRetencao(raiz: string, manter: number): Promise<void> {
 }
 
 async function exportarPara(db: Db, raiz: string, nomeDiretorio: string, agora: Date, opcoes: BackupOptions, aplicarLimpeza: boolean) {
-  if (!/^(?:\d{4}-\d{2}-\d{2}|rollback-[0-9a-fA-FTZ._-]+)$/.test(nomeDiretorio)) throw erroSeguro("Nome de diretório de backup inválido.");
+  if (!/^(?:\d{4}-\d{2}-\d{2}(?:-\d{4})?|rollback-[0-9a-fA-FTZ._-]+)$/.test(nomeDiretorio)) throw erroSeguro("Nome de diretório de backup inválido.");
   await mkdir(raiz, { recursive: true, mode: 0o700 });
   const proteger = opcoes.protegerDiretorio ?? protegerDiretorioLocal;
   await proteger(raiz);
@@ -243,7 +252,11 @@ async function exportarPara(db: Db, raiz: string, nomeDiretorio: string, agora: 
 export async function criarBackupAtlas(db: Db, opcoes: BackupOptions = {}) {
   const raiz = resolve(opcoes.rootDir ?? join(process.cwd(), "backups"));
   const agora = opcoes.agora ?? new Date();
-  return exportarPara(db, raiz, dataBrt(agora), agora, opcoes, true);
+  // um backup por dia; se o do dia já existe (migração à tarde, noite com backup no começo e no fim), o novo
+  // ganha a hora no nome. Nada é sobrescrito.
+  let nome = dataBrt(agora);
+  if (await stat(resolve(raiz, nome)).then(() => true, () => false)) nome = `${nome}-${horaBrt(agora)}`;
+  return exportarPara(db, raiz, nome, agora, opcoes, true);
 }
 
 type ConteudoBackup = { diretorio: string; manifesto: ManifestoBackup; documentos: Map<string, Document[]> };
