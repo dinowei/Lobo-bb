@@ -18,6 +18,14 @@ export const SIGLA: Record<Disciplina, string> = {
   direito_administrativo: "DA",
   gestao_publica: "GP",
   suporte_tecnico_administrativo: "ST",
+  direito_penal: "DP",
+  direito_processual_penal: "PP",
+  direito_processual_civil: "PC",
+  normas_corregedoria: "NC",
+  atualidades: "AT",
+  mercado_valores_mobiliarios: "MV",
+  fundamentos_direito: "FD",
+  fluencia_dados: "FL",
 };
 
 // Nome curto para os cartões (quebra em duas linhas, como no layout)
@@ -36,6 +44,14 @@ export const CURTO: Record<Disciplina, string> = {
   direito_administrativo: "Direito\nAdministrativo",
   gestao_publica: "Gestão\nPública",
   suporte_tecnico_administrativo: "Suporte\nTéc.-Adm.",
+  direito_penal: "Direito\nPenal",
+  direito_processual_penal: "Processo\nPenal",
+  direito_processual_civil: "Processo\nCivil",
+  normas_corregedoria: "Normas da\nCorregedoria",
+  atualidades: "Atualidades",
+  mercado_valores_mobiliarios: "Mercado de\nCapitais",
+  fundamentos_direito: "Fundamentos\nde Direito",
+  fluencia_dados: "Fluência\nem Dados",
 };
 
 export const COR_DISC: Record<Disciplina, string> = {
@@ -54,6 +70,15 @@ export const COR_DISC: Record<Disciplina, string> = {
   direito_administrativo: "#5ab4f0",
   gestao_publica: "#f5c542",
   suporte_tecnico_administrativo: "#e6e1d6",
+  // TJ-SP e CVM: mesma paleta, sem cor nova
+  direito_penal: "#f05a9a",
+  direito_processual_penal: "#f08a5a",
+  direito_processual_civil: "#59d1c4",
+  normas_corregedoria: "#e6e1d6",
+  atualidades: "#5ab4f0",
+  mercado_valores_mobiliarios: "#ff5b1f",
+  fundamentos_direito: "#8b7cf6",
+  fluencia_dados: "#4fc98a",
 };
 
 export const pct = (x: number) => `${Math.round(x * 100)}%`;

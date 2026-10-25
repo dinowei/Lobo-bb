@@ -1,5 +1,5 @@
 // E2E da F5 (abas BB/BACEN) no Edge, com a API simulada no próprio teste (nada toca no progresso real):
-// a aba BB vem marcada → clica BACEN → os pedidos seguintes vão com X-Concurso: bacen e a lista de tópicos
+// a aba BB vem marcada (as abas TJ-SP e CVM também existem) → clica BACEN → os pedidos seguintes vão com X-Concurso: bacen e a lista de tópicos
 // muda → recarregar a página mantém o BACEN → Ajustes mostra o BACEN "Em estudo" com o aviso da banca
 // de referência → "Estudar este" no BB volta para o BB. Prints 1440 e 360 em docs/telas/concurso/.
 // uso: npx tsx scripts/e2e-concurso.ts   (com o servidor "bb-web" :5182 de pé)
@@ -59,10 +59,13 @@ try {
     const bacen = p.locator("[data-testid=aba-bacen]");
     await bb.waitFor();
     assert.equal(await bb.getAttribute("aria-selected"), "true", "BB marcado de início");
+    assert.deepEqual(await p.locator(".seletor-concurso [role=tab]").allInnerTexts(), ["BB", "TJ-SP", "BACEN", "CVM"], "as quatro abas");
     await p.waitForFunction(() => document.body.innerText.includes("Vendas"));
     assert.ok(cabecalhos.some((c) => c.caminho === "/api/painel" && c.concurso === "bb"), "painel pedido com X-Concurso: bb");
 
-    // troca para o BACEN: pedidos novos com bacen e a matéria muda
+    // troca para o BACEN: pedidos novos com bacen e a matéria muda (espera a carga inicial acabar, senão um
+    // pedido do BB que começou antes do clique aparece depois dele)
+    await p.waitForLoadState("networkidle");
     const antes = cabecalhos.length;
     await bacen.click();
     await p.waitForFunction(() => document.querySelector("[data-testid=aba-bacen]")?.getAttribute("aria-selected") === "true");

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
 import { useApp, type Tela } from "./estado";
+import { CONCURSOS, IDS_CONCURSO, SIGLA_CONCURSO } from "../../shared/concursos";
 import { Pose } from "./componentes/Pose";
 import {
   IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, ICheck, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
@@ -230,9 +231,9 @@ function SeletorConcurso() {
   const { concurso, trocarConcurso } = useApp();
   return (
     <div className="seletor-concurso" role="tablist" aria-label="Concurso">
-      {(["bb", "bacen"] as const).map((c) => (
-        <button key={c} role="tab" aria-selected={concurso === c} className={concurso === c ? "ativo" : ""} onClick={() => trocarConcurso(c)} data-testid={`aba-${c}`}>
-          {c.toUpperCase()}
+      {IDS_CONCURSO.map((c) => (
+        <button key={c} role="tab" aria-selected={concurso === c} className={concurso === c ? "ativo" : ""} onClick={() => trocarConcurso(c)} data-testid={`aba-${c}`} title={`${CONCURSOS[c].nome}: ${CONCURSOS[c].cargo}`}>
+          {SIGLA_CONCURSO[c]}
         </button>
       ))}
     </div>

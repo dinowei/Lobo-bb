@@ -9,6 +9,7 @@ export const INDICE_VETORIAL = () => process.env.VECTOR_INDEX || "chunks_vector"
 // 1. TÓPICOS — o mapa do edital. Tudo gira em torno disso.
 // ------------------------------------------------------------
 import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Disciplina, type Letra } from "../shared/tipos.js";
+import { IDS_CONCURSO } from "../shared/concursos.js";
 export { DISCIPLINAS, LETRAS, type Disciplina, type Letra };
 
 // Matérias normativas: só geram questão nova com fonte primária por trás.
@@ -31,7 +32,7 @@ const TopicSchema = new Schema(
     volatil: { type: Boolean, default: false },
     ativo: { type: Boolean, default: true },
     // disciplina compartilhada = um tópico só, ligado aos dois concursos (a migração põe ["bb"] nos atuais)
-    concursos: { type: [{ type: String, enum: ["bb", "bacen"] }], default: undefined, index: true },
+    concursos: { type: [{ type: String, enum: IDS_CONCURSO }], default: undefined, index: true },
     embedding: { type: [Number], select: false }, // usado para classificar trechos e questões
   },
   { timestamps: true }
@@ -110,7 +111,7 @@ const QuestionSchema = new Schema(
     origem: { type: String, enum: ["oficial", "gerada"], required: true },
     estiloBanca: { type: String, default: "cesgranrio" },
     // concurso e banca como dado (BB + BACEN): a migração preenche as antigas (BB, Cesgranrio, múltipla escolha)
-    concursos: { type: [{ type: String, enum: ["bb", "bacen"] }], default: undefined, index: true },
+    concursos: { type: [{ type: String, enum: IDS_CONCURSO }], default: undefined, index: true },
     banca: { type: String, enum: ["cesgranrio", "cebraspe", "fgv", "fcc", "vunesp"] }, // oficial: a banca da prova
     formato: { type: String, enum: ["multipla", "certo_errado"] },
     derivadaDe: { type: Schema.Types.ObjectId, ref: "Question" }, // item C/E montado de uma múltipla escolha
@@ -293,7 +294,7 @@ const AttemptSchema = new Schema(
     simuladoId: String,
     motivoErro: { type: String, enum: MOTIVOS_ERRO }, // informado pelo aluno depois do erro
     // em que concurso/banca a resposta foi dada (Elo e Desempenho por concurso); antigas = BB/Cesgranrio
-    concurso: { type: String, enum: ["bb", "bacen"] },
+    concurso: { type: String, enum: IDS_CONCURSO },
     banca: String,
   },
   { timestamps: true }
@@ -459,7 +460,7 @@ const RatingAlunoSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     // Elo do aluno por concurso + banca + disciplina (a migração preenche as antigas com BB/Cesgranrio)
-    concurso: { type: String, enum: ["bb", "bacen"], default: "bb" },
+    concurso: { type: String, enum: IDS_CONCURSO, default: "bb" },
     banca: { type: String, default: "cesgranrio" },
     disciplina: { type: String, enum: DISCIPLINAS, required: true },
     rating: { type: Number, required: true },
@@ -478,7 +479,7 @@ const SimuladoSchema = new Schema(
     _id: { type: String, required: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     data: { type: Date, required: true },
-    concurso: { type: String, enum: ["bb", "bacen"], default: "bb" },
+    concurso: { type: String, enum: IDS_CONCURSO, default: "bb" },
     banca: { type: String, default: "cesgranrio" },
     diagnostico: { type: Boolean, default: false },
     tamanho: Number,
@@ -534,7 +535,7 @@ const ItemCESchema = new Schema(
   {
     topicId: { type: Schema.Types.ObjectId, ref: "Topic", required: true, index: true },
     subtopico: { type: String, index: true },
-    concursos: { type: [{ type: String, enum: ["bb", "bacen"] }], default: undefined, index: true },
+    concursos: { type: [{ type: String, enum: IDS_CONCURSO }], default: undefined, index: true },
     banca: { type: String, enum: ["cesgranrio", "cebraspe", "fgv", "fcc", "vunesp"] }, // oficial: da prova
     origem: { type: String, enum: ["oficial", "derivada", "cursinho"], required: true },
     camada: { type: String, enum: ["A", "B", "C"] },
@@ -569,7 +570,7 @@ const RespostaCESchema = new Schema(
     subtopico: String,
     resposta: { type: String, enum: ["C", "E", null], default: null },
     acertou: { type: Boolean, default: null }, // null = em branco
-    concurso: { type: String, enum: ["bb", "bacen"] },
+    concurso: { type: String, enum: IDS_CONCURSO },
     banca: String,
     tempoSeg: Number,
   },
@@ -742,7 +743,7 @@ const UserSchema = new Schema(
     ultimoLogin: Date,
     // concurso ativo (abas BB / BACEN) e, por concurso, a banca e a área escolhidas ("a_definir" = referência)
     preferencias: {
-      concursoAtivo: { type: String, enum: ["bb", "bacen"], default: "bb" },
+      concursoAtivo: { type: String, enum: IDS_CONCURSO, default: "bb" },
       bancas: { type: Map, of: String, default: undefined },
       areas: { type: Map, of: String, default: undefined },
     },

@@ -1,11 +1,14 @@
-// Concurso ativo do site (F5): aba BB / BACEN. Guardado neste navegador e mandado ao servidor em toda
+// Concurso ativo do site (F5): uma aba por concurso. Guardado neste navegador e mandado ao servidor em toda
 // requisição (cabeçalho X-Concurso); o modo demo lê daqui também. Sem escolha, o BB de sempre.
-export type IdConcursoAtivo = "bb" | "bacen";
+import { IDS_CONCURSO, type IdConcurso } from "../../shared/concursos";
+
+export type IdConcursoAtivo = IdConcurso;
 const CHAVE = "lobo-concurso";
 
 export function concursoAtivo(): IdConcursoAtivo {
   try {
-    return localStorage.getItem(CHAVE) === "bacen" ? "bacen" : "bb";
+    const c = localStorage.getItem(CHAVE);
+    return (IDS_CONCURSO as readonly string[]).includes(c ?? "") ? (c as IdConcursoAtivo) : "bb";
   } catch {
     return "bb";
   }

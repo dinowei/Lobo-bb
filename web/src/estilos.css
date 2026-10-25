@@ -1316,6 +1316,9 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 .ce-recomendacao-depois { margin: -6px 0 14px; color: var(--suave); font-size: 13px; max-width: 68ch; }
 .resultado-faixa.branco { background: var(--atencao-fundo); color: var(--atencao-texto); box-shadow: inset 4px 0 0 var(--lo); }
 .ce-filtro { margin: 6px 0 0; font-size: 14px; }
+/* aba de concurso ainda sem matérias (TJ-SP e CVM até o material chegar) */
+.aviso-concurso-vazio { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; max-width: 68ch; background: var(--binho-fundo); box-shadow: inset 4px 0 0 var(--binho); }
+.aviso-concurso-vazio b { color: var(--binho-texto); }
 .ce-placar { padding: 8px 14px; border-radius: 999px; background: var(--verde-fundo); color: var(--verde-texto); font-size: 14px; }
 .ce-placar b { font-size: 16px; }
 @media (max-width: 520px) { .ce-botoes button { flex: 1 1 100%; justify-content: center; } .ce-afirmacao { font-size: 17px; } }

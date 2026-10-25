@@ -2,13 +2,17 @@
 // O BB é o padrão de hoje e a estrutura dele é a mesma de antes (estruturaProva.ts lê o bb.json).
 import bb from "../data/concursos/bb.json" with { type: "json" };
 import bacen from "../data/concursos/bacen.json" with { type: "json" };
+import tjsp from "../data/concursos/tjsp.json" with { type: "json" };
+import cvm from "../data/concursos/cvm.json" with { type: "json" };
 import cesgranrio from "../data/bancas/cesgranrio.json" with { type: "json" };
 import cebraspe from "../data/bancas/cebraspe.json" with { type: "json" };
 import fgv from "../data/bancas/fgv.json" with { type: "json" };
 import fcc from "../data/bancas/fcc.json" with { type: "json" };
 import vunesp from "../data/bancas/vunesp.json" with { type: "json" };
 
-export type IdConcurso = "bb" | "bacen";
+// lista única dos concursos (abas, schemas, cabeçalho X-Concurso): concurso novo = uma linha aqui + o json dele
+export const IDS_CONCURSO = ["bb", "tjsp", "bacen", "cvm"] as const;
+export type IdConcurso = (typeof IDS_CONCURSO)[number];
 export type IdBanca = "cesgranrio" | "cebraspe" | "fgv" | "fcc" | "vunesp";
 export type FormatoItem = "multipla" | "certo_errado";
 // camada do material: A = prova oficial/gabarito definitivo/edital/lei vigente; B = material oficial; C = cursinho
@@ -34,7 +38,9 @@ export const BANCAS: Record<IdBanca, Banca> = {
   vunesp: vunesp as Banca,
 };
 
-export const CONCURSOS = { bb, bacen } as const;
+export const CONCURSOS = { bb, tjsp, bacen, cvm } as const;
+// nome curto da aba
+export const SIGLA_CONCURSO: Record<IdConcurso, string> = { bb: "BB", tjsp: "TJ-SP", bacen: "BACEN", cvm: "CVM" };
 export const CONCURSO_PADRAO: IdConcurso = "bb";
 
 // banca em uso num concurso: a escolhida pelo aluno; "a_definir" estuda no estilo da banca de referência

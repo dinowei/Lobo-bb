@@ -288,6 +288,14 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - Coleções `itens_ce` e `respostas_ce`. Comando `bb -- derivar-ce` (ainda não rodado).
   - Tela "Certo ou Errado" (servidor + demo + `scripts/e2e-ce.ts`), com filtro por tema.
 
+- **Quatro concursos (decisão do dono, 25/10):** o BB continua e entram TJ-SP (Escrevente Técnico Judiciário) e CVM (Agente Executivo), além do BACEN.
+  - Lista única em `IDS_CONCURSO` (`shared/concursos.ts`); schemas, cabeçalho, abas e demo leem dela. Concurso novo = uma linha + o json.
+  - `data/concursos/tjsp.json`: Vunesp, 100 questões, 5 h, matérias pelas seções do caderno de 2023. A cota por matéria fica **pendente** (o edital não está no acervo).
+  - `data/concursos/cvm.json`: banca a definir, referência FGV. O edital CVM 2024 só teve Inspetor e Analista; usei o Módulo I como referência (LP 10, Mercado de Valores Mobiliários 10, Fundamentos de Direito 10, Fluência em Dados 5, Raciocínio Lógico 5).
+  - 8 matérias novas no `DISCIPLINAS`.
+  - A aba sem matérias mostra "as matérias ainda estão chegando".
+  - Os **72 arquivos (um por tema)** do dono entram quando ele avisar (pasta `72 FONTES/`).
+
 RETOMAR AQUI — ordem do dono (25/10/2026), nesta sequência:
 1. FEITO: visual da madrugada testado, com prints, commitado (`14834cb`).
 2. AGORA: PROMPT-LOBO-BB-BACEN de F8 até F14. Toda tela nova já nasce no estilo novo (cores, barra lateral, cartões do mockup).

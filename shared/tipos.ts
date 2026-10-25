@@ -3,6 +3,7 @@
 // ============================================================
 import type { DesempenhoTemaDTO } from "./desempenhoTema.js";
 import type { ResumoSimulado } from "./simulados.js";
+import type { IdConcurso } from "./concursos.js";
 export type { DesempenhoTemaDTO, ResumoSimulado };
 
 export const DISCIPLINAS = [
@@ -21,6 +22,16 @@ export const DISCIPLINAS = [
   "direito_administrativo",
   "gestao_publica",
   "suporte_tecnico_administrativo",
+  // TJ-SP Escrevente (data/concursos/tjsp.json)
+  "direito_penal",
+  "direito_processual_penal",
+  "direito_processual_civil",
+  "normas_corregedoria",
+  "atualidades",
+  // CVM Agente Executivo (data/concursos/cvm.json)
+  "mercado_valores_mobiliarios",
+  "fundamentos_direito",
+  "fluencia_dados",
 ] as const;
 export type Disciplina = (typeof DISCIPLINAS)[number];
 
@@ -39,6 +50,14 @@ export const NOME_DISCIPLINA: Record<Disciplina, string> = {
   direito_administrativo: "Direito Administrativo",
   gestao_publica: "Gestão Pública",
   suporte_tecnico_administrativo: "Suporte Técnico-Administrativo",
+  direito_penal: "Direito Penal",
+  direito_processual_penal: "Direito Processual Penal",
+  direito_processual_civil: "Direito Processual Civil",
+  normas_corregedoria: "Normas da Corregedoria Geral da Justiça",
+  atualidades: "Atualidades",
+  mercado_valores_mobiliarios: "Mercado de Valores Mobiliários",
+  fundamentos_direito: "Fundamentos de Direito",
+  fluencia_dados: "Fluência em Dados",
 };
 
 export const LETRAS = ["A", "B", "C", "D", "E"] as const;
@@ -548,7 +567,7 @@ export type MotivoContestacao = "gabarito_errado" | "duas_corretas" | "desatuali
 
 // Concursos (F5): banca em uso (ou a de referência, se "a definir") e área de cada um
 export interface ConcursoInfoDTO {
-  id: "bb" | "bacen";
+  id: IdConcurso;
   nome: string;
   cargo: string | null;
   banca: string; // id da banca ou "a_definir"

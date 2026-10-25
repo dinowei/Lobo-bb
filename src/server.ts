@@ -24,6 +24,7 @@ import { apiServidor } from "./estudo.js";
 import { garantirIndiceElo } from "./migracaoConcursos.js";
 import { caminhoMaterial } from "./temas.js";
 import { ajustarConcurso, carregarConfigConcursos, historicoConcursos, infoConcursos } from "./concursosConfig.js";
+import type { IdConcurso } from "../shared/concursos.js";
 import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro, type NotaCartao } from "../shared/tipos.js";
 
 const app = express();
@@ -143,7 +144,7 @@ app.post("/api/admin/concursos", rota(async (req, res) => {
   const campo = b.campo === "area" ? "area" : b.campo === "banca" ? "banca" : null;
   if (!campo) return res.status(400).json({ erro: "Campo inválido." });
   try {
-    const r = await ajustarConcurso(String(b.concurso) as "bb" | "bacen", campo, String(b.para ?? ""), String(b.motivo ?? ""), usuarioAtual()?.email ?? "dono");
+    const r = await ajustarConcurso(String(b.concurso) as IdConcurso, campo, String(b.para ?? ""), String(b.motivo ?? ""), usuarioAtual()?.email ?? "dono");
     res.json({ ...r, concursos: infoConcursos(), historico: historicoConcursos() });
   } catch (e) {
     res.status(400).json({ erro: (e as Error).message });

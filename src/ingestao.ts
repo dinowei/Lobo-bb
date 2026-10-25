@@ -52,7 +52,7 @@ import {
 } from "./prompts.js";
 import { buscarFontesPorConsulta, geracoesHoje, tetoDiario } from "./pipeline.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
-import { BANCAS, type IdBanca } from "../shared/concursos.js";
+import { BANCAS, IDS_CONCURSO, type IdBanca } from "../shared/concursos.js";
 
 const ehDisciplina = (s: string): s is Disciplina => (DISCIPLINAS as readonly string[]).includes(s);
 
@@ -108,7 +108,7 @@ const TopicoItemZ = z.object({
   descricao: z.string().optional(),
   questoesNaProva: z.number().int().positive().nullish(),
   volatil: z.boolean().default(false),
-  concursos: z.array(z.enum(["bb", "bacen"])).optional(), // ausente = não mexe (a árvore de subtópicos liga)
+  concursos: z.array(z.enum(IDS_CONCURSO)).optional(), // ausente = não mexe (a árvore de subtópicos liga)
 });
 const ArquivoTopicosZ = z.object({ disciplinas: z.record(z.string(), z.array(TopicoItemZ)) });
 

@@ -1,0 +1,27 @@
+{
+  "id": "tjsp",
+  "nome": "Tribunal de Justiça de São Paulo",
+  "cargo": "Escrevente Técnico Judiciário",
+  "bancaPadrao": "vunesp",
+  "bancasPossiveis": ["vunesp"],
+  "areas": [],
+  "situacaoEdital": "edital novo pendente; estrutura de referência = prova de 2023 (Vunesp): 100 questões objetivas de 5 alternativas, 5 horas",
+  "fonte": "[CONFIRMADO] capa do caderno 001 Prova Objetiva Escrevente Técnico Judiciário 2023 (Vunesp), acervo 13_TJ-SP/Provas e Gabaritos: 100 questões, 5 horas. Seções do caderno: Língua Portuguesa, Direito Penal, Direito Processual Penal, Direito Processual Civil, Direito Constitucional, Direito Administrativo, Normas da Corregedoria Geral da Justiça, Atualidades, Matemática, Informática, Raciocínio Lógico. [PENDENTE] quantidade por matéria (o edital não está no acervo)",
+  "conferido": false,
+  "totalQuestoes": 100,
+  "duracaoMin": 300,
+  "disciplinas": [
+    "lingua_portuguesa",
+    "direito_penal",
+    "direito_processual_penal",
+    "direito_processual_civil",
+    "direito_constitucional",
+    "direito_administrativo",
+    "normas_corregedoria",
+    "atualidades",
+    "matematica",
+    "informatica",
+    "raciocinio_logico"
+  ],
+  "disciplinasComuns": ["lingua_portuguesa", "matematica", "informatica", "raciocinio_logico", "direito_constitucional", "direito_administrativo"]
+}

@@ -5,6 +5,7 @@ import { Types } from "mongoose";
 import { Attempt, Question, RatingAluno, Topic } from "./models.js";
 import { dificuldadeDoRating, ratingInicialQuestao, reprocessar, RESPOSTAS_PARA_CALIBRAR } from "../shared/rating.js";
 import type { Confianca, Disciplina } from "../shared/tipos.js";
+import type { IdConcurso } from "../shared/concursos.js";
 
 // Recalcula tudo a partir das tentativas (idempotente: grava valores absolutos, não soma)
 export async function migrarRatings() {
@@ -23,7 +24,7 @@ export async function migrarRatings() {
     const [userId, concurso, banca, d] = chave.split("|");
     if (d === "?") continue;
     const disciplina = d as Disciplina;
-    await RatingAluno.updateOne({ userId: new Types.ObjectId(userId), concurso: concurso as "bb" | "bacen", banca, disciplina }, { $set: { rating: a.rating, n: a.n } }, { upsert: true });
+    await RatingAluno.updateOne({ userId: new Types.ObjectId(userId), concurso: concurso as IdConcurso, banca, disciplina }, { $set: { rating: a.rating, n: a.n } }, { upsert: true });
     alunos++;
   }
   return { tentativas: tents.length, questoes: global.questoes.size, alunos };

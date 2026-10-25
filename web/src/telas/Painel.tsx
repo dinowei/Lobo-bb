@@ -13,9 +13,10 @@ import { Ilustracao } from "../componentes/Ilustracoes";
 import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
 import { COR_DISC, CURTO, SIGLA, diasAte, pct } from "../util";
 import { Pose } from "../componentes/Pose";
+import { CONCURSOS, SIGLA_CONCURSO } from "../../../shared/concursos";
 
 export function Painel() {
-  const { painel, ajustes, ir, usuario, api } = useApp();
+  const { painel, ajustes, ir, usuario, api, concurso } = useApp();
   // 1ª visita depois de entrar (por conta; sem conta, por navegador): o Binho acena uma vez
   const chaveVisita = `lobo-boas-vindas-${usuario?.email ?? "local"}`;
   const [primeiraVisita] = useState(() => {
@@ -81,6 +82,11 @@ export function Painel() {
             {faltam !== null && faltam >= 0 && <> Faltam <b className="num">{faltam}</b> dias para a prova.</>}
             {plano?.totalSemanas && <> <button className="link" onClick={() => ir("plano")}>Semana <b className="num">{plano.semanaAtual}</b> de <b className="num">{plano.totalSemanas}</b></button></>}
           </p>
+          {!painel.topicos.length && (
+            <p className="aviso-concurso-vazio" role="note" data-testid="concurso-sem-conteudo">
+              <b>{SIGLA_CONCURSO[concurso]}: as matérias ainda estão chegando.</b> O {CONCURSOS[concurso].nome} ({CONCURSOS[concurso].cargo}) entra com o material de estudo; enquanto isso, as outras abas seguem normais.
+            </p>
+          )}
         </div>
         <button className="botao-laranja botao-grande" onClick={() => (temaHoje ? estudarTemaDoDia() : ir("praticar", trilha?.modo === "domingo" ? { revisao: true } : {}))}>
           <span aria-hidden="true">▶</span> {trilha?.modo === "domingo" && !temaHoje ? "Domingo: revisões e erros" : n > 0 ? "Continuar estudando" : "Começar agora"}

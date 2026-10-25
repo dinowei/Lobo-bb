@@ -1,6 +1,6 @@
 # BB Estudos (app "lobo")
 
-App pessoal de estudo para o concurso de Escriturário do Banco do Brasil. Banco de questões que cresce sozinho: provas oficiais + questões geradas por IA e auditadas por um segundo modelo, explicação de cada alternativa, revisão espaçada (SM-2) e gamificação (XP, níveis, conquistas). Usuário único (o dono), em português do Brasil.
+App pessoal de estudo para concursos: Escriturário do Banco do Brasil, Escrevente Técnico Judiciário do TJ-SP, Técnico do Banco Central e Agente Executivo da CVM (uma aba por concurso; lista única em `shared/concursos.ts` + `data/concursos/*.json`). Banco de questões que cresce sozinho: provas oficiais + questões geradas por IA e auditadas por um segundo modelo, explicação de cada alternativa, revisão espaçada (SM-2) e gamificação (XP, níveis, conquistas). Usuário único (o dono), em português do Brasil.
 
 ## Stack
 - Servidor: Node 22+, TypeScript (ESM, NodeNext → imports com `.js`), Express 5, Mongoose 9, MongoDB Atlas (Vector Search), Zod 4, SDK `openai` falando com qualquer API compatível (NVIDIA NIM/Nemotron etc.).

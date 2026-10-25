@@ -38,7 +38,7 @@ import { ehDiagnostico, MISTURA_DIAGNOSTICO, PREFIXO_DIAGNOSTICO, ratingDoDiagno
 import { reprocessar, type EventoRating, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../../../shared/rating";
 import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../../../shared/aprendizado";
 import { classificarPorCodigo, concursosDoTopico, SUBTOPICO_POR_ID } from "../../../shared/subtopicos";
-import { BANCAS, CONCURSOS, type IdBanca } from "../../../shared/concursos";
+import { BANCAS, CONCURSOS, IDS_CONCURSO, type IdBanca } from "../../../shared/concursos";
 import { corrigirCE, derivarItens, recomendarBranco } from "../../../shared/certoErrado";
 import { concursoAtivo } from "../concursoAtivo";
 import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA, type InicioTrilha } from "../../../shared/trilha";
@@ -260,7 +260,7 @@ export const apiDemo: Api = {
 
   topicos: () => espera(topicosAtivos()),
 
-  concursos: () => espera((["bb", "bacen"] as const).map((id) => {
+  concursos: () => espera(IDS_CONCURSO.map((id) => {
     const j = CONCURSOS[id] as { nome: string; cargo?: string; bancaPadrao: string; bancaReferencia?: string; areas?: { id: string; nome: string }[] };
     const aDefinir = j.bancaPadrao === "a_definir";
     const emUso = aDefinir ? j.bancaReferencia ?? "cebraspe" : j.bancaPadrao;

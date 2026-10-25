@@ -1,0 +1,26 @@
+{
+  "id": "cvm",
+  "nome": "Comissão de Valores Mobiliários",
+  "cargo": "Agente Executivo",
+  "bancaPadrao": "a_definir",
+  "bancaReferencia": "fgv",
+  "bancasPossiveis": ["fgv", "cebraspe", "cesgranrio", "fcc", "vunesp"],
+  "areas": [],
+  "situacaoEdital": "a_definir: o edital CVM 2024 (FGV) foi só de Inspetor e Analista; Agente Executivo (nível médio) sem edital. Estrutura de referência = Módulo I (conhecimentos básicos) do CVM 2024",
+  "fonte": "[CONFIRMADO] Edital 1 CVM 2024 (FGV, retificado), item 9.6.1 (110 questões, 5 alternativas, 1 ponto) e quadro do Módulo I – Conhecimentos Básicos; acervo 03_CVM/Editais. Agente Executivo: [PENDENTE] edital",
+  "conferido": false,
+  "referenciaBasicos": {
+    "prova": "Módulo I — Conhecimentos Básicos (CVM 2024, FGV, Inspetor e Analista)",
+    "questoes": { "lingua_portuguesa": 10, "mercado_valores_mobiliarios": 10, "fundamentos_direito": 10, "fluencia_dados": 5, "raciocinio_logico": 5 }
+  },
+  "disciplinas": [
+    "lingua_portuguesa",
+    "mercado_valores_mobiliarios",
+    "fundamentos_direito",
+    "fluencia_dados",
+    "raciocinio_logico",
+    "direito_administrativo",
+    "conhecimentos_bancarios"
+  ],
+  "disciplinasComuns": ["lingua_portuguesa", "raciocinio_logico", "direito_administrativo", "conhecimentos_bancarios"]
+}
