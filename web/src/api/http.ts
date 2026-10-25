@@ -117,6 +117,8 @@ export const apiHttp: Api = {
   corrigirRedacao: (r) => post("/redacoes/corrigir", r),
   redacoes: () => req("/redacoes"),
   marcarRedacoesVistas: () => post("/redacoes/vistas", {}),
+  espacoLo: () => req("/espaco-lo"),
+  salvarPosicaoAudio: (id, p) => post("/espaco-lo/posicao", { id, ...p }),
 };
 
 // O servidor está de pé? (no site publicado sem backend, cai no modo demo)

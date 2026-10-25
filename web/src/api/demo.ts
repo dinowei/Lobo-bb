@@ -45,9 +45,25 @@ import { prontidaoDeTodos } from "../../../shared/prontidao";
 import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA, type InicioTrilha } from "../../../shared/trilha";
 import { desempenhoPorTema, diaLocal, diasDaTrilha, type TentativaTema } from "../../../shared/desempenhoTema";
 import { resumirSimulado } from "../../../shared/simulados";
+import { itensDoTema, montarRecados, unicos, registrarPosicao, resumirDia, rolarVisita, type EstadoTema, type EstadoVisita, type PosicaoAudio } from "../../../shared/espacoLo";
+import { textoDaAula } from "../../../shared/fala";
+import temasJson from "../../../data/temas.json";
 
 const CHAVE = "lobo-demo-v1";
 const CHAVE_INICIO = "lobo-demo-trilha-inicio";
+const CHAVE_ESPACO_LO = "lobo-demo-espaco-lo";
+const CONTEUDO_TEMAS = temasJson.temas as unknown as Record<string, { pontos?: string[]; ficha?: { texto: string } }>;
+
+// Espaço da Lo: posição dos áudios e base dos recados, no aparelho
+type EstadoEspacoLo = { audios: Record<string, PosicaoAudio>; visita: EstadoVisita | null };
+let espacoLoMemoria: EstadoEspacoLo = { audios: {}, visita: null };
+function lerEspacoLo(): EstadoEspacoLo {
+  try { return { audios: {}, visita: null, ...JSON.parse(localStorage.getItem(CHAVE_ESPACO_LO) ?? "{}") }; } catch { return espacoLoMemoria; }
+}
+function gravarEspacoLo(e: EstadoEspacoLo) {
+  espacoLoMemoria = e;
+  try { localStorage.setItem(CHAVE_ESPACO_LO, JSON.stringify(e)); } catch { /* sem storage: fica na memória */ }
+}
 const slug = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 // peso no treino: o do edital ou a cota da disciplina na prova ÷ tópicos dela (igual ao servidor)
@@ -636,4 +652,48 @@ export const apiDemo: Api = {
   },
   redacoes: () => espera([] as RedacaoDTO[]),
   marcarRedacoesVistas: async () => espera(undefined),
+
+  // Espaço da Lo no demo: mesmas regras (shared/espacoLo.ts); conteúdo = aulas e pontos do demo; posição no aparelho
+  espacoLo: async () => {
+    const t = await apiDemo.trilha();
+    const est = lerEspacoLo();
+    const itens = TRILHA.flatMap((x) => {
+      const s = SUBTOPICO_POR_ID.get(x.subtopico);
+      if (!s) return [];
+      const aulas = TOPICOS.filter((tp) => s.topicos.includes(tp.assunto)).map((tp) => AULAS_DEMO[tp.id]).filter((a) => !!a);
+      const c = CONTEUDO_TEMAS[x.subtopico] ?? {};
+      return itensDoTema({
+        subtopico: x.subtopico, nome: s.nome, disciplina: discDoSubDemo(x.subtopico),
+        ficha: c.ficha ? [c.ficha.texto] : null,
+        aulas: aulas.map((a) => ({ topicoId: a.topicoId, assunto: a.assunto, texto: textoDaAula(a) })),
+        pontos: c.pontos?.length ? c.pontos : aulas.flatMap((a) => a.pontosChave),
+      });
+    }).map((i) => ({ ...i, posicao: est.audios[i.id] ?? null }));
+    const hoje = t.hoje;
+    const playlist = hoje ? itens.filter((i) => i.subtopico === hoje.subtopico) : [];
+    const selosAgora = Object.fromEntries(t.temas.map((x) => [x.subtopico, x.estado])) as Record<string, EstadoTema>;
+    const visita = rolarVisita(est.visita, selosAgora);
+    gravarEspacoLo({ ...est, visita });
+    return {
+      seuDia: resumirDia({
+        modo: t.modo, tema: hoje ? { nome: hoje.nome, novas: Math.max(0, hoje.tamanho - hoje.novasFeitasHoje) } : null,
+        fichaPronta: playlist.some((i) => i.tipo === "ficha"), aulaPronta: playlist.some((i) => i.tipo === "aula"), audioPronto: false,
+        revisoesVencidas: t.revisoesVencidas, janelas: [], inicioJanelaB: "18:00", demo: true,
+      }),
+      temaDoDia: hoje ? { subtopico: hoje.subtopico, nome: hoje.nome } : null,
+      playlist,
+      biblioteca: unicos(itens), // no demo tudo sai na hora, com a voz do navegador
+      recados: montarRecados({
+        visita, selosAgora, nomes: Object.fromEntries(t.temas.map((x) => [x.subtopico, x.nome])),
+        temasDoAluno: [...t.temas.filter((x) => x.estado !== "novo").map((x) => x.subtopico), ...(hoje ? [hoje.subtopico] : [])],
+        conflitos: [], novidades: [],
+      }),
+    };
+  },
+  salvarPosicaoAudio: async (id, p) => {
+    const est = lerEspacoLo();
+    const nova = registrarPosicao(est.audios[id] ?? null, p);
+    gravarEspacoLo({ ...est, audios: { ...est.audios, [id]: nova } });
+    return nova;
+  },
 };

@@ -5,6 +5,7 @@ import type { DesempenhoTemaDTO } from "./desempenhoTema.js";
 import type { ResumoSimulado } from "./simulados.js";
 import type { IdConcurso } from "./concursos.js";
 import type { ProntidaoDTO } from "./prontidao.js";
+import type { EspacoLoDTO, PosicaoAudio } from "./espacoLo.js";
 export type { DesempenhoTemaDTO, ProntidaoDTO, ResumoSimulado };
 
 export const DISCIPLINAS = [
@@ -704,4 +705,8 @@ export interface Api {
   corrigirRedacao(r: { temaId: string; texto: string; linhas: number; tempoSeg: number }): Promise<RedacaoDTO>;
   redacoes(): Promise<RedacaoDTO[]>;
   marcarRedacoesVistas(): Promise<void>;
+  // Espaço da Lo: seu dia, playlist do tema do dia, biblioteca de áudios e recados (tudo montado por código)
+  espacoLo(): Promise<EspacoLoDTO>;
+  // "continuar de onde parei": posição de um áudio, salva por aluno
+  salvarPosicaoAudio(id: string, p: { fracao: number; frase: number; segundos: number }): Promise<PosicaoAudio>;
 }

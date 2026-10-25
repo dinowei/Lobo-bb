@@ -3,11 +3,14 @@
 import { useEffect, useState } from "react";
 import { ouvir, parar, pausarOuContinuar } from "../leitor";
 import { Pose } from "./Pose";
+import { useApp } from "../estado";
 
 export function MiniLo() {
+  const { tela } = useApp();
   const [e, setE] = useState<{ id: string | null; estado: string; titulo?: string }>({ id: null, estado: "parado" });
   useEffect(() => ouvir(setE), []);
   if (!e.id || e.estado === "parado") return null;
+  if (tela === "espaco-lo") return null; // o Espaço da Lo tem o próprio player, com transcrição
   const lendo = e.estado === "tocando";
   return (
     <div className={`mini-lo${lendo ? " lendo" : ""}`} role="status" aria-live="polite">

@@ -25,6 +25,7 @@ import { garantirIndiceElo } from "./migracaoConcursos.js";
 import { caminhoMaterial } from "./temas.js";
 import { ajustarConcurso, carregarConfigConcursos, historicoConcursos, infoConcursos } from "./concursosConfig.js";
 import { painelJanelas, salvarJanelas } from "./janelaB.js";
+import { ID_AUDIO } from "./espacoLo.js";
 import type { IdConcurso } from "../shared/concursos.js";
 import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro, type NotaCartao } from "../shared/tipos.js";
 
@@ -296,6 +297,13 @@ app.post(
     res.json(await apiServidor.corrigirRedacao({ temaId, texto: corpo, linhas: Number(linhas), tempoSeg: Number(tempoSeg) }));
   })
 );
+// Espaço da Lo: seu dia, playlist, biblioteca e recados; posição de cada áudio por aluno
+app.get("/api/espaco-lo", rota(async (_req, res) => res.json(await apiServidor.espacoLo())));
+app.post("/api/espaco-lo/posicao", rota(async (req, res) => {
+  const id = texto(req.body?.id);
+  if (!id || !ID_AUDIO.test(id)) return res.status(400).json({ erro: "Áudio desconhecido." });
+  res.json(await apiServidor.salvarPosicaoAudio(id, { fracao: Number(req.body?.fracao), frase: Number(req.body?.frase), segundos: Number(req.body?.segundos) }));
+}));
 app.post("/api/redacoes/vistas", rota(async (_req, res) => { await apiServidor.marcarRedacoesVistas(); res.status(204).end(); }));
 
 // ---------- Conferência do dono (tela Figuras) ----------

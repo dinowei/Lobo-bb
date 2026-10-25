@@ -130,6 +130,10 @@ test("isolamento: o que A faz não aparece para B, e B não altera nada de A", {
   const { hashPergunta } = await import("./chatBinho.js");
   await M.RespostaBinho.create({ userId: ids.a, topicId: q1.topicId, perguntaHash: hashPergunta("o que cai na prova?"), pergunta: "o que cai na prova?", resposta: "RESPOSTA-SECRETA-DE-A", citacoes: [] });
 
+  // Espaço da Lo: a posição do áudio é de A
+  assert.equal((await chamar(A, "POST", "/api/espaco-lo/posicao", { id: "ficha-crase", fracao: 0.5, frase: 4, segundos: 0 })).status, 200);
+  assert.equal((await chamar(A, "POST", "/api/espaco-lo/posicao", { id: "../x", fracao: 0.5, frase: 4, segundos: 0 })).status, 400, "id de áudio inválido");
+
   const painelA = (await chamar(A, "GET", "/api/painel")).json as { xp: number; totalRespondidas: number };
   assert.ok(painelA.totalRespondidas >= 2 && painelA.xp > 0, "A tem progresso");
   const contagemA = {
@@ -161,7 +165,13 @@ test("isolamento: o que A faz não aparece para B, e B não altera nada de A", {
   const chatA = (await chamar(A, "POST", "/api/binho/perguntar", { topicoId: String(q1.topicId), pergunta: "o que cai na prova?" })).json as { resposta?: string };
   assert.equal(chatA.resposta, "RESPOSTA-SECRETA-DE-A", "o cache é de A");
 
+  const loB = (await chamar(B, "GET", "/api/espaco-lo")).json as { biblioteca: { id: string; posicao: unknown }[]; playlist: { posicao: unknown }[] };
+  assert.ok(![...loB.biblioteca, ...loB.playlist].some((i) => i.posicao), "B não vê a posição dos áudios de A");
+
   // ---- B tenta mexer no que é de A, passando ids e campos que o cliente não pode mandar
+  await chamar(B, "POST", "/api/espaco-lo/posicao", { id: "ficha-crase", fracao: 1, frase: 9, segundos: 0, userId: String(ids.a) });
+  const loA = await M.EspacoLo.findOne({ userId: ids.a }).lean();
+  assert.equal((loA?.audios as Record<string, { fracao: number }>)["ficha-crase"].fracao, 0.5, "B não mudou a posição de A");
   await chamar(B, "POST", "/api/motivo-erro", { questaoId: String(q1._id), motivo: "nao_sabia", userId: String(ids.a) });
   await chamar(B, "POST", "/api/redacoes/vistas", { userId: String(ids.a) });
   const injetada = await chamar(B, "POST", "/api/responder", { questaoId: String(q1._id), resposta: q1.gabarito, confianca: 1, tempoSeg: 5, modo: "treino", userId: String(ids.a), acertou: true, xp: 99999, papel: "admin", gabarito: "Z", status: "contestada" });

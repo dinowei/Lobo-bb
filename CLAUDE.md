@@ -22,6 +22,7 @@ App pessoal de estudo para concursos: Escriturário do Banco do Brasil, Escreven
 - `src/estudo.ts`: implementação da interface `Api` (shared/tipos.ts) no servidor
 - `src/aulas.ts` e `src/outroJeito.ts`: aulas curtas por tópico auditadas e tutor alternativo com pré-geração, cache e cota diária
 - `src/cartoes.ts`: cartões de normas (trecho literal) e vocabulário de Inglês, auditados, com revisão espaçada própria
+- `src/espacoLo.ts` + `shared/espacoLo.ts`: Espaço da Lo (seu dia e recados por código, playlist do tema do dia, biblioteca de áudios, posição do áudio por aluno na coleção `espaco_lo`)
 - `src/rating.ts` + `shared/rating.ts`: Elo de questão e aluno (`rating-migrar`, `calibragem`)
 - `shared/`: `estruturaProva.ts` (cotas da prova, mistura), `aprendizado.ts` (motivo do erro, calibragem da confiança, horas líquidas), `diagnostico.ts` (Raio-X), `plano.ts` (plano até a prova), `redacaoLinhas.ts` (linhas da folha, 25 a 30)
 - `src/corrente.ts` + `data/modelos.json`: corrente de modelos grátis por função (regra de família); `src/noturno.ts`: fila persistente da noite

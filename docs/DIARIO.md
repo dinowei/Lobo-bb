@@ -335,7 +335,30 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - Player da Lo: o botão que está tocando agora é turquesa (era laranja; áudio é da Lo).
   - Prints antes/depois (claro e escuro, 360 e 1440) em `docs/telas/visual-final/`, gerados por `scripts/prints-visual.ts`.
   - Mesmos testes, sem alterar nenhum: suíte 256 ok / 0 falha, e2e fluxos, trilha, concurso, ce e janelas verdes.
-  - BLOQUEADO: "Espaço da Lo" e "Áudios da Lo" não têm especificação em lugar nenhum (pergunta ao dono).
+  - ~~BLOQUEADO~~ → feito com a especificação do dono (abaixo).
+- **Espaço da Lo (E13, especificação do dono 25/10):** tela nova no grupo "Com a Lo", turquesa.
+  - Regras puras em `shared/espacoLo.ts`, usadas pelo servidor e pelo demo, com 9 testes:
+    - "Seu dia" montado por código dos relatórios das janelas A/B, da trilha, da ficha, da aula, do áudio e das revisões, incluindo "o noturno não rodou e a Janela B recuperou";
+    - "Recados": selo que mudou (reforço → concluído), ficha ou prova nova nos seus temas desde a última visita, apostila × lei;
+    - posição do áudio: "ouvido" a partir de 90%, retomada uma frase (ou 3 s) antes;
+    - filtro da biblioteca.
+  - Lógica nova como funcionalidade, com teste:
+    - Coleção `espaco_lo` por aluno, com a posição de cada áudio e a base dos recados.
+    - Rotas `GET /api/espaco-lo` e `POST /api/espaco-lo/posicao` (id validado).
+    - Isolamento entre contas cobre as duas rotas.
+    - No demo, fica no `localStorage`.
+  - "Ouvir no almoço": playlist do tema do dia com transcrição (frase atual destacada), pausar, repetir, velocidade e "Continuar de onde parei".
+    - Só conteúdo aprovado: ficha aprovada, aula aprovada com as travas de fonte, pontos conferidos.
+    - Áudio sob demanda com cache (`/api/voz`, `naHora`).
+    - O leitor ganhou posição inicial, progresso e troca de velocidade no meio.
+  - "Áudios da Lo": o que já tem MP3 no cache ou já foi ouvido, agrupado por matéria, com busca e filtro "ouvido / não ouvido".
+  - Voz: Louise padrão. Nesta tela o mini-player do rodapé dá lugar ao player com transcrição.
+  - Bug achado pelo e2e e corrigido: "Repetir" só pausava, porque tocar o mesmo id alterna pausa.
+  - `scripts/e2e-espaco-lo.ts`:
+    - demo (quarta com Crase): toca → pausa → 1,5× → recarrega → continua uma frase antes → repetir → ouvido;
+    - servidor simulado: Janela B, 3 recados, posição no POST.
+    - Verde em 1440 e 360; prints em `docs/telas/espaco-lo/`.
+  - Suíte 265 ok / 0 falha.
 - Etapa 10: em fila (cadeia 5, depois da 4).
   - Lote 1 BB/BACEN: BB Escriturário 2021/2023 e Tecnologia 2021/2023 já estão no banco; BACEN 2024 C/E roda na cadeia 2.
   - Lote 2 Cesgranrio: BNDES (de novo), Caixa 2021, Banrisul 2022 e BASA 2022 (16–60, sem Legislação), depois incidência.

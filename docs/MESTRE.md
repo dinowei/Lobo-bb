@@ -95,6 +95,10 @@ Regras de ouro (detalhe no `CLAUDE.md`, regras 1 a 19):
 - trilha única com lentes, prontidão por concurso e Certo/Errado com nota Cebraspe;
 - login com convite, Admin (IA, Fila, Janelas, Concursos, Pendências, Convites, Contas);
 - noturno com etapas e Janela B, backup (o segundo do dia ganha o sufixo `-HHmm`), PWA com versão;
+- Espaço da Lo:
+  - "Seu dia" e "Recados" montados por código;
+  - "Ouvir no almoço" com transcrição e "continuar de onde parei";
+  - "Áudios da Lo", com ouvido / não ouvido;
 - abertura instantânea com o Painel guardado enquanto o Render acorda (`web/vercel.json`, `docs/VERCEL.md`).
 
 **Quase:**
@@ -112,7 +116,6 @@ Abertas (detalhe em `docs/DECISOES-PENDENTES.md`, lido pela tela Admin → Pend�
 - Pares de similaridade para classificar.
 - Crase: `erro_tratamento` fica fora do sorteio até um juiz acertar ≥ 95% em 20 frases.
 - Candidatos: classificador `bolt-e4b` e embedding de 1024 dimensões.
-- "Espaço da Lo" e "Áudios da Lo": falta a especificação.
 
 Resolvidas (uma linha cada):
 - corrente com auditor Muse → Ultra (25/10);
@@ -134,7 +137,6 @@ Resolvidas (uma linha cada):
    - Render: *Manual Deploy* → *Deploy latest commit*. Conferir `/api/saude`.
 6. **Os 72 arquivos por tema:** pôr em `72 FONTES/` e avisar.
 7. **CVM:** os ids `cvm_*` são provisórios até o edital do Agente Executivo.
-8. **"Espaço da Lo" e "Áudios da Lo":** descrever o que cada tela deve ter.
 
 ## 7. Rodar, publicar, montar do zero
 

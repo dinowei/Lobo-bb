@@ -1637,3 +1637,70 @@ h2.inline { display: inline; }
 .ficha-acervo blockquote { margin: 6px 0 0; padding-left: 10px; border-left: 2px solid var(--laranja); color: var(--suave); font-size: 13px; }
 small.sobe { color: var(--certo); }
 small.desce { color: var(--errado); }
+
+/* Espaço da Lo (turquesa): seu dia no destaque da Lo, recados, playlist com transcrição, biblioteca */
+.lo-grade { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: stretch; margin-bottom: 16px; }
+.lo-seu-dia { min-height: 0; grid-area: auto; } /* .seu-dia tem grid-area no Painel */
+.linhas-dia { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 14.5px; color: var(--n-texto); }
+.linhas-dia li { display: flex; gap: 10px; align-items: baseline; }
+.linhas-dia li > span { flex: none; width: 18px; text-align: center; font-weight: 700; color: var(--lo-sobre-branco); }
+.linhas-dia .dia-alerta { color: var(--atencao-texto); font-weight: 600; }
+.linhas-dia .dia-alerta > span { color: var(--atencao-texto); }
+.lo-seu-dia .cartao-interno { padding-right: 140px; }
+.lista-recados { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; font-size: 13.5px; }
+.lista-recados li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--raio-p); background: var(--lo-fundo); }
+.lista-recados li > span:nth-child(2) { flex: 1; }
+.lista-recados .recado-conflito { background: var(--atencao-fundo); }
+.icone-recado { flex: none; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--lo); color: var(--lo-tinta); font-size: 13px; }
+.recado-conflito .icone-recado { background: var(--atencao); color: var(--n-escuro); }
+.lo-almoco-cabeca { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.lo-almoco-cabeca h2 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.lo-almoco-cabeca h2 svg { color: var(--lo-texto); }
+.playlist-lo, .lista-audios { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.playlist-lo { counter-reset: faixa; }
+.faixa-lo { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: center; width: 100%; padding: 10px 12px; text-align: left; border-radius: var(--raio-p); border: 1px solid var(--linha); background: var(--superficie); color: var(--texto); }
+.faixa-lo .selo { grid-row: span 2; background: var(--lo-fundo); color: var(--lo-texto); }
+.faixa-lo b { font-size: 14px; }
+.faixa-lo small { color: var(--texto-2); font-size: 12px; }
+.faixa-lo:hover, .faixa-lo:focus-visible { border-color: var(--lo); outline: none; }
+.playlist-lo li.atual .faixa-lo { border-color: var(--lo); box-shadow: inset 4px 0 0 var(--lo); }
+.player-lo { margin-top: 14px; padding: 16px; border-radius: var(--raio); background: var(--nav); color: var(--n-claro); }
+.player-lo .sub { display: block; color: var(--escuro-texto-2); font-size: 12.5px; }
+.player-lo-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.player-lo-topo strong { color: var(--lo); }
+.player-lo-botoes { display: flex; align-items: center; gap: 10px; }
+.player-lo .botao-linha { color: var(--n-claro); border-color: var(--escuro-linha); }
+.barra-lo { height: 6px; margin: 12px 0; border-radius: 99px; background: var(--escuro-linha); overflow: hidden; }
+.barra-lo i { display: block; height: 100%; background: var(--lo); border-radius: inherit; transition: width .3s; }
+.velocidades { display: flex; flex-wrap: wrap; gap: 6px; }
+.player-lo .chip { color: var(--n-claro); border-color: var(--escuro-linha); background: transparent; }
+.player-lo .chip[aria-pressed="true"], .tela-lo .chip[aria-pressed="true"] { border-color: var(--lo); background: var(--lo-fundo); }
+.player-lo .chip[aria-pressed="true"] { background: var(--lo); color: var(--lo-tinta); }
+.transcricao { max-height: 260px; overflow-y: auto; margin-top: 12px; padding-right: 6px; font-size: 14.5px; line-height: 1.6; }
+.transcricao p { margin: 0 0 6px; color: var(--escuro-texto-2); }
+.transcricao p.lida { color: var(--nav-inativo); }
+.transcricao p.lendo { color: var(--n-claro); font-weight: 600; box-shadow: inset 3px 0 0 var(--lo); padding-left: 8px; }
+.filtros-lo { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 8px; }
+.filtros-lo input, .filtros-lo select { min-height: 40px; padding: 8px 12px; border-radius: 99px; border: 1px solid var(--linha); background: var(--superficie); color: var(--texto); font: inherit; }
+.filtros-lo input { flex: 1 1 220px; }
+.grupo-audios h3 { margin: 16px 0 0; font-size: 13px; font-weight: 600; color: var(--texto-2); text-transform: uppercase; letter-spacing: .04em; }
+.lista-audios li { display: flex; align-items: center; gap: 10px; }
+.lista-audios .faixa-lo { flex: 1; }
+.selo-ouvido { flex: none; font-size: 11.5px; padding: 3px 9px; border-radius: 99px; border: 1px solid var(--linha); color: var(--texto-2); }
+.selo-ouvido.sim { border-color: var(--lo); background: var(--lo-fundo); color: var(--lo-texto); }
+.lo-voz { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.lo-voz > div { flex: 1 1 220px; }
+.lo-voz h2 { margin: 0 0 2px; }
+.lo-voz .sub { margin: 0; }
+.lo-voz .pose img { width: 56px; display: block; }
+.lo-voz .filtros-lo { margin: 0; }
+.tela-lo .secao { margin-top: 0; }
+.tela-lo .lo-almoco, .tela-lo .lo-biblioteca { margin-bottom: 16px; }
+@media (max-width: 900px) { .lo-grade { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .lo-seu-dia .cartao-interno { padding-right: 20px; }
+  .lo-seu-dia > .pose { display: none; }
+  .player-lo-topo { flex-wrap: wrap; }
+  .lista-audios li { flex-wrap: wrap; }
+}
+@media (prefers-reduced-motion: reduce) { .barra-lo i { transition: none; } }

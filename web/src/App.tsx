@@ -3,7 +3,7 @@ import { useApp, type Tela } from "./estado";
 import { CONCURSOS, IDS_CONCURSO, SIGLA_CONCURSO } from "../../shared/concursos";
 import { Pose } from "./componentes/Pose";
 import {
-  IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, ICheck, IEngrenagem, IEscudo, IFogo, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
+  IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, ICheck, IEngrenagem, IEscudo, IFogo, IFone, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
 } from "./componentes/Icones";
 import { ErroTela, Esqueleto } from "./componentes/ErroTela";
 import { MiniLo } from "./componentes/MiniLo";
@@ -27,10 +27,12 @@ const Figuras = carregar(() => import("./telas/Figuras"), "Figuras");
 const Admin = carregar(() => import("./telas/Admin"), "Admin");
 const Tema = carregar(() => import("./telas/Tema"), "Tema");
 const CertoErrado = carregar(() => import("./telas/CertoErrado"), "CertoErrado");
+const EspacoLo = carregar(() => import("./telas/EspacoLo"), "EspacoLo");
 
 const TITULO: Record<Tela, string> = {
   painel: "Painel", plano: "Plano", praticar: "Praticar", "certo-errado": "Certo ou Errado", revisoes: "Revisões", cartoes: "Cartões", simulados: "Simulados",
   diagnostico: "Raio-X", erros: "Caderno de erros", redacao: "Redação", conquistas: "Conquistas", ajustes: "Ajustes", figuras: "Figuras", admin: "Admin", tema: "Tema",
+  "espaco-lo": "Espaço da Lo",
 };
 
 function useOnline() {
@@ -57,6 +59,7 @@ const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa; grupo: Grupo }[] =
   { tela: "simulados", rotulo: "Simulados", Icone: IAlvo, grupo: "binho" },
   { tela: "redacao", rotulo: "Redação", Icone: IRedacao, grupo: "binho" },
   { tela: "erros", rotulo: "Caderno de erros", Icone: ISino, grupo: "lo" },
+  { tela: "espaco-lo", rotulo: "Espaço da Lo", Icone: IFone, grupo: "lo" },
   { tela: "conquistas", rotulo: "Conquistas", Icone: ITrofeu, grupo: "binho" },
   { tela: "ajustes", rotulo: "Ajustes", Icone: IEngrenagem, grupo: "controle" },
 ];
@@ -174,6 +177,7 @@ export function App() {
               {tela === "figuras" && (ehAdmin ? <Figuras /> : <Painel />)}
               {tela === "admin" && (ehAdmin ? <Admin /> : <Painel />)}
               {tela === "tema" && <Tema />}
+              {tela === "espaco-lo" && <EspacoLo />}
             </Suspense>
           </ErroTela>
         </main>

@@ -36,4 +36,5 @@ export const IMais = (p: P) => (<svg {...base(p)}><circle cx="5" cy="12" r="1.2"
 export const IEscudo = (p: P) => (<svg {...base(p)}><path d="M12 3 19 6v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z" /><path d="m9 12 2 2 4-4" /></svg>);
 export const IFolha = (p: P) => (<svg {...base({ tam: 15, ...p })}><path d="M7 3h7l4 4v14H7z" /><path d="M14 3v4h4M10 12h5M10 16h5" /></svg>);
 export const ICartoes = (p: P) => (<svg {...base(p)}><rect x="3" y="7" width="13" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-3" /></svg>);
+export const IFone = (p: P) => (<svg {...base(p)}><path d="M4 15v-3a8 8 0 0 1 16 0v3" /><rect x="3" y="14" width="4" height="6" rx="1.5" /><rect x="17" y="14" width="4" height="6" rx="1.5" /></svg>);
 export const IRedacao =(p: P) => (<svg {...base(p)}><path d="M6 4h9l4 4v7" /><path d="M15 4v4h4M8 12h7M8 16h4" /><path d="m14 20 5.8-5.8 1.5 1.5L15.5 22H14z" /></svg>);

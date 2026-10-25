@@ -457,6 +457,18 @@ AudioSchema.index({ hash: 1, voz: 1 }, { unique: true });
 AudioSchema.index({ ouvidas: 1, ultimaVez: 1 });
 export const Audio = model("Audio", AudioSchema, "audios");
 
+// Espaço da Lo, por aluno: posição de cada áudio ("continuar de onde parei", ouvido/não ouvido) e a base dos
+// recados (selos e hora da última visita). Chave de `audios` = id do áudio (shared/espacoLo.ts, só [a-z0-9_-]).
+const EspacoLoSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, required: true, unique: true },
+    audios: { type: Schema.Types.Mixed, default: {} },
+    visita: Schema.Types.Mixed,
+  },
+  { timestamps: true, minimize: false }
+);
+export const EspacoLo = model("EspacoLo", EspacoLoSchema, "espaco_lo");
+
 // Rating Elo do aluno por disciplina (8.7)
 const RatingAlunoSchema = new Schema(
   {
