@@ -230,4 +230,27 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
 - Agendado para depois da janela (05:31, quando o noturno terminar): `desempatar-pendentes` e geração de 20 Crase com o Ultra desempatando. O resultado entra abaixo.
 - Erro de processo meu de novo: um teste foi acrescentado com heredoc (regra: código só pelo editor). Sem escape de regex, nada quebrou.
 
-RETOMAR AQUI: registrar o resultado do job pós-janela (desempate + 20 Crase). Depois, V2 passo 2, o que falta das interseções: F12 estilo por banca (3 oficiais da mesma banca e subtópico como exemplo) e "uma noite real com todas as etapas no relatório"; fichas no noturno (gancho), depois das questões. Depois V2 passo 3 (Janela B: auditoria e recuperação, incluindo as pendentes aguardando juiz; orquestração por contrato nos outros fluxos).
+## 25/10/2026 (manhã) — Visual fechado, F5 (abas BB/BACEN) entregue
+
+- **Noite de 25/10:**
+  - 01:00–01:17: 11 questões salvas (7 aprovadas, 4 rejeitadas: Sigilo, Inglês, Copom, Atendimento). Às 01:17:22 a tarefa morreu com 0xC000013A (janela do console fechada; houve desbloqueio do Windows e troca de energia às 01:14–01:16).
+  - Uma segunda execução (`noturno --ate 05:25`, 04:00) não salvou nada e deixou a trava órfã. O desempate a liberou às 09:15.
+  - Crase: nenhuma gerada à noite. Desempate pós-janela: 0 aguardando juiz (0 aprovadas, 0 rejeitadas).
+  - As 20 Crase rodam desde 09:17 (cerca de 7–10 min cada, com o Ultra desempatando). O resultado entra abaixo.
+- **Visual (commit 14834cb):**
+  - Suíte 222 ok / 0 falha (6 skip) e os e2e de fluxos e trilha verdes, sem alterar teste.
+  - Prints "depois" 360/1440 claro e escuro em `docs/telas/visual/depois/`.
+  - Achado nos prints: no celular, `overflow-x: hidden` em html e body virava contêiner de rolagem, e a página não pintava abaixo da primeira tela na captura. Agora é `clip`.
+  - Parado aqui por ordem do dono. Plano, Cartões, Raio-X etc. ficam para o polimento final.
+- **F5, abas BB/BACEN (commit ae8495a):**
+  - Cada pedido leva `X-Concurso`; o servidor guarda no contexto da requisição (AsyncLocalStorage).
+  - Tópicos, revisões, erros e simulado filtram pelo concurso ativo. A matéria comum vale nos dois; Suporte Técnico-Administrativo só entra no BACEN dessa área.
+  - Banca e área ficam por concurso, na Config `concursos_config`.
+  - Admin → Concursos: muda banca ou área com motivo, e o histórico fica salvo.
+  - Ajustes → Concurso mostra o aviso "Estudando no estilo Cebraspe (referência). Quando o edital sair, a banca muda."
+  - A troca de aba remonta a tela. O modo demo usa o mesmo filtro.
+  - Novo `scripts/e2e-concurso.ts` (API simulada): BB → BACEN (cabeçalho e matérias) → recarregar mantém → Ajustes volta para o BB, em 1440 e 360. Prints em `docs/telas/concurso/`.
+  - **Dependência registrada:** simulado fiel do BACEN exige a F10 (itens Certo/Errado) e o edital de Técnico. Hoje as cotas da prova ainda são as do BB.
+- Erro de processo meu: o primeiro commit falhou porque a mensagem foi passada como here-string do PowerShell; refeito com arquivo de mensagem. Nada foi gravado errado.
+
+RETOMAR AQUI: registrar o resultado das 20 Crase. Depois, V2 passo 2, o que falta das interseções: F12 estilo por banca (3 oficiais da mesma banca e subtópico como exemplo) e "uma noite real com todas as etapas no relatório"; fichas no noturno (gancho), depois das questões. Depois V2 passo 3 (Janela B: auditoria e recuperação, incluindo as pendentes aguardando juiz; orquestração por contrato nos outros fluxos).
