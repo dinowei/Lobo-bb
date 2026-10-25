@@ -5,6 +5,20 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ---
 
+## Decisão 2026-10-25a — Crase: a regra "erro_tratamento" (à Vossa Senhoria) trava a aprovação
+
+- **Fato (20 Crase pedidas em 25/10, com o Ultra desempatando):** 0 aprovadas nas 15 primeiras. 10 caíram em `auditor_por_frase_discordou` e **as 10 têm a mesma frase de erro: "à Vossa Senhoria"** (regra `erro_tratamento`, `src/portugues.ts`). O auditor (Muse) diz que a frase está correta, e no desempate o Ultra também diz. A gramática está do lado do banco de regras: pronome de tratamento não aceita artigo.
+- **O código fez o certo:** pela regra 13, só aprova se o auditor marcar "correta" exatamente na frase do gabarito; não aprovou nenhuma. Nada errado entrou no banco.
+- **Efeito:** toda questão que sorteia `erro_tratamento` entre as 4 de erro (quase metade) está condenada antes de começar. Isso custa ~5 min de IA por tentativa e explica a maior parte das reprovações.
+- **Também apareceu (escritor):** 2 frases de erro saíram sem o erro, ex.: "O gerente enviou a proposta de crédito ao cliente no balcão". A trava de posição não pegou porque a regra delas não pede "à" num lugar fixo. Isso eu posso consertar sem mudar regra aprovada; fica na fila.
+- **Opções:**
+  1. Tirar `erro_tratamento` do sorteio até um juiz acertá-la no benchmark (o banco de regras fica igual; só não é sorteada). **Recomendo.**
+  2. Manter e aceitar a perda (~metade das tentativas de Crase).
+  3. Mudar a frase da regra para "à Sua Excelência" ou "à Vossa Excelência". Duvido que ajude: o erro do juiz é o mesmo.
+- **Por que precisa de você:** o banco de regras da Crase foi aprovado por você, e tirar uma regra do sorteio muda a variedade das questões.
+
+---
+
 ## Decisão 0 — Juiz de Português sem modelo funcionando (24/10/2026) — RESOLVIDO 25/10/2026
 
 > **Decisão do dono (25/10):** `juiz_pt` e Redação = Ultra → Muse, sem `reasoning_budget` no Ultra; Super fora até nova sondagem provar estabilidade. Ativo com `npm run bb -- corrente definitiva` (commit `02e5e4d`); reverter com `corrente desfazer`. O texto abaixo é o histórico da proposta.
