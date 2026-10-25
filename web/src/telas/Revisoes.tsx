@@ -9,7 +9,7 @@ export function Revisoes() {
   const semana = painel.revisoesPorDia.reduce((s, d) => s + d.total, 0);
 
   return (
-    <div className="pagina">
+    <div className="pagina tela-lo">
       <div className="pagina-cabeca">
         <div>
           <h1>Revisões</h1>

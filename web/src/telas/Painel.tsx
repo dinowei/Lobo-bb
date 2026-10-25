@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PESO_PADRAO } from "../../../shared/motor";
 import { MOTIVOS_ERRO, NOME_DISCIPLINA, NOME_MOTIVO, type BancoDTO, type DesempenhoTemaDTO, type Disciplina, type MotivoErro, type MotivosDisciplinaDTO, type TopicoProgresso, type TrilhaDTO } from "../../../shared/tipos";
 import { csvDesempenho, NOME_SELO } from "../../../shared/desempenhoTema";
@@ -71,50 +71,68 @@ export function Painel() {
     </div>
     {aba === "temas" ? <DesempenhoTemas /> : (
     <div className="painel-grade">
-      <section className="area-hero">
-        <div className="hero">
-          <div className="hero-texto">
-            <div>
-              <p className="ola">
-                {primeiraVisita ? "Bem-vindo! O Binho vai estudar com você" : `Salve, ${ajustes.nome || "concurseiro"}!`}
-                {faltam !== null && faltam >= 0 && <> · faltam <b className="num">{faltam}</b> dias para a prova</>}
-                {plano?.totalSemanas && <> · <button className="link" onClick={() => ir("plano")}>semana <b className="num">{plano.semanaAtual}</b> de <b className="num">{plano.totalSemanas}</b></button></>}
-              </p>
-              <h1>
-                {n > 0 ? (
-                  <>Você respondeu {n} {n === 1 ? "questão" : "questões"} esta semana</>
-                ) : (
-                  <>Bora começar? Sua primeira questão te espera</>
-                )}
-              </h1>
-            </div>
-            <div className="hero-acao">
-              {temaHoje ? (
-                <div className="acao-trilha">
-                  <button className="botao-laranja" onClick={estudarTemaDoDia} data-testid="tema-do-dia">
-                    Estudar o tema do dia <ISeta />
-                  </button>
-                  <small>
-                    {trilha?.modo === "sabado" ? "Sábado: retomada · " : ""}Tema {temaHoje.n}: <b>{temaHoje.nome}</b>
-                    {temaHoje.estado === "reforco" ? ` · ${temaHoje.refazer ? "refazer" : "reforço"}` : ""}
-                  </small>
-                  <button className="link" onClick={() => ir("tema", { subtopico: temaHoje.subtopico })}>Ver o tema</button>
-                </div>
-              ) : (
-                <button className="botao-laranja" onClick={() => ir("praticar", trilha?.modo === "domingo" ? { revisao: true } : {})}>
-                  {trilha?.modo === "domingo" ? "Domingo: revisões e erros" : n > 0 ? "Continuar estudando" : "Começar agora"} <ISeta />
-                </button>
-              )}
-              {/* uma pose só: acenando na 1ª visita, lendo na hora de estudar, andando para a próxima tarefa */}
-              <Pose nome={primeiraVisita ? "acenando" : n > 0 ? "andando" : "lendo"} largura={84} carregar="eager" />
-            </div>
-          </div>
-          <CarrosselDisciplinas disciplinas={recomendadas} onPraticar={(disciplina) => ir("praticar", { disciplina })} />
+      {/* saudação + chamada principal (referência "Lobo Binho") */}
+      <section className="saudacao">
+        <div>
+          <h1>{primeiraVisita ? "Bem-vindo!" : `Olá, ${ajustes.nome || "concurseiro"}`}</h1>
+          <p>
+            {primeiraVisita ? "O Binho vai estudar com você." : "Seu estudo de hoje está preparado."}
+            {n > 0 && <> Você respondeu <b className="num">{n}</b> {n === 1 ? "questão" : "questões"} esta semana.</>}
+            {faltam !== null && faltam >= 0 && <> Faltam <b className="num">{faltam}</b> dias para a prova.</>}
+            {plano?.totalSemanas && <> <button className="link" onClick={() => ir("plano")}>Semana <b className="num">{plano.semanaAtual}</b> de <b className="num">{plano.totalSemanas}</b></button></>}
+          </p>
         </div>
+        <button className="botao-laranja botao-grande" onClick={() => (temaHoje ? estudarTemaDoDia() : ir("praticar", trilha?.modo === "domingo" ? { revisao: true } : {}))}>
+          <span aria-hidden="true">▶</span> {trilha?.modo === "domingo" && !temaHoje ? "Domingo: revisões e erros" : n > 0 ? "Continuar estudando" : "Começar agora"}
+        </button>
       </section>
 
-      <RadarDominio linhas={recomendadas} />
-      <SeuDia />
+      {/* destaque do Binho: plano de hoje, laranja sólido com o cartão branco por dentro */}
+      <section className="plano-hoje-cartao" aria-labelledby="titulo-plano-hoje">
+        <h2 id="titulo-plano-hoje"><span aria-hidden="true">▦</span> Plano de hoje</h2>
+        <div className="cartao-interno">
+          <h3>{temaHoje ? temaHoje.nome : trilha?.modo === "domingo" ? "Revisões e erros" : deHoje?.itens[0] ? textoItem(deHoje.itens[0]) : "Treino livre"}</h3>
+          <ul className="itens-plano">
+            <li><span aria-hidden="true">▷</span> <b className="num">{temaHoje ? temaHoje.tamanho - Math.min(temaHoje.tamanho, temaHoje.novasFeitasHoje) : painel.revisoesHoje}</b> {temaHoje ? "questões novas do tema" : "revisões para hoje"}</li>
+            <li><span aria-hidden="true">?</span> <b className="num">{temaHoje?.mistas ?? 5}</b> mistas da matéria no fim</li>
+          </ul>
+          {temaHoje ? (
+            <div className="acao-trilha">
+              <span className="progresso-tema">
+                <span>Progresso do tema</span>
+                <b className="num">{pct(Math.min(1, temaHoje.novasFeitasHoje / Math.max(1, temaHoje.tamanho)))}</b>
+                <i aria-hidden="true"><u style={{ width: pct(Math.min(1, temaHoje.novasFeitasHoje / Math.max(1, temaHoje.tamanho))) }} /></i>
+              </span>
+              <small>
+                {trilha?.modo === "sabado" ? "Sábado: retomada · " : ""}Tema {temaHoje.n}: <b>{temaHoje.nome}</b>
+                {temaHoje.estado === "reforco" ? ` · ${temaHoje.refazer ? "refazer" : "reforço"}` : ""}
+              </small>
+              <div className="acoes-plano">
+                <button className="botao-laranja" onClick={estudarTemaDoDia} data-testid="tema-do-dia">Estudar o tema do dia <ISeta /></button>
+                <button className="link" onClick={() => ir("tema", { subtopico: temaHoje.subtopico })}>Ver o tema</button>
+              </div>
+            </div>
+          ) : (
+            <div className="acoes-plano"><button className="botao-laranja" onClick={() => ir("plano")}>Ver o plano <ISeta /></button></div>
+          )}
+          <span className="frase-mascote" aria-hidden="true">Você consegue!</span>
+        </div>
+        <Pose nome="escrevendo" largura={190} carregar="eager" alt="" />
+      </section>
+
+      <SeuDia trilha={trilha} />
+
+      <ProximasAtividades trilha={trilha} temaHoje={temaHoje} estudarTemaDoDia={estudarTemaDoDia} deHoje={deHoje} />
+
+      <ModulosEstudo linhas={recomendadas} foco={disc?.disciplina} aoVerTopicos={(d) => setFoco(recomendadas.findIndex((r) => r.disciplina === d))} />
+
+      <section className="desempenho-cartao" aria-labelledby="titulo-desempenho">
+        <h2 id="titulo-desempenho"><span aria-hidden="true">▮▮▮</span> Seu desempenho</h2>
+        <div className="desempenho-grade">
+          <RadarDominio linhas={recomendadas} />
+          <MiniEvolucao />
+        </div>
+      </section>
 
       {!disc ? (
         <section className="area-modulo" aria-labelledby="titulo-modulo">
@@ -153,91 +171,18 @@ export function Painel() {
       </section>
       )}
 
-      <aside className="area-agenda" aria-labelledby="titulo-agenda">
-        <div className="agenda-cabeca">
-          <h2 id="titulo-agenda">Agenda</h2>
-          <button className="link" onClick={() => ir("revisoes")}>Ver tudo</button>
-        </div>
-
-        <div className="grupo-dia">Hoje</div>
-        {trilha && (
-          <button className="evento" onClick={temaHoje ? estudarTemaDoDia : () => ir("praticar", { revisao: true })}>
-            <strong>Trilha · Rodada {trilha.rodada}</strong>
-            <span className="sub num">
-              {temaHoje ? `Tema ${temaHoje.n} de ${trilha.total}: ${temaHoje.nome}${temaHoje.novasFeitasHoje ? ` · ${temaHoje.novasFeitasHoje} novas hoje` : ""}` : trilha.modo === "domingo" ? "Domingo: revisões e erros, sem tema novo" : "Sem tema hoje"}
-            </span>
-            <div className="rodape"><span className="sub num">{trilha.concluidos} concluídos{trilha.filaRetomada.length ? ` · ${trilha.filaRetomada.length} na retomada` : ""}</span><span className="tag"><i />Trilha</span></div>
-          </button>
-        )}
-        {deHoje && deHoje.itens.length > 0 && (
-          <button className="evento" onClick={() => ir("plano")}>
-            <strong>Plano de hoje</strong>
-            <ul className="plano-hoje">
-              {deHoje.itens.map((i, k) => {
-                const feito = i.tipo === "questoes" ? (painel.hojePorDisciplina?.find((x) => x.disciplina === i.disciplina)?.n ?? 0) : null;
-                return <li key={k} className={feito !== null && i.tipo === "questoes" && feito >= i.questoes ? "cumprido" : ""}>{textoItem(i)}{feito !== null && i.tipo === "questoes" ? ` · ${Math.min(feito, i.questoes)}/${i.questoes}` : ""}</li>;
-              })}
-            </ul>
-            <div className="rodape"><span className="sub">{plano?.totalSemanas ? NOME_FASE[plano.fase] : "Ciclo de estudos"}</span><span className="tag"><i />Plano</span></div>
-          </button>
-        )}
-        {diagnosticoPendente(painel.diagnosticos?.[painel.diagnosticos.length - 1]?.data) && (
-          <button className="evento convite-raiox" onClick={() => ir("diagnostico")}>
-            <span>
-              <strong>{painel.diagnosticos?.length ? "Hora de refazer o Raio-X" : "Faça seu Raio-X"}</strong>
-              <span className="sub">{painel.diagnosticos?.length ? "Já faz 30 dias: veja quanto você evoluiu." : "30 questões para o Binho saber onde você está e não gastar seu tempo com o que já sabe."}</span>
-            </span>
-          </button>
-        )}
-        <button className="evento" onClick={() => ir("praticar")}>
-          <strong>Meta do dia</strong>
-          <span className="sub num">
-            {painel.respondeuHoje >= ajustes.metaDiaria
-              ? `Batida! ${painel.respondeuHoje} questões hoje`
-              : `${painel.respondeuHoje} de ${ajustes.metaDiaria} questões`}
-          </span>
-          <div className="rodape">
-            <Rostos discs={recomendadas.slice(0, 3).map((d) => d.disciplina)} />
-            <span className="tag verde"><i />Meta</span>
-          </div>
-        </button>
-        <button className="evento" onClick={() => ir("praticar", { revisao: true })}>
-          <strong>Revisão espaçada</strong>
-          <span className="sub num">
-            {painel.revisoesHoje ? `${painel.revisoesHoje} ${painel.revisoesHoje === 1 ? "questão vencida" : "questões vencidas"}` : "Tudo em dia por hoje"}
-          </span>
-          <div className="rodape">
-            <span className="sub">{painel.revisoesHoje ? "Comece por aqui" : "Nada pendente"}</span>
-            <span className="tag roxo"><i />Revisão</span>
-          </div>
-        </button>
-
-        <div className="grupo-dia">Amanhã</div>
-        <button className="evento" onClick={() => ir("revisoes")}>
-          <strong>Revisão</strong>
-          <span className="sub num">
-            {painel.revisoesPorDia[1]?.total ? `${painel.revisoesPorDia[1].total} questões voltam` : "Nenhuma questão agendada"}
-          </span>
-          <div className="rodape"><span /><span className="tag roxo"><i />Revisão</span></div>
-        </button>
-        <button className="evento" onClick={() => ir("simulados")}>
-          <strong>Simulado semanal</strong>
-          <span className="sub">20 questões no peso do edital</span>
-          <div className="rodape"><span /><span className="tag amarelo"><i />Simulado</span></div>
-        </button>
-
+      {/* o que já existia no painel e não está na referência: banco, motivos de erro, calibragem, horas */}
+      <section className="area-detalhes" aria-label="Mais do seu estudo">
         {painel.banco && <CartaoBanco banco={painel.banco} />}
-        {painel.redacaoCorrigidaPendente && <button className="evento" onClick={() => ir("redacao")}><strong>Sua redação foi corrigida</strong><span className="sub">Veja sua nota e os próximos ajustes</span></button>}
         {painel.motivosErro?.some((d) => d.erros) && <CartaoMotivos linhas={painel.motivosErro} />}
         {painel.calibragem && <CartaoCalibragem linhas={painel.calibragem} />}
         {!!painel.horasSemana?.length && <CartaoHoras linhas={painel.horasSemana} />}
-
         {painel.totalRespondidas === 0 && (
-          <div className="vazio" style={{ marginTop: 12 }}>
+          <div className="vazio">
             <p style={{ margin: 0 }}>Cada questão respondida vira XP, agenda revisões e mostra seus pontos fracos aqui.</p>
           </div>
         )}
-      </aside>
+      </section>
     </div>
     )}
     </>
@@ -248,34 +193,39 @@ export function Painel() {
 // já calcula) × "acerto geral" (todas as tentativas). Tabela junto: o mesmo dado para leitor de tela.
 function RadarDominio({ linhas }: { linhas: { disciplina: Disciplina; nome: string; dominio: number; tentativas: number; acertos: number }[] }) {
   if (linhas.length < 3) return null;
-  const L = 300, c = L / 2, r = 118;
+  // mais largo que alto: os rótulos (em duas linhas) cabem dos lados sem cortar
+  const L = 380, A = 290, cx = L / 2, c = A / 2, r = 100;
   const ang = (i: number) => -Math.PI / 2 + (i * 2 * Math.PI) / linhas.length;
-  const ponto = (i: number, v: number) => [c + Math.cos(ang(i)) * r * v, c + Math.sin(ang(i)) * r * v] as const;
+  const ponto = (i: number, v: number) => [cx + Math.cos(ang(i)) * r * v, c + Math.sin(ang(i)) * r * v] as const;
   const poligono = (vals: number[]) => vals.map((v, i) => ponto(i, v).map((n) => n.toFixed(1)).join(",")).join(" ");
   const dominio = linhas.map((l) => l.dominio);
   const acerto = linhas.map((l) => (l.tentativas ? l.acertos / l.tentativas : 0));
   return (
     <section className="cartao-radar" aria-labelledby="titulo-radar">
-      <h2 id="titulo-radar">Domínio por matéria</h2>
-      <p className="sub">Domínio recente × acerto geral, de 0 a 100%</p>
+      <h3 id="titulo-radar">Domínio por matéria</h3>
+      <ul className="legenda-radar">
+        <li><i className="a" />Domínio recente</li>
+        <li><i className="b" />Acerto geral</li>
+      </ul>
       <div className="radar">
-        <svg viewBox={`0 0 ${L} ${L}`} role="img" aria-label={`Radar de domínio: ${linhas.map((l, i) => `${l.nome} ${pct(dominio[i])}`).join(", ")}`}>
+        <svg viewBox={`0 0 ${L} ${A}`} role="img" aria-label={`Radar de domínio: ${linhas.map((l, i) => `${l.nome} ${pct(dominio[i])}`).join(", ")}`}>
           {[0.25, 0.5, 0.75, 1].map((k) => <polygon key={k} className="grade-radar" points={poligono(linhas.map(() => k))} />)}
-          {linhas.map((_, i) => { const [x, y] = ponto(i, 1); return <line key={i} className="eixo-radar" x1={c} y1={c} x2={x} y2={y} />; })}
-          <polygon className="serie-b" points={poligono(acerto)} />
+          {linhas.map((_, i) => { const [x, y] = ponto(i, 1); return <line key={i} className="eixo-radar" x1={cx} y1={c} x2={x} y2={y} />; })}
+          {/* como na referência: a série principal preenchida em lima, a comparação só no contorno escuro por cima */}
           <polygon className="serie-a" points={poligono(dominio)} />
-          {dominio.map((v, i) => { const [x, y] = ponto(i, v); return <circle key={i} className="ponto-radar" cx={x} cy={y} r={4} />; })}
+          <polygon className="serie-b" points={poligono(acerto)} />
           {linhas.map((l, i) => {
             const [x, y] = ponto(i, 1.1);
-            return <text key={l.disciplina} className="rotulo-radar" x={x} y={y} textAnchor={Math.abs(x - c) < 8 ? "middle" : x > c ? "start" : "end"} dominantBaseline="middle">{SIGLA[l.disciplina]}</text>;
+            const partes = (CURTO[l.disciplina] ?? SIGLA[l.disciplina]).split("\n");
+            return (
+              <text key={l.disciplina} className="rotulo-radar" x={x} y={y - (partes.length - 1) * 5.5} textAnchor={Math.abs(x - cx) < 8 ? "middle" : x > cx ? "start" : "end"} dominantBaseline="middle">
+                {partes.map((p, k) => <tspan key={k} x={x} dy={k ? 11 : 0}>{p}</tspan>)}
+              </text>
+            );
           })}
         </svg>
         <div>
-          <ul className="legenda-radar">
-            <li><i className="a" />Domínio recente</li>
-            <li><i className="b" />Acerto geral</li>
-          </ul>
-          <table className="tabela-radar">
+          <table className="tabela-radar so-leitor">
             <caption className="so-leitor">Domínio recente e acerto geral por matéria</caption>
             <tbody>
               {linhas.map((l, i) => <tr key={l.disciplina}><td>{CURTO[l.disciplina] ?? l.nome}</td><td>{pct(dominio[i])}</td><td>{l.tentativas ? pct(acerto[i]) : "–"}</td></tr>)}
@@ -288,22 +238,148 @@ function RadarDominio({ linhas }: { linhas: { disciplina: Disciplina; nome: stri
 }
 
 // "Seu dia" da Lo (turquesa): revisões vencidas, erros para refazer e o que volta amanhã
-function SeuDia() {
+function SeuDia({ trilha }: { trilha: TrilhaDTO | null }) {
   const { painel, ir } = useApp();
   if (!painel) return null;
   const erros = (painel.motivosErro ?? []).reduce((s, d) => s + d.erros, 0);
   const amanha = painel.revisoesPorDia[1]?.total ?? 0;
+  const reforco = trilha?.hoje?.estado === "reforco" ? trilha.hoje.nome : null;
   return (
     <section className="seu-dia" aria-labelledby="titulo-seu-dia">
-      <h2 id="titulo-seu-dia">Seu dia com a Lo</h2>
-      <ul>
-        <li><b className="num">{painel.revisoesHoje}</b> {painel.revisoesHoje === 1 ? "revisão vencida" : "revisões vencidas"}</li>
-        <li><b className="num">{erros}</b> {erros === 1 ? "erro para refazer" : "erros para refazer"}</li>
-        <li><b className="num">{amanha}</b> {amanha === 1 ? "volta amanhã" : "voltam amanhã"}</li>
-      </ul>
-      <button className="botao-lo" onClick={() => (painel.revisoesHoje ? ir("praticar", { revisao: true }) : ir("erros"))}>{painel.revisoesHoje ? "Revisar com a Lo" : "Ver o caderno de erros"} <ISeta /></button>
-      <Pose nome="lo-acenando" largura={92} alt="" />
+      <h2 id="titulo-seu-dia"><span className="icone-lo" aria-hidden="true">◎</span> Seu dia com a Lo</h2>
+      <div className="cartao-interno">
+        <ul>
+          <li><span aria-hidden="true">↻</span> <b className="num">{painel.revisoesHoje}</b> {painel.revisoesHoje === 1 ? "revisão pendente" : "revisões pendentes"}</li>
+          <li><span aria-hidden="true">?</span> <b className="num">{erros}</b> {erros === 1 ? "erro para refazer" : "erros para refazer"}</li>
+          <li><span aria-hidden="true">◷</span> <b className="num">{amanha}</b> {amanha === 1 ? "volta amanhã" : "voltam amanhã"}</li>
+        </ul>
+        {reforco && <p className="alerta-lo"><span aria-hidden="true">⚠</span> <b>{reforco}</b> precisa de reforço</p>}
+        <button className="botao-lo largo" onClick={() => (painel.revisoesHoje ? ir("praticar", { revisao: true }) : ir("erros"))}>
+          <span aria-hidden="true">▶</span> {painel.revisoesHoje ? "Começar revisão" : "Ver o caderno de erros"}
+        </button>
+      </div>
+      <span className="frase-mascote lo" aria-hidden="true">Vamos revisar juntos?</span>
+      <Pose nome="lo-lendo" largura={150} alt="" />
     </section>
+  );
+}
+
+// "Próximas atividades" (referência): o que já estava na agenda, com o ponto na cor de quem cuida
+// (laranja = Binho/estudo, turquesa = Lo/revisão, verde = resultado/meta/simulado)
+function ProximasAtividades({ trilha, temaHoje, estudarTemaDoDia, deHoje }: {
+  trilha: TrilhaDTO | null; temaHoje: TrilhaDTO["hoje"]; estudarTemaDoDia: () => void; deHoje: ReturnType<typeof planoDeHoje> | null;
+}) {
+  const { painel, ir, ajustes } = useApp();
+  if (!painel) return null;
+  const item = (cor: "binho" | "lo" | "verde", titulo: string, sub: string, acao: () => void, chave: string) => (
+    <button key={chave} className="evento atividade" onClick={acao}>
+      <i className={`ponto-${cor}`} aria-hidden="true" />
+      <span><strong>{titulo}</strong><span className="sub num">{sub}</span></span>
+      <IDir />
+    </button>
+  );
+  const itens = [
+    temaHoje ? item("binho", `Tema do dia: ${temaHoje.nome}`, `Trilha · tema ${temaHoje.n} de ${trilha?.total ?? 51}${temaHoje.novasFeitasHoje ? ` · ${temaHoje.novasFeitasHoje} novas hoje` : ""}`, estudarTemaDoDia, "tema")
+      : trilha?.modo === "domingo" ? item("lo", "Domingo de revisões", "Sem tema novo: revisões e erros", () => ir("praticar", { revisao: true }), "domingo") : null,
+    deHoje?.itens.length ? item("binho", "Plano de hoje", deHoje.itens.map((i) => textoItem(i)).slice(0, 2).join(" · "), () => ir("plano"), "plano") : null,
+    item("lo", "Revisão espaçada", painel.revisoesHoje ? `${painel.revisoesHoje} ${painel.revisoesHoje === 1 ? "questão vencida" : "questões vencidas"} · hoje` : "Tudo em dia por hoje", () => ir("praticar", { revisao: true }), "revisao"),
+    item("lo", "Revisão de amanhã", painel.revisoesPorDia[1]?.total ? `${painel.revisoesPorDia[1].total} questões voltam` : "Nenhuma questão agendada", () => ir("revisoes"), "amanha"),
+    item("verde", "Meta do dia", painel.respondeuHoje >= ajustes.metaDiaria ? `Batida! ${painel.respondeuHoje} questões hoje` : `${painel.respondeuHoje} de ${ajustes.metaDiaria} questões`, () => ir("praticar"), "meta"),
+    item("verde", "Simulado semanal", "20 questões no peso do edital", () => ir("simulados"), "simulado"),
+    diagnosticoPendente(painel.diagnosticos?.[painel.diagnosticos.length - 1]?.data)
+      ? item("binho", painel.diagnosticos?.length ? "Hora de refazer o Raio-X" : "Faça seu Raio-X", painel.diagnosticos?.length ? "Já faz 30 dias: veja quanto evoluiu" : "30 questões para o Binho saber onde você está", () => ir("diagnostico"), "raiox") : null,
+    painel.redacaoCorrigidaPendente ? item("verde", "Sua redação foi corrigida", "Veja sua nota estimada", () => ir("redacao"), "redacao") : null,
+  ].filter(Boolean);
+  return (
+    <aside className="proximas" aria-labelledby="titulo-proximas">
+      <div className="agenda-cabeca">
+        <h2 id="titulo-proximas"><span aria-hidden="true">▦</span> Próximas atividades</h2>
+        <button className="link" onClick={() => ir("revisoes")}>Ver todas →</button>
+      </div>
+      <div className="lista-atividades">{itens}</div>
+    </aside>
+  );
+}
+
+// "Módulos de estudo" (referência): cartões por matéria com barra verde do domínio e questões respondidas
+function ModulosEstudo({ linhas, foco, aoVerTopicos }: { linhas: DisciplinaHero[]; foco?: Disciplina; aoVerTopicos: (d: Disciplina) => void }) {
+  const { painel, ir, api } = useApp();
+  const [todos, setTodos] = useState(false);
+  const [series, setSeries] = useState<Map<Disciplina, number[]> | null>(null);
+  useEffect(() => {
+    api.simulados().then((sims) => {
+      const m = new Map<Disciplina, number[]>();
+      for (const s of [...sims].filter((x) => !x.diagnostico).sort((a, b) => a.data.localeCompare(b.data)))
+        for (const p of s.porDisciplina) if (p.total) m.set(p.disciplina, [...(m.get(p.disciplina) ?? []), Math.round((p.acertos / p.total) * 100)]);
+      setSeries(m);
+    }).catch(() => setSeries(null));
+  }, [api]);
+  if (!linhas.length) return null;
+  const banco = new Map((painel?.banco?.porDisciplina ?? []).map((b) => [b.disciplina, b]));
+  return (
+    <section className="modulos" aria-labelledby="titulo-modulos">
+      <div className="agenda-cabeca">
+        <h2 id="titulo-modulos"><span aria-hidden="true">⚙</span> Módulos de estudo</h2>
+        {linhas.length > 6 && <button className="link" onClick={() => setTodos((v) => !v)}>{todos ? "Ver menos" : "Ver todos →"}</button>}
+      </div>
+      <div className="grade-modulos">
+        {(todos ? linhas : linhas.slice(0, 6)).map((d) => {
+          const b = banco.get(d.disciplina);
+          const serie = series?.get(d.disciplina) ?? [];
+          return (
+            <div key={d.disciplina} className={`modulo${foco === d.disciplina ? " em-foco" : ""}`}>
+              <button className="modulo-principal" onClick={() => ir("praticar", { disciplina: d.disciplina })} title={`Praticar ${d.nome}`}>
+                <span className="modulo-icone"><Ilustracao disciplina={d.disciplina} /></span>
+                <strong>{d.nome}</strong>
+                <span className="modulo-barra"><i aria-hidden="true"><u style={{ width: pct(d.dominio) }} /></i><b className="num">{pct(d.dominio)}</b></span>
+                <span className="sub num">{b ? `${b.total - b.ineditas} / ${b.total} questões` : `${d.tentativas} respondidas`}</span>
+                {serie.length >= 2 && <Sparkline valores={serie} rotulo={`Acerto de ${d.nome} nos simulados`} />}
+              </button>
+              <button className="link modulo-topicos" onClick={() => aoVerTopicos(d.disciplina)}>Tópicos</button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+// "Evolução nos simulados" do painel (referência): linha verde com o valor de cada simulado em selo verde
+function MiniEvolucao() {
+  const { api, ir } = useApp();
+  const [pontos, setPontos] = useState<{ data: string; pct: number }[] | null>(null);
+  useEffect(() => {
+    api.simulados().then((sims) => setPontos([...sims].filter((s) => !s.diagnostico && s.total).sort((a, b) => a.data.localeCompare(b.data)).slice(-6).map((s) => ({ data: s.data, pct: Math.round((s.acertos / s.total) * 100) })))).catch(() => setPontos([]));
+  }, [api]);
+  const L = 300, A = 180, M = { e: 34, d: 14, t: 26, b: 24 };
+  const x = (i: number) => M.e + (pontos && pontos.length > 1 ? (i * (L - M.e - M.d)) / (pontos.length - 1) : (L - M.e - M.d) / 2);
+  const y = (v: number) => M.t + (1 - v / 100) * (A - M.t - M.b);
+  return (
+    <div className="mini-evolucao">
+      <h3>Evolução nos simulados</h3>
+      {!pontos ? <p className="atalho">Carregando…</p> : !pontos.length ? (
+        <p className="atalho">Faça um simulado para ver sua evolução. <button className="link" onClick={() => ir("simulados")}>Fazer agora</button></p>
+      ) : (
+        <svg viewBox={`0 0 ${L} ${A}`} role="img" aria-label={`Acerto nos últimos simulados: ${pontos.map((p) => `${new Date(p.data).toLocaleDateString("pt-BR")} ${p.pct}%`).join(", ")}`}>
+          {[0, 25, 50, 75, 100].map((v) => (
+            <g key={v}>
+              <line x1={M.e} x2={L - M.d} y1={y(v)} y2={y(v)} className="grade" />
+              <text x={M.e - 6} y={y(v) + 4} textAnchor="end" className="eixo">{v}%</text>
+            </g>
+          ))}
+          <path className="area" d={`M${x(0)},${y(0)} ${pontos.map((p, i) => `L${x(i)},${y(p.pct)}`).join(" ")} L${x(pontos.length - 1)},${y(0)} Z`} />
+          <path className="linha" d={pontos.map((p, i) => `${i ? "L" : "M"}${x(i)},${y(p.pct)}`).join(" ")} />
+          {pontos.map((p, i) => (
+            <g key={p.data}>
+              <circle cx={x(i)} cy={y(p.pct)} r={4.5} className="ponto" />
+              <rect x={x(i) - 17} y={y(p.pct) - 24} width={34} height={17} rx={8.5} className="selo-valor" />
+              <text x={x(i)} y={y(p.pct) - 12} textAnchor="middle" className="valor">{p.pct}%</text>
+              <text x={x(i)} y={A - 6} textAnchor="middle" className="eixo">{new Date(p.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}</text>
+            </g>
+          ))}
+        </svg>
+      )}
+    </div>
   );
 }
 
@@ -367,7 +443,7 @@ function DesempenhoTemas() {
   );
 }
 
-type DisciplinaHero = { disciplina: Disciplina; nome: string; dominio: number };
+type DisciplinaHero = { disciplina: Disciplina; nome: string; dominio: number; tentativas: number };
 
 // sparkline do cartão de matéria: % de acerto da matéria em cada simulado (do mais antigo ao mais novo)
 function Sparkline({ valores, rotulo }: { valores: number[]; rotulo: string }) {
@@ -378,140 +454,6 @@ function Sparkline({ valores, rotulo }: { valores: number[]; rotulo: string }) {
     <svg className="spark" viewBox={`0 0 ${L} ${A}`} preserveAspectRatio="none" role="img" aria-label={`${rotulo}: ${valores.map((v) => `${v}%`).join(", ")}`}>
       <path d={valores.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")} vectorEffect="non-scaling-stroke" />
     </svg>
-  );
-}
-
-function CarrosselDisciplinas({ disciplinas, onPraticar }: { disciplinas: DisciplinaHero[]; onPraticar: (disciplina: Disciplina) => void }) {
-  const { api } = useApp();
-  // séries por matéria a partir do histórico de simulados que já existe (api.simulados), sem conta nova
-  const [series, setSeries] = useState<Map<Disciplina, number[]> | null>(null);
-  useEffect(() => {
-    api.simulados().then((sims) => {
-      const m = new Map<Disciplina, number[]>();
-      for (const s of [...sims].filter((x) => !x.diagnostico).sort((a, b) => a.data.localeCompare(b.data)))
-        for (const p of s.porDisciplina) if (p.total) m.set(p.disciplina, [...(m.get(p.disciplina) ?? []), Math.round((p.acertos / p.total) * 100)]);
-      setSeries(m);
-    }).catch(() => setSeries(null));
-  }, [api]);
-  const trilho = useRef<HTMLDivElement>(null);
-  const ponteiro = useRef({ ativo: false, x: 0, scroll: 0, moveu: false, capturado: false });
-  const [posicao, setPosicao] = useState(0);
-  const [temAntes, setTemAntes] = useState(false);
-  const [temDepois, setTemDepois] = useState(false);
-  const [arrastando, setArrastando] = useState(false);
-
-  const atualizar = useCallback(() => {
-    const el = trilho.current;
-    if (!el) return;
-    setTemAntes(el.scrollLeft > 2);
-    setTemDepois(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
-    const primeiroVisivel = [...el.querySelectorAll<HTMLElement>(".cartao-disc")]
-      .findIndex((item) => item.offsetLeft + item.offsetWidth > el.scrollLeft + 4);
-    setPosicao(Math.max(0, primeiroVisivel));
-  }, []);
-
-  useEffect(() => {
-    atualizar();
-    const el = trilho.current;
-    if (!el) return;
-    const observer = new ResizeObserver(atualizar);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [atualizar, disciplinas.length]);
-
-  const comportamento = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-  const mover = (sentido: -1 | 1) => {
-    const el = trilho.current;
-    if (el) el.scrollBy({ left: sentido * Math.max(180, el.clientWidth * 0.78), behavior: comportamento() });
-  };
-  const irPara = (indice: number) => {
-    const el = trilho.current;
-    const item = el?.querySelectorAll<HTMLElement>(".cartao-disc")[indice];
-    if (el && item) el.scrollTo({ left: item.offsetLeft, behavior: comportamento() });
-  };
-
-  function iniciarArrasto(e: PointerEvent<HTMLDivElement>) {
-    if (e.pointerType !== "mouse" || e.button !== 0) return;
-    ponteiro.current = { ativo: true, x: e.clientX, scroll: e.currentTarget.scrollLeft, moveu: false, capturado: false };
-    setArrastando(false);
-  }
-  function arrastar(e: PointerEvent<HTMLDivElement>) {
-    if (!ponteiro.current.ativo) return;
-    const delta = e.clientX - ponteiro.current.x;
-    if (Math.abs(delta) > 5) {
-      ponteiro.current.moveu = true;
-      setArrastando(true);
-      if (!ponteiro.current.capturado) {
-        e.currentTarget.setPointerCapture(e.pointerId);
-        ponteiro.current.capturado = true;
-      }
-    }
-    e.currentTarget.scrollLeft = ponteiro.current.scroll - delta;
-  }
-  function terminarArrasto(e: PointerEvent<HTMLDivElement>) {
-    if (!ponteiro.current.ativo) return;
-    ponteiro.current.ativo = false;
-    if (ponteiro.current.capturado && e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
-    ponteiro.current.capturado = false;
-    setArrastando(false);
-  }
-  function roda(e: WheelEvent<HTMLDivElement>) {
-    const el = e.currentTarget;
-    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || el.scrollWidth <= el.clientWidth) return;
-    el.scrollLeft += e.deltaY;
-    e.preventDefault();
-  }
-
-  return (
-    <div className={`carrossel-materias${temAntes ? " tem-antes" : ""}${temDepois ? " tem-depois" : ""}`}>
-      <button className="carrossel-seta esquerda" onClick={() => mover(-1)} disabled={!temAntes} aria-label="Disciplinas anteriores">‹</button>
-      <div
-        className={`hero-cartoes${arrastando ? " arrastando" : ""}`}
-        ref={trilho}
-        role="region"
-        aria-label="Disciplinas prioritárias para o treino"
-        tabIndex={0}
-        onScroll={atualizar}
-        onWheel={roda}
-        onPointerDown={iniciarArrasto}
-        onPointerMove={arrastar}
-        onPointerUp={terminarArrasto}
-        onPointerCancel={terminarArrasto}
-        onClickCapture={(e) => {
-          if (ponteiro.current.moveu) {
-            e.preventDefault();
-            e.stopPropagation();
-            ponteiro.current.moveu = false;
-          }
-        }}
-        onKeyDown={(e) => {
-          if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-          e.preventDefault();
-          mover(e.key === "ArrowRight" ? 1 : -1);
-        }}
-      >
-        {disciplinas.map((d, i) => (
-          <button
-            key={d.disciplina}
-            className={`cartao-disc${i === 1 ? " laranja" : ""}`}
-            onClick={() => onPraticar(d.disciplina)}
-            title={`Praticar ${d.nome}`}
-          >
-            {/* nome acessível = o texto visível (WCAG 2.5.3), com o verbo antes só para leitor de tela */}
-            <span className="sr-only">Praticar, prioridade </span>
-            <span className="n">{String(i + 1).padStart(2, "0")}</span>
-            <strong style={{ whiteSpace: "pre-line" }}>{CURTO[d.disciplina]}</strong>
-            {(series?.get(d.disciplina)?.length ?? 0) >= 2 && <Sparkline valores={series!.get(d.disciplina)!} rotulo={`Acerto de ${d.nome} nos simulados`} />}
-            <span className="dominio-cartao"><span>Domínio</span><b className="num">{pct(d.dominio)}</b><i><u style={{ width: pct(d.dominio) }} /></i></span>
-            <Ilustracao disciplina={d.disciplina} />
-          </button>
-        ))}
-      </div>
-      <button className="carrossel-seta direita" onClick={() => mover(1)} disabled={!temDepois} aria-label="Próximas disciplinas">›</button>
-      <div className="carrossel-pontos" aria-label={`Posição ${Math.min(posicao + 1, disciplinas.length)} de ${disciplinas.length}`}>
-        {disciplinas.map((d, i) => <button key={d.disciplina} className={i === posicao ? "ativo" : ""} onClick={() => irPara(i)} aria-label={`Ir para ${d.nome}`} aria-current={i === posicao ? "true" : undefined} />)}
-      </div>
-    </div>
   );
 }
 

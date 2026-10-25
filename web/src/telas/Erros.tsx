@@ -56,7 +56,7 @@ export function Erros() {
   const lista = filtro === "todas" ? erros : erros.filter((e) => e.disciplina === filtro);
 
   return (
-    <div className="pagina">
+    <div className="pagina tela-lo">
       <div className="pagina-cabeca">
         <div>
           <h1>Caderno de erros</h1>
