@@ -725,6 +725,9 @@ const RelatorioSchema = new Schema({
   resumo: Schema.Types.Mixed, // ResumoNoite (tarefas)
   noite: Schema.Types.Mixed, // RelatorioNoiteDTO (gerações desde o início)
   progresso: { aprovadas: Number, meta: Number, _id: false },
+  // E6: cada etapa da noite (backup, acervo, ingestão, classificação, geração, derivação C/E, fichas, áudio...)
+  etapas: [{ etapa: String, status: { type: String, enum: ["ok", "pulada", "falhou"] }, detalhe: String, ms: Number, _id: false }],
+  janela: { type: String, enum: ["A", "B"], default: "A" }, // E8: noite (A) ou recuperação (B)
 });
 RelatorioSchema.index({ fim: -1 });
 export const Relatorio = model("Relatorio", RelatorioSchema, "relatorios");

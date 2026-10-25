@@ -50,7 +50,8 @@ import { indexarQuestoes, calibrar } from "./similaridade.js";
 import { carregarCatalogo, CORRENTE_DEFINITIVA } from "./catalogo.js";
 import { aprovarCorrentes, desfazerCorrentes, correnteAtiva } from "./corrente.js";
 import { sondarModelos, verificarModelos } from "./sondagem.js";
-import { calcularAteFila, planejarEtapasDaNoite, planejarNoite, rodarFila } from "./noturno.js";
+import { alvosDaTrilha, calcularAteFila, planejarEtapasDaNoite, planejarNoite, rodarFila } from "./noturno.js";
+import { enfileirarIngestao, etapa, etapaAcervo, etapaBackup, etapaClassificacao, etapaDerivacao, etapaFichas, etapaIngestao, filaIngestao, sobraTempo, type EtapaNoite, type ItemIngestao } from "./noiteCompleta.js";
 import { planejarPregeracoes } from "./outroJeito.js";
 import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
 import { gerarAulas, planejarAulas } from "./aulas.js";
@@ -113,6 +114,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   voz limpar                    tira do cache o áudio de vozes fora da lista aprovada
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
+  fila-ingestao [--add itens.json]               provas/leis que o noturno ingere, uma por noite (lista ou acrescenta)
   derivar-ce [--n 6]                             itens Certo/Errado de múltiplas aprovadas (código monta, IA reescreve, auditor julga às cegas)
   migrar-trilha-unica --simular|--confirmar      início da trilha: nº do tema (por concurso) → subtópico (por aluno); rodar ANTES do trilha-ordenar
   trilha-ordenar --simular|--confirmar           trilha única: ordem por código (comuns, peso × incidência, pré-requisitos) → data/trilha.json
@@ -170,6 +172,7 @@ async function main() {
       ia: { type: "boolean" },
       oficiais: { type: "boolean" },
       tema: { type: "string" },
+      add: { type: "string" },
       comentario: { type: "string" },
       tipo: { type: "string" },
       titulo: { type: "string" },
@@ -464,6 +467,19 @@ async function main() {
         return;
       }
 
+      case "fila-ingestao": {
+        // E6: fila de provas/leis que o noturno ingere, uma por noite. "--add" lê um JSON (lista de ItemIngestao)
+        if (o.add) {
+          const itens = JSON.parse(await readFile(o.add, "utf8")) as ItemIngestao[];
+          const r = await enfileirarIngestao(itens);
+          return console.log(`Fila de ingestão: ${r.antes} → ${r.depois}`);
+        }
+        const fila = await filaIngestao();
+        console.log(`Fila de ingestão: ${fila.length} item(ns)`);
+        for (const [i, it] of fila.entries()) console.log(`  ${i + 1}. [${it.comando}] ${it.nome}`);
+        return;
+      }
+
       case "derivar-ce": {
         // F10: itens Certo/Errado a partir de múltiplas aprovadas (--n = nº de questões; 5 itens cada)
         return await naFila(rotulo, async () => {
@@ -659,12 +675,16 @@ async function main() {
         return await naFila(rotulo, async () => {
           const inicio = new Date();
           const lote = `noite ${inicio.toISOString().slice(0, 10)}`;
+          // E6 (F12): a noite completa, etapa por etapa, cada uma no relatório (ok / pulada / falhou)
+          const etapas: EtapaNoite[] = [];
+          await etapa(etapas, "backup", etapaBackup);
+          await etapa(etapas, "acervo", etapaAcervo);
+          await etapa(etapas, "ingestão", async () => (sobraTempo(ate, 120) ? etapaIngestao() : null));
           // questão/tópico novos ganham concurso, banca, formato e camada (idempotente: só o que falta)
           const preenchidos = (await migrarConcursos()).feitos.reduce((s, f) => s + f.alterados, 0);
           if (preenchidos) console.log(`✔ Concurso/banca preenchidos em ${preenchidos} registro(s) novo(s).`);
-          // subtópico das questões novas: só por código (o que ficar ambíguo espera a classificação com modelo)
-          const sub = await classificarBanco({ ia: false, gravar: true });
-          if (sub.gravadas) console.log(`✔ Subtópico em ${sub.gravadas} questão(ões) nova(s)${sub.ambiguas ? `; ${sub.ambiguas} ambígua(s) esperam o modelo` : ""}.`);
+          // subtópico das questões novas: código primeiro, ambíguas com o modelo
+          await etapa(etapas, "classificação", etapaClassificacao);
           // ordem da noite: questões → explicações alternativas → aulas → cartões → fontes atuais → temas → áudio
           // (a fila roda na ordem de criação, então esta é também a ordem de execução)
           const { gerar: n, explicar_outro_jeito: extras, aula: aulas, cartoes, fonte_atual: fontesAtuais, tema: temas, voz: audios } = await planejarEtapasDaNoite({
@@ -683,14 +703,23 @@ async function main() {
             },
           });
           console.log(`Plano: ${n} questão(ões), ${extras} explicação(ões) alternativa(s), ${aulas} aula(s), ${cartoes} lote(s) de cartões, ${fontesAtuais} conferência(s) de fonte atual, ${temas} tema(s) de redação e ${audios} áudio(s) do Binho (${lote})${ate ? `, até ${ate.toLocaleTimeString("pt-BR")}` : ""}`);
-          const ateFila = calcularAteFila(ate, inicio);
+          // reserva 45 min antes do fim para a derivação C/E e as fichas
+          const ateFila = calcularAteFila(ate ? new Date(+ate - 45 * 60_000) : undefined, inicio);
           const r = await rodarFila({ ate: ateFila, max: max !== undefined ? max + extras + aulas + cartoes + fontesAtuais + temas + audios + 1 : undefined, geradores: (await correnteAtiva()).correntes.gerador });
           console.log(`\n${r.rodadas} tarefa(s): ${r.aprovadas} questão(ões) aprovada(s), ${r.concluidas} concluída(s), ${r.descartadas} descartada(s), ${r.aguardando} aguardando nova tentativa, ${r.esgotadas} esgotada(s)${r.orfas ? `, ${r.orfas} recuperada(s) de processo que caiu` : ""}`);
+          etapas.push({ etapa: "geração e pré-geração", status: "ok", detalhe: `${n} questão(ões) planejada(s) (tema de amanhã primeiro), ${r.aprovadas} aprovada(s); ${extras} explicação(ões), ${aulas} aula(s), ${cartoes} lote(s) de cartões, ${audios} áudio(s) na fila`, ms: Date.now() - +inicio });
+          await etapa(etapas, "derivação C/E", async () => (sobraTempo(ate, 25) ? etapaDerivacao(4) : null));
+          await etapa(etapas, "fichas", async () => {
+            if (!sobraTempo(ate, 20)) return null;
+            const alvos = await alvosDaTrilha(await Topic.find({ ativo: true }).select("_id assunto").lean());
+            return etapaFichas(alvos[0]?.subtopico ?? null, 2);
+          });
           try {
             const noite = await relatorioDaNoite(inicio);
             const aprovadas = await Question.countDocuments({ status: "aprovada" });
-            await Relatorio.create({ lote, inicio, fim: new Date(), resumo: r, noite, progresso: { aprovadas, meta: META_BANCO } });
+            await Relatorio.create({ lote, inicio, fim: new Date(), resumo: r, noite, progresso: { aprovadas, meta: META_BANCO }, etapas, janela: "A" });
             console.log(`Banco: ${aprovadas} de ${META_BANCO} aprovadas (meta)`);
+            console.log(`Etapas: ${etapas.map((e) => `${e.etapa} ${e.status}`).join(" · ")}`);
           } catch (e) {
             console.error("Falha ao salvar relatório da noite:", e);
           }
