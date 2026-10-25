@@ -138,8 +138,8 @@
       "gratis": true,
       "preview": false,
       "parametros": [],
-      "status": "nao_testado",
-      "nota": "CANDIDATO APROVADO NA SONDA (F6 25/10/2026): 10 páginas do acervo (leis, provas, livros BCB/CVM, cursinho) renderizadas a 1240 px. 10/10 com ≥ 95% das palavras do texto embutido (8/10 ≥ 96,7% também na ordem dos caracteres; os 2 restantes trocam a ordem das colunas). 2–7 s por página, devolve caixas de layout (markdown_bbox). Fica fora da corrente até ter consumidor (triagem de página escaneada na F7); texto de OCR entra como 'incerto'"
+      "status": "ativo",
+      "nota": "APROVADO PELO DONO (25/10/2026) para páginas escaneadas/sem texto; texto de OCR entra como 'incerto'. Sonda F6 25/10/2026: 10 páginas do acervo (leis, provas, livros BCB/CVM, cursinho) renderizadas a 1240 px. 10/10 com ≥ 95% das palavras do texto embutido (8/10 ≥ 96,7% também na ordem dos caracteres; os 2 restantes trocam a ordem das colunas). 2–7 s por página, devolve caixas de layout (markdown_bbox). Fica fora da corrente até ter consumidor (triagem de página escaneada na F7); texto de OCR entra como 'incerto'"
     },
     {
       "id": "meta/llama-3.2-11b-vision-instruct",

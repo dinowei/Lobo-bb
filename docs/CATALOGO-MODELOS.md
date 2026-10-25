@@ -65,7 +65,7 @@ Sondas fora do repositório, poucas chamadas, 4 s entre elas; nenhuma muda corre
 | função | modelo | status | medição |
 |---|---|---|---|
 | (a) reranker | `llama-3.2-nv-rerankqa-1b-v2`, `llama-nemotron-rerank-1b-v2` | **sem endpoint grátis** | 410 "end of life" (18/05 e 25/08/2026). A busca segue só por embedding; a F11 usa A > B > C sem reranker |
-| (b) OCR e layout | `nemotron-parse` (v1) | candidato aprovado na sonda | 10 páginas do acervo: 10/10 com ≥ 95% das palavras do texto embutido; 8/10 ≥ 96,7% também na ordem; 2–7 s por página; caixas de layout |
+| (b) OCR e layout | `nemotron-parse` (v1) | **ativo** (OK do dono 25/10, só página escaneada/sem texto) | 10 páginas do acervo: 10/10 com ≥ 95% das palavras do texto embutido; 8/10 ≥ 96,7% também na ordem; 2–7 s por página; caixas de layout |
 | (b) OCR e layout | `nemotron-parse-2.0` | fora | 400 "DEGRADED function"; contexto de 4096 tokens |
 | (c) triagem/classificação em JSON | `nemotron-3.5-bolt-e4b` | candidato, abaixo do aceite | 39 questões ambíguas: 92,3% de acordo (tutor atual 94,9%); 0,46 s × 2,3 s. Aceite ≥ 95% |
 | (d) visão (classificar figura) | `llama-3.2-11b-vision-instruct` | candidato | transcreveu 100% de uma página com tabela; 19 s |

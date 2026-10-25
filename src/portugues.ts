@@ -233,14 +233,20 @@ function menosUsadas(regras: RegraCrase[], n: number, h: HistoricoCrase): RegraC
     .slice(0, n);
 }
 
+// Regras certas que ficam no banco mas fora do sorteio enquanto nenhum juiz acerta ≥ 95% delas num
+// benchmark próprio (decisão do dono, 25/10/2026). erro_tratamento: auditor e Ultra julgam "à Vossa
+// Senhoria" correta; como nunca aprovava, era sempre a "menos usada" e entrava em toda questão (0/20).
+export const FORA_DO_SORTEIO = new Set(["erro_tratamento"]);
+
 // 1 regra CORRETA na letra do gabarito + 4 regras de ERRO diferentes nas outras
 export function construirCrase(
   gabarito: Letra,
   contexto: string,
   historico: HistoricoCrase = { uso: new Map(), anterior: new Set() }
 ): CraseMontada {
-  const [certa] = menosUsadas(REGRAS_CRASE.filter((r) => r.correta), 1, historico);
-  const erros = embaralhar(menosUsadas(REGRAS_CRASE.filter((r) => !r.correta), 4, historico));
+  const sorteaveis = REGRAS_CRASE.filter((r) => !FORA_DO_SORTEIO.has(r.id));
+  const [certa] = menosUsadas(sorteaveis.filter((r) => r.correta), 1, historico);
+  const erros = embaralhar(menosUsadas(sorteaveis.filter((r) => !r.correta), 4, historico));
   const frases = (["A", "B", "C", "D", "E"] as Letra[]).map((letra) => ({
     letra,
     regra: letra === gabarito ? certa : erros.shift()!,

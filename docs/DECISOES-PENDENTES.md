@@ -5,7 +5,12 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ---
 
-## Decisão 2026-10-25a — Crase: a regra "erro_tratamento" (à Vossa Senhoria) trava a aprovação
+## Decisão 2026-10-25a — Crase: a regra "erro_tratamento" (à Vossa Senhoria) trava a aprovação — DECIDIDO 25/10/2026
+
+> **Decisão do dono (25/10):** fora do sorteio até um juiz acertar ≥ 95% dela num benchmark próprio (ex.: 20 frases só dessa regra). A regra está certa e continua no banco de regras.
+> Aplicado: `FORA_DO_SORTEIO` em `src/portugues.ts`, com teste.
+> **Pendência:** montar o benchmark de 20 frases de `erro_tratamento` e rodar nos juízes (Ultra, Muse, step-5-preview, gpt-oss). Quem passar de 95% devolve a regra ao sorteio.
+> Achado: a regra entrava em toda questão porque o sorteio prefere as regras menos usadas nas aprovadas, e ela nunca aprovava.
 
 - **Fato (20 Crase pedidas em 25/10, com o Ultra desempatando):** **0 de 20 aprovadas.** 15 caíram em `auditor_por_frase_discordou` e **as 15 têm a mesma frase de erro: "à Vossa Senhoria"** (regra `erro_tratamento`, `src/portugues.ts`). O auditor (Muse) diz que a frase está correta, e no desempate o Ultra também diz. A gramática está do lado do banco de regras: pronome de tratamento não aceita artigo.
 - **O código fez o certo:** pela regra 13, só aprova se o auditor marcar "correta" exatamente na frase do gabarito; não aprovou nenhuma. Nada errado entrou no banco.
