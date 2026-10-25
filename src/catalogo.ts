@@ -112,7 +112,8 @@ const M = {
 };
 export const CORRENTE_DEFINITIVA: Correntes = {
   gerador: [M.gpt, M.muse, M.lightning],
-  auditor: [M.muse, M.super, M.ultra],
+  // decisão do dono (25/10/2026, E2): Muse → Ultra, Super fora; a regra de família pula o da mesma família do gerador
+  auditor: [M.muse, M.ultra],
   escritor_pt: [M.glm, M.gpt, M.muse],
   // Decisão 0 do dono (25/10/2026): Super deu 404 na conta (fora até nova sondagem); Ultra sem reasoning_budget
   juiz_pt: [M.ultra, M.muse],

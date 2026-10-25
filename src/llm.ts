@@ -133,10 +133,22 @@ export function extrairJSON(raw: string): unknown {
       else if (c === '"') emString = false;
     } else if (c === '"') emString = true;
     else if (c === "{") nivel++;
-    else if (c === "}" && --nivel === 0) return JSON.parse(raw.slice(ini, i + 1));
+    else if (c === "}" && --nivel === 0) return parseTolerante(raw.slice(ini, i + 1));
   }
   // objeto não fechou: última chance com o último "}"
-  return JSON.parse(raw.slice(ini, raw.lastIndexOf("}") + 1));
+  return parseTolerante(raw.slice(ini, raw.lastIndexOf("}") + 1));
+}
+
+// Reparo de JSON (E2): texto copiado de PDF traz barra invertida solta ("R\$", "C:\pasta", fórmula),
+// que o JSON.parse recusa ("Bad escaped character"). A barra que não começa um escape válido vira "\\".
+export function parseTolerante(s: string): unknown {
+  try {
+    return JSON.parse(s);
+  } catch (e) {
+    const reparado = s.replace(/\\(?!["\\/bfnrtu])/g, "\\\\").replace(/\\u(?![0-9a-fA-F]{4})/g, "\\\\u");
+    if (reparado === s) throw e;
+    return JSON.parse(reparado);
+  }
 }
 
 type Mensagem = { role: "system" | "user" | "assistant"; content: string };

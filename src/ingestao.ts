@@ -53,6 +53,14 @@ import {
 import { buscarFontesPorConsulta, geracoesHoje, tetoDiario } from "./pipeline.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
 import { BANCAS, IDS_CONCURSO, type IdBanca } from "../shared/concursos.js";
+import { chatJSONFuncao } from "./corrente.js";
+
+// E2: extração, texto de apoio e explicação das oficiais pela CORRENTE do auditor (catálogo + corrente
+// aprovada: modelo "fora" nunca é chamado, reserva automática), não mais pelo AUDITOR_MODEL do .env
+async function auditorJSON(system: string, user: string, temperature: number, maxTokens: number, opcoes: { pensar?: boolean } = {}) {
+  const r = await chatJSONFuncao("auditor", system, user, temperature, maxTokens, opcoes);
+  return { json: r.json, modelo: r.modelo };
+}
 
 const ehDisciplina = (s: string): s is Disciplina => (DISCIPLINAS as readonly string[]).includes(s);
 
@@ -358,7 +366,7 @@ async function extrairUma(paginas: string[], n: number, secao: string): Promise<
   const fatia = paginas.slice(pag, pag + 2); // a questão pode continuar na página seguinte
   const texto = fatia.map((p, i) => `=== PÁGINA ${pag + i + 1} ===\n${p}`).join("\n\n");
   try {
-    const { json } = await chatJSONAuditor(
+    const { json } = await auditorJSON(
       EXTRATOR_SYSTEM,
       `${extratorUser(texto, secao)}\n\nEXTRAIA SOMENTE A QUESTÃO DE NÚMERO ${n}, com as cinco alternativas dela. ` +
         "Ignore as outras questões destas páginas (o PDF tem duas colunas: outra questão pode aparecer no meio do texto).",
@@ -399,14 +407,14 @@ async function extrairQuestoes(
   }
 
   // Extrai uma janela. Valida questão por questão: um item ruim não derruba as outras da janela.
-  async function extrairJanela(ini: number): Promise<boolean> {
-    const fatia = paginas.slice(ini, ini + JANELA);
+  async function extrairJanela(ini: number, tamanho = JANELA): Promise<boolean> {
+    const fatia = paginas.slice(ini, ini + tamanho);
     const texto = fatia.map((p, i) => `=== PÁGINA ${ini + i + 1} ===\n${p}`).join("\n\n");
     console.log(`… extraindo páginas ${ini + 1}–${ini + fatia.length} de ${paginas.length}`);
     try {
       // copiar não exige raciocínio: sem "pensar" fica rápido; se o auditor cair, usa a reserva
       const secao = secaoNoInicio.get(ini) ?? secaoAtual;
-      const { json } = await chatJSONAuditor(EXTRATOR_SYSTEM, extratorUser(texto, secao), 0, 16_000, { pensar: false });
+      const { json } = await auditorJSON(EXTRATOR_SYSTEM, extratorUser(texto, secao), 0, 16_000, { pensar: false });
       const itens = (json as { questoes?: unknown })?.questoes;
       if (!Array.isArray(itens)) throw new Error("resposta sem a lista 'questoes'");
       const boas: QuestaoExtraida[] = [];
@@ -433,10 +441,15 @@ async function extrairQuestoes(
     secaoNoInicio.set(ini, secaoAtual);
     if (!(await extrairJanela(ini))) falharam.push(ini);
   }
-  // segunda chance para as janelas que falharam (provedor instável)
+  // segunda chance (E2): a janela que falhou (JSON quebrado, timeout) volta em lotes menores, página a página,
+  // com a seção vigente de cada página
   if (falharam.length) {
-    console.log(`… repetindo ${falharam.length} janela(s) que falharam`);
-    for (const ini of falharam) await extrairJanela(ini);
+    console.log(`… repetindo ${falharam.length} janela(s) que falharam, página a página`);
+    for (const ini of falharam)
+      for (let k = ini; k < Math.min(ini + JANELA, paginas.length); k++) {
+        if (!secaoNoInicio.has(k)) secaoNoInicio.set(k, secaoNoInicio.get(ini) ?? secaoAtual);
+        await extrairJanela(k, 1);
+      }
   }
 
   // Busca dirigida: o modelo às vezes pula questões de uma janela grande. Para cada número que
@@ -492,7 +505,7 @@ async function extrairQuestoes(
     const texto = fatia.map((p, i) => `=== PÁGINA ${ini + i + 1} ===\n${p}`).join("\n\n");
     console.log(`… copiando o texto de apoio das questões ${numeros.join(", ")}`);
     try {
-      const { json } = await chatJSONAuditor(TEXTO_APOIO_SYSTEM, textoApoioUser(texto, numeros, g[0].disciplina), 0, 8_000, { pensar: false });
+      const { json } = await auditorJSON(TEXTO_APOIO_SYSTEM, textoApoioUser(texto, numeros, g[0].disciplina), 0, 8_000, { pensar: false });
       const { textoBase } = TextoApoioZ.parse(json);
       const cobertura = coberturaLiteral(textoBase, paginas.join("\n"));
       if (cobertura < 0.9) {
@@ -760,7 +773,7 @@ export async function ingerirProvaCE(
     const texto = fatia.map((p, i) => `=== PÁGINA ${ini + i + 1} ===\n${p}`).join("\n\n");
     console.log(`… extraindo páginas ${ini + 1}–${ini + fatia.length} de ${lido.paginas.length}`);
     try {
-      const { json } = await chatJSONAuditor(EXTRATOR_CE_SYSTEM, extratorUser(texto, secao), 0, 16_000, { pensar: false });
+      const { json } = await auditorJSON(EXTRATOR_CE_SYSTEM, extratorUser(texto, secao), 0, 16_000, { pensar: false });
       const itens = (json as { itens?: unknown })?.itens;
       for (const bruto of Array.isArray(itens) ? itens : []) {
         const v = ItemCEExtraidoZ.safeParse(bruto);
@@ -910,7 +923,7 @@ export async function explicarOficiais(limite = 50) {
 
       // 1) a IA resolve às cegas: se errar, a questão é traiçoeira e você precisa saber
       const userCego = auditorCegoUser(base, fontesTxt);
-      const rCego = await chatJSONAuditor(AUDITOR_CEGO_SYSTEM, userCego, 0, 2000);
+      const rCego = await auditorJSON(AUDITOR_CEGO_SYSTEM, userCego, 0, 2000);
       const cego = await validarOuReparar(RespostaCegaZ, rCego.json, {
         client: auditor(),
         model: rCego.modelo,
@@ -919,7 +932,7 @@ export async function explicarOficiais(limite = 50) {
       });
       // 2) escreve a explicação com o gabarito oficial travado (JSON inválido → reparo pelo mesmo modelo)
       const userExp = explicadorUser({ ...base, gabarito: q.gabarito }, fontesTxt);
-      const rExp = await chatJSONAuditor(EXPLICADOR_SYSTEM, userExp, 0.2, 5000);
+      const rExp = await auditorJSON(EXPLICADOR_SYSTEM, userExp, 0.2, 5000);
       const exp = await validarOuReparar(ExplicacaoZ, rExp.json, {
         client: auditor(),
         model: rExp.modelo,
@@ -986,9 +999,9 @@ export async function explicarItensCE(limite = 50) {
     const rotulo = `${it.prova ?? ""} #${it.numeroOriginal ?? it._id}`;
     try {
       const base = `${it.textoBase ? `COMANDO/TEXTO:\n${it.textoBase.slice(0, 3000)}\n\n` : ""}AFIRMAÇÃO: ${it.afirmacao}`;
-      const rCego = await chatJSONAuditor(JUIZ_CE_SYSTEM, base, 0, 800);
+      const rCego = await auditorJSON(JUIZ_CE_SYSTEM, base, 0, 800);
       const cego = JulgamentoCEZ.parse(rCego.json);
-      const rExp = await chatJSONAuditor(EXPLICADOR_CE_SYSTEM, `${base}\n\nGABARITO OFICIAL: ${it.gabarito === "C" ? "CERTO" : "ERRADO"}`, 0.2, 1200);
+      const rExp = await auditorJSON(EXPLICADOR_CE_SYSTEM, `${base}\n\nGABARITO OFICIAL: ${it.gabarito === "C" ? "CERTO" : "ERRADO"}`, 0.2, 1200);
       const exp = ExplicacaoCEZ.parse(rExp.json);
       const acertou = cego.julgamento === it.gabarito;
       if (!acertou) discordou++;
