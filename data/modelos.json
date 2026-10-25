@@ -120,6 +120,36 @@
       "parametros": [],
       "status": "ativo",
       "nota": "embeddings de 2048 dimensões"
+    },
+    {
+      "id": "nvidia/nemotron-parse-2.0",
+      "familia": "nvidia",
+      "funcoes": ["ocr_layout"],
+      "gratis": true,
+      "preview": false,
+      "parametros": [],
+      "status": "nao_testado",
+      "nota": "CANDIDATO (F6/F7, 24/10/2026): OCR e layout de página escaneada, tabela e figura do acervo. Entrada é imagem (renderizar a página). Aceite: em 10 páginas do acervo que também têm texto embutido, ≥ 95% dos caracteres iguais e tabelas com as mesmas células. Texto de OCR entra como 'incerto' até conferido (V2)"
+    },
+    {
+      "id": "nvidia/nemotron-3.5-embed-1b",
+      "familia": "nvidia",
+      "funcoes": ["embed"],
+      "gratis": true,
+      "preview": false,
+      "parametros": [],
+      "status": "nao_testado",
+      "nota": "CANDIDATO (F6, 24/10/2026): embedding menor/mais novo. V2: o atual fica até o benchmark de recuperação provar ganho (recall@5 dos trechos que fundamentam questões aprovadas). Trocar exige reindexar e rollback do índice"
+    },
+    {
+      "id": "nvidia/nemotron-3.5-bolt-e4b",
+      "familia": "nvidia",
+      "funcoes": ["classificador"],
+      "gratis": true,
+      "preview": false,
+      "parametros": [],
+      "status": "nao_testado",
+      "nota": "CANDIDATO (F6, 24/10/2026): classificador barato e rápido (subtópico, tipo de material na triagem do acervo, motivo de rejeição). Aceite: ≥ 95% de acordo com a classificação auditada em 80 questões, com latência menor que a do tutor atual. Só classifica; o código decide"
     }
   ]
 }

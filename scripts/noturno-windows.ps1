@@ -61,6 +61,9 @@ function Invoke-LoggedProcess {
   $process.StartInfo.CreateNoWindow = $true
   $process.StartInfo.RedirectStandardOutput = $true
   $process.StartInfo.RedirectStandardError = $true
+  # o Node escreve UTF-8; sem isto o PowerShell 5.1 lê na página do console e o log sai "Ô£ö" (23/10)
+  $process.StartInfo.StandardOutputEncoding = $utf8NoBom
+  $process.StartInfo.StandardErrorEncoding = $utf8NoBom
 
   $timedOut = $false
   $started = $false
