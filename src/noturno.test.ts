@@ -2,7 +2,7 @@
 // "antes de salvar" pega a parecida que outro trabalhador acabou de salvar (sem banco e sem IA)
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { planoDaNoite, metaDoTopico, destinoDaTarefa, TravaTopicos, filtroDaMeta, calcularAteFila, planejarEtapasDaNoite, ORDEM_PRE_GERACAO, type AlunoPlano } from "./noturno.js";
+import { planoDaNoite, metaDoTopico, destinoDaTarefa, TravaTopicos, filtroDaMeta, calcularAteFila, planejarEtapasDaNoite, ORDEM_PRE_GERACAO, itensDaTrilha, tipoDoSubtopico, diaDeEstudo, type AlunoPlano } from "./noturno.js";
 import { filtrarTopicosParaAula } from "./aulas.js";
 
 test("plano da noite: aulas entram na fila depois das questões e das explicações, antes de temas e áudio", async () => {
@@ -88,6 +88,27 @@ test("plano: tema pedido pelo aluno (página do tema) vai na frente, mesmo com a
   assert.ok(p.length > 0 && p.every((i) => i.topicId === "ing1"));
   const vazio = planoDaNoite({ topicos: TOP, aprovadas: new Map(), alunos: [aluno()], cotas: COTAS, totalQuestoes: 70, metaBanco: 1200, max: 1, pedidos: new Set(["inf2"]) });
   assert.equal(vazio[0].topicId, "inf2");
+});
+
+test("trilha: tema de amanhã sem 15 novas vai antes de tudo; desconta abertas; dois alunos → maior falta", () => {
+  const alvo = (novasParaAluno: number, abertas = 0) => ({ subtopico: "crase", topicId: "pt-reg", assunto: "Regência verbal e nominal e crase", tipo: "crase (por construção)", novasParaAluno, abertas });
+  assert.deepEqual(itensDaTrilha([alvo(15)]), []);
+  const [it] = itensDaTrilha([alvo(4, 3), alvo(2)]);
+  assert.equal(it.quantas, 13);
+  assert.deepEqual(it.item, { topicId: "pt-reg", assunto: "Regência verbal e nominal e crase", motivo: "trilha", subtopico: "crase", tipo: "crase (por construção)" });
+  // com a meta batida em tudo, só a trilha entra, e na frente
+  const cheio = new Map([["inf1", 200], ["inf2", 200], ["ing1", 200]]);
+  const p = planoDaNoite({ topicos: TOP, aprovadas: cheio, alunos: [aluno()], cotas: COTAS, totalQuestoes: 70, metaBanco: 1200, max: 50, trilha: itensDaTrilha([alvo(10)]) });
+  assert.equal(p.length, 5);
+  assert.ok(p.every((i) => i.motivo === "trilha" && i.tipo === "crase (por construção)"));
+});
+
+test("trilha: tipo forçado só quando o tópico mistura subtópicos; dia de estudo pela hora de Brasília", () => {
+  const tipos = ["regência (por construção)", "crase (por construção)", "crase"];
+  assert.equal(tipoDoSubtopico("Regência verbal e nominal e crase", "crase", tipos), "crase (por construção)");
+  assert.equal(tipoDoSubtopico("Pontuação", "pontuacao", ["pontuação (por construção)"]), undefined);
+  assert.equal(diaDeEstudo(new Date("2026-10-25T04:00:00Z")), "2026-10-25"); // 01:00 BRT: o dia que começa
+  assert.equal(diaDeEstudo(new Date("2026-10-25T01:30:00Z")), "2026-10-25"); // 22:30 BRT do dia 24: o dia seguinte
 });
 
 test("trava por tópico: dois trabalhadores nunca no mesmo tópico", () => {

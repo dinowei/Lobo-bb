@@ -606,6 +606,7 @@ const TarefaSchema = new Schema(
     resultadoId: Schema.Types.ObjectId, // questão aprovada
     iniciadaEm: Date,
     lote: String, // ex.: "noite 2026-10-17"
+    prioridade: { type: Number, default: 0 }, // maior roda antes (trilha de amanhã = 3); empate: proximaEm, criação
   },
   { timestamps: true }
 );
