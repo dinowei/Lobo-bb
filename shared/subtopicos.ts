@@ -12,6 +12,7 @@ export interface Subtopico {
   palavras?: string[];
   tipos?: string[];
   extra?: boolean;
+  leis?: string[]; // trecho do nome do arquivo da lei no acervo ("13.709", "LC 105") — a lei vai primeiro no mapa
 }
 export const SUBTOPICOS = arvore.subtopicos as Subtopico[];
 export const SUBTOPICO_POR_ID = new Map(SUBTOPICOS.map((s) => [s.id, s]));

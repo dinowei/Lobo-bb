@@ -13,9 +13,27 @@
       ],
       "lei": null,
       "materiais": [
-        { "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf", "paginas": "54–63", "pagina": 54, "camada": "C", "titulo": "Português para o CNU (Estratégia): crase em 2 passos, com questões resolvidas" },
-        { "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera Banco do Brasil 2023.pdf", "paginas": "13", "pagina": 13, "camada": "C", "titulo": "Revisão de Véspera BB 2023 (Estratégia): Aposta 11, crase" },
-        { "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - BB 2023 Escriturario Agente Comercial - Prova Comentada.pdf", "paginas": "12–13", "pagina": 12, "camada": "C", "titulo": "Prova comentada BB 2023 (Estratégia): questão 8 da Prova B" }
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf",
+          "paginas": "54–63",
+          "pagina": 54,
+          "camada": "C",
+          "titulo": "Português para o CNU (Estratégia): crase em 2 passos, com questões resolvidas"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera Banco do Brasil 2023.pdf",
+          "paginas": "13",
+          "pagina": 13,
+          "camada": "C",
+          "titulo": "Revisão de Véspera BB 2023 (Estratégia): Aposta 11, crase"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - BB 2023 Escriturario Agente Comercial - Prova Comentada.pdf",
+          "paginas": "12–13",
+          "pagina": 12,
+          "camada": "C",
+          "titulo": "Prova comentada BB 2023 (Estratégia): questão 8 da Prova B"
+        }
       ],
       "ficha": {
         "texto": "**Crase** é o encontro da preposição **a** (pedida por um verbo ou nome) com o artigo **a** (da palavra feminina). Dois passos: 1) alguém exige \"a\"? 2) a palavra aceita o artigo \"a\"? Os dois sim → **à**. Um não → sem acento.",
@@ -31,6 +49,1388 @@
         "BB 2023 Agente de Tecnologia Q8",
         "BB 2021 Agente de Tecnologia Q8"
       ]
+    },
+    "interpretacao": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Prova PRF 2021 comentada.pdf",
+          "paginas": "13–22",
+          "pagina": 13,
+          "camada": "C",
+          "titulo": "Estrategia - Prova PRF 2021 comentada"
+        },
+        {
+          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
+          "paginas": "7–11",
+          "pagina": 7,
+          "camada": "C",
+          "titulo": "Estrategia - Resumao PRF"
+        },
+        {
+          "arquivo": "08_CGU/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera CGU.pdf",
+          "paginas": "94–101",
+          "pagina": 94,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera CGU"
+        }
+      ],
+      "oficiais": []
+    },
+    "pontuacao": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book BNB 2024.pdf",
+          "paginas": "49–51",
+          "pagina": 49,
+          "camada": "C",
+          "titulo": "Estrategia - E-book BNB 2024"
+        },
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf",
+          "paginas": "50–52",
+          "pagina": 50,
+          "camada": "C",
+          "titulo": "Estrategia - Portugues para o CNU"
+        },
+        {
+          "arquivo": "11_TSE Unificado - Justica Eleitoral/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Analista Judiciario Area Administrativa TSE.pdf",
+          "paginas": "62–63",
+          "pagina": 62,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Analista Judiciario Area Administrativa TSE"
+        }
+      ],
+      "oficiais": []
+    },
+    "concordancia": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "08_CGU/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera CGU.pdf",
+          "paginas": "94–102",
+          "pagina": 94,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera CGU"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book BNB 2024.pdf",
+          "paginas": "75–77",
+          "pagina": 75,
+          "camada": "C",
+          "titulo": "Estrategia - E-book BNB 2024"
+        },
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf",
+          "paginas": "76–78",
+          "pagina": 76,
+          "camada": "C",
+          "titulo": "Estrategia - Portugues para o CNU"
+        }
+      ],
+      "oficiais": []
+    },
+    "regencia": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Pegadinhas Inteligentes Banco do Brasil.pdf",
+          "paginas": "7–8",
+          "pagina": 7,
+          "camada": "C",
+          "titulo": "Estrategia - Pegadinhas Inteligentes Banco do Brasil"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera BB 2021 parte 1.pdf",
+          "paginas": "19–21",
+          "pagina": 19,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera BB 2021 parte 1"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera BB 2021 parte 2.pdf",
+          "paginas": "19–21",
+          "pagina": 19,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera BB 2021 parte 2"
+        }
+      ],
+      "oficiais": []
+    },
+    "classes_colocacao": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book BNB 2024.pdf",
+          "paginas": "20–24",
+          "pagina": 20,
+          "camada": "C",
+          "titulo": "Estrategia - E-book BNB 2024"
+        },
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf",
+          "paginas": "21–25",
+          "pagina": 21,
+          "camada": "C",
+          "titulo": "Estrategia - Portugues para o CNU"
+        },
+        {
+          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
+          "paginas": "13–14",
+          "pagina": 13,
+          "camada": "C",
+          "titulo": "Estrategia - Resumao PRF"
+        }
+      ],
+      "oficiais": []
+    },
+    "coesao_reescrita": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "05_INSS/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado INSS.pdf",
+          "paginas": "39–41",
+          "pagina": 39,
+          "camada": "C",
+          "titulo": "Estrategia - Manual do Aprovado INSS"
+        },
+        {
+          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
+          "paginas": "23–24",
+          "pagina": 23,
+          "camada": "C",
+          "titulo": "Estrategia - Resumao PRF"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Vade Mecum BB Agente Comercial 2021.pdf",
+          "paginas": "96",
+          "pagina": 96,
+          "camada": "C",
+          "titulo": "Estrategia - Vade Mecum BB Agente Comercial 2021"
+        }
+      ],
+      "oficiais": []
+    },
+    "ortografia": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
+          "paginas": "308–309",
+          "pagina": 308,
+          "camada": "C",
+          "titulo": "Estrategia - Resumao PRF"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book BNB 2024.pdf",
+          "paginas": "53–55",
+          "pagina": 53,
+          "camada": "C",
+          "titulo": "Estrategia - E-book BNB 2024"
+        },
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Portugues para o CNU.pdf",
+          "paginas": "54–56",
+          "pagina": 54,
+          "camada": "C",
+          "titulo": "Estrategia - Portugues para o CNU"
+        }
+      ],
+      "oficiais": []
+    },
+    "porcentagem": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - Revisao de Vespera BB Tecnologia e Servicos 2023.pdf",
+          "paginas": "4–5",
+          "pagina": 4,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera BB Tecnologia e Servicos 2023"
+        },
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Direito Constitucional para o CNU.pdf",
+          "paginas": "46–47",
+          "pagina": 46,
+          "camada": "C",
+          "titulo": "Estrategia - Direito Constitucional para o CNU"
+        },
+        {
+          "arquivo": "13_TJ-SP/Materiais de Cursinhos (gratuitos)/Estrategia - Raio-X Estrategico TJ-SP Escrevente.pdf",
+          "paginas": "10–11",
+          "pagina": 10,
+          "camada": "C",
+          "titulo": "Estrategia - Raio-X Estrategico TJ-SP Escrevente"
+        }
+      ],
+      "oficiais": []
+    },
+    "numeros_operacoes": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Raciocinio Logico para o CNU.pdf",
+          "paginas": "25–26",
+          "pagina": 25,
+          "camada": "C",
+          "titulo": "Estrategia - Raciocinio Logico para o CNU"
+        },
+        {
+          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
+          "paginas": "108–109",
+          "pagina": 108,
+          "camada": "C",
+          "titulo": "Estrategia - Resumao PRF"
+        },
+        {
+          "arquivo": "13_TJ-SP/Materiais de Cursinhos (gratuitos)/Estrategia - Raio-X Estrategico TJ-SP Escrevente.pdf",
+          "paginas": "10–11",
+          "pagina": 10,
+          "camada": "C",
+          "titulo": "Estrategia - Raio-X Estrategico TJ-SP Escrevente"
+        }
+      ],
+      "oficiais": []
+    },
+    "funcoes_equacoes": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado Banco do Brasil.pdf",
+          "paginas": "35",
+          "pagina": 35,
+          "camada": "C",
+          "titulo": "Estrategia - Manual do Aprovado Banco do Brasil"
+        },
+        {
+          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
+          "paginas": "107",
+          "pagina": 107,
+          "camada": "C",
+          "titulo": "Estrategia - Resumao PRF"
+        }
+      ],
+      "oficiais": []
+    },
+    "progressoes": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado Banco do Brasil.pdf",
+          "paginas": "43–45",
+          "pagina": 43,
+          "camada": "C",
+          "titulo": "Estrategia - Manual do Aprovado Banco do Brasil"
+        }
+      ],
+      "oficiais": []
+    },
+    "juros_simples": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - 50 Questoes comentadas Matematica Financeira Cebraspe.pdf",
+          "paginas": "4–10",
+          "pagina": 4,
+          "camada": "C",
+          "titulo": "Estrategia - 50 Questoes comentadas Matematica Financeira Cebraspe"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Matematica Financeira e Estatistica (Caixa 2024).pdf",
+          "paginas": "83–88",
+          "pagina": 83,
+          "camada": "C",
+          "titulo": "Estrategia - Matematica Financeira e Estatistica (Caixa 2024)"
+        },
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Raciocinio Logico para o CNU.pdf",
+          "paginas": "58–62",
+          "pagina": 58,
+          "camada": "C",
+          "titulo": "Estrategia - Raciocinio Logico para o CNU"
+        }
+      ],
+      "oficiais": []
+    },
+    "juros_compostos": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Caderno de Educacao Financeira - Gestao de Financas Pessoais.pdf",
+          "paginas": "32–34",
+          "pagina": 32,
+          "camada": "B",
+          "titulo": "BCB - Caderno de Educacao Financeira - Gestao de Financas Pessoais"
+        },
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Raciocinio Logico para o CNU.pdf",
+          "paginas": "4–13",
+          "pagina": 4,
+          "camada": "C",
+          "titulo": "Estrategia - Raciocinio Logico para o CNU"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Matematica Financeira e Estatistica (Caixa 2024).pdf",
+          "paginas": "52–61",
+          "pagina": 52,
+          "camada": "C",
+          "titulo": "Estrategia - Matematica Financeira e Estatistica (Caixa 2024)"
+        }
+      ],
+      "oficiais": []
+    },
+    "descontos": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Caderno de Educacao Financeira - Gestao de Financas Pessoais.pdf",
+          "paginas": "51–52",
+          "pagina": 51,
+          "camada": "B",
+          "titulo": "BCB - Caderno de Educacao Financeira - Gestao de Financas Pessoais"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio de Economia Bancaria 2023.pdf",
+          "paginas": "47–48",
+          "pagina": 47,
+          "camada": "B",
+          "titulo": "BCB - Relatorio de Economia Bancaria 2023"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio de Estabilidade Financeira 2025-04.pdf",
+          "paginas": "73–74",
+          "pagina": 73,
+          "camada": "B",
+          "titulo": "BCB - Relatorio de Estabilidade Financeira 2025-04"
+        }
+      ],
+      "oficiais": []
+    },
+    "taxas": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio de Estabilidade Financeira 2024-10.pdf",
+          "paginas": "11–15",
+          "pagina": 11,
+          "camada": "B",
+          "titulo": "BCB - Relatorio de Estabilidade Financeira 2024-10"
+        },
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Livro TOP Analise de Investimentos.pdf",
+          "paginas": "68–72",
+          "pagina": 68,
+          "camada": "B",
+          "titulo": "CVM - Livro TOP Analise de Investimentos"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - BACEN 2024 Economia e Financas - Prova Comentada.pdf",
+          "paginas": "60–61",
+          "pagina": 60,
+          "camada": "C",
+          "titulo": "Estrategia - BACEN 2024 Economia e Financas - Prova Comentada"
+        }
+      ],
+      "oficiais": []
+    },
+    "sac_price": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio Integrado de Gestao 2025.pdf",
+          "paginas": "108",
+          "pagina": 108,
+          "camada": "B",
+          "titulo": "BCB - Relatorio Integrado de Gestao 2025"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado BB - Dicas.pdf",
+          "paginas": "12",
+          "pagina": 12,
+          "camada": "C",
+          "titulo": "Estrategia - Manual do Aprovado BB - Dicas"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - 50 Questoes comentadas Matematica Financeira Cebraspe.pdf",
+          "paginas": "58",
+          "pagina": 58,
+          "camada": "C",
+          "titulo": "Estrategia - 50 Questoes comentadas Matematica Financeira Cebraspe"
+        }
+      ],
+      "oficiais": []
+    },
+    "rendas_vpl": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - 50 Questoes comentadas Matematica Financeira Cebraspe.pdf",
+          "paginas": "54–57",
+          "pagina": 54,
+          "camada": "C",
+          "titulo": "Estrategia - 50 Questoes comentadas Matematica Financeira Cebraspe"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Formulario Estrategico Matematica Financeira.pdf",
+          "paginas": "17–20",
+          "pagina": 17,
+          "camada": "C",
+          "titulo": "Estrategia - Formulario Estrategico Matematica Financeira"
+        }
+      ],
+      "oficiais": []
+    },
+    "proposicoes": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "05_INSS/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado INSS.pdf",
+          "paginas": "38–42",
+          "pagina": 38,
+          "camada": "C",
+          "titulo": "Estrategia - Manual do Aprovado INSS"
+        },
+        {
+          "arquivo": "05_INSS/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes de Revisao Ativa Tecnico INSS.pdf",
+          "paginas": "16–20",
+          "pagina": 16,
+          "camada": "C",
+          "titulo": "Estrategia - Questoes de Revisao Ativa Tecnico INSS"
+        },
+        {
+          "arquivo": "08_CGU/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado CGU.pdf",
+          "paginas": "72–76",
+          "pagina": 72,
+          "camada": "C",
+          "titulo": "Estrategia - Manual do Aprovado CGU"
+        }
+      ],
+      "oficiais": []
+    },
+    "negacao_equivalencias": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - BACEN 2024 Economia e Financas - Prova Comentada.pdf",
+          "paginas": "16–25",
+          "pagina": 16,
+          "camada": "C",
+          "titulo": "Estrategia - BACEN 2024 Economia e Financas - Prova Comentada"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - BACEN 2024 Tecnologia da Informacao - Prova Comentada.pdf",
+          "paginas": "17–26",
+          "pagina": 17,
+          "camada": "C",
+          "titulo": "Estrategia - BACEN 2024 Tecnologia da Informacao - Prova Comentada"
+        },
+        {
+          "arquivo": "08_CGU/Materiais de Cursinhos (gratuitos)/Estrategia - Manual do Aprovado CGU.pdf",
+          "paginas": "76–79",
+          "pagina": 76,
+          "camada": "C",
+          "titulo": "Estrategia - Manual do Aprovado CGU"
+        }
+      ],
+      "oficiais": []
+    },
+    "tabela_verdade": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "05_INSS/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes de Revisao Ativa Tecnico INSS.pdf",
+          "paginas": "18–19",
+          "pagina": 18,
+          "camada": "C",
+          "titulo": "Estrategia - Questoes de Revisao Ativa Tecnico INSS"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - Resumos Estrategicos BACEN Economia e Financas.pdf",
+          "paginas": "15",
+          "pagina": 15,
+          "camada": "C",
+          "titulo": "Estrategia - Resumos Estrategicos BACEN Economia e Financas"
+        }
+      ],
+      "oficiais": []
+    },
+    "combinatoria": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book Tecnico Bancario Caixa 2021.pdf",
+          "paginas": "19",
+          "pagina": 19,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Tecnico Bancario Caixa 2021"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Escriturario Banco do Brasil.pdf",
+          "paginas": "17",
+          "pagina": 17,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Escriturario Banco do Brasil"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - Resumos Estrategicos BACEN Economia e Financas.pdf",
+          "paginas": "19",
+          "pagina": 19,
+          "camada": "C",
+          "titulo": "Estrategia - Resumos Estrategicos BACEN Economia e Financas"
+        }
+      ],
+      "oficiais": []
+    },
+    "probabilidade": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - BACEN 2024 Tecnologia da Informacao - Prova Comentada.pdf",
+          "paginas": "28–35",
+          "pagina": 28,
+          "camada": "C",
+          "titulo": "Estrategia - BACEN 2024 Tecnologia da Informacao - Prova Comentada"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Matematica Financeira e Estatistica (Caixa 2024).pdf",
+          "paginas": "108–112",
+          "pagina": 108,
+          "camada": "C",
+          "titulo": "Estrategia - Matematica Financeira e Estatistica (Caixa 2024)"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - BACEN 2024 Economia e Financas - Prova Comentada.pdf",
+          "paginas": "27–32",
+          "pagina": 27,
+          "camada": "C",
+          "titulo": "Estrategia - BACEN 2024 Economia e Financas - Prova Comentada"
+        }
+      ],
+      "oficiais": []
+    },
+    "estatistica": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
+          "paginas": "4–8",
+          "pagina": 4,
+          "camada": "C",
+          "titulo": "Estrategia - Resumao PRF"
+        },
+        {
+          "arquivo": "12_TCU/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Auditor Controle Externo TCU.pdf",
+          "paginas": "49–50",
+          "pagina": 49,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Auditor Controle Externo TCU"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book Tecnico Bancario Caixa 2021.pdf",
+          "paginas": "19–20",
+          "pagina": 19,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Tecnico Bancario Caixa 2021"
+        }
+      ],
+      "oficiais": []
+    },
+    "so_atalhos": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Gran - Revisao de Vespera Banco do Brasil 2021.pdf",
+          "paginas": "23–26",
+          "pagina": 23,
+          "camada": "C",
+          "titulo": "Gran - Revisao de Vespera Banco do Brasil 2021"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Revisao de Vespera BB 2021 parte 2.pdf",
+          "paginas": "165–170",
+          "pagina": 165,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera BB 2021 parte 2"
+        },
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2).pdf",
+          "paginas": "63–64",
+          "pagina": 63,
+          "camada": "C",
+          "titulo": "Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2)"
+        }
+      ],
+      "oficiais": []
+    },
+    "planilhas": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Escriturario Banco do Brasil.pdf",
+          "paginas": "27",
+          "pagina": 27,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Escriturario Banco do Brasil"
+        },
+        {
+          "arquivo": "06_PRF/Materiais de Cursinhos (gratuitos)/Estrategia - Resumao PRF.pdf",
+          "paginas": "199",
+          "pagina": 199,
+          "camada": "C",
+          "titulo": "Estrategia - Resumao PRF"
+        }
+      ],
+      "oficiais": []
+    },
+    "internet_email": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2).pdf",
+          "paginas": "65–72",
+          "pagina": 65,
+          "camada": "C",
+          "titulo": "Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2)"
+        }
+      ],
+      "oficiais": []
+    },
+    "nuvem_redes": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2).pdf",
+          "paginas": "12–21",
+          "pagina": 12,
+          "camada": "C",
+          "titulo": "Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2)"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Materiais de Cursinhos (gratuitos)/Estrategia - BACEN 2024 Tecnologia da Informacao - Prova Comentada.pdf",
+          "paginas": "69–72",
+          "pagina": 69,
+          "camada": "C",
+          "titulo": "Estrategia - BACEN 2024 Tecnologia da Informacao - Prova Comentada"
+        }
+      ],
+      "oficiais": []
+    },
+    "seguranca_lgpd": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Lei 13.709-2018 - LGPD.pdf",
+          "paginas": "1–10",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Lei 13.709-2018 - LGPD"
+        },
+        {
+          "arquivo": "05_INSS/Legislacao/Lei 8.213-1991 - Planos de Beneficios da Previdencia.pdf",
+          "paginas": "49",
+          "pagina": 49,
+          "camada": "A",
+          "titulo": "Lei 8.213-1991 - Planos de Beneficios da Previdencia"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio de Estabilidade Financeira 2024-10.pdf",
+          "paginas": "76",
+          "pagina": 76,
+          "camada": "B",
+          "titulo": "BCB - Relatorio de Estabilidade Financeira 2024-10"
+        }
+      ],
+      "oficiais": []
+    },
+    "dados_bd": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2).pdf",
+          "paginas": "89–94",
+          "pagina": 89,
+          "camada": "C",
+          "titulo": "Estrategia - Questoes recentes Cesgranrio 2024 (Bloco 2)"
+        }
+      ],
+      "oficiais": []
+    },
+    "estrutura_sfn": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Legislacao/Lei 4.595-1964 - Sistema Financeiro Nacional.pdf",
+          "paginas": "1–3",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Lei 4.595-1964 - Sistema Financeiro Nacional"
+        },
+        {
+          "arquivo": "04_SUSEP/Legislacao/Decreto-Lei 73-1966 - Sistema Nacional de Seguros Privados.pdf",
+          "paginas": "36–41",
+          "pagina": 36,
+          "camada": "A",
+          "titulo": "Decreto-Lei 73-1966 - Sistema Nacional de Seguros Privados"
+        },
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Direito do Mercado de Valores Mobiliarios.pdf",
+          "paginas": "730–739",
+          "pagina": 730,
+          "camada": "B",
+          "titulo": "CVM - Direito do Mercado de Valores Mobiliarios"
+        }
+      ],
+      "oficiais": []
+    },
+    "bcb_autonomia": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Legislacao/LC 179-2021 - Autonomia do Banco Central.pdf",
+          "paginas": "1–3",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "LC 179-2021 - Autonomia do Banco Central"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Legislacao/Lei 4.595-1964 - Sistema Financeiro Nacional.pdf",
+          "paginas": "10–13",
+          "pagina": 10,
+          "camada": "A",
+          "titulo": "Lei 4.595-1964 - Sistema Financeiro Nacional"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Legislacao/Lei 9.069-1995 - Plano Real.pdf",
+          "paginas": "1–3",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Lei 9.069-1995 - Plano Real"
+        }
+      ],
+      "oficiais": []
+    },
+    "produtos_tarifas": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - BB 2023 Escriturario Agente Comercial - Prova Comentada.pdf",
+          "paginas": "77",
+          "pagina": 77,
+          "camada": "C",
+          "titulo": "Estrategia - BB 2023 Escriturario Agente Comercial - Prova Comentada"
+        }
+      ],
+      "oficiais": []
+    },
+    "pix": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Legislacao/Lei 12.865-2013 - Arranjos e Instituicoes de Pagamento.pdf",
+          "paginas": "1–10",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Lei 12.865-2013 - Arranjos e Instituicoes de Pagamento"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio Integrado de Gestao 2025.pdf",
+          "paginas": "96–101",
+          "pagina": 96,
+          "camada": "B",
+          "titulo": "BCB - Relatorio Integrado de Gestao 2025"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - E-book BNB 2024.pdf",
+          "paginas": "81–83",
+          "pagina": 81,
+          "camada": "C",
+          "titulo": "Estrategia - E-book BNB 2024"
+        }
+      ],
+      "oficiais": []
+    },
+    "pld_ft": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Legislacao/Lei 9.613-1998 - Lavagem de Dinheiro.pdf",
+          "paginas": "1–10",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Lei 9.613-1998 - Lavagem de Dinheiro"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Vade Mecum BB Agente Comercial 2021.pdf",
+          "paginas": "10–11",
+          "pagina": 10,
+          "camada": "C",
+          "titulo": "Estrategia - Vade Mecum BB Agente Comercial 2021"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - Vade Mecum BB Agente de Tecnologia 2021.pdf",
+          "paginas": "10–11",
+          "pagina": 10,
+          "camada": "C",
+          "titulo": "Estrategia - Vade Mecum BB Agente de Tecnologia 2021"
+        }
+      ],
+      "oficiais": []
+    },
+    "sigilo_fgc": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Legislacao/LC 105-2001 - Sigilo Bancario.pdf",
+          "paginas": "1–5",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "LC 105-2001 - Sigilo Bancario"
+        }
+      ],
+      "oficiais": []
+    },
+    "mercado_capitais_cvm": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Direito do Mercado de Valores Mobiliarios.pdf",
+          "paginas": "729–738",
+          "pagina": 729,
+          "camada": "B",
+          "titulo": "CVM - Direito do Mercado de Valores Mobiliarios"
+        },
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Livro TOP Mercado de Valores Mobiliarios Brasileiro (5a ed).pdf",
+          "paginas": "68–77",
+          "pagina": 68,
+          "camada": "B",
+          "titulo": "CVM - Livro TOP Mercado de Valores Mobiliarios Brasileiro (5a ed)"
+        }
+      ],
+      "oficiais": []
+    },
+    "cambio_seguros_prev": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "04_SUSEP/Legislacao/Decreto-Lei 73-1966 - Sistema Nacional de Seguros Privados.pdf",
+          "paginas": "28–37",
+          "pagina": 28,
+          "camada": "A",
+          "titulo": "Decreto-Lei 73-1966 - Sistema Nacional de Seguros Privados"
+        },
+        {
+          "arquivo": "05_INSS/Legislacao/Decreto 3.048-1999 - Regulamento da Previdencia Social.pdf",
+          "paginas": "203–212",
+          "pagina": 203,
+          "camada": "A",
+          "titulo": "Decreto 3.048-1999 - Regulamento da Previdencia Social"
+        },
+        {
+          "arquivo": "05_INSS/Legislacao/Lei 8.213-1991 - Planos de Beneficios da Previdencia.pdf",
+          "paginas": "42–51",
+          "pagina": 42,
+          "camada": "A",
+          "titulo": "Lei 8.213-1991 - Planos de Beneficios da Previdencia"
+        }
+      ],
+      "oficiais": []
+    },
+    "mercado_monetario_credito": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Legislacao/Lei 4.595-1964 - Sistema Financeiro Nacional.pdf",
+          "paginas": "5–14",
+          "pagina": 5,
+          "camada": "A",
+          "titulo": "Lei 4.595-1964 - Sistema Financeiro Nacional"
+        },
+        {
+          "arquivo": "12_TCU/Legislacao/LC 101-2000 - Lei de Responsabilidade Fiscal.pdf",
+          "paginas": "14–20",
+          "pagina": 14,
+          "camada": "A",
+          "titulo": "LC 101-2000 - Lei de Responsabilidade Fiscal"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio de Estabilidade Financeira 2025-04.pdf",
+          "paginas": "20–29",
+          "pagina": 20,
+          "camada": "B",
+          "titulo": "BCB - Relatorio de Estabilidade Financeira 2025-04"
+        }
+      ],
+      "oficiais": []
+    },
+    "titulos_tesouro": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Livro TOP Mercado de Valores Mobiliarios Brasileiro (5a ed).pdf",
+          "paginas": "269",
+          "pagina": 269,
+          "camada": "B",
+          "titulo": "CVM - Livro TOP Mercado de Valores Mobiliarios Brasileiro (5a ed)"
+        }
+      ],
+      "oficiais": []
+    },
+    "autorregulacao": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Direito do Mercado de Valores Mobiliarios.pdf",
+          "paginas": "167–173",
+          "pagina": 167,
+          "camada": "B",
+          "titulo": "CVM - Direito do Mercado de Valores Mobiliarios"
+        }
+      ],
+      "oficiais": []
+    },
+    "copom_selic": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio de Politica Monetaria 2025-03.pdf",
+          "paginas": "70–75",
+          "pagina": 70,
+          "camada": "B",
+          "titulo": "BCB - Relatorio de Politica Monetaria 2025-03"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio de Politica Monetaria 2026-09 (mais recente).pdf",
+          "paginas": "84–90",
+          "pagina": 84,
+          "camada": "B",
+          "titulo": "BCB - Relatorio de Politica Monetaria 2026-09 (mais recente)"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio Integrado de Gestao 2025.pdf",
+          "paginas": "70–74",
+          "pagina": 70,
+          "camada": "B",
+          "titulo": "BCB - Relatorio Integrado de Gestao 2025"
+        }
+      ],
+      "oficiais": []
+    },
+    "open_finance_cripto": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio de Estabilidade Financeira 2025-04.pdf",
+          "paginas": "77–81",
+          "pagina": 77,
+          "camada": "B",
+          "titulo": "BCB - Relatorio de Estabilidade Financeira 2025-04"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio Integrado de Gestao 2025.pdf",
+          "paginas": "105–107",
+          "pagina": 105,
+          "camada": "B",
+          "titulo": "BCB - Relatorio Integrado de Gestao 2025"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - BNB 2024 Prova Comentada.pdf",
+          "paginas": "34–35",
+          "pagina": 34,
+          "camada": "C",
+          "titulo": "Estrategia - BNB 2024 Prova Comentada"
+        }
+      ],
+      "oficiais": []
+    },
+    "inovacao_fintechs": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - Revisao de Vespera BRB 2022.pdf",
+          "paginas": "101–109",
+          "pagina": 101,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera BRB 2022"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - Revisao de Vespera Banrisul 2023.pdf",
+          "paginas": "62–66",
+          "pagina": 62,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera Banrisul 2023"
+        }
+      ],
+      "oficiais": []
+    },
+    "esg": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Livro TOP Mercado de Valores Mobiliarios Brasileiro (5a ed).pdf",
+          "paginas": "375–377",
+          "pagina": 375,
+          "camada": "B",
+          "titulo": "CVM - Livro TOP Mercado de Valores Mobiliarios Brasileiro (5a ed)"
+        },
+        {
+          "arquivo": "01_BACEN - Banco Central/Apostilas e Livros/BCB - Relatorio Integrado de Gestao 2025.pdf",
+          "paginas": "116–118",
+          "pagina": 116,
+          "camada": "B",
+          "titulo": "BCB - Relatorio Integrado de Gestao 2025"
+        },
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Livro TOP Analise de Investimentos.pdf",
+          "paginas": "205–206",
+          "pagina": 205,
+          "camada": "B",
+          "titulo": "CVM - Livro TOP Analise de Investimentos"
+        }
+      ],
+      "oficiais": []
+    },
+    "atendimento_relacionamento": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - Revisao de Vespera BASA 2022.pdf",
+          "paginas": "33",
+          "pagina": 33,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera BASA 2022"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - Revisao de Vespera Caixa 2021.pdf",
+          "paginas": "83–84",
+          "pagina": 83,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera Caixa 2021"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Materiais de Cursinhos (gratuitos)/Estrategia - 100 Questoes Ineditas Banco do Brasil.pdf",
+          "paginas": "95",
+          "pagina": 95,
+          "camada": "C",
+          "titulo": "Estrategia - 100 Questoes Ineditas Banco do Brasil"
+        }
+      ],
+      "oficiais": []
+    },
+    "tecnicas_venda_negociacao": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - Caixa 2024 o que e mais cobrado por disciplina.pdf",
+          "paginas": "16",
+          "pagina": 16,
+          "camada": "C",
+          "titulo": "Estrategia - Caixa 2024 o que e mais cobrado por disciplina"
+        }
+      ],
+      "oficiais": []
+    },
+    "cdc": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "02_Banco do Brasil/Legislacao/Lei 8.078-1990 - Codigo de Defesa do Consumidor.pdf",
+          "paginas": "1–10",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Lei 8.078-1990 - Codigo de Defesa do Consumidor"
+        },
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Direito do Mercado de Valores Mobiliarios.pdf",
+          "paginas": "546",
+          "pagina": 546,
+          "camada": "B",
+          "titulo": "CVM - Direito do Mercado de Valores Mobiliarios"
+        },
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Livro TOP Planejamento Financeiro Pessoal.pdf",
+          "paginas": "54",
+          "pagina": 54,
+          "camada": "B",
+          "titulo": "CVM - Livro TOP Planejamento Financeiro Pessoal"
+        }
+      ],
+      "oficiais": []
+    },
+    "principios_fundamentais": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Constituicao Federal 1988 (compilada).pdf",
+          "paginas": "1–10",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Constituicao Federal 1988 (compilada)"
+        }
+      ],
+      "oficiais": []
+    },
+    "art5": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Direito Constitucional para o CNU.pdf",
+          "paginas": "29–38",
+          "pagina": 29,
+          "camada": "C",
+          "titulo": "Estrategia - Direito Constitucional para o CNU"
+        },
+        {
+          "arquivo": "07_BNDES/Materiais de Cursinhos (gratuitos)/Estrategia - O Essencial para o BNDES.pdf",
+          "paginas": "78–80",
+          "pagina": 78,
+          "camada": "C",
+          "titulo": "Estrategia - O Essencial para o BNDES"
+        }
+      ],
+      "oficiais": []
+    },
+    "adm_publica_cf": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Constituicao Federal 1988 (compilada).pdf",
+          "paginas": "1–10",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Constituicao Federal 1988 (compilada)"
+        }
+      ],
+      "oficiais": []
+    },
+    "principios_adm": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Lei 8.429-1992 - Improbidade Administrativa.pdf",
+          "paginas": "5–6",
+          "pagina": 5,
+          "camada": "A",
+          "titulo": "Lei 8.429-1992 - Improbidade Administrativa"
+        },
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Constituicao Federal 1988 (compilada).pdf",
+          "paginas": "104",
+          "pagina": 104,
+          "camada": "A",
+          "titulo": "Constituicao Federal 1988 (compilada)"
+        },
+        {
+          "arquivo": "08_CGU/Legislacao/Lei 12.846-2013 - Lei Anticorrupcao.pdf",
+          "paginas": "2",
+          "pagina": 2,
+          "camada": "A",
+          "titulo": "Lei 12.846-2013 - Lei Anticorrupcao"
+        }
+      ],
+      "oficiais": []
+    },
+    "atos_processo_9784": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Lei 9.784-1999 - Processo Administrativo Federal.pdf",
+          "paginas": "1–10",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Lei 9.784-1999 - Processo Administrativo Federal"
+        }
+      ],
+      "oficiais": []
+    },
+    "agentes_8112": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Lei 8.112-1990 - Estatuto do Servidor Publico Federal.pdf",
+          "paginas": "1–10",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Lei 8.112-1990 - Estatuto do Servidor Publico Federal"
+        },
+        {
+          "arquivo": "05_INSS/Legislacao/Decreto 3.048-1999 - Regulamento da Previdencia Social.pdf",
+          "paginas": "59–63",
+          "pagina": 59,
+          "camada": "A",
+          "titulo": "Decreto 3.048-1999 - Regulamento da Previdencia Social"
+        },
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Constituicao Federal 1988 (compilada).pdf",
+          "paginas": "111–113",
+          "pagina": 111,
+          "camada": "A",
+          "titulo": "Constituicao Federal 1988 (compilada)"
+        }
+      ],
+      "oficiais": []
+    },
+    "licitacoes_14133": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Lei 14.133-2021 - Licitacoes e Contratos.pdf",
+          "paginas": "1–2",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Lei 14.133-2021 - Licitacoes e Contratos"
+        },
+        {
+          "arquivo": "08_CGU/Legislacao/Lei 12.846-2013 - Lei Anticorrupcao.pdf",
+          "paginas": "9",
+          "pagina": 9,
+          "camada": "A",
+          "titulo": "Lei 12.846-2013 - Lei Anticorrupcao"
+        },
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Blocos 1 a 7 CNU.pdf",
+          "paginas": "136–141",
+          "pagina": 136,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Blocos 1 a 7 CNU"
+        }
+      ],
+      "oficiais": []
+    },
+    "improbidade_8429": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Lei 8.429-1992 - Improbidade Administrativa.pdf",
+          "paginas": "1–9",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Lei 8.429-1992 - Improbidade Administrativa"
+        },
+        {
+          "arquivo": "13_TJ-SP/Materiais de Cursinhos (gratuitos)/Estrategia - Vade Mecum TJ-SP Escrevente.pdf",
+          "paginas": "110–119",
+          "pagina": 110,
+          "camada": "C",
+          "titulo": "Estrategia - Vade Mecum TJ-SP Escrevente"
+        },
+        {
+          "arquivo": "05_INSS/Materiais de Cursinhos (gratuitos)/Direcao - Vade Mecum INSS direcionado.pdf",
+          "paginas": "57–62",
+          "pagina": 57,
+          "camada": "C",
+          "titulo": "Direcao - Vade Mecum INSS direcionado"
+        }
+      ],
+      "oficiais": []
+    },
+    "etica_transparencia": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "00_Legislacao Comum (todos os concursos)/Decreto 1.171-1994 - Codigo de Etica do Servidor.pdf",
+          "paginas": "1–5",
+          "pagina": 1,
+          "camada": "A",
+          "titulo": "Decreto 1.171-1994 - Codigo de Etica do Servidor"
+        }
+      ],
+      "oficiais": []
+    },
+    "adm_publica_federal": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - Administracao Publica Federal para o CNU.pdf",
+          "paginas": "2–11",
+          "pagina": 2,
+          "camada": "C",
+          "titulo": "Estrategia - Administracao Publica Federal para o CNU"
+        }
+      ],
+      "oficiais": []
+    },
+    "contabilidade": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "12_TCU/Legislacao/Lei 4.320-1964 - Direito Financeiro.pdf",
+          "paginas": "15–16",
+          "pagina": 15,
+          "camada": "A",
+          "titulo": "Lei 4.320-1964 - Direito Financeiro"
+        },
+        {
+          "arquivo": "08_CGU/Legislacao/Lei 10.180-2001 - Sistemas de Controle Interno.pdf",
+          "paginas": "7–9",
+          "pagina": 7,
+          "camada": "A",
+          "titulo": "Lei 10.180-2001 - Sistemas de Controle Interno"
+        },
+        {
+          "arquivo": "03_CVM/Apostilas e Livros/CVM - Livro TOP Analise de Investimentos.pdf",
+          "paginas": "131–135",
+          "pagina": 131,
+          "camada": "B",
+          "titulo": "CVM - Livro TOP Analise de Investimentos"
+        }
+      ],
+      "oficiais": []
+    },
+    "gestao_pessoas": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "10_CNU - Concurso Nacional Unificado/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Blocos 1 a 7 CNU.pdf",
+          "paginas": "26–28",
+          "pagina": 26,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Blocos 1 a 7 CNU"
+        },
+        {
+          "arquivo": "11_TSE Unificado - Justica Eleitoral/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Analista Judiciario Area Administrativa TSE.pdf",
+          "paginas": "26",
+          "pagina": 26,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Analista Judiciario Area Administrativa TSE"
+        },
+        {
+          "arquivo": "11_TSE Unificado - Justica Eleitoral/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Tecnico Judiciario Area Administrativa TSE.pdf",
+          "paginas": "25",
+          "pagina": 25,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Tecnico Judiciario Area Administrativa TSE"
+        }
+      ],
+      "oficiais": []
+    },
+    "recursos_materiais": {
+      "auto": true,
+      "materiais": [
+        {
+          "arquivo": "05_INSS/Legislacao/Decreto 3.048-1999 - Regulamento da Previdencia Social.pdf",
+          "paginas": "99",
+          "pagina": 99,
+          "camada": "A",
+          "titulo": "Decreto 3.048-1999 - Regulamento da Previdencia Social"
+        },
+        {
+          "arquivo": "02_Banco do Brasil/Outros Bancos (mesmo conteudo)/Estrategia - Revisao de Vespera BB Tecnologia e Servicos 2023.pdf",
+          "paginas": "242–243",
+          "pagina": 242,
+          "camada": "C",
+          "titulo": "Estrategia - Revisao de Vespera BB Tecnologia e Servicos 2023"
+        },
+        {
+          "arquivo": "11_TSE Unificado - Justica Eleitoral/Materiais de Cursinhos (gratuitos)/Estrategia - E-book Analista Judiciario Area Administrativa TSE.pdf",
+          "paginas": "23",
+          "pagina": 23,
+          "camada": "C",
+          "titulo": "Estrategia - E-book Analista Judiciario Area Administrativa TSE"
+        }
+      ],
+      "oficiais": []
     }
   }
 }

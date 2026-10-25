@@ -5,6 +5,20 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ---
 
+## Decisão 0 — Juiz de Português sem modelo funcionando (24/10/2026) — PRECISA DE VOCÊ
+
+- **Fato:** o `nemotron-3-super` (1º do `juiz_pt` e da Redação na corrente definitiva) responde 404 "Function not found for account" desde 22/10. Sondado de novo em 24/10: 404 nos 4 modos. O 2º, Ultra, está marcado "fora" desde 17/10 (503).
+- **Efeito:** a Crase e as outras de Português por construção não têm desempate. Desde 24/10 elas ficam `pendente / aguardando_auditoria_independente` (antes eram descartadas). A Redação está caindo no Muse (3º da corrente).
+- **Evidência (benchmark do juiz, 46 frases, `docs/BENCHMARK-MODELOS.md`):** Ultra 96% (6 s, 100% disponível em 24/10, só recusa `reasoning_budget`); Muse 96% (27 s); step-5-preview 93% (preview); gpt-oss-20b 87%; glm-5.3-flash 100%, mas com 107 s e timeouts (e é o escritor). Os intervalos se sobrepõem: sem vencedor claro.
+- **Proposta:** `juiz_pt` = Ultra → Muse, com o Ultra marcado "ativo" e sem `reasoning_budget` (o código só manda o que o catálogo aceita).
+  - Independência: o escritor é glm → gpt → Muse. Quando o Muse escreve, julga o Ultra; quando o Ultra falhar e quem escreveu foi o Muse, a frase fica aguardando.
+  - Redação: Ultra → Muse.
+  - Step-5-preview continua só em teste.
+- **Por que precisa de você:** a corrente definitiva é decisão sua, e a V2 diz para manter o Ultra fora "enquanto persistirem recusas de parâmetros ou 503". A recusa de `reasoning_budget` persiste, mas é um parâmetro que o código não precisa mandar.
+- **Como reverter:** `npm run bb -- corrente desfazer`.
+
+---
+
 ## Decisão 1a — BB 2021, Q51 (Segurança da informação): manter no treino
 
 - **Decisão do dono aplicada em 19/10/2026:** recusada a proposta de desatualização. A Q51 é uma classificação conceitual de controle de segurança em Informática; a Resolução CMN 5.274/2025 não altera esse conceito.
