@@ -165,4 +165,30 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - Daqui em diante: lote de geração de dia com `--n` que caiba antes das 00:30 (a ~9 min por tentativa) e checagem do relógio antes de lançar.
 - O log do noturno mostra acentos quebrados nas linhas vindas do Node ("Ô£ö"). A saída do processo filho não é lida como UTF-8 pelo wrapper; anotado para a F12.
 
-RETOMAR AQUI: avisar o dono que a fatia de Crase está pronta para testar (com 16 aprovadas; ≥ 15 novas depende do juiz_pt). Depois F5 (abas BB/BACEN e banca).
+## 24/10/2026 — Especificação V2, Fase 1 (continuidade): estado conferido
+
+- **Ordem combinada com o dono:** intercalar.
+  1. Fase 1.
+  2. Interseções: F6 modelos, F11 fontes e fichas, F12 noturno, e o que a F3/F5 exigir.
+  3. Base da V2: orquestração por função com contrato JSON, auditor independente, código decide, telemetria, limites, rollback, duas janelas.
+  4. F7–F10, F13, F14.
+  5. Os 58 pacotes do Gemini.
+- **Git:** `main` = `origin/main` (`f72b4c3`). Locais: só os prints do e2e da trilha (meus, de 22/10 22:23), commitados agora. Os 3 `docs/PROMPT-*.md` do dono continuam fora do Git, como estavam.
+- **Outro agente:** nenhum (só uma sessão de outro projeto, offline). Nenhum node rodando.
+- **Travas:**
+  - `logs/noturno/noturno.lock` tinha dono PID 12232 (24/10 10:26), que já não existe. O arquivo só registra o último dono; a trava é o handle aberto, que o SO solta.
+  - Provado: abri e fechei o arquivo sem conflito e o `-TestarTrava` passou (4 casos). Nada apagado.
+  - Trava de IA no banco (`fila_jobs`): vazia.
+- **Noites:**
+  - 23/10: rodou depois de esperar meu job até 02:36; 110 tarefas, 34 aprovadas, fim 05:24 código 0.
+  - **24/10: não rodou às 01:00** (sem linha no log da janela; PC dormindo, a mesma causa de 21–22/10, pendência de energia do dono). Às 10:26 acordou, viu que estava fora da janela e saiu limpo.
+  - Fila persistente: 183 pendentes + 1 aguardando; o próximo noturno continua dela.
+- **Backup:** `backups/2026-10-24` (10 coleções, 568 documentos, hashes validados). `restaurar --simular`: contagens iguais ao banco (questions 469, topics 74, attempts 7, reviewstates 7, users 3).
+- **Atlas:** 203 MB de 512 (40%).
+- **Docs pedidos pela V2 que não existem no repositório:** `docs/ROADMAP.md`, `docs/ADENDO-BANCO-GRANDE.md`, `docs/ADENDO-BINHO-VOZ.md`. A documentação foi unificada em MESTRE + DIARIO no FECHAMENTO (F10, `10db7ae`). Lidos DIARIO, MESTRE e DECISOES-PENDENTES.
+- **Ponto de retomada:**
+  - Fatia de Crase pronta, com pendência: o `juiz_pt` não tem desempate independente. Pela V2, isso vira "aguardando auditoria independente" em vez de reprovação silenciosa; step-5-preview só em teste, nunca principal.
+  - F3 com auditoria em 92,5%.
+  - Próximo: interseção F6 (sondar modelos, catálogo com evidência, benchmark por função).
+
+RETOMAR AQUI: V2 passo 2 (interseções): F6 — sondar de novo os modelos (404/503/timeout), catálogo com evidência sem ativar nada, `juiz_pt` sem independência → aguardando, especialistas NVIDIA (OCR, reranker, embed menor) com função e aceite.
