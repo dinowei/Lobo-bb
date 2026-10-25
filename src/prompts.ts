@@ -333,6 +333,31 @@ REGRAS
 Responda APENAS com JSON:
 {"questoes":[{"numero":1,"disciplina":"lingua_portuguesa","textoBase":null,"referenciaTexto":false,"enunciado":"...","alternativas":{"A":"...","B":"...","C":"...","D":"...","E":"..."},"dependeDeImagem":false,"completa":true}]}`;
 
+// Prova Certo/Errado (Cebraspe): itens numerados depois de um comando ("julgue os itens a seguir").
+// A IA só copia; número e gabarito vêm do código e cada texto é conferido literalmente no PDF.
+export const ItemCEExtraidoZ = z.object({
+  numero: z.coerce.number().int().positive(),
+  disciplina: z.string(),
+  comando: z.string().nullish(),
+  textoBase: z.string().nullish(),
+  afirmacao: z.string().min(10),
+  dependeDeImagem: z.boolean().default(false),
+});
+export type ItemCEExtraido = z.infer<typeof ItemCEExtraidoZ>;
+
+export const EXTRATOR_CE_SYSTEM = `Você converte o texto bruto (extraído de PDF) de uma prova Certo/Errado da Cebraspe em JSON. Você é um COPISTA, não um professor.
+
+A prova tem: título de seção (ex.: "DIREITO ADMINISTRATIVO"), um comando ("Considerando ..., julgue os itens a seguir."), às vezes um texto de apoio, e itens numerados ("36 Os bens das autarquias ...").
+
+REGRAS
+1. Copie LITERALMENTE. Só junte palavras quebradas no fim da linha e tire cabeçalhos/rodapés ("CEBRASPE – BCB – Edital: 2024").
+2. "afirmacao": SÓ o texto do item, sem o número. "comando": o comando que vale para o item (copie igual para todos os itens do grupo). "textoBase": o texto de apoio inteiro, se houver nesta janela; senão null.
+3. "disciplina": exatamente uma destas: ${DISCIPLINAS.join(", ")}, pelo título da seção; se não aparecer, use a SEÇÃO ATUAL informada.
+4. "dependeDeImagem": true se o item depende de figura, gráfico, tabela ou fórmula que não veio legível (símbolos estranhos no lugar das variáveis).
+5. Extraia só itens cujo número aparece nesta janela. NÃO julgue nada e NÃO indique gabarito.
+
+Responda APENAS com JSON: {"itens":[{"numero":36,"disciplina":"direito_administrativo","comando":"...","textoBase":null,"afirmacao":"...","dependeDeImagem":false}]}`;
+
 // Texto de apoio longo (Português, Inglês): pedido à parte e conferido por código contra o PDF
 export const TextoApoioZ = z.object({ textoBase: z.string().min(200) });
 

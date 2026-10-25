@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { lerGabaritoGrade, lerGabaritoOficial, lerGabaritoPares } from "./extrair.js";
-import { escolherGabarito } from "./ingestao.js";
+import { escolherGabarito, SIMBOLO_ILEGIVEL } from "./ingestao.js";
+
+test("item C/E com símbolo de fórmula ilegível (fonte matemática do PDF) fica para conferir", () => {
+  assert.ok(SIMBOLO_ILEGIVEL.test("A probabilidade de ocorrência simultânea dos eventos ᡈ 㐇 0 e ᡉ 㐇 0 é igual a 0,21."));
+  assert.ok(!SIMBOLO_ILEGIVEL.test("Os bens das autarquias são, invariavelmente, de natureza pública — e impenhoráveis (art. 100, § 1º)."));
+});
 
 // trechos no layout real do texto extraído dos PDFs oficiais (acervo-indice)
 const ZEROS = Array(20).fill("0").join(" ");

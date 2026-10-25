@@ -13,6 +13,8 @@ import {
   vincularFonteAoTopico,
   ingerirProva,
   explicarOficiais,
+  explicarItensCE,
+  ingerirProvaCE,
   anularOficial,
   recuperarQuestao,
   revogarFonte,
@@ -90,6 +92,8 @@ BB Estudos — comandos (npm run bb -- <comando>)
         [--disciplina <d>] [--orgao BACEN] [--ano 2020] [--url ...] [--vigente 2020-11-16]
         tipos: lei | norma_bacen_cmn | edital | material_proprio
   prova <prova.pdf> --gabarito <gabarito.pdf|txt> --nome "<nome>" [--banca cesgranrio] [--ano 2023] [--caderno 1] [--questoes 1-35]
+  prova-ce <prova.pdf> --gabarito <gabarito.pdf> --nome "<nome>" [--ano 2024] [--questoes 1-50]   prova Certo/Errado (Cebraspe)
+  explicar-ce [--limite 50]       itens C/E oficiais: julgamento às cegas + explicação com o gabarito oficial travado
   explicar [--limite 50]        IA escreve as explicações das oficiais pendentes
   anular --prova "<parte do nome>" --numero <n>   oficial anulada no gabarito definitivo sai de circulação
   recuperar <prova.pdf> --gabarito <txt> --nome "<nome exato>" --numero <n>   traz uma oficial que ficou de fora
@@ -247,6 +251,20 @@ async function main() {
 
       case "explicar":
         return await naFila(rotulo, () => explicarOficiais(o.limite ? Number(o.limite) : 50));
+
+      case "prova-ce":
+        return await naFila(rotulo, async () => {
+          await ingerirProvaCE(exigir(args[0], "o PDF da prova"), exigir(o.gabarito, "--gabarito"), {
+            nome: exigir(o.nome, "--nome"),
+            banca: o.banca === "cesgranrio" ? "cebraspe" : o.banca!, // padrão do CLI é cesgranrio; C/E é Cebraspe
+            ano: o.ano ? Number(o.ano) : undefined,
+            caderno: o.caderno,
+            questoes: o.questoes,
+          });
+        });
+
+      case "explicar-ce":
+        return await naFila(rotulo, () => explicarItensCE(o.limite ? Number(o.limite) : 50));
 
       case "figuras-oficiais":
         return await extrairFigurasOficiais(args[0] ?? "data/figuras-oficiais.json");
