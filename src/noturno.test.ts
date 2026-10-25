@@ -82,6 +82,19 @@ test("plano: estudado nos últimos 7 dias passa na frente; meta batida só volta
   assert.ok(dominou.length === 2 && dominou.every((i) => i.motivo === "dominado" && (i.dificuldade ?? 0) >= 4));
 });
 
+test("plano: incidência na banca multiplica o peso; sem dado, a ordem antiga fica igual", () => {
+  const sem = planoDaNoite({ topicos: TOP, aprovadas: new Map(), alunos: [aluno()], cotas: COTAS, totalQuestoes: 70, metaBanco: 1200, max: 3 });
+  const vazio = planoDaNoite({ topicos: TOP, aprovadas: new Map(), alunos: [aluno()], cotas: COTAS, totalQuestoes: 70, metaBanco: 1200, max: 3, incidencia: new Map() });
+  assert.deepEqual(vazio, sem);
+  // mesmo peso (Informática): o que mais caiu na banca passa na frente
+  const segundaInf = sem.filter((i) => i.topicId.startsWith("inf"))[1].topicId;
+  const com = planoDaNoite({ topicos: TOP, aprovadas: new Map(), alunos: [aluno()], cotas: COTAS, totalQuestoes: 70, metaBanco: 1200, max: 3, incidencia: new Map([[segundaInf, 0.5]]) });
+  assert.equal(com[0].topicId, segundaInf);
+  // peso × incidência: Inglês (cota 5) que caiu muito não passa Informática (cota 15) que nunca caiu
+  const ing = planoDaNoite({ topicos: TOP, aprovadas: new Map(), alunos: [aluno()], cotas: COTAS, totalQuestoes: 70, metaBanco: 1200, max: 3, incidencia: new Map([["ing1", 1]]) });
+  assert.equal(ing.at(-1)!.topicId, "ing1");
+});
+
 test("plano: tema pedido pelo aluno (página do tema) vai na frente, mesmo com a meta batida", () => {
   const cheio = new Map([["inf1", 200], ["inf2", 200], ["ing1", 200]]);
   const p = planoDaNoite({ topicos: TOP, aprovadas: cheio, alunos: [aluno()], cotas: COTAS, totalQuestoes: 70, metaBanco: 1200, max: 10, pedidos: new Set(["ing1"]) });

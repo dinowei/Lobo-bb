@@ -69,6 +69,7 @@ import { desempatarPendentes } from "./desempate.js";
 import { TRILHA } from "../shared/trilha.js";
 import { aplicarArvore, auditarAmostra, classificarBanco, itensClassificados, reclassificarOficiais, simularArvore } from "./subtopicos.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
+import { relatorioIncidencia } from "./incidencia.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
@@ -106,6 +107,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   voz limpar                    tira do cache o áudio de vozes fora da lista aprovada
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
+  incidencia                                     quantas vezes cada subtópico caiu nas oficiais, por banca e ano → docs/INCIDENCIA.md
   estoque [--min 30]            completa o estoque mínimo de todos os tópicos
   noturno [--max 20] [--ate 05:00]  planeja a noite e roda a fila persistida (tela Fila)
   backup                        exporta as coleções críticas do Atlas para backups/ (gzip + manifest)
@@ -432,6 +434,16 @@ async function main() {
       case "rating-migrar": {
         const r = await migrarRatings();
         console.log(`✔ Ratings recalculados: ${r.tentativas} tentativas, ${r.questoes} questões, ${r.alunos} rating(s) de aluno por disciplina.`);
+        return;
+      }
+
+      case "incidencia": {
+        // só leitura do banco + docs/INCIDENCIA.md (F8: quantas vezes cada subtópico caiu, por banca e ano)
+        const r = await relatorioIncidencia();
+        console.log(`Top 10 de incidência (${r.linhas.length} subtópicos com questão oficial; ${r.semSubtopico} oficiais sem subtópico)\n`);
+        for (const [i, l] of r.linhas.slice(0, 10).entries())
+          console.log(`${String(i + 1).padStart(2)}. ${l.chave}: ${l.total} questões em ${l.provas} prova(s) · ${Object.entries(l.porBanca).map(([b, n]) => `${b} ${n}`).join(", ")}`);
+        console.log(`\n✔ ${r.arquivo}`);
         return;
       }
 

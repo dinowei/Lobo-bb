@@ -15,6 +15,7 @@ import { SUBTOPICO_POR_ID, subtopicosDoTopico } from "../shared/subtopicos.js";
 import { concursosDoTema, MINIMO_NOVAS, situacaoTrilha, TRILHA, type InicioTrilha } from "../shared/trilha.js";
 import { diaLocal, diasDaTrilha } from "../shared/desempenhoTema.js";
 import { carregarVariacoes } from "./variacao.js";
+import { incidenciaPorTopico } from "./incidencia.js";
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
 import { gerarQuestao, MOTIVOS_INFRA, tetoDiario, geracoesHoje } from "./pipeline.js";
@@ -160,6 +161,7 @@ export function planoDaNoite(p: {
   max: number;
   pedidos?: Set<string>; // tópicos de temas com < 15 aprovadas que o aluno pediu (página do tema): vão na frente
   trilha?: { item: ItemPlano; quantas: number }[]; // tema de amanhã sem 15 novas: antes de tudo
+  incidencia?: Map<string, number>; // tópico → 0..1, o quanto caiu na banca do concurso (F8); sem dado = 0
 }): ItemPlano[] {
   const porDisciplina = new Map<string, number>();
   for (const t of p.topicos) porDisciplina.set(t.disciplina, (porDisciplina.get(t.disciplina) ?? 0) + 1);
@@ -194,8 +196,9 @@ export function planoDaNoite(p: {
     }
     if (!item) continue;
     if (item.motivo !== "meta" && alunos.some((a) => a.dominados.has(t.id))) item.dificuldade = 4;
-    // pedido do aluno > estudado nos últimos 7 dias > peso na prova > tamanho da falta
-    const prioridade = (pedido ? 2000 : 0) + (recente ? 1000 : 0) + peso * 10 + Math.min(9, (quantas / meta) * 10);
+    // pedido do aluno > estudado nos últimos 7 dias > peso na prova × incidência na banca > tamanho da falta
+    const incidencia = p.incidencia?.get(t.id) ?? 0;
+    const prioridade = (pedido ? 2000 : 0) + (recente ? 1000 : 0) + peso * 10 * (1 + incidencia) + Math.min(9, (quantas / meta) * 10);
     necessidades.push({ item, quantas, prioridade });
   }
   // trilha: o tema de amanhã vem antes de pedido, recente e peso (F12, prioridade 1)
@@ -237,7 +240,7 @@ export async function planejarNoite(lote: string, opcoes: { max?: number } = {})
   const max = opcoes.max ?? (Number(process.env.GERACAO_MAX_TENTATIVAS_NOITE) || Number(process.env.GERACAO_MAX_NOITE) || 200);
   const seteDias = new Date(Date.now() - 7 * 86_400_000);
   const [topicos, aprovadas, abertas, comTrecho, fontes, tentativas] = await Promise.all([
-    Topic.find({ ativo: true }).select("assunto disciplina volatil").lean(),
+    Topic.find({ ativo: true }).select("assunto disciplina volatil concursos").lean(),
     Question.aggregate<{ _id: Types.ObjectId; n: number }>([{ $match: { status: "aprovada" } }, { $group: { _id: "$topicId", n: { $sum: 1 } } }]),
     Tarefa.aggregate<{ _id: string; n: number }>([
       { $match: { tipo: "gerar", status: { $in: ["pendente", "rodando", "aguardando"] } } },
@@ -283,6 +286,7 @@ export async function planejarNoite(lote: string, opcoes: { max?: number } = {})
     max,
     pedidos: await topicosPedidos(topicos),
     trilha: itensDaTrilha(await alvosDaTrilha(topicos)),
+    incidencia: await incidenciaPorTopico(topicos),
   });
   const novas = itens.map((i) => ({ tipo: "gerar" as const, params: i, lote, prioridade: i.motivo === "trilha" ? 3 : 0 }));
   if (await verificacaoVencida()) await Tarefa.create({ tipo: "verificar_modelos", lote });
