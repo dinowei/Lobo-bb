@@ -596,7 +596,10 @@ export async function ingerirProva(
       ? `… disciplinas lidas da capa: ${distribuicao.size} questões`
       : "⚠ não consegui ler a distribuição de disciplinas da capa; a disciplina vem da IA (confira depois)"
   );
-  const questoes = await extrairQuestoes(paginas, [...gabarito.keys()], distribuicao);
+  const todas = await extrairQuestoes(paginas, [...gabarito.keys()], distribuicao);
+  // --questoes "21-35": as páginas começam na 1, então o que vem antes da faixa (outras matérias) sai aqui
+  const questoes = meta.questoes ? todas.filter((q) => gabarito.has(q.numero)) : todas;
+  if (todas.length > questoes.length) console.log(`… ${todas.length - questoes.length} questões fora da faixa ${meta.questoes} ignoradas`);
   if (!questoes.length) throw new Error("Nenhuma questão extraída. O PDF tem texto selecionável?");
   const cobertas = questoes.filter((q) => gabarito.has(q.numero)).length;
   if (cobertas < questoes.length * 0.9)

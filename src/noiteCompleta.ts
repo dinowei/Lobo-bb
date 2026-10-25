@@ -59,8 +59,15 @@ export async function etapaIngestao(): Promise<string | null> {
   const item = fila[0];
   if (!item) return null;
   const meta = { nome: item.nome, banca: item.banca, ano: item.ano, caderno: item.caderno, questoes: item.questoes };
-  if (item.comando === "prova-ce") await ingerirProvaCE(item.prova, item.gabarito, meta);
-  else await ingerirProva(item.prova, item.gabarito, meta);
+  try {
+    if (item.comando === "prova-ce") await ingerirProvaCE(item.prova, item.gabarito, meta);
+    else await ingerirProva(item.prova, item.gabarito, meta);
+  } catch (e) {
+    // prova que falha sai da frente (senão trava todas as noites seguintes) e fica em "fila_ingestao_falhas" para conferir
+    await Config.updateOne({ _id: "fila_ingestao" }, { $set: { valor: fila.slice(1), em: new Date() } });
+    await Config.updateOne({ _id: "fila_ingestao_falhas" }, { $push: { valor: { ...item, erro: (e as Error).message.slice(0, 300), em: new Date() } } }, { upsert: true });
+    throw e;
+  }
   await Config.updateOne({ _id: "fila_ingestao" }, { $set: { valor: fila.slice(1), em: new Date() } });
   return `"${item.nome}" ingerida; ${fila.length - 1} na fila`;
 }
