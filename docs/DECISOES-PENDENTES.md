@@ -7,7 +7,7 @@ precisa de você, as opções e a minha recomendação. Em ordem de prioridade.
 
 ## Decisão 2026-10-25a — Crase: a regra "erro_tratamento" (à Vossa Senhoria) trava a aprovação
 
-- **Fato (20 Crase pedidas em 25/10, com o Ultra desempatando):** 0 aprovadas nas 15 primeiras. 10 caíram em `auditor_por_frase_discordou` e **as 10 têm a mesma frase de erro: "à Vossa Senhoria"** (regra `erro_tratamento`, `src/portugues.ts`). O auditor (Muse) diz que a frase está correta, e no desempate o Ultra também diz. A gramática está do lado do banco de regras: pronome de tratamento não aceita artigo.
+- **Fato (20 Crase pedidas em 25/10, com o Ultra desempatando):** **0 de 20 aprovadas.** 15 caíram em `auditor_por_frase_discordou` e **as 15 têm a mesma frase de erro: "à Vossa Senhoria"** (regra `erro_tratamento`, `src/portugues.ts`). O auditor (Muse) diz que a frase está correta, e no desempate o Ultra também diz. A gramática está do lado do banco de regras: pronome de tratamento não aceita artigo.
 - **O código fez o certo:** pela regra 13, só aprova se o auditor marcar "correta" exatamente na frase do gabarito; não aprovou nenhuma. Nada errado entrou no banco.
 - **Efeito:** toda questão que sorteia `erro_tratamento` entre as 4 de erro (quase metade) está condenada antes de começar. Isso custa ~5 min de IA por tentativa e explica a maior parte das reprovações.
 - **Também apareceu (escritor):** 2 frases de erro saíram sem o erro, ex.: "O gerente enviou a proposta de crédito ao cliente no balcão". A trava de posição não pegou porque a regra delas não pede "à" num lugar fixo. Isso eu posso consertar sem mudar regra aprovada; fica na fila.

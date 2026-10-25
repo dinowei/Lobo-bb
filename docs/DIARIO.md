@@ -253,4 +253,15 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - **Dependência registrada:** simulado fiel do BACEN exige a F10 (itens Certo/Errado) e o edital de Técnico. Hoje as cotas da prova ainda são as do BB.
 - Erro de processo meu: o primeiro commit falhou porque a mensagem foi passada como here-string do PowerShell; refeito com arquivo de mensagem. Nada foi gravado errado.
 
-RETOMAR AQUI: registrar o resultado das 20 Crase. Depois, V2 passo 2, o que falta das interseções: F12 estilo por banca (3 oficiais da mesma banca e subtópico como exemplo) e "uma noite real com todas as etapas no relatório"; fichas no noturno (gancho), depois das questões. Depois V2 passo 3 (Janela B: auditoria e recuperação, incluindo as pendentes aguardando juiz; orquestração por contrato nos outros fluxos).
+- **20 Crase (09:17–10:26, ~207 s cada): 0 aprovadas.**
+  - Recusas: 15 `auditor_por_frase_discordou`, 3 duplicadas, 2 `frase_fora_da_regra`.
+  - As 15 recusas do auditor têm a frase de erro "à Vossa Senhoria" (regra `erro_tratamento`). O auditor (Muse) e o Ultra no desempate a julgam correta. O código recusou certo (regra 13).
+  - Decisão pedida ao dono em `docs/DECISOES-PENDENTES.md` (recomendo tirar a regra do sorteio até um juiz acertá-la).
+  - 2 frases de erro saíram sem erro (escritor). Fica para corrigir.
+- **F8 (código):**
+  - Leitores de gabarito por banca: 82 de 87 gabaritos do acervo lidos.
+    - Recusados: BNB 2024 com "1 7- B" no PDF oficial (o dono confirma o item 17), 2 comunicados da FGV e ESAF 2010.
+    - Acervo: "PROVA A - GABARITO 1" é caderno, não gabarito.
+  - Incidência (`bb -- incidencia`, `docs/INCIDENCIA.md`) e peso no noturno: peso × (1 + incidência na banca).
+
+RETOMAR AQUI: F6 (sondar reranker, extrator de PDF/OCR, modelo pequeno de triagem, visão e embedding menor → tabela modelo → função → status → medição). Depois, F8 ingestão das provas na ordem (Cesgranrio BB/BNDES/CNU → Cebraspe BACEN 2024 → FGV), com o Atlas medido antes de cada uma e parada em 80%. Depois, V2 passo 2, o que falta das interseções: F12 estilo por banca (3 oficiais da mesma banca e subtópico como exemplo) e "uma noite real com todas as etapas no relatório"; fichas no noturno (gancho), depois das questões. Depois V2 passo 3 (Janela B: auditoria e recuperação, incluindo as pendentes aguardando juiz; orquestração por contrato nos outros fluxos).
