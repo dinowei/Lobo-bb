@@ -89,6 +89,7 @@ function servidorFalso(p: Page, e: Estado) {
             lei: null, ficha: { texto: "Crase é a fusão de duas vogais idênticas.", citacao: "trecho conferido do material", fonte: "Material de teste, p. 1" },
             materiais: [{ arquivo: "teste.pdf", paginas: "10–14", pagina: 10, camada: "C", titulo: "Português: crase", disponivel: true }],
             youtube: "https://www.youtube.com/results?search_query=Crase%20concurso%20BB%20aula", oficiaisNoAcervo: ["BB 2023 Q7"],
+            fichaAcervo: { afirmacoes: [{ texto: "Crase é a contração de preposição ‘a’ com artigo ‘a’.", classe: "conceito", trecho: "A crase é a contração de preposição ‘a’ com artigo ‘a’.", titulo: "Estrategia - Portugues para o CNU", pagina: 54, camada: "C" }], conflitos: [], em: new Date().toISOString() },
           },
           pratica: { novas: 4, revisoes: 0, erradas: 4, oficiais: 3, geradas: 21, derivadas: 0, cursinho: 0 },
         };
@@ -162,6 +163,8 @@ try {
     assert.match(await p.locator("[data-testid=youtube]").getAttribute("href") ?? "", /youtube\.com\/results\?search_query=Crase/);
     assert.match(await p.locator("a", { hasText: "Abrir material" }).getAttribute("href") ?? "", /\/api\/material\?arquivo=teste\.pdf#page=10/);
     assert.ok(await p.locator("button", { hasText: "Estudar ouvindo" }).count());
+    // ficha da rede: frase + fonte (arquivo, página, camada) com o trecho literal
+    assert.match(await p.locator("[data-testid=ficha-acervo]").innerText(), /contração de preposição[\s\S]*fonte: Estrategia - Portugues para o CNU, p\. 54 \(C\)/);
     await p.screenshot({ path: `${PASTA}/tema-${tela.nome}.png`, fullPage: true });
 
     // Desempenho por tema (aba do Painel)
