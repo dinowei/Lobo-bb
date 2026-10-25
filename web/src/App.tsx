@@ -43,22 +43,29 @@ function useOnline() {
   return online;
 }
 
-const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa }[] = [
-  { tela: "painel", rotulo: "Painel", Icone: ICasa },
-  { tela: "plano", rotulo: "Plano", Icone: IBandeira },
-  { tela: "praticar", rotulo: "Praticar", Icone: IBalao },
-  { tela: "revisoes", rotulo: "Revisões", Icone: ICalendario },
-  { tela: "cartoes", rotulo: "Cartões", Icone: ICartoes },
-  { tela: "simulados", rotulo: "Simulados", Icone: IAlvo },
-  { tela: "redacao", rotulo: "Redação", Icone: IRedacao },
-  { tela: "erros", rotulo: "Caderno de erros", Icone: ISino },
-  { tela: "conquistas", rotulo: "Conquistas", Icone: ITrofeu },
-  { tela: "ajustes", rotulo: "Ajustes", Icone: IEngrenagem },
+// grupos da barra lateral (referência "Lobo Binho"): o que o Binho ensina, o que a Lo revisa, controle
+type Grupo = "binho" | "lo" | "controle";
+const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa; grupo: Grupo }[] = [
+  { tela: "painel", rotulo: "Painel", Icone: ICasa, grupo: "binho" },
+  { tela: "plano", rotulo: "Plano", Icone: IBandeira, grupo: "binho" },
+  { tela: "praticar", rotulo: "Praticar", Icone: IBalao, grupo: "binho" },
+  { tela: "revisoes", rotulo: "Revisões", Icone: ICalendario, grupo: "lo" },
+  { tela: "cartoes", rotulo: "Cartões", Icone: ICartoes, grupo: "binho" },
+  { tela: "simulados", rotulo: "Simulados", Icone: IAlvo, grupo: "binho" },
+  { tela: "redacao", rotulo: "Redação", Icone: IRedacao, grupo: "binho" },
+  { tela: "erros", rotulo: "Caderno de erros", Icone: ISino, grupo: "lo" },
+  { tela: "conquistas", rotulo: "Conquistas", Icone: ITrofeu, grupo: "binho" },
+  { tela: "ajustes", rotulo: "Ajustes", Icone: IEngrenagem, grupo: "controle" },
+];
+const GRUPOS: { id: Grupo; titulo: string }[] = [
+  { id: "binho", titulo: "Binho" },
+  { id: "lo", titulo: "Com a Lo" },
+  { id: "controle", titulo: "Controle" },
 ];
 
 export function App() {
   // aluno nunca vê a tela Admin; sem contas cadastradas, o único usuário do modo servidor é o dono
-  const { tela, ir, painel, api, toasts, subiuNivel, fecharNivel, ehAdmin } = useApp();
+  const { tela, ir, painel, api, toasts, subiuNivel, fecharNivel, ehAdmin, concurso } = useApp();
   const online = useOnline();
   const [menuMais, setMenuMais] = useState(false);
   // título da aba por tela (Praticar e Simulados detalham a questão)
@@ -69,23 +76,35 @@ export function App() {
     <div className="app">
       <a href="#conteudo" className="pular">Pular para o conteúdo</a>
       <aside className="lateral">
-        <div className="marca" aria-label="lobo">lo</div>
+        <div className="marca">
+          <span className="marca-rosto"><Pose nome="em-pe" largura={60} carregar="eager" alt="" /></span>
+          <span className="marca-nome"><b>Lobo</b><b>Binho</b></span>
+        </div>
         <nav className="nav" aria-label="Principal">
-          {NAV.map(({ tela: t, rotulo, Icone }) => (
-            <button key={t} aria-current={tela === t ? "page" : undefined} onClick={() => ir(t)} title={rotulo}>
-              <Icone />
-              <span className="rotulo-nav">{rotulo}</span>
-              {t === "revisoes" && !!painel?.revisoesHoje && <span className="contador num">{painel.revisoesHoje}</span>}
-            </button>
+          {GRUPOS.map((g) => (
+            <div key={g.id} className={`grupo-nav grupo-${g.id}`}>
+              <span className="titulo-grupo" aria-hidden="true">{g.titulo}</span>
+              {NAV.filter((n) => n.grupo === g.id).map(({ tela: t, rotulo, Icone }) => (
+                <button key={t} aria-current={tela === t ? "page" : undefined} onClick={() => ir(t)} title={rotulo}>
+                  <Icone />
+                  <span className="rotulo-nav">{rotulo}</span>
+                  {t === "revisoes" && !!painel?.revisoesHoje && <span className="contador num">{painel.revisoesHoje}</span>}
+                </button>
+              ))}
+              {g.id === "controle" && ehAdmin && (
+                <button aria-current={tela === "admin" ? "page" : undefined} onClick={() => ir("admin")} title="Admin">
+                  <IEscudo />
+                  <span className="rotulo-nav">Admin</span>
+                  {!!painel?.alertasAdmin?.length && <span className="contador num" aria-label={`${painel.alertasAdmin.length} alerta(s)`}>{painel.alertasAdmin.length}</span>}
+                </button>
+              )}
+            </div>
           ))}
-          {ehAdmin && (
-            <button aria-current={tela === "admin" ? "page" : undefined} onClick={() => ir("admin")} title="Admin">
-              <IEscudo />
-              <span className="rotulo-nav">Admin</span>
-              {!!painel?.alertasAdmin?.length && <span className="contador num" aria-label={`${painel.alertasAdmin.length} alerta(s)`}>{painel.alertasAdmin.length}</span>}
-            </button>
-          )}
         </nav>
+        <div className="lema-lateral">
+          <p>Grandes conquistas começam com pequenos passos.</p>
+          <span className="assinatura">Binho</span>
+        </div>
         {painel && (
           <button
             className="nivel-mini"
@@ -102,19 +121,22 @@ export function App() {
 
       <div className="principal">
         <header className="topo">
-          <h1 className="titulo-tela">{TITULO[tela]}</h1>
+          {tela !== "painel" && <h1 className="titulo-tela">{TITULO[tela]}</h1>}
           <Busca />
           <div className="pilulas">
             <SeletorConcurso />
             <Notificacoes />
             {api.modo === "demo" && <span className="selo-demo" title="Sem servidor: progresso salvo só neste navegador">modo demo</span>}
-            <span className="pilula num" title="XP total">
+            <span className="pilula pilula-xp num" title={`XP total: ${(painel?.xp ?? 0).toLocaleString("pt-BR")}`}>
               <span className="bolinha"><IRaio /></span>
-              {(painel?.xp ?? 0).toLocaleString("pt-BR")} XP
+              <span className="xp-texto">
+                <span><b>XP {(painel?.nivel.xpNoNivel ?? 0).toLocaleString("pt-BR")}</b><span className="rotulo-longo"> / {(painel?.nivel.xpParaProximo ?? 0).toLocaleString("pt-BR")}</span></span>
+                <i className="xp-barra" aria-hidden="true"><u style={{ width: `${painel ? Math.round((painel.nivel.xpNoNivel / painel.nivel.xpParaProximo) * 100) : 0}%` }} /></i>
+              </span>
             </span>
-            <span className="pilula num" title="Dias seguidos estudando">
-              <span className="bolinha branca"><IFogo /></span>
-              {painel?.sequenciaDias ?? 0} <span className="rotulo-longo">{painel?.sequenciaDias === 1 ? "dia" : "dias"}</span>
+            <span className="pilula pilula-fogo num" title="Dias seguidos estudando">
+              <span className="bolinha fogo"><IFogo /></span>
+              <span className="xp-texto"><b>{painel?.sequenciaDias ?? 0} {painel?.sequenciaDias === 1 ? "dia" : "dias"}</b><span className="rotulo-longo">na sequência</span></span>
             </span>
             <Avatar />
           </div>
@@ -128,7 +150,7 @@ export function App() {
 
         <main className="conteudo" id="conteudo" tabIndex={-1}>
           <ErroTela chave={tela}>
-            <Suspense fallback={<Esqueleto />}>
+            <Suspense fallback={<Esqueleto />} key={concurso}>
               {tela === "painel" && <Painel />}
               {tela === "praticar" && <Praticar />}
               {tela === "revisoes" && <Revisoes />}
@@ -202,10 +224,14 @@ export function App() {
 // Concurso no cabeçalho (lugar do "Financial" da referência). Só visual por enquanto: trocar de concurso
 // é a F5 (abas BB/BACEN, Elo e tópicos por concurso); até lá o BACEN aparece desabilitado com o aviso.
 function SeletorConcurso() {
+  const { concurso, trocarConcurso } = useApp();
   return (
-    <div className="seletor-concurso" role="group" aria-label="Concurso">
-      <button aria-pressed="true" className="ativo">BB</button>
-      <button disabled title="Chega com as abas BB/BACEN (em preparação)">BACEN</button>
+    <div className="seletor-concurso" role="tablist" aria-label="Concurso">
+      {(["bb", "bacen"] as const).map((c) => (
+        <button key={c} role="tab" aria-selected={concurso === c} className={concurso === c ? "ativo" : ""} onClick={() => trocarConcurso(c)} data-testid={`aba-${c}`}>
+          {c.toUpperCase()}
+        </button>
+      ))}
     </div>
   );
 }
@@ -339,7 +365,7 @@ function Busca() {
       <input
         id="busca"
         type="search"
-        placeholder="Buscar tópico: Pix, crase, SAC, Copom…"
+        placeholder="Buscar tema, disciplina ou questão: Pix, crase, SAC…"
         value={q}
         onChange={(e) => {
           setQ(e.target.value);

@@ -3,13 +3,14 @@
 // ============================================================
 import type { Api } from "../../../shared/tipos";
 import { EVENTO_SESSAO } from "./conta";
+import { concursoAtivo } from "../concursoAtivo";
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
 async function req<T>(caminho: string, init?: RequestInit): Promise<T> {
   const r = await fetch(`${BASE}/api${caminho}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: { "Content-Type": "application/json", "X-Concurso": concursoAtivo(), ...(init?.headers ?? {}) },
   });
   if (!r.ok) {
     const corpo = (await r.json().catch(() => ({}))) as { erro?: string; codigo?: string };
@@ -72,6 +73,7 @@ export const apiHttp: Api = {
   },
   desempenhoTemas: () => req("/temas/desempenho"),
   simulados: () => req("/simulados"),
+  concursos: () => req("/concursos"),
   definirTemaDoDia: (subtopico) => post("/trilha/inicio", { subtopico }),
   trilha: () => req("/trilha"),
   tema: (subtopico) => req(`/tema/${encodeURIComponent(subtopico)}`),

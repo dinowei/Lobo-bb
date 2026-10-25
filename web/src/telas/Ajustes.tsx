@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import type { ConcursoInfoDTO } from "../../../shared/tipos";
 import { useApp, type Ajustes } from "../estado";
 import { zerarDemo } from "../api/demo";
 import { conta, ErroCampo } from "../api/conta";
@@ -87,6 +88,44 @@ function MinhaConta() {
           <button className="botao-linha" onClick={() => setConfirmarTodos(true)}>Sair de todos os aparelhos</button>
         )}
       </div>
+    </div>
+  );
+}
+
+// Concurso em estudo: troca de aba e o que vale para cada um (banca e área mudam só no Admin, com motivo)
+function SecaoConcurso() {
+  const { api, concurso, trocarConcurso } = useApp();
+  const [lista, setLista] = useState<ConcursoInfoDTO[] | null>(null);
+  useEffect(() => {
+    api.concursos().then(setLista).catch(() => setLista([]));
+  }, [api]);
+  return (
+    <div className="secao secao-concurso" style={{ marginTop: 26, maxWidth: 620 }} data-testid="ajustes-concurso">
+      <h2>Concurso</h2>
+      {lista === null ? (
+        <p className="sub">Carregando…</p>
+      ) : (
+        <div className="lista-concursos">
+          {lista.map((c) => (
+            <div key={c.id} className={`concurso-item${c.id === concurso ? " ativo" : ""}`}>
+              <div>
+                <b>{c.nome}</b>
+                {c.cargo && <span className="sub"> · {c.cargo}</span>}
+                <p className="sub" style={{ margin: "4px 0 0" }}>
+                  Banca: {c.aDefinir ? `a definir (estudando no estilo ${c.nomeBanca}, referência)` : c.nomeBanca}
+                  {c.areas.length > 0 && <> · Área: {c.areas.find((a) => a.id === c.area)?.nome ?? "a escolher"}</>}
+                </p>
+                {c.aDefinir && <p className="aviso-lo" style={{ margin: "8px 0 0" }}>Estudando no estilo {c.nomeBanca} (referência). Quando o edital sair, a banca muda.</p>}
+              </div>
+              {c.id === concurso ? (
+                <span className="selo">Em estudo</span>
+              ) : (
+                <button type="button" className="botao-linha" onClick={() => trocarConcurso(c.id)}>Estudar este</button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -217,6 +256,8 @@ export function AjustesTela() {
         </label>
         <div><button className="botao-laranja" type="submit">Salvar</button></div>
       </form>
+
+      <SecaoConcurso />
 
       <div className="secao" style={{ marginTop: 26, maxWidth: 620 }}>
         <h2>Fonte das questões</h2>

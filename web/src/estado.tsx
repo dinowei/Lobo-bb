@@ -5,6 +5,7 @@ import { apiHttp, servidorDisponivel } from "./api/http";
 import { conta, EVENTO_SESSAO, type UsuarioDTO } from "./api/conta";
 import { Entrar } from "./telas/Entrar";
 import { preferenciaVozLoSalva, type VozLo } from "../../shared/voz";
+import { concursoAtivo, guardarConcurso, type IdConcursoAtivo } from "./concursoAtivo";
 
 export type Tela = "painel" | "plano" | "praticar" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin" | "tema";
 export const TELAS: Tela[] = ["painel", "plano", "praticar", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin", "tema"];
@@ -84,6 +85,9 @@ interface Ctx {
   ehAdmin: boolean;
   sair: () => Promise<void>;
   atualizarUsuario: (u: UsuarioDTO) => void;
+  // F5: aba BB / BACEN (o servidor recebe no cabeçalho X-Concurso; o demo lê do mesmo lugar)
+  concurso: IdConcursoAtivo;
+  trocarConcurso: (c: IdConcursoAtivo) => void;
 }
 const Contexto = createContext<Ctx | null>(null);
 export const useApp = () => {
@@ -110,6 +114,7 @@ export function Provedor({ children }: { children: ReactNode }) {
   const [tela, setTela] = useState<Tela>(telaDoHash);
   const [filtro, setFiltro] = useState<FiltroPratica>(filtroDoHash);
   const [ajustes, setAjustes] = useState<Ajustes>(lerAjustes);
+  const [concurso, setConcurso] = useState<IdConcursoAtivo>(concursoAtivo);
   // aparência: tema claro/escuro (ou o do sistema) e fonte dos títulos, como atributos no <html>
   useEffect(() => {
     const raiz = document.documentElement;
@@ -261,6 +266,15 @@ export function Provedor({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // trocar de aba: guarda (o próximo pedido já vai com o novo concurso), recarrega o painel; a tela atual
+  // remonta (App usa o concurso como chave) e busca de novo os dados dela
+  const trocarConcurso = useCallback((c: IdConcursoAtivo) => {
+    if (c === concursoAtivo()) return;
+    guardarConcurso(c);
+    setConcurso(c);
+    void recarregar();
+  }, [recarregar]);
+
   if (!api || login === "verificando") return <div className="carregando">Carregando…</div>;
   if (login === "pedir") return <Entrar aoEntrar={entrou} />;
   // até existir conta, o único usuário do modo servidor é o dono
@@ -268,6 +282,7 @@ export function Provedor({ children }: { children: ReactNode }) {
   return (
     <Contexto.Provider
       value={{
+        concurso, trocarConcurso,
         api, painel, recarregar, tela, filtro, ir, guardarSaida, ajustes, salvarAjustes, avisar, desfazivel, toasts, subiuNivel,
         fecharNivel: () => setSubiuNivel(null),
         usuario, ehAdmin, sair, atualizarUsuario: setUsuario,

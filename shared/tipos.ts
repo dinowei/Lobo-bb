@@ -546,6 +546,20 @@ export interface ExplicacaoMaisDTO {
 
 export type MotivoContestacao = "gabarito_errado" | "duas_corretas" | "desatualizada" | "ambigua" | "explicacao_ruim";
 
+// Concursos (F5): banca em uso (ou a de referência, se "a definir") e área de cada um
+export interface ConcursoInfoDTO {
+  id: "bb" | "bacen";
+  nome: string;
+  cargo: string | null;
+  banca: string; // id da banca ou "a_definir"
+  aDefinir: boolean;
+  bancaEmUso: string; // a que vale para o estilo e a nota (referência quando a definir)
+  nomeBanca: string;
+  areas: { id: string; nome: string }[];
+  area: string | null;
+}
+export interface RegistroConcursoDTO { em: string; quem: string; concurso: string; campo: "banca" | "area"; de: string; para: string; motivo: string }
+
 // Trilha de estudos (F4): tema do dia, estados e fila de retomada (regra em shared/trilha.ts)
 export interface TrilhaDTO {
   rodada: number;
@@ -618,6 +632,8 @@ export interface Api {
   definirTemaDoDia(subtopico: string): Promise<void>;
   // histórico dos simulados com o detalhe guardado (evolução, tabela, CSV)
   simulados(): Promise<ResumoSimulado[]>;
+  // concursos disponíveis (abas BB/BACEN): banca em uso e área
+  concursos(): Promise<ConcursoInfoDTO[]>;
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;
   aula(topicoId: string): Promise<AulaDTO | null>;
   explicarMais(questaoId: string, duvida?: string): Promise<ExplicacaoMaisDTO>;

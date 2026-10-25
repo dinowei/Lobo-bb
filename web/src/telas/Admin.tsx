@@ -20,13 +20,15 @@ import { Markdown } from "../componentes/Markdown";
 import { useApp } from "../estado";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
+import { BANCAS, type IdBanca } from "../../../shared/concursos";
 
-type Aba = "ia" | "fila" | "benchmark" | "pendencias" | "convites" | "contas";
+type Aba = "ia" | "fila" | "benchmark" | "pendencias" | "concursos" | "convites" | "contas";
 const ABAS: { id: Aba; rotulo: string }[] = [
   { id: "ia", rotulo: "IA" },
   { id: "fila", rotulo: "Fila" },
   { id: "benchmark", rotulo: "Benchmark" },
   { id: "pendencias", rotulo: "Pendências" },
+  { id: "concursos", rotulo: "Concursos" },
   { id: "convites", rotulo: "Convites" },
   { id: "contas", rotulo: "Contas" },
 ];
@@ -147,6 +149,7 @@ export function Admin() {
         {aba === "fila" && <AbaFila />}
         {aba === "benchmark" && <AbaBenchmark />}
         {aba === "pendencias" && <AbaPendencias irPara={escolher} />}
+        {aba === "concursos" && <AbaConcursos />}
         {aba === "convites" && <AbaConvites />}
         {aba === "contas" && <AbaContas />}
       </section>
@@ -294,6 +297,94 @@ function AbaContas() {
             </tbody>
           </table>
         </div>
+      </div>
+    </Estado>
+  );
+}
+
+// ---------- Concursos: banca e área de cada um, sempre com motivo (fica no histórico) ----------
+const ROTULO_BANCA = (id: string) => (id === "a_definir" ? "A definir (estuda no estilo da referência)" : BANCAS[id as IdBanca]?.nome ?? id);
+
+function AbaConcursos() {
+  const { avisar, recarregar: recarregarPainel } = useApp();
+  const { dados, erro, recarregar } = useDados(adminTelas.concursos);
+  const [edicao, setEdicao] = useState<{ concurso: string; campo: "banca" | "area"; para: string; motivo: string } | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  const salvar = async () => {
+    if (!edicao) return;
+    if (edicao.motivo.trim().length < 5) return avisar("Escreva o motivo (fica no histórico).");
+    setSalvando(true);
+    try {
+      await adminTelas.ajustarConcurso(edicao.concurso, edicao.campo, edicao.para, edicao.motivo.trim());
+      setEdicao(null);
+      avisar("Concurso atualizado");
+      await recarregar();
+      void recarregarPainel();
+    } catch (e) {
+      avisar((e as Error).message);
+    } finally {
+      setSalvando(false);
+    }
+  };
+  return (
+    <Estado erro={erro} carregando={!dados} tentar={recarregar}>
+      {dados?.concursos.map((c) => (
+        <div key={c.id} className="secao" data-testid={`admin-concurso-${c.id}`}>
+          <div className="linha-titulo"><h2>{c.nome}{c.cargo ? ` · ${c.cargo}` : ""}</h2></div>
+          <p className="sub" style={{ marginTop: 0 }}>
+            Banca: <b>{ROTULO_BANCA(c.banca)}</b>{c.aDefinir && <> · em uso: {c.nomeBanca}</>}
+            {c.areas.length > 0 && <> · Área: <b>{c.areas.find((a) => a.id === c.area)?.nome ?? "a escolher"}</b></>}
+          </p>
+          <div className="acoes">
+            <button className="botao-linha" onClick={() => setEdicao({ concurso: c.id, campo: "banca", para: c.banca, motivo: "" })}>Mudar banca</button>
+            {c.areas.length > 0 && (
+              <button className="botao-linha" onClick={() => setEdicao({ concurso: c.id, campo: "area", para: c.area ?? c.areas[0].id, motivo: "" })}>Mudar área</button>
+            )}
+          </div>
+          {edicao?.concurso === c.id && (
+            <div className="convite-novo">
+              <label htmlFor={`para-${c.id}`}>
+                {edicao.campo === "banca" ? "Nova banca" : "Nova área"}
+                <select id={`para-${c.id}`} value={edicao.para} onChange={(e) => setEdicao({ ...edicao, para: e.target.value })}>
+                  {edicao.campo === "banca"
+                    ? ["a_definir", ...Object.keys(BANCAS)].map((b) => <option key={b} value={b}>{ROTULO_BANCA(b)}</option>)
+                    : c.areas.map((a) => <option key={a.id} value={a.id}>{a.nome}</option>)}
+                </select>
+              </label>
+              <label htmlFor={`motivo-${c.id}`}>
+                Motivo (ex.: "edital publicado em 12/03, banca Cebraspe")
+                <input id={`motivo-${c.id}`} value={edicao.motivo} maxLength={200} onChange={(e) => setEdicao({ ...edicao, motivo: e.target.value })} />
+              </label>
+              <div className="acoes">
+                <button className="botao-laranja" disabled={salvando} onClick={salvar}>{salvando ? "Salvando…" : "Salvar"}</button>
+                <button className="botao-linha" onClick={() => setEdicao(null)}>Cancelar</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+      <div className="secao">
+        <div className="linha-titulo"><h2>Histórico</h2></div>
+        {!dados?.historico.length ? (
+          <p className="sub">Nenhuma mudança ainda.</p>
+        ) : (
+          <div className="tabela-rolavel">
+            <table className="tabela">
+              <thead><tr><th>Quando</th><th>Concurso</th><th>Mudança</th><th>Motivo</th><th>Quem</th></tr></thead>
+              <tbody>
+                {dados.historico.map((h, i) => (
+                  <tr key={i}>
+                    <td>{quando(h.em)}</td>
+                    <td>{h.concurso.toUpperCase()}</td>
+                    <td>{h.campo === "banca" ? "Banca" : "Área"}: {h.campo === "banca" ? ROTULO_BANCA(h.de) : h.de} → {h.campo === "banca" ? ROTULO_BANCA(h.para) : h.para}</td>
+                    <td>{h.motivo}</td>
+                    <td className="quebra">{h.quem}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </Estado>
   );

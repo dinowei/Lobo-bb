@@ -37,7 +37,9 @@ import { pesoDoTopico, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PRO
 import { ehDiagnostico, MISTURA_DIAGNOSTICO, PREFIXO_DIAGNOSTICO, ratingDoDiagnostico } from "../../../shared/diagnostico";
 import { reprocessar, type EventoRating, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../../../shared/rating";
 import { fatorNaoSabia, naoSabiaPorTopico, palavrasDecisivas, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../../../shared/aprendizado";
-import { classificarPorCodigo, SUBTOPICO_POR_ID } from "../../../shared/subtopicos";
+import { classificarPorCodigo, concursosDoTopico, SUBTOPICO_POR_ID } from "../../../shared/subtopicos";
+import { BANCAS, CONCURSOS } from "../../../shared/concursos";
+import { concursoAtivo } from "../concursoAtivo";
 import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA, type InicioTrilha } from "../../../shared/trilha";
 import { desempenhoPorTema, diaLocal, diasDaTrilha, type TentativaTema } from "../../../shared/desempenhoTema";
 import { resumirSimulado } from "../../../shared/simulados";
@@ -61,6 +63,13 @@ export const TOPICOS: TopicoDTO[] = Object.entries(
     }))
   );
 const topicoDe = (q: QuestaoDemo) => `${q.disciplina}:${slug(q.assunto)}`;
+// F5: só os tópicos do concurso ativo (igual ao servidor; tópico sem subtópico mapeado = BB)
+const doConcurso = (assunto: string) => {
+  const c = concursosDoTopico(assunto);
+  return c.length ? c.includes(concursoAtivo()) : concursoAtivo() === "bb";
+};
+const topicosAtivos = () => TOPICOS.filter((t) => doConcurso(t.assunto));
+const questaoAtiva = (q: QuestaoDemo) => doConcurso(q.assunto);
 const porId = new Map(QUESTOES_DEMO.map((q) => [q.id, q]));
 
 const AULAS_DEMO: Record<string, AulaDTO> = Object.fromEntries(
@@ -227,18 +236,25 @@ const discDoSubDemo = (s: string) => QUESTOES_DEMO.find((q) => subDe(q) === s)?.
 export const apiDemo: Api = {
   modo: "demo",
 
-  topicos: () => espera(TOPICOS),
+  topicos: () => espera(topicosAtivos()),
+
+  concursos: () => espera((["bb", "bacen"] as const).map((id) => {
+    const j = CONCURSOS[id] as { nome: string; cargo?: string; bancaPadrao: string; bancaReferencia?: string; areas?: { id: string; nome: string }[] };
+    const aDefinir = j.bancaPadrao === "a_definir";
+    const emUso = aDefinir ? j.bancaReferencia ?? "cebraspe" : j.bancaPadrao;
+    return { id, nome: j.nome, cargo: j.cargo ?? null, banca: j.bancaPadrao, aDefinir, bancaEmUso: emUso, nomeBanca: (BANCAS as Record<string, { nome: string }>)[emUso]?.nome ?? emUso, areas: j.areas ?? [], area: j.areas?.[0]?.id ?? null };
+  })),
 
   desempenhoTemas: () => {
     const e = ler();
-    return espera(desempenhoPorTema(tentativasTema(e), aprovadasDemo(e), discDoSubDemo).filter((d) => d.concursos.includes("bb")));
+    return espera(desempenhoPorTema(tentativasTema(e), aprovadasDemo(e), discDoSubDemo).filter((d) => d.concursos.includes(concursoAtivo())));
   },
 
   trilha: () => {
     const e = ler();
     const ts = tentativasTema(e);
     const ap = aprovadasDemo(e);
-    const temas = TRILHA.filter((t) => concursosDoTema(t).includes("bb"));
+    const temas = TRILHA.filter((t) => concursosDoTema(t).includes(concursoAtivo()));
     const hoje = diaLocal(new Date());
     let inicio: InicioTrilha | null = null;
     try { inicio = JSON.parse(localStorage.getItem(CHAVE_INICIO) ?? "null"); } catch { /* sem storage */ }
@@ -271,7 +287,7 @@ export const apiDemo: Api = {
       subtopico, nome: s.nome, n: t?.n ?? null, disciplina: discDoSubDemo(subtopico),
       topicoIds: TOPICOS.filter((x) => s.topicos.includes(x.assunto)).map((x) => x.id),
       concursos: s.concursos, aprovadas: qs.length, poucas: qs.length < MINIMO_NOVAS,
-      estudo: { tempoMin: 45, objetivo: null, pontos: [], lei: null, ficha: null, materiais: [], youtube: linkYoutube(s.nome, "bb"), oficiaisNoAcervo: [] },
+      estudo: { tempoMin: 45, objetivo: null, pontos: [], lei: null, ficha: null, materiais: [], youtube: linkYoutube(s.nome, concursoAtivo()), oficiaisNoAcervo: [] },
       pratica: { novas: qs.filter((q) => !vistas.has(q.id)).length, revisoes: 0, erradas: qs.filter((q) => erradas.has(q.id)).length, oficiais: 0, geradas: qs.length, derivadas: 0, cursinho: 0 },
     });
   },
@@ -300,7 +316,9 @@ export const apiDemo: Api = {
 
   painel: () => {
     const e = ler();
-    const painel = calcularPainel({ topicos: TOPICOS, tentativas: e.tentativas, revisoes: Object.values(e.revisoes).map((r) => r.proxima) });
+    // revisões só do concurso ativo; XP e sequência somam tudo (as tentativas vão inteiras)
+    const revisoesAtivas = Object.entries(e.revisoes).filter(([id]) => { const q = porId.get(id); return !q || questaoAtiva(q); }).map(([, r]) => r.proxima);
+    const painel = calcularPainel({ topicos: topicosAtivos(), tentativas: e.tentativas, revisoes: revisoesAtivas });
     // cartão "Banco de questões" com a mesma regra do servidor (no demo nada entra de noite)
     const banco = calcularBanco(
       QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id)).map((q) => ({ id: q.id, disciplina: q.disciplina, gerada: false, criadaEm: "2026-01-01T00:00:00Z" })),
@@ -312,7 +330,7 @@ export const apiDemo: Api = {
 
   async proxima(f) {
     const e = ler();
-    const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id));
+    const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id) && questaoAtiva(q));
 
     if (f.questaoId) {
       const q = porId.get(f.questaoId);
@@ -464,7 +482,7 @@ export const apiDemo: Api = {
 
   async simulado(n, opcoes) {
     const e = ler();
-    const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id));
+    const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id) && questaoAtiva(q));
     const comQuestao = TOPICOS.filter((t) => ativas.some((q) => topicoDe(q) === t.id));
     const cotas = cotasPorDisciplina(Math.min(n, ativas.length), comQuestao);
     const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : MISTURA_SIMULADO;
@@ -519,7 +537,7 @@ export const apiDemo: Api = {
     const porQ = new Map<string, TentativaBruta[]>();
     for (const t of e.tentativas) porQ.set(t.questaoId, [...(porQ.get(t.questaoId) ?? []), t]);
     const lista = [...porQ]
-      .filter(([, ts]) => !ts[ts.length - 1].acertou)
+      .filter(([id, ts]) => !ts[ts.length - 1].acertou && !!porId.get(id) && questaoAtiva(porId.get(id)!))
       .map(([id, ts]) => {
         const q = porId.get(id)!;
         return {

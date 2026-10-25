@@ -5,11 +5,13 @@ import type {
   AdminFilaDTO,
   AdminIADTO,
   AmostraFiguraDTO,
+  ConcursoInfoDTO,
   ContaDTO,
   ConviteDTO,
   PendenciaDTO,
   QuestaoComFigurasDTO,
   RegiaoPdf,
+  RegistroConcursoDTO,
 } from "../../../shared/tipos";
 import { EVENTO_SESSAO } from "./conta";
 
@@ -48,7 +50,12 @@ export const adminTelas = {
   cancelarConvite: (id: string) => req<{ cancelado: boolean }>(`/convites/${id}/cancelar`, { method: "POST" }),
   contas: () => req<ContaDTO[]>("/contas"),
   senhaProvisoria: (id: string) => req<{ provisoria: string }>(`/contas/${id}/senha`, { method: "POST" }),
+  // Concursos: banca e área de cada um, com motivo e histórico
+  concursos: () => req<ConcursosAdminDTO>("/concursos"),
+  ajustarConcurso: (concurso: string, campo: "banca" | "area", para: string, motivo: string) =>
+    req<ConcursosAdminDTO>("/concursos", { method: "POST", body: JSON.stringify({ concurso, campo, para, motivo }) }),
 };
+type ConcursosAdminDTO = { concursos: ConcursoInfoDTO[]; historico: RegistroConcursoDTO[] };
 
 export const adminFiguras = {
   listar: () => req<QuestaoComFigurasDTO[]>("/figuras"),

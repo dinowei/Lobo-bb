@@ -11,6 +11,9 @@ import { promisify } from "node:util";
 import type { NextFunction, Request, Response } from "express";
 import { Types } from "mongoose";
 import { User, Sessao, Convite, Attempt, ReviewState, Report } from "./models.js";
+import { CONCURSOS } from "../shared/concursos.js";
+
+const CONCURSOS_VALIDOS = new Set(Object.keys(CONCURSOS));
 
 const scrypt = promisify(scryptCb) as (s: string, sal: Buffer, n: number) => Promise<Buffer>;
 
@@ -30,7 +33,9 @@ export async function conferirSenha(senha: string, guardada: string): Promise<bo
 
 // ---------- contexto da requisição (quem está usando) ----------
 export interface Usuario { id: Types.ObjectId; nome: string; email: string; papel: "admin" | "aluno" }
-const contexto = new AsyncLocalStorage<{ usuario: Usuario | null }>();
+const contexto = new AsyncLocalStorage<{ usuario: Usuario | null; concurso?: string }>();
+// concurso ativo da requisição (F5: aba BB/BACEN do site, cabeçalho X-Concurso); sem ele, o padrão (BB)
+export const concursoDaRequisicao = () => contexto.getStore()?.concurso;
 const DONO = () => new Types.ObjectId(process.env.ALUNO_ID || "000000000000000000000001");
 // userId de quem está usando; fora de requisição (CLI) ou no modo dono único, o ALUNO_ID
 export const usuarioAtualId = () => contexto.getStore()?.usuario?.id ?? DONO();
@@ -100,7 +105,9 @@ export function autenticar() {
         if (!usuario) return res.status(401).json({ erro: "Sua sessão acabou. Entre de novo.", codigo: "sessao_expirada" });
         if (caminho.startsWith("/api/admin/") && usuario.papel !== "admin") return res.status(403).json({ erro: "Só o administrador acessa isto." });
       }
-      contexto.run({ usuario }, () => next());
+      // só aceita concurso conhecido (o valor vem do cliente)
+      const pedido = String(req.headers["x-concurso"] ?? "").toLowerCase();
+      contexto.run({ usuario, ...(CONCURSOS_VALIDOS.has(pedido) ? { concurso: pedido } : {}) }, () => next());
     } catch (e) {
       next(e);
     }

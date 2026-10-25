@@ -23,6 +23,7 @@ import { dirname, join, resolve } from "node:path";
 import { apiServidor } from "./estudo.js";
 import { garantirIndiceElo } from "./migracaoConcursos.js";
 import { caminhoMaterial } from "./temas.js";
+import { ajustarConcurso, carregarConfigConcursos, historicoConcursos, infoConcursos } from "./concursosConfig.js";
 import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro, type NotaCartao } from "../shared/tipos.js";
 
 const app = express();
@@ -119,6 +120,20 @@ app.get("/api/trilha", rota(async (_req, res) => res.json(await apiServidor.tril
 app.post("/api/trilha/inicio", rota(async (req, res) => {
   await apiServidor.definirTemaDoDia(String((req.body as { subtopico?: unknown })?.subtopico ?? ""));
   res.json({ ok: true });
+}));
+// concursos (F5): banca em uso e área de cada um; o admin troca com registro
+app.get("/api/concursos", (_req, res) => res.json(infoConcursos()));
+app.get("/api/admin/concursos", (_req, res) => res.json({ concursos: infoConcursos(), historico: historicoConcursos() }));
+app.post("/api/admin/concursos", rota(async (req, res) => {
+  const b = (req.body ?? {}) as { concurso?: unknown; campo?: unknown; para?: unknown; motivo?: unknown };
+  const campo = b.campo === "area" ? "area" : b.campo === "banca" ? "banca" : null;
+  if (!campo) return res.status(400).json({ erro: "Campo inválido." });
+  try {
+    const r = await ajustarConcurso(String(b.concurso) as "bb" | "bacen", campo, String(b.para ?? ""), String(b.motivo ?? ""), usuarioAtual()?.email ?? "dono");
+    res.json({ ...r, concursos: infoConcursos(), historico: historicoConcursos() });
+  } catch (e) {
+    res.status(400).json({ erro: (e as Error).message });
+  }
 }));
 app.get("/api/simulados",rota(async (_req, res) => res.json(await apiServidor.simulados())));
 app.get("/api/tema/:subtopico", rota(async (req, res) => {
@@ -405,6 +420,7 @@ async function iniciar() {
   await mongoose.connect(uri);
   console.log("✔ Banco conectado");
   if (await garantirIndiceElo().catch(() => false)) console.log("✔ Índice antigo do Elo (aluno + disciplina) removido");
+  await carregarConfigConcursos().catch((e) => console.warn(`concursos: config padrão (${(e as Error).message})`));
 }
 // só sobe quando é o processo principal; o teste de isolamento importa o app sem abrir porta nem banco
 export { app };

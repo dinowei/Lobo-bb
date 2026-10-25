@@ -40,14 +40,15 @@ import type {
 import { gerarQuestao } from "./pipeline.js";
 import { seFilaLivre } from "./fila.js";
 import { alertasAdminAgora } from "./adminTelas.js";
-import { usuarioAtualId, usuarioAtual } from "./auth.js";
+import { usuarioAtualId, usuarioAtual, concursoDaRequisicao } from "./auth.js";
+import { bancaConfigurada, infoConcursos } from "./concursosConfig.js";
 import { Geracao } from "./models.js";
 import { MOTIVOS_REPETICAO } from "./similaridade.js";
 import { inicioDaNoite } from "../shared/motor.js";
 import { pesoDoTopico, cotasPorFaixa, faixaDe, sortearDisciplinaMista, COTAS_PROVA, MISTURA_SIMULADO } from "../shared/estruturaProva.js";
 import { bancaEmUso, CONCURSO_PADRAO, type IdBanca, type IdConcurso } from "../shared/concursos.js";
 import { fatorNaoSabia, palavrasDecisivas, JANELA_NAO_SABIA_DIAS, MENSAGEM_MOTIVO, REVISAO_CHUTE_MIN, TEMPO_ALVO_SEG } from "../shared/aprendizado.js";
-import type { AcaoMotivoDTO, MotivoErro } from "../shared/tipos.js";
+import type { AcaoMotivoDTO, ConcursoInfoDTO, MotivoErro } from "../shared/tipos.js";
 import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
 import { aulaDoTopico } from "./aulas.js";
 import { explicarSobDemanda } from "./outroJeito.js";
@@ -60,9 +61,11 @@ import { listarSimulados, salvarSimulado } from "./simulados.js";
 // quem está usando: o usuário da sessão; no modo dono único (sem login), o ALUNO_ID
 export const ALUNO = usuarioAtualId;
 // em que concurso e banca o aluno está estudando agora (Elo, tentativas e Desempenho por concurso).
-// Por enquanto o BB no estilo Cesgranrio, igual a antes; as abas BB / BACEN mudam isso.
+// F5: o concurso vem da aba do site (cabeçalho X-Concurso, no contexto da requisição); a banca é a que o
+// admin configurou ou, "a definir", a de referência (BACEN: Cebraspe). Sem aba, o BB de sempre.
 export function chaveConcurso(): { concurso: IdConcurso; banca: IdBanca } {
-  return { concurso: CONCURSO_PADRAO, banca: bancaEmUso(CONCURSO_PADRAO) };
+  const concurso = (concursoDaRequisicao() ?? CONCURSO_PADRAO) as IdConcurso;
+  return { concurso, banca: bancaEmUso(concurso, bancaConfigurada(concurso)) };
 }
 const oid = (s: string) => {
   if (!/^[0-9a-f]{24}$/i.test(s)) throw new Error(`id inválido: ${s}`);
@@ -76,9 +79,18 @@ const oid = (s: string) => {
 async function mapaTopicos() {
   const { concurso } = chaveConcurso();
   const ts = await Topic.find({ ativo: true, $or: [{ concursos: concurso }, ...(concurso === "bb" ? [{ concursos: { $exists: false } }] : [])] }).lean();
-  return new Map(ts.map((t) => [String(t._id), t]));
+  // BACEN: a matéria da área (Suporte Técnico-Administrativo) só entra para quem é dessa área
+  const area = infoConcursos().find((c) => c.id === concurso)?.area;
+  const fora = concurso === "bacen" && area !== "suporte_tecnico_administrativo" ? "suporte_tecnico_administrativo" : null;
+  return new Map(ts.filter((t) => t.disciplina !== fora).map((t) => [String(t._id), t]));
 }
 
+
+// questões dos tópicos do concurso ativo (revisões, erros e simulado filtram por elas; matéria comum vale nos dois)
+async function questoesDoConcurso(mapa?: Awaited<ReturnType<typeof mapaTopicos>>): Promise<Types.ObjectId[]> {
+  const m = mapa ?? (await mapaTopicos());
+  return (await Question.distinct("_id", { topicId: { $in: [...m.values()].map((t) => t._id) } })) as Types.ObjectId[];
+}
 
 // peso no treino: o do edital (questoesNaProva) ou a cota da disciplina na prova ÷ tópicos dela
 async function listarTopicos(): Promise<TopicoDTO[]> {
@@ -267,13 +279,15 @@ export const apiServidor: Omit<Api, "modo"> = {
   pedirPrioridadeTema: pedirPrioridade,
   definirTemaDoDia,
   simulados: () => listarSimulados(ALUNO()),
+  concursos: async () => infoConcursos() as ConcursoInfoDTO[],
 
   async painel() {
     const userId = ALUNO();
+    const doConcurso = await questoesDoConcurso(); // revisões contam só as do concurso ativo; XP e sequência, tudo
     const [topicos, tentativas, revisoes, aprovadas, alertasAdmin, redacaoCorrigidaPendente, redacoes] = await Promise.all([
       listarTopicos(),
       Attempt.find({ userId }).select("questionId topicId acertou xp modo simuladoId confianca motivoErro tempoSeg createdAt").lean(),
-      ReviewState.find({ userId }).select("proximaRevisao").lean(),
+      ReviewState.find({ userId, questionId: { $in: doConcurso } }).select("proximaRevisao").lean(),
       Question.find({ status: "aprovada" }).select("_id topicId origem createdAt").lean(),
       // só o admin vê (com o login da Etapa 4, só vai para o papel admin)
       usuarioAtual()?.papel === "aluno" ? ([] as string[]) : alertasAdminAgora().catch(() => [] as string[]),
@@ -344,7 +358,7 @@ export const apiServidor: Omit<Api, "modo"> = {
     // 1. revisões vencidas
     const semFiltro = !f.topicoId && !f.disciplina;
     if (f.revisao || semFiltro) {
-      const vencidas = await ReviewState.find({ userId, proximaRevisao: { $lte: new Date() } })
+      const vencidas = await ReviewState.find({ userId, proximaRevisao: { $lte: new Date() }, questionId: { $in: await questoesDoConcurso(topicos) } })
         .sort({ proximaRevisao: 1 })
         .limit(30)
         .lean();
@@ -576,7 +590,8 @@ export const apiServidor: Omit<Api, "modo"> = {
       (await Question.find({ _id: { $in: grupos.map((g) => g._id) } }).select("enunciado topicId explicacaoGeral").lean()).map((q) => [String(q._id), q])
     );
     return grupos
-      .filter((g) => qs.has(String(g._id)))
+      // só os erros de tópicos do concurso ativo (matéria comum aparece nos dois)
+      .filter((g) => qs.has(String(g._id)) && mapa.has(String(qs.get(String(g._id))!.topicId)))
       .map((g): ErroDTO => {
         const q = qs.get(String(g._id))!;
         const t = mapa.get(String(q.topicId));
