@@ -588,6 +588,9 @@ export interface TemaDTO {
     lei: { nome: string; url: string } | null;
     ficha: { texto: string; citacao: string; fonte: string } | null;
     materiais: { arquivo: string; paginas: string; pagina: number; camada: "A" | "B" | "C"; titulo: string; disponivel: boolean }[];
+    materialAutomatico?: boolean; // mapa por palavra-chave, ainda não conferido
+    // ficha aprovada pela rede (gerador + código + auditor de outra família): cada frase com o trecho literal
+    fichaAcervo?: { afirmacoes: { texto: string; classe: string; trecho: string; titulo: string; pagina: number; camada: "A" | "B" | "C" }[]; conflitos: string[]; em: string } | null;
     youtube: string;
     oficiaisNoAcervo: string[];
   };

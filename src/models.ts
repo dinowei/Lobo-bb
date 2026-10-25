@@ -496,6 +496,36 @@ const SimuladoSchema = new Schema(
 );
 export const Simulado = model("Simulado", SimuladoSchema, "simulados");
 
+// Ficha por subtópico (F11/V2): afirmações curtas, cada uma com o trecho LITERAL conferido pelo código
+// na página do acervo. No Atlas só o destilado (frases + trechos citados); as páginas ficam no PC.
+// Uma ficha nova não apaga a anterior (rollback = voltar a ler a versão anterior aprovada).
+const FichaSchema = new Schema(
+  {
+    subtopico: { type: String, required: true, index: true },
+    afirmacoes: [
+      {
+        _id: false,
+        texto: String,
+        classe: { type: String, enum: ["fato", "regra_normativa", "conceito", "interpretacao", "inferencia", "hipotese", "exemplo"] },
+        trecho: String, // literal, conferido no texto da página
+        arquivo: String, // relativo a ACERVO_DIR
+        pagina: Number,
+        camada: { type: String, enum: ["A", "B", "C"] },
+      },
+    ],
+    conflitos: [String], // C × A/B: avisados, vale A/B
+    ondeLerMais: [{ _id: false, arquivo: String, paginas: String, pagina: Number, camada: String, titulo: String }],
+    status: { type: String, enum: ["aprovada", "pendente", "rejeitada", "aguardando_auditoria_independente", "aguardando_fonte"], required: true },
+    motivos: [String],
+    contratos: Schema.Types.Mixed, // contratos JSON de cada etapa (gerador, auditor) — rastreabilidade
+    geradaPor: String,
+    auditadaPor: String,
+  },
+  { timestamps: true }
+);
+FichaSchema.index({ subtopico: 1, status: 1, createdAt: -1 });
+export const Ficha = model("Ficha", FichaSchema, "fichas");
+
 // Cartões (8.6): frente/verso de normas (com trecho literal da fonte) e vocabulário de Inglês (trecho
 // literal da prova oficial). Só "aprovado" (auditor de outra família) aparece para o aluno.
 const CartaoSchema = new Schema(

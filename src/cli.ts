@@ -63,6 +63,9 @@ import { executarEvalGerador } from "./evalGerador.js";
 import { cancelarConvite, listarConvites } from "./admin.js";
 import { migrarConcursos, simularMigracaoConcursos } from "./migracaoConcursos.js";
 import { migrarSimulados, simularMigracaoSimulados } from "./simulados.js";
+import { escreverMapa, indexarAcervo, mapearTemas } from "./acervo.js";
+import { gerarFicha } from "./fichas.js";
+import { TRILHA } from "../shared/trilha.js";
 import { aplicarArvore, auditarAmostra, classificarBanco, itensClassificados, reclassificarOficiais, simularArvore } from "./subtopicos.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
@@ -126,6 +129,9 @@ BB Estudos — comandos (npm run bb -- <comando>)
   arvore --simular|--confirmar  árvore de subtópicos: tópicos do BACEN e concursos de cada tópico
   classificar-subtopicos --simular|--confirmar [--ia] [--oficiais] [--n 40]   subtópico de cada questão; --n audita amostra
   migrar-simulados --simular|--confirmar   simulados antigos ganham o resumo recalculado das tentativas
+  acervo indexar                índice local do acervo por hash (só leitura no OneDrive; pula o que está só na nuvem)
+  acervo mapa                   mapa tema → páginas (A > B > C) em docs/CRONOGRAMA-MATERIAL.md e data/temas.json (automático)
+  fichas [--tema crase] [--n 3]  ficha do tema com o acervo: gerador → código confere cada trecho → auditor de outra família
 `;
 
 function exigir(v: string | undefined, nome: string): string {
@@ -150,6 +156,7 @@ async function main() {
       assuntos: { type: "string" },
       ia: { type: "boolean" },
       oficiais: { type: "boolean" },
+      tema: { type: "string" },
       comentario: { type: "string" },
       tipo: { type: "string" },
       titulo: { type: "string" },
@@ -239,6 +246,33 @@ async function main() {
         return await naFila(rotulo, () =>
           recuperarQuestao(exigir(args[0], "o PDF da prova"), exigir(o.gabarito, "--gabarito"), exigir(o.nome, "--nome"), numero)
         );
+      }
+
+      case "acervo": {
+        // índice local por hash (só leitura no OneDrive) e mapa tema → páginas, A > B > C, marcado como automático
+        if (args[0] === "indexar") {
+          const r = await indexarAcervo();
+          console.log(`PDFs: ${r.total} · novos indexados ${r.novos} · já no índice ${r.jaIndexados} · só na nuvem ${r.nuvem.length} · erros ${r.erros.length} · páginas ${r.paginas}`);
+          for (const n of r.nuvem) console.log(`  ☁ pulado (só na nuvem): ${n}`);
+          for (const e of r.erros) console.log(`  ✖ ${e}`);
+          return;
+        }
+        if (args[0] === "mapa") {
+          const r = escreverMapa(mapearTemas());
+          return console.log(`✔ docs/CRONOGRAMA-MATERIAL.md · temas com material: ${r.comMaterial}/${r.total} · data/temas.json: ${r.novos} tema(s) novo(s) (automáticos), ${r.mantidos} conferido(s) mantido(s)`);
+        }
+        throw new Error('Use "acervo indexar" ou "acervo mapa".');
+      }
+
+      case "fichas": {
+        // F11: ficha por subtópico com o acervo (gerador → código confere trecho → auditor de outra família)
+        const alvo = o.tema ? [o.tema] : TRILHA.map((t) => t.subtopico).slice(0, o.n ? Number(o.n) : 3);
+        return await naFila(rotulo, async () => {
+          for (const s of alvo) {
+            const r = await gerarFicha(s);
+            console.log(`${r.status === "aprovada" ? "✔" : "·"} ${s}: ${r.status}${"afirmacoes" in r && r.afirmacoes !== undefined ? ` (${r.afirmacoes} afirmações)` : ""}${r.motivos.length ? ` — ${r.motivos.join("; ")}` : ""}`);
+          }
+        });
       }
 
       case "migrar-simulados": {

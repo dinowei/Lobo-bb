@@ -1128,5 +1128,8 @@ h2.inline { display: inline; }
 .linha-clicavel:hover td { background: var(--cartao); }
 .detalhe-simulado td { background: var(--cartao); }
 .detalhe-simulado p { margin: 4px 0; }
+.ficha-acervo li { margin-bottom: 8px; }
+.ficha-acervo details summary { color: var(--suave); font-size: 12px; cursor: pointer; }
+.ficha-acervo blockquote { margin: 6px 0 0; padding-left: 10px; border-left: 2px solid var(--laranja); color: var(--suave); font-size: 13px; }
 small.sobe { color: var(--certo); }
 small.desce { color: var(--errado); }

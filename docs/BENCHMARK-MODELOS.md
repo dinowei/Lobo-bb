@@ -1,6 +1,6 @@
 # Benchmark de modelos grátis (NVIDIA)
 
-Gerado em 18/10/2026, 12:37:10 por `npm run bb -- benchmark relatorio`. Resultados brutos na coleção `benchmark_respostas` (retomável: cada modelo × item roda uma vez).
+Gerado em 24/10/2026, 22:29:36 por `npm run bb -- benchmark relatorio`. Resultados brutos na coleção `benchmark_respostas` (retomável: cada modelo × item roda uma vez).
 
 ## Como foi medido
 
@@ -10,7 +10,7 @@ Gerado em 18/10/2026, 12:37:10 por `npm run bb -- benchmark relatorio`. Resultad
 
 ## 1. Auditor: oficiais resolvidas às cegas
 
-Amostra: 60 oficiais aprovadas, sem figura, estratificada por disciplina (proporcional, mínimo 2), sorteio fixo pela semente `bb-2026`: informatica 13, vendas_negociacao 13, conhecimentos_bancarios 9, lingua_portuguesa 8, lingua_inglesa 5, atualidades_mercado_financeiro 5, matematica_financeira 4, matematica 3.
+Amostra: 60 oficiais aprovadas, sem figura, estratificada por disciplina (proporcional, mínimo 2), sorteio fixo pela semente `bb-2026`: informatica 13, vendas_negociacao 12, lingua_portuguesa 9, conhecimentos_bancarios 9, lingua_inglesa 5, atualidades_mercado_financeiro 5, matematica_financeira 4, matematica 3.
 Prompt: `AUDITOR_CEGO_SYSTEM` + enunciado, texto de apoio e alternativas (`questaoCega`: o objeto enviado não tem gabarito, "correta" nem explicação; um teste confere).
 
 | modelo | família | acerto | IC 95% | respondidas | disponibilidade | mediana | falhas |
@@ -37,9 +37,17 @@ Por disciplina (acertos/respondidas):
 
 Cada frase isolada, `AUDITOR_FRASE_SYSTEM` (o mesmo do pipeline). Casos: 6 armadilhas em que o auditor já errou ("à ela", "à Vossa Senhoria", "recorreu a gerência") e as versões certas delas + frases das Crase aprovadas (a do gabarito é a única certa, garantido pelo banco de regras).
 
-_Ainda não rodou._
+| modelo | família | acerto | IC 95% | respondidas | disponibilidade | mediana | falhas |
+|---|---|---|---|---|---|---|---|
+| z-ai/glm-5.3-flash | zai | 45/45 = **100%** | 92%–100% | 45/47 | 96% | 107 s | timeout: 2 |
+| nvidia/nemotron-3-ultra-550b-a55b | nvidia | 44/46 = **96%** | 85%–99% | 46/46 | 100% | 6 s | — |
+| meta/muse-glimmer-30b | meta | 44/46 = **96%** | 85%–99% | 46/47 | 98% | 27 s | 5xx: 1 |
+| stepfun-ai/step-5-preview (preview) | stepfun | 43/46 = **93%** | 82%–98% | 46/46 | 100% | 12 s | — |
+| openai/gpt-oss-20b | openai | 40/46 = **87%** | 74%–94% | 46/46 | 100% | 6 s | — |
+| nvidia/nemotron-3-super-120b-a12b | nvidia | 39/45 = **87%** | 74%–94% | 45/45 | 100% | 9 s | — |
+| deepseek-ai/deepseek-v4.1-flash | deepseek | 0/0 = **0%** | 0%–0% | 0/7 | 0% | 0 s | timeout: 6, 5xx: 1 |
 
-
+Empate estatístico com o primeiro (intervalos se sobrepõem): nvidia/nemotron-3-ultra-550b-a55b, meta/muse-glimmer-30b, stepfun-ai/step-5-preview, openai/gpt-oss-20b, nvidia/nemotron-3-super-120b-a12b. **Não há vencedor claro.**
 
 ## 3. Escritor de Português (Crase)
 

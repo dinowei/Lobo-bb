@@ -114,6 +114,7 @@ export function Tema() {
           <h2 id="titulo-estudo">Estudo <small className="num">· {e.tempoMin} min sugeridos</small></h2>
 
           <h3>Material</h3>
+          {e.materialAutomatico && !!e.materiais.length && <p className="atalho">Mapa automático do acervo (por palavra-chave): confira as páginas antes de confiar.</p>}
           {e.materiais.length ? (
             <ul className="lista-material">
               {e.materiais.map((m) => (
@@ -144,6 +145,22 @@ export function Tema() {
                 <Markdown texto={e.ficha.texto} />
                 <blockquote>“{e.ficha.citacao}”<cite> — {e.ficha.fonte}</cite></blockquote>
               </div>
+            </>
+          )}
+
+          {e.fichaAcervo && (
+            <>
+              <h3>Ficha do acervo</h3>
+              <ul className="ficha-acervo" data-testid="ficha-acervo">
+                {e.fichaAcervo.afirmacoes.map((a, i) => (
+                  <li key={i}>
+                    {a.texto}
+                    {a.classe === "exemplo" || a.classe === "hipotese" ? <small> ({a.classe})</small> : null}
+                    <details><summary>fonte: {a.titulo}, p. {a.pagina} ({a.camada})</summary><blockquote>“{a.trecho}”</blockquote></details>
+                  </li>
+                ))}
+              </ul>
+              {!!e.fichaAcervo.conflitos.length && <p className="atalho">Atenção, o cursinho diverge da lei aqui (vale a lei): {e.fichaAcervo.conflitos.join(" · ")}</p>}
             </>
           )}
 

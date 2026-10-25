@@ -8,5 +8,7 @@ provas/
 fontes/
 logs/
 backups/
+# índice local do acervo (texto das páginas dos PDFs do dono): só no PC
+acervo-indice/
 # rascunhos de inspeção dos agentes (fora do projeto)
 scratchpad/

@@ -9,6 +9,7 @@ import { isAbsolute, join, normalize, relative } from "node:path";
 import { Types } from "mongoose";
 import { Attempt, Config, Question, ReviewState, Topic } from "./models.js";
 import { ALUNO, chaveConcurso } from "./estudo.js";
+import { fichaAprovada } from "./fichas.js";
 import { SUBTOPICO_POR_ID } from "../shared/subtopicos.js";
 import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA, type InicioTrilha } from "../shared/trilha.js";
 import { desempenhoPorTema, diaLocal, diasDaTrilha, type OrigemTema, type TentativaTema } from "../shared/desempenhoTema.js";
@@ -16,6 +17,7 @@ import type { Disciplina, TemaDTO, TrilhaDTO } from "../shared/tipos.js";
 import conteudo from "../data/temas.json" with { type: "json" };
 
 type ConteudoTema = {
+  auto?: boolean; // veio do mapa automático do acervo (palavra-chave), ainda não conferido
   tempoMin?: number;
   objetivo?: string;
   pontos?: string[];
@@ -142,6 +144,7 @@ export async function paginaTema(subtopico: string): Promise<TemaDTO | null> {
   ]);
   const c = CONTEUDO[subtopico] ?? {};
   const tema = TRILHA.find((t) => t.subtopico === subtopico);
+  const ficha = await fichaAprovada(subtopico);
   const contar = (o: OrigemTema) => qs.filter((q) => origemDe(q) === o).length;
   const temAcervo = !!process.env.ACERVO_DIR;
   return {
@@ -160,6 +163,17 @@ export async function paginaTema(subtopico: string): Promise<TemaDTO | null> {
       lei: c.lei ?? null,
       ficha: c.ficha ?? null,
       materiais: (c.materiais ?? []).map((m) => ({ ...m, disponivel: temAcervo && !!caminhoMaterial(m.arquivo) })),
+      materialAutomatico: !!c.auto,
+      fichaAcervo: ficha
+        ? {
+            afirmacoes: (ficha.afirmacoes ?? []).map((a) => ({
+              texto: a.texto ?? "", classe: a.classe ?? "conceito", trecho: a.trecho ?? "",
+              titulo: (a.arquivo ?? "").split("/").pop()!.replace(/\.pdf$/i, ""), pagina: a.pagina ?? 0, camada: (a.camada ?? "C") as "A" | "B" | "C",
+            })),
+            conflitos: ficha.conflitos ?? [],
+            em: (ficha.createdAt as Date).toISOString(),
+          }
+        : null,
       youtube: linkYoutube(s.nome, chaveConcurso().concurso),
       oficiaisNoAcervo: c.oficiais ?? [],
     },
