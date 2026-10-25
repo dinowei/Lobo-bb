@@ -65,6 +65,7 @@ import { migrarConcursos, simularMigracaoConcursos } from "./migracaoConcursos.j
 import { migrarSimulados, simularMigracaoSimulados } from "./simulados.js";
 import { escreverMapa, indexarAcervo, mapearTemas } from "./acervo.js";
 import { gerarFicha } from "./fichas.js";
+import { desempatarPendentes } from "./desempate.js";
 import { TRILHA } from "../shared/trilha.js";
 import { aplicarArvore, auditarAmostra, classificarBanco, itensClassificados, reclassificarOficiais, simularArvore } from "./subtopicos.js";
 import { migrarRatings, relatorioCalibragem } from "./rating.js";
@@ -131,6 +132,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   migrar-simulados --simular|--confirmar   simulados antigos ganham o resumo recalculado das tentativas
   acervo indexar                índice local do acervo por hash (só leitura no OneDrive; pula o que está só na nuvem)
   acervo mapa                   mapa tema → páginas (A > B > C) em docs/CRONOGRAMA-MATERIAL.md e data/temas.json (automático)
+  desempatar-pendentes          Português por construção aguardando juiz independente: desempate às cegas, o código decide
   fichas [--tema crase] [--n 3]  ficha do tema com o acervo: gerador → código confere cada trecho → auditor de outra família
 `;
 
@@ -262,6 +264,14 @@ async function main() {
           return console.log(`✔ docs/CRONOGRAMA-MATERIAL.md · temas com material: ${r.comMaterial}/${r.total} · data/temas.json: ${r.novos} tema(s) novo(s) (automáticos), ${r.mantidos} conferido(s) mantido(s)`);
         }
         throw new Error('Use "acervo indexar" ou "acervo mapa".');
+      }
+
+      case "desempatar-pendentes": {
+        // V2 Janela B: questões de Português por construção que esperavam juiz independente
+        return await naFila(rotulo, async () => {
+          const r = await desempatarPendentes();
+          console.log(`Aguardando juiz: ${r.total} · aprovadas ${r.aprovadas} · rejeitadas ${r.rejeitadas} · continuam aguardando ${r.aguardando}`);
+        });
       }
 
       case "fichas": {

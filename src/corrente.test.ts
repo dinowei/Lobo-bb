@@ -11,6 +11,7 @@ import {
   correntesDoEnv,
   validarCorrentes,
   violacoesDeFamilia,
+  CORRENTE_DEFINITIVA,
   type Correntes,
 } from "./catalogo.js";
 import { classificarErro, percentil, agregar } from "./telemetria.js";
@@ -75,11 +76,13 @@ test("catálogo: famílias, gratuidade e descontinuados", () => {
 });
 
 test("regra de família: auditor nunca da família do gerador; juiz nunca da do escritor", () => {
+  // só a regra de família: catálogo com todos ativos (o status real muda com a sondagem)
+  const todosAtivos = new Map([...carregarCatalogo()].map(([id, m]) => [id, { ...m, status: "ativo" as const }]));
   const corrente = [SUPER, ULTRA, GPT, MUSE];
-  assert.deepEqual(elegiveis(corrente, { excluirFamilias: ["nvidia"] }), [GPT, MUSE]);
-  assert.deepEqual(elegiveis(corrente, { excluirFamilias: ["openai"] }), [SUPER, ULTRA, MUSE]);
-  assert.deepEqual(elegiveis([SUPER], { excluirFamilias: ["nvidia"] }), []); // ninguém: a questão espera
-  assert.deepEqual(elegiveis([GLM, DEEPSEEK], { fora: new Set([GLM]) }), [DEEPSEEK]); // modelo descansando
+  assert.deepEqual(elegiveis(corrente, { excluirFamilias: ["nvidia"] }, todosAtivos), [GPT, MUSE]);
+  assert.deepEqual(elegiveis(corrente, { excluirFamilias: ["openai"] }, todosAtivos), [SUPER, ULTRA, MUSE]);
+  assert.deepEqual(elegiveis([SUPER], { excluirFamilias: ["nvidia"] }, todosAtivos), []); // ninguém: a questão espera
+  assert.deepEqual(elegiveis([GLM, DEEPSEEK], { fora: new Set([GLM]) }, todosAtivos), [DEEPSEEK]); // modelo descansando
 });
 
 test("legado de hoje fere a regra (Lightning e Super são Nemotron) e o .env pode trocar a corrente", () => {
@@ -176,4 +179,17 @@ test("noturno: infraestrutura volta para a fila (10, 30, 90 min) até 3 vezes; q
   assert.equal(destinoDaTarefa({ ok: false, motivo: "provedor_falhou" }, 3, agora, esperas).status, "esgotada");
   const teto = destinoDaTarefa({ ok: false, motivo: "teto_diario" }, 1, agora, esperas);
   assert.ok(teto.status === "aguardando" && teto.tentativas === 1 && teto.proximaEm.getDate() === 18, "teto diário fica para amanhã sem gastar tentativa");
+});
+
+test("Decisão 0: Ultra no juiz_pt e na Redação nunca recebe reasoning_budget; Super fora", () => {
+  const ULTRA = "nvidia/nemotron-3-ultra-550b-a55b";
+  const pensando = extrasDeRaciocinio(ULTRA, true, 4000, "medium");
+  assert.equal("reasoning_budget" in pensando, false);
+  assert.deepEqual(pensando, { reasoning_effort: "medium" });
+  assert.deepEqual(extrasDeRaciocinio(ULTRA, true, 4000), {}); // sem esforço pedido: padrão do modelo, nada de orçamento
+  assert.deepEqual(CORRENTE_DEFINITIVA.juiz_pt, [ULTRA, "meta/muse-glimmer-30b"]);
+  assert.deepEqual(CORRENTE_DEFINITIVA.redacao, [ULTRA, "meta/muse-glimmer-30b"]);
+  assert.equal(carregarCatalogo().get("nvidia/nemotron-3-super-120b-a12b")?.status, "fora");
+  // "fora" sai da corrente: o auditor pula o Super e vai do Muse para o Ultra
+  assert.deepEqual(elegiveis(CORRENTE_DEFINITIVA.auditor), ["meta/muse-glimmer-30b", ULTRA]);
 });

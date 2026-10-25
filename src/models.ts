@@ -184,6 +184,7 @@ const QuestionSchema = new Schema(
             regraEsperada: String, // regra que o código atribuiu à letra
             correta: Boolean, // o que o auditor julgou
             regra: String, // a regra que o auditor citou
+            juiz: String, // modelo que julgou a frase (o desempate nunca volta para ele)
             _id: false,
           },
         ],

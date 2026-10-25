@@ -91,7 +91,9 @@ export function elegiveis(
 ): string[] {
   return corrente.filter((id) => {
     const m = cat.get(id);
-    if (m && (m.status === "descontinuado" || !m.gratis)) return false;
+    // "fora" (temporariamente) também sai da corrente: até 25/10 só "descontinuado" saía e o Super (404 na
+    // conta) seguia sendo chamado e falhando antes do reserva. Volta quando a sondagem provar estabilidade.
+    if (m && (m.status === "descontinuado" || m.status === "fora" || !m.gratis)) return false;
     if (opcoes.fora?.has(id)) return false;
     return !(opcoes.excluirFamilias ?? []).includes(familiaDe(id, cat));
   });
@@ -112,9 +114,10 @@ export const CORRENTE_DEFINITIVA: Correntes = {
   gerador: [M.gpt, M.muse, M.lightning],
   auditor: [M.muse, M.super, M.ultra],
   escritor_pt: [M.glm, M.gpt, M.muse],
-  juiz_pt: [M.super, M.ultra],
+  // Decisão 0 do dono (25/10/2026): Super deu 404 na conta (fora até nova sondagem); Ultra sem reasoning_budget
+  juiz_pt: [M.ultra, M.muse],
   tutor: [M.gpt, M.muse, M.lightning],
-  redacao: [M.super, M.ultra, M.muse],
+  redacao: [M.ultra, M.muse],
 };
 
 export function validarCorrentes(c: Correntes, cat: Catalogo = carregarCatalogo()): { erros: string[]; avisos: string[] } {

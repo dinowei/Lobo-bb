@@ -17,8 +17,8 @@
       "gratis": true,
       "preview": false,
       "parametros": ["reasoning_budget", "enable_thinking"],
-      "status": "ativo",
-      "nota": "SONDA 24/10/2026: 404 'Function not found for account' nos 4 modos (já dava 404 em 22/10 nos logs). Continua na lista de /models, mas a função saiu da conta. Status não mudado: decisão do dono (é 1º juiz_pt e 1º redação na corrente definitiva)"
+      "status": "fora",
+      "nota": "SONDA 24/10/2026: 404 'Function not found for account' nos 4 modos (já dava 404 em 22/10 nos logs). DECISÃO DO DONO 25/10/2026 (Decisão 0): fora até nova sondagem provar estabilidade"
     },
     {
       "id": "nvidia/nemotron-3-ultra-550b-a55b",
@@ -26,9 +26,9 @@
       "funcoes": ["auditor", "juiz_pt", "redacao"],
       "gratis": true,
       "preview": false,
-      "parametros": ["enable_thinking"],
-      "status": "fora",
-      "nota": "recusa reasoning_budget (HTTP 400); 503 'temporarily overloaded' nas 4 sondas de 17/10/2026. SONDA 24/10/2026: 200 com JSON certo em basico (1,2 s), reasoning_effort (7,1 s) e sem_pensar (1,1 s); reasoning_budget segue 400. Status 'fora' mantido até benchmark e OK do dono"
+      "parametros": ["enable_thinking", "reasoning_effort"],
+      "status": "ativo",
+      "nota": "recusa reasoning_budget (HTTP 400): NUNCA enviar (fora de 'parametros', o cliente não manda). 503 nas sondas de 17/10/2026. SONDA 24/10/2026: 200 em basico (1,2 s), reasoning_effort (7,1 s) e sem_pensar (1,1 s). Benchmark do juiz 24/10: 96% (44/46), 6 s. DECISÃO DO DONO 25/10/2026 (Decisão 0): ativo, 1º do juiz_pt e da Redação"
     },
     {
       "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
