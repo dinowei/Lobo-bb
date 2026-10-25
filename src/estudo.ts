@@ -223,7 +223,7 @@ function paraDTO(q: QuestaoDoc, topicos: Map<string, { disciplina: string; assun
     topicoId: String(q.topicId),
     disciplina: (t?.disciplina ?? "conhecimentos_bancarios") as Disciplina,
     assunto: t?.assunto ?? "",
-    origem: q.origem as "oficial" | "gerada",
+    origem: q.origem as "oficial" | "gerada" | "cursinho",
     prova: q.prova ?? undefined,
     numeroOriginal: q.numeroOriginal ?? undefined,
     banca: q.banca ?? q.estiloBanca ?? undefined,
@@ -566,6 +566,7 @@ export const apiServidor: Omit<Api, "modo"> = {
   },
 
   // Simulado fiel: cotas da prova real por disciplina e, dentro delas, a mistura de dificuldade
+  // simulado fiel: só oficiais e geradas (questão de cursinho, camada C, treina mas fica fora)
   async simulado(n, opcoes) {
     const topicos = await listarTopicos();
     const comQuestao = new Set((await Question.distinct("topicId", { status: "aprovada" })).map(String));
@@ -583,14 +584,14 @@ export const apiServidor: Omit<Api, "modo"> = {
       for (const [faixa, q] of cotasPorFaixa(k, mistura)) {
         if (!q) continue;
         daDisc.push(...(await Question.aggregate<QuestaoDoc>([
-          { $match: { topicId: { $in: ids }, status: "aprovada", dificuldade: { $in: [...FAIXAS[faixa]] } } },
+          { $match: { topicId: { $in: ids }, status: "aprovada", origem: { $ne: "cursinho" }, dificuldade: { $in: [...FAIXAS[faixa]] } } },
           { $sample: { size: q } },
         ])));
       }
       // faltou numa faixa: completa com qualquer dificuldade da mesma disciplina
       if (daDisc.length < k)
         daDisc.push(...(await Question.aggregate<QuestaoDoc>([
-          { $match: { topicId: { $in: ids }, status: "aprovada", _id: { $nin: daDisc.map((q) => q._id) } } },
+          { $match: { topicId: { $in: ids }, status: "aprovada", origem: { $ne: "cursinho" }, _id: { $nin: daDisc.map((q) => q._id) } } },
           { $sample: { size: k - daDisc.length } },
         ])));
       escolhidas.push(...daDisc);
@@ -599,7 +600,7 @@ export const apiServidor: Omit<Api, "modo"> = {
       // completa só com disciplinas da prova (fora do edital não entra em simulado nem no Raio-X)
       const daProva = validos.filter((t) => (COTAS_PROVA[t.disciplina] ?? 0) > 0).map((t) => oid(t.id));
       const extra = await Question.aggregate<QuestaoDoc>([
-        { $match: { status: "aprovada", topicId: { $in: daProva }, _id: { $nin: escolhidas.map((q) => q._id) } } },
+        { $match: { status: "aprovada", origem: { $ne: "cursinho" }, topicId: { $in: daProva }, _id: { $nin: escolhidas.map((q) => q._id) } } },
         { $sample: { size: n - escolhidas.length } },
       ]);
       escolhidas.push(...extra);

@@ -159,9 +159,9 @@ export async function semearTopicos(caminho: string) {
 // ------------------------------------------------------------
 // Classificação por similaridade (trecho/questão → tópico)
 // ------------------------------------------------------------
-type TopicoVetor = { _id: Types.ObjectId; disciplina: string; assunto: string; embedding: number[] };
+export type TopicoVetor = { _id: Types.ObjectId; disciplina: string; assunto: string; embedding: number[] };
 
-async function topicosComVetor(disciplina?: string): Promise<TopicoVetor[]> {
+export async function topicosComVetor(disciplina?: string): Promise<TopicoVetor[]> {
   const filtro: Record<string, unknown> = { ativo: true };
   if (disciplina) filtro.disciplina = disciplina;
   const ts = (await Topic.find(filtro).select("+embedding disciplina assunto").lean()) as unknown as TopicoVetor[];
@@ -177,7 +177,7 @@ async function topicosComVetor(disciplina?: string): Promise<TopicoVetor[]> {
 
 const simMin = () => Number(process.env.EMBED_MIN_SIM ?? 0.3);
 
-function classificar(
+export function classificar(
   v: number[],
   topicos: TopicoVetor[],
   { max = 2, margem = 0.03, forcar = false } = {}
@@ -389,7 +389,7 @@ async function extrairUma(paginas: string[], n: number, secao: string): Promise<
   return null;
 }
 
-async function extrairQuestoes(
+export async function extrairQuestoes(
   paginas: string[],
   esperadas: number[] = [],
   distribuicao: Map<number, string> | null = null
@@ -908,7 +908,8 @@ export async function recuperarQuestao(caminhoProva: string, caminhoGabarito: st
 // 5. EXPLICAR — escreve o material didático das oficiais pendentes
 // ============================================================
 export async function explicarOficiais(limite = 50) {
-  const pendentes = await Question.find({ origem: "oficial", status: "pendente" })
+  // oficiais e de cursinho (E7): as duas têm gabarito vindo do material, lido por código
+  const pendentes = await Question.find({ origem: { $in: ["oficial", "cursinho"] }, status: "pendente" })
     .sort({ prova: 1, numeroOriginal: 1 })
     .limit(limite);
   if (!pendentes.length) {
@@ -1002,7 +1003,7 @@ Explique em 2 a 4 frases, em português direto, por que o item está certo ou er
 Responda APENAS JSON: {"explicacao":"..."}`;
 
 export async function explicarItensCE(limite = 50) {
-  const pendentes = await ItemCE.find({ origem: "oficial", status: "pendente" }).sort({ prova: 1, numeroOriginal: 1 }).limit(limite);
+  const pendentes = await ItemCE.find({ origem: { $in: ["oficial", "cursinho"] }, status: "pendente" }).sort({ prova: 1, numeroOriginal: 1 }).limit(limite);
   if (!pendentes.length) return console.log("Nada pendente.");
   let ok = 0, discordou = 0, falhas = 0;
   for (const [i, it] of pendentes.entries()) {
@@ -1011,13 +1012,14 @@ export async function explicarItensCE(limite = 50) {
       const base = `${it.textoBase ? `COMANDO/TEXTO:\n${it.textoBase.slice(0, 3000)}\n\n` : ""}AFIRMAÇÃO: ${it.afirmacao}`;
       const rCego = await auditorJSON(JUIZ_CE_SYSTEM, base, 0, 800);
       const cego = JulgamentoCEZ.parse(rCego.json);
-      const rExp = await auditorJSON(EXPLICADOR_CE_SYSTEM, `${base}\n\nGABARITO OFICIAL: ${it.gabarito === "C" ? "CERTO" : "ERRADO"}`, 0.2, 1200);
-      const exp = ExplicacaoCEZ.parse(rExp.json);
+      // cursinho (E7): a explicação do próprio material fica (citada, camada C); a IA só julga às cegas
+      const temExplicacao = it.origem === "cursinho" && !!it.explicacao?.trim();
+      const rExp = temExplicacao ? null : await auditorJSON(EXPLICADOR_CE_SYSTEM, `${base}\n\nGABARITO OFICIAL: ${it.gabarito === "C" ? "CERTO" : "ERRADO"}`, 0.2, 1200);
       const acertou = cego.julgamento === it.gabarito;
       if (!acertou) discordou++;
-      it.explicacao = exp.explicacao;
+      if (rExp) it.explicacao = ExplicacaoCEZ.parse(rExp.json).explicacao;
       it.auditoria = {
-        modelo: [...new Set([rCego.modelo, rExp.modelo])].join(" + "),
+        modelo: [...new Set([rCego.modelo, rExp?.modelo].filter(Boolean))].join(" + "),
         respostaCega: cego.julgamento,
         justificativa: cego.justificativa,
         problemas: acertou ? [] : [`A IA julgou ${cego.julgamento} às cegas; o gabarito oficial é ${it.gabarito}. Item traiçoeiro.`],

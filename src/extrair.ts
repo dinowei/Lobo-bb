@@ -421,6 +421,27 @@ export function lerGabaritoPares(texto: string): BlocoGabarito[] {
   return conferirBlocos(blocos);
 }
 
+// E7: gabarito de livro de questões de cursinho ("72. enunciado... A) ... E) ... Gabarito: D Comentários: ...").
+// Só conta como questão o número que segue a anterior (n = anterior + 1): listas dentro do comentário ("2.")
+// não viram questão. Cada "Gabarito: X" fica com o último número visto que ainda não tem gabarito.
+export function lerGabaritoCursinho(texto: string): Map<number, RespostaGabarito> {
+  const mapa = new Map<number, RespostaGabarito>();
+  const eventos = [
+    ...[...texto.matchAll(/(?:^|\n)\s*(\d{1,3})\s*[.)]\s+\S/g)].map((m) => ({ i: m.index ?? 0, tipo: "q" as const, n: Number(m[1]) })),
+    ...[...texto.matchAll(/Gabarito\s*:?\s*(?:letra\s+)?([A-E]|anulada)\b/gi)].map((m) => ({ i: m.index ?? 0, tipo: "g" as const, v: m[1].toUpperCase() })),
+  ].sort((a, b) => a.i - b.i);
+  let atual: number | null = null;
+  let ultimo = 0;
+  for (const e of eventos) {
+    if (e.tipo === "q") {
+      if (e.n === ultimo + 1 || (ultimo === 0 && e.n >= 1)) { atual = e.n; ultimo = e.n; }
+    } else if (atual !== null && !mapa.has(atual)) {
+      mapa.set(atual, e.v === "ANULADA" ? "anulada" : (e.v as RespostaGabarito));
+    }
+  }
+  return mapa;
+}
+
 // formato vem da prova (a Cebraspe também faz múltipla escolha, ex.: Banrisul 2025), nunca de adivinhação
 export function lerGabaritoOficial(texto: string, formato: FormatoItem): BlocoGabarito[] {
   const grade = lerGabaritoGrade(texto, formato);

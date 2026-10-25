@@ -162,7 +162,7 @@ export interface QuestaoDTO {
   topicoId: string;
   disciplina: Disciplina;
   assunto: string;
-  origem: "oficial" | "gerada";
+  origem: "oficial" | "gerada" | "cursinho";
   prova?: string;
   numeroOriginal?: number;
   /** banca da questão (oficial: a da prova; gerada: o estilo) e o formato (trilha única: questões de qualquer banca) */

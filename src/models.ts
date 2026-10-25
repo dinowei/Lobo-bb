@@ -47,7 +47,7 @@ const SourceSchema = new Schema(
   {
     tipo: {
       type: String,
-      enum: ["prova_oficial", "edital", "lei", "norma_bacen_cmn", "material_proprio"],
+      enum: ["prova_oficial", "edital", "lei", "norma_bacen_cmn", "material_proprio", "material_cursinho"], // cursinho: E7, camada C
       required: true,
     },
     titulo: { type: String, required: true }, // ex.: "Resolução BCB nº 1/2020 (Regulamento Pix)"
@@ -108,7 +108,9 @@ const AlternativaSchema = new Schema(
 const QuestionSchema = new Schema(
   {
     topicId: { type: Schema.Types.ObjectId, ref: "Topic", required: true, index: true },
-    origem: { type: String, enum: ["oficial", "gerada"], required: true },
+    // cursinho (E7): questão de material de cursinho, camada C, gabarito do próprio material lido por código;
+    // treina, revisa e conta no Desempenho, mas fica fora do simulado fiel
+    origem: { type: String, enum: ["oficial", "gerada", "cursinho"], required: true },
     estiloBanca: { type: String, default: "cesgranrio" },
     // concurso e banca como dado (BB + BACEN): a migração preenche as antigas (BB, Cesgranrio, múltipla escolha)
     concursos: { type: [{ type: String, enum: IDS_CONCURSO }], default: undefined, index: true },

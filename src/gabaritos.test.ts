@@ -1,6 +1,25 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { lerGabaritoGrade, lerGabaritoOficial, lerGabaritoPares } from "./extrair.js";
+import { lerGabaritoCursinho, lerGabaritoGrade, lerGabaritoOficial, lerGabaritoPares } from "./extrair.js";
+
+test("cursinho: 'Gabarito: X' depois da questão; lista no comentário ('2.') não vira questão", () => {
+  const t = [
+    "CESGRANRIO / AGERIO / ASSISTENTE / 2023",
+    "72. Os vírus de computador existem há muitas décadas.",
+    "A) abre um arquivo. B) envia mensagem. C) escuta música. D) executa programa. E) visualiza foto.",
+    "Gabarito: D",
+    "Comentários:",
+    "1. primeiro motivo da explicação",
+    "2. segundo motivo da explicação",
+    "73. Uma prática comum para proteger estações de trabalho é",
+    "A) x B) y C) z D) w E) v",
+    "Gabarito: letra B",
+    "74. Questão anulada no material",
+    "Gabarito: Anulada",
+  ].join("\n");
+  const g = lerGabaritoCursinho(t);
+  assert.deepEqual([...g.entries()], [[72, "D"], [73, "B"], [74, "anulada"]]);
+});
 import { escolherGabarito, SIMBOLO_ILEGIVEL } from "./ingestao.js";
 
 test("item C/E com símbolo de fórmula ilegível (fonte matemática do PDF) fica para conferir", () => {

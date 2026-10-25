@@ -52,6 +52,7 @@ import { aprovarCorrentes, desfazerCorrentes, correnteAtiva } from "./corrente.j
 import { sondarModelos, verificarModelos } from "./sondagem.js";
 import { alvosDaTrilha, calcularAteFila, planejarEtapasDaNoite, planejarNoite, rodarFila } from "./noturno.js";
 import { rodarJanelaB } from "./janelaB.js";
+import { importarCursinho } from "./cursinho.js";
 import { enfileirarIngestao, etapa, etapaAcervo, etapaBackup, etapaClassificacao, etapaDerivacao, etapaFichas, etapaIngestao, filaIngestao, sobraTempo, type EtapaNoite, type ItemIngestao } from "./noiteCompleta.js";
 import { planejarPregeracoes } from "./outroJeito.js";
 import { gerarTemas, planejarTemasRedacao } from "./redacao.js";
@@ -115,6 +116,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   voz limpar                    tira do cache o áudio de vozes fora da lista aprovada
   rating-migrar                                  recalcula o rating Elo de questões e aluno a partir das tentativas
   calibragem                                     onde o rótulo de dificuldade da IA mais erra (questões com 5+ respostas)
+  importar-cursinho <pdf> --nome "<nome>" [--formato multipla|ce] [--banca x] [--disciplina x]   questões de cursinho (camada C, fora do simulado fiel)
   janela-b [--forcar]                            Janela B (padrão 18:00–19:00): sem noite = essencial; com noite = recupera pendentes
   fila-ingestao [--add itens.json]               provas/leis que o noturno ingere, uma por noite (lista ou acrescenta)
   derivar-ce [--n 6]                             itens Certo/Errado de múltiplas aprovadas (código monta, IA reescreve, auditor julga às cegas)
@@ -175,6 +177,7 @@ async function main() {
       oficiais: { type: "boolean" },
       tema: { type: "string" },
       add: { type: "string" },
+      formato: { type: "string" },
       forcar: { type: "boolean" },
       comentario: { type: "string" },
       tipo: { type: "string" },
@@ -468,6 +471,18 @@ async function main() {
         const r = await migrarRatings();
         console.log(`✔ Ratings recalculados: ${r.tentativas} tentativas, ${r.questoes} questões, ${r.alunos} rating(s) de aluno por disciplina.`);
         return;
+      }
+
+      case "importar-cursinho": {
+        // E7: questões de cursinho (origem "cursinho", camada C, gabarito do material por código, fora do simulado fiel)
+        const formato = o.formato === "ce" ? "ce" : "multipla";
+        return await naFila(rotulo, async () => {
+          const r = await importarCursinho(exigir(args[0], "o PDF do material"), { nome: exigir(o.nome, "--nome"), formato, banca: o.banca, disciplina: o.disciplina });
+          if (r.ja) return console.log("↷ esse material já foi importado — pulando");
+          console.log(JSON.stringify(r, (k, v) => (k === "recusados" ? (v as unknown[]).length : v)));
+          for (const x of ("recusados" in r ? r.recusados ?? [] : []).slice(0, 10)) console.log(`  ✖ nº ${x.numero}: ${x.motivo}`);
+          console.log('Próximo passo: "explicar" (múltipla) ou "explicar-ce" (C/E).');
+        });
       }
 
       case "janela-b": {

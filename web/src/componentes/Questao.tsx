@@ -15,7 +15,11 @@ export function Cabecalho({ q, traicoeira }: { q: QuestaoDTO; traicoeira?: boole
       </div>
       <div className="selos">
         <span className="selo laranja">
-          {q.origem === "oficial" ? `Oficial · ${q.prova ?? "prova anterior"}${q.numeroOriginal ? ` · nº ${q.numeroOriginal}` : ""}` : "Inédita · revisada"}
+          {q.origem === "oficial"
+            ? `Oficial · ${q.prova ?? "prova anterior"}${q.numeroOriginal ? ` · nº ${q.numeroOriginal}` : ""}`
+            : q.origem === "cursinho"
+              ? `Cursinho · ${q.prova ?? "material de estudo"}${q.numeroOriginal ? ` · nº ${q.numeroOriginal}` : ""}`
+              : "Inédita · revisada"}
         </span>
         <span className="selo" aria-label={`Dificuldade ${q.dificuldade} de 5`}>
           Dificuldade
