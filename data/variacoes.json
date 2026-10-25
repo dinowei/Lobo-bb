@@ -15,6 +15,29 @@
     "senhas e códigos de acesso de clientes",
     "pesquisa com clientes da agência"
   ],
+  "_avisoEscrita": "E4 (25/10/2026): situações de escrita dos quatro concursos, só para os tipos marcados \"escrita\" (Português por construção). As estruturas variam a introdução do enunciado; texto fixo igual em toda questão fazia o filtro de similaridade recusar as novas como duplicadas.",
+  "contextosEscrita": [
+    "atendimento no balcão de um fórum",
+    "ofício de um cartório judicial",
+    "comunicado de uma companhia aberta aos acionistas",
+    "fiscalização de um fundo de investimento",
+    "aviso sobre o funcionamento do Pix",
+    "troca de e-mails entre setores de um órgão público",
+    "aviso aos servidores sobre o ponto eletrônico",
+    "intimação para uma audiência de conciliação",
+    "resposta a uma reclamação de consumidor",
+    "relatório de uma auditoria interna"
+  ],
+  "estruturasPortugues": [
+    "Ao revisar comunicados de uma agência bancária sobre {contexto}, um escriturário analisou as frases a seguir.",
+    "Em um e-mail interno sobre {contexto}, foram redigidas as frases abaixo.",
+    "Um servidor recebeu as frases a seguir para revisar, todas tiradas de um texto sobre {contexto}.",
+    "As frases seguintes foram retiradas de um aviso sobre {contexto}.",
+    "Durante a revisão de um relatório sobre {contexto}, destacaram-se as frases a seguir.",
+    "Considere as frases abaixo, extraídas de uma resposta oficial sobre {contexto}.",
+    "Uma equipe preparou um comunicado sobre {contexto} e separou estas frases para conferência.",
+    "Leia as frases a seguir, escritas em um documento sobre {contexto}."
+  ],
   "tipos": {
     "Juros compostos": {
       "calcular o montante": ["aplicação em CDB", "caderneta de poupança", "investimento de uma empresa (PJ)", "cliente pessoa física atendido na agência"],
@@ -81,14 +104,14 @@
       "decidir entre dois projetos pelo VPL": ["investimento de uma empresa (PJ)", "cliente pessoa jurídica negociando com o gerente"]
     },
     "Regência verbal e nominal e crase": {
-      "crase (por construção)": "todos",
-      "regência (por construção)": "todos"
+      "crase (por construção)": "escrita",
+      "regência (por construção)": "escrita"
     },
     "Concordância verbal e nominal": {
-      "concordância (por construção)": "todos"
+      "concordância (por construção)": "escrita"
     },
     "Pontuação": {
-      "pontuação (por construção)": "todos"
+      "pontuação (por construção)": "escrita"
     },
     "Análise combinatória": {
       "arranjo (a ordem importa)": ["formação de equipes na agência", "cliente pessoa jurídica negociando com o gerente"],

@@ -214,8 +214,11 @@ const embaralhar = <T>(xs: readonly T[]): T[] =>
 
 // Enunciado conforme as alternativas: "corretamente empregado" só quando TODAS têm "à";
 // se alguma não tem acento grave, a pergunta é sobre o uso OU a ausência.
-export function enunciadoCrase(contexto: string, regras: RegraCrase[]): string {
-  const intro = `Ao revisar comunicados de uma agência bancária sobre ${contexto}, um escriturário analisou as frases a seguir.`;
+// E4: a estrutura da introdução vem sorteada de data/variacoes.json ("estruturasCrase", com "{contexto}");
+// texto fixo igual em toda questão fazia o filtro de similaridade recusar as novas como duplicadas.
+export const ESTRUTURA_CRASE_PADRAO = "Ao revisar comunicados de uma agência bancária sobre {contexto}, um escriturário analisou as frases a seguir.";
+export function enunciadoCrase(contexto: string, regras: RegraCrase[], estrutura = ESTRUTURA_CRASE_PADRAO): string {
+  const intro = estrutura.replace("{contexto}", contexto);
   return regras.every((r) => r.temCrase)
     ? `${intro} O acento grave está corretamente empregado em:`
     : `${intro} O uso ou a ausência do acento grave está de acordo com a norma-padrão em:`;
@@ -242,7 +245,8 @@ export const FORA_DO_SORTEIO = new Set(["erro_tratamento"]);
 export function construirCrase(
   gabarito: Letra,
   contexto: string,
-  historico: HistoricoCrase = { uso: new Map(), anterior: new Set() }
+  historico: HistoricoCrase = { uso: new Map(), anterior: new Set() },
+  estruturas: string[] = [ESTRUTURA_CRASE_PADRAO]
 ): CraseMontada {
   const sorteaveis = REGRAS_CRASE.filter((r) => !FORA_DO_SORTEIO.has(r.id));
   const [certa] = menosUsadas(sorteaveis.filter((r) => r.correta), 1, historico);
@@ -255,7 +259,7 @@ export function construirCrase(
     gabarito,
     frases,
     dificuldade: 3,
-    enunciado: enunciadoCrase(contexto, frases.map((f) => f.regra)),
+    enunciado: enunciadoCrase(contexto, frases.map((f) => f.regra), sortear(estruturas.length ? estruturas : [ESTRUTURA_CRASE_PADRAO])),
   };
 }
 

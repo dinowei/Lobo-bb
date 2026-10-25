@@ -14,9 +14,11 @@ import {
   explicarAlternativa as explicarCrase,
   explicacaoGeralCrase,
   DICA_CRASE,
+  ESTRUTURA_CRASE_PADRAO,
   type HistoricoCrase,
 } from "./portugues.js";
 import { CRASE_ESCRITOR_SYSTEM, AUDITOR_FRASE_SYSTEM } from "./prompts.js";
+import { carregarVariacoes } from "./variacao.js";
 
 export type RegraPT = {
   id: string;
@@ -86,7 +88,16 @@ function explicarPorRegras(regra: RegraPT, trecho: string, frase?: string) {
   };
 }
 
-const intro = (contexto: string) => `Ao revisar comunicados de uma agência bancária sobre ${contexto}, um escriturário analisou as frases a seguir.`;
+// E4: a introdução sai de uma das estruturas de data/variacoes.json ("estruturasPortugues", com "{contexto}"),
+// sorteada pelo código; a padrão fica quando a lista não existe
+const estruturasPT = () => {
+  const lista = carregarVariacoes().estruturasPortugues;
+  return lista?.length ? lista : [ESTRUTURA_CRASE_PADRAO];
+};
+const intro = (contexto: string) => {
+  const lista = estruturasPT();
+  return lista[Math.floor(Math.random() * lista.length)].replace("{contexto}", contexto);
+};
 
 function escritorSystem(tema: string, foco: string, proibido: string) {
   return `Você é professor de Língua Portuguesa e elaborador de questões da Cesgranrio para o concurso do Banco do Brasil.
@@ -596,7 +607,7 @@ export const AREA_CRASE: AreaPT = {
   regras: REGRAS_CRASE,
   escritorSystem: CRASE_ESCRITOR_SYSTEM,
   juizSystem: AUDITOR_FRASE_SYSTEM,
-  construir: construirCrase as AreaPT["construir"],
+  construir: ((g, contexto, h) => construirCrase(g, contexto, h, estruturasPT())) as AreaPT["construir"],
   conferir: conferirCrase as AreaPT["conferir"],
   explicar: explicarCrase as AreaPT["explicar"],
   explicacaoGeral: explicacaoGeralCrase as AreaPT["explicacaoGeral"],

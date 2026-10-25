@@ -14,7 +14,12 @@ import type { Types } from "mongoose";
 
 export type ConfigVariacao = {
   contextos: string[];
-  tipos: Record<string, Record<string, string[] | "todos">>;
+  // E4: situações de escrita dos quatro concursos (fórum, cartório, CVM, órgão público): só para os tipos
+  // marcados "escrita" (Português por construção), para não vazar em cálculo, planilha ou vendas
+  contextosEscrita?: string[];
+  // estruturas da introdução do Português por construção ("{contexto}" é trocado pelo contexto sorteado)
+  estruturasPortugues?: string[];
+  tipos: Record<string, Record<string, string[] | "todos" | "escrita">>;
   duasEtapas: Record<string, string[]>;
 };
 
@@ -28,10 +33,16 @@ export function carregarVariacoes(): ConfigVariacao {
   for (const [assunto, tipos] of Object.entries(c.tipos))
     for (const [tipo, ctx] of Object.entries(tipos)) {
       if (ctx === "todos") continue;
+      if (ctx === "escrita") {
+        if (!c.contextosEscrita?.length) throw new Error(`variacoes.json: "${assunto}" › "${tipo}" usa "escrita" sem 'contextosEscrita'`);
+        continue;
+      }
       if (!ctx.length) throw new Error(`variacoes.json: "${assunto}" › "${tipo}" sem contexto permitido`);
       for (const x of ctx)
         if (!c.contextos.includes(x)) throw new Error(`variacoes.json: contexto desconhecido "${x}" em "${assunto}" › "${tipo}"`);
     }
+  for (const e of c.estruturasPortugues ?? [])
+    if (!e.includes("{contexto}")) throw new Error(`variacoes.json: estrutura sem "{contexto}": "${e.slice(0, 60)}"`);
   for (const [assunto, lista] of Object.entries(c.duasEtapas))
     for (const tipo of lista)
       if (!c.tipos[assunto]?.[tipo]) throw new Error(`variacoes.json: duasEtapas cita tipo inexistente "${assunto}" › "${tipo}"`);
@@ -53,9 +64,11 @@ const ASSUNTOS_COM_META_CONSTRUCAO = new Set([
 
 export type Variacao = { tipo: string; contexto: string; duasEtapas: boolean };
 
-// contextos que um tipo aceita ("todos" ou tipo fora da tabela = qualquer um)
+// contextos que um tipo aceita ("todos" ou tipo fora da tabela = qualquer um da lista principal;
+// "escrita" = a lista principal + as situações de escrita)
 export function contextosPermitidos(c: ConfigVariacao, assunto: string, tipo: string): string[] {
   const ctx = c.tipos[assunto]?.[tipo];
+  if (ctx === "escrita") return [...c.contextos, ...(c.contextosEscrita ?? [])];
   return !ctx || ctx === "todos" ? c.contextos : ctx;
 }
 
