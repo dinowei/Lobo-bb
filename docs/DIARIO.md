@@ -279,6 +279,9 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - Classificador e embedding de 1024 dimensões seguem como candidatos.
   - BNB 2024, item 17: o dono vai conferir no PDF.
   - Chave da NVIDIA trocada. Regra: nunca imprimir o `.env`, nem as linhas de comentário.
+- **Crase de novo, sem `erro_tratamento` (11:0x–11:46, ~164 s cada): 5/20 aprovadas** (antes 0/20).
+  - Recusas: 8 duplicadas (filtro da regra 16; agora é o gargalo), 3 `auditor_por_frase_discordou`, 3 `frase_fora_da_regra` e 1 reprovada na revisão.
+  - Próximo ganho provável: mais variedade de contexto/estrutura na Crase, para não cair na impressão estrutural repetida. Não mexi no filtro.
 - **F8 (código):** `ingerirProva` aceita `--caderno` e `--questoes 1-35`. Grava `banca`. Recusa gabarito só com C/E lido como múltipla escolha. Atlas em 40% (203,7 MB).
 - **F10 (código):**
   - Motor em `shared/certoErrado.ts`: nota com penalidade, "em branco" e derivação.
