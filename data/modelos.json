@@ -17,7 +17,8 @@
       "gratis": true,
       "preview": false,
       "parametros": ["reasoning_budget", "enable_thinking"],
-      "status": "ativo"
+      "status": "ativo",
+      "nota": "SONDA 24/10/2026: 404 'Function not found for account' nos 4 modos (já dava 404 em 22/10 nos logs). Continua na lista de /models, mas a função saiu da conta. Status não mudado: decisão do dono (é 1º juiz_pt e 1º redação na corrente definitiva)"
     },
     {
       "id": "nvidia/nemotron-3-ultra-550b-a55b",
@@ -27,7 +28,7 @@
       "preview": false,
       "parametros": ["enable_thinking"],
       "status": "fora",
-      "nota": "recusa reasoning_budget (HTTP 400); 503 'temporarily overloaded' nas 4 sondas de 17/10/2026"
+      "nota": "recusa reasoning_budget (HTTP 400); 503 'temporarily overloaded' nas 4 sondas de 17/10/2026. SONDA 24/10/2026: 200 com JSON certo em basico (1,2 s), reasoning_effort (7,1 s) e sem_pensar (1,1 s); reasoning_budget segue 400. Status 'fora' mantido até benchmark e OK do dono"
     },
     {
       "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
@@ -77,7 +78,7 @@
       "preview": false,
       "parametros": ["reasoning_effort"],
       "status": "ativo",
-      "nota": "recusa reasoning_budget (400); ignora enable_thinking; ~20 s por resposta em 17/10/2026"
+      "nota": "recusa reasoning_budget (400); ignora enable_thinking; ~20 s por resposta em 17/10/2026. SONDA 24/10/2026: timeout de 120 s em basico e reasoning_effort, 99 s sem pensar (instável; o escritor_pt cai no gpt-oss-20b)"
     },
     {
       "id": "z-ai/glm-5.3",

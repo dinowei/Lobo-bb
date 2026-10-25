@@ -37,7 +37,7 @@ import { chatJSONFuncao } from "./corrente.js";
 import { construir, tiposConstruidos, type Montada } from "./construcao.js";
 import { descreverFigura, tirarTabelaCopiada } from "./construcaoFiguras.js";
 import type { HistoricoCrase } from "./portugues.js";
-import { AREAS_PT, TIPO_CRASE, type AreaPT, type MontagemPT } from "./regrasPT.js";
+import { AREAS_PT, TIPO_CRASE, fechaComRegraNasPendentes, type AreaPT, type MontagemPT } from "./regrasPT.js";
 import { normalizar, hashTexto } from "./extrair.js";
 import { ehDisciplinaDeCalculo, verificarConta, numerosDoTexto } from "./verificacao.js";
 import { sortearVariacao, type Variacao } from "./variacao.js";
@@ -626,23 +626,26 @@ async function gerarPorRegras(
     return { ok: false, motivo: motivoDaFalha(e, "auditor_falhou"), detalhes: [umaLinha(e), ...linhas] };
   }
   // Desempate: frase em que o juiz discorda do banco de regras vai, às cegas (só a frase), para
-  // OUTRO juiz da corrente (no legado, o Ultra). Se ele concordar com a regra, vale a regra;
-  // senão (ou sem outro juiz), a questão é descartada.
-  const desempates: { letra: Letra; auditor: boolean; ultra: boolean | null; regraUltra: string }[] = [];
+  // OUTRO juiz da corrente (no legado, o Ultra). Se ele concordar com a regra, vale a regra; se
+  // discordar, a questão é descartada. Sem outro juiz elegível (V2), ela não é aprovada nem jogada
+  // fora: passa pela revisão e fica "pendente / aguardando_auditoria_independente".
+  const desempates: { letra: Letra; auditor: boolean; ultra: boolean | null; regraUltra: string; semJuiz?: boolean }[] = [];
   for (const [k, p] of porFrase.entries()) {
     const esperado = m.frases[k].regra.correta;
     if (p.correta === esperado) continue;
     let veredito: z.infer<typeof VereditoFraseZ> | null = null;
     let desempatador = "";
+    let semJuiz = false;
     try {
       const r = await julgar(porLetra.get(p.letra)!.frase, [p.juiz]);
       veredito = VereditoFraseZ.parse(r.json);
       desempatador = r.modelo;
       modelos.add(r.modelo);
     } catch (e) {
+      semJuiz = e instanceof SemModeloDisponivel;
       console.warn(`  ⚠ desempate da ${p.letra} falhou: ${umaLinha(e).slice(0, 120)}`);
     }
-    desempates.push({ letra: p.letra, auditor: p.correta, ultra: veredito?.correta ?? null, regraUltra: veredito?.regra ?? "" });
+    desempates.push({ letra: p.letra, auditor: p.correta, ultra: veredito?.correta ?? null, regraUltra: veredito?.regra ?? "", ...(semJuiz ? { semJuiz } : {}) });
     if (veredito?.correta === esperado) {
       console.log(`  ⚖ ${p.letra}: juiz disse ${p.correta ? "SIM" : "não"}, ${desempatador} disse ${veredito.correta ? "SIM" : "não"} = regra → vale a regra`);
       p.correta = esperado;
@@ -656,7 +659,10 @@ async function gerarPorRegras(
     (d) => `desempate ${d.letra}: auditor ${d.auditor ? "SIM" : "não"}, Ultra ${d.ultra === null ? "falhou" : d.ultra ? "SIM" : "não"}`
   );
   const sims = porFrase.filter((p) => p.correta);
-  if (sims.length !== 1 || sims[0].letra !== gabarito)
+  // só falta o desempate que não teve juiz: com a regra nessas frases, a questão fecharia
+  const semJuiz = new Set(desempates.filter((d) => d.semJuiz).map((d) => d.letra));
+  const aguardando = semJuiz.size > 0 && fechaComRegraNasPendentes(porFrase, m.frases.map((f) => f.regra.correta), semJuiz, gabarito);
+  if (!aguardando && (sims.length !== 1 || sims[0].letra !== gabarito))
     return {
       ok: false,
       motivo: "auditor_por_frase_discordou",
@@ -672,11 +678,12 @@ async function gerarPorRegras(
   } catch (e) {
     return { ok: false, motivo: motivoDaFalha(e, "auditor_falhou"), detalhes: [umaLinha(e), ...vereditos] };
   }
-  const aprovada = rev.veredito === "aprovada";
-  if (aprovada) {
+  const aprovada = rev.veredito === "aprovada" && !aguardando;
+  if (rev.veredito === "aprovada") {
     const de = await repetidaAgora(q.enunciado, q.alternativas.find((a) => a.correta)!.texto, sim.embedding, topic._id, topic.disciplina);
     if (de) return de;
   }
+  const pendente = rev.veredito === "aprovada" && aguardando;
 
   const doc = await Question.create({
     topicId: topic._id,
@@ -688,21 +695,24 @@ async function gerarPorRegras(
     explicacaoGeral: q.explicacaoGeral,
     dicaDeProva: q.dicaDeProva ?? undefined,
     fontes: [],
-    status: aprovada ? "aprovada" : "rejeitada",
+    status: aprovada ? "aprovada" : pendente ? "pendente" : "rejeitada",
     geradaPor: [...escritores].join(" + "),
     auditoria: {
       modelo: [...modelos].join(" + "),
-      respostaCega: sims[0].letra,
+      respostaCega: aguardando ? gabarito : sims[0].letra,
       veredito: rev.veredito,
       problemas: rev.problemas,
       porFrase,
       desempates,
+      ...(pendente ? { pendencia: "aguardando_auditoria_independente" as const } : {}),
     },
     variacao,
     hashEnunciado: h,
     embedding: sim.embedding ?? undefined,
     impressao,
   });
+  if (pendente)
+    return { ok: false, motivo: "aguardando_auditoria_independente", detalhes: [`sem juiz independente para: ${[...semJuiz].join(", ")}`, ...resumoDesempates], questionId: doc._id };
   return aprovada
     ? { ok: true, questionId: doc._id }
     : { ok: false, motivo: "reprovada_na_revisao", detalhes: [...rev.problemas, ...vereditos], questionId: doc._id };

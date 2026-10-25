@@ -1,7 +1,7 @@
 // Português por construção (Concordância, Regência, Pontuação e Crase): banco de regras e montagem
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AREAS_PT, AREA_CONCORDANCIA, AREA_REGENCIA, AREA_PONTUACAO, type AreaPT } from "./regrasPT.js";
+import { AREAS_PT, AREA_CONCORDANCIA, AREA_REGENCIA, AREA_PONTUACAO, fechaComRegraNasPendentes, type AreaPT } from "./regrasPT.js";
 import type { Letra } from "../shared/tipos.js";
 
 const NOVAS: AreaPT[] = [AREA_CONCORDANCIA, AREA_REGENCIA, AREA_PONTUACAO];
@@ -84,6 +84,21 @@ test("pontuação: vírgula a mais fora do trecho é barrada", () => {
 test("concordância facultativa é proibida nas frases", () => {
   const r = AREA_CONCORDANCIA.regras.find((x) => x.id === "houveram")!;
   assert.match(AREA_CONCORDANCIA.conferir("A maioria dos clientes reclamou e houveram reclamações novas.", "houveram reclamações", r) ?? "", /facultativa/);
+});
+
+test("sem juiz independente: espera auditoria só se a regra nas frases sem desempate fecharia a questão", () => {
+  // auditor disse SIM para A (errada pela regra) e C (gabarito); A ficou sem juiz → fecharia com a regra
+  const porFrase = (["A", "B", "C", "D", "E"] as Letra[]).map((letra) => ({ letra, correta: letra === "A" || letra === "C" }));
+  const esperado = [false, false, true, false, false];
+  assert.equal(fechaComRegraNasPendentes(porFrase, esperado, new Set<Letra>(["A"]), "C"), true);
+  // sem pendência nenhuma, o desacordo continua desacordo
+  assert.equal(fechaComRegraNasPendentes(porFrase, esperado, new Set<Letra>(), "C"), false);
+  // o juiz independente existia e discordou em B: mesmo com A pendente, não fecha
+  const comB = porFrase.map((p) => (p.letra === "B" ? { ...p, correta: true } : p));
+  assert.equal(fechaComRegraNasPendentes(comB, esperado, new Set<Letra>(["A"]), "C"), false);
+  // a frase sem juiz é a do gabarito e o auditor disse "não": vale a regra (SIM) → fecharia
+  const gabNao = porFrase.map((p) => ({ ...p, correta: false }));
+  assert.equal(fechaComRegraNasPendentes(gabNao, esperado, new Set<Letra>(["C"]), "C"), true);
 });
 
 test("todas as áreas estão registradas, Crase inclusive", () => {

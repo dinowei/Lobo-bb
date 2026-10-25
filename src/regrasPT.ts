@@ -606,3 +606,11 @@ export const AREA_CRASE: AreaPT = {
 export const AREAS_PT: Record<string, AreaPT> = Object.fromEntries(
   [AREA_CRASE, AREA_CONCORDANCIA, AREA_REGENCIA, AREA_PONTUACAO].map((a) => [a.tipo, a])
 );
+
+// Sem juiz independente para desempatar (V2): se, valendo a regra nas frases que ficaram sem
+// desempate, exatamente a do gabarito for "correta", a questão fecharia — então ela espera
+// auditoria ("aguardando_auditoria_independente"), não é aprovada nem descartada.
+export function fechaComRegraNasPendentes(porFrase: { letra: Letra; correta: boolean }[], esperado: boolean[], semJuiz: Set<Letra>, gabarito: Letra) {
+  const corretas = porFrase.filter((p, k) => (semJuiz.has(p.letra) ? esperado[k] : p.correta));
+  return corretas.length === 1 && corretas[0].letra === gabarito;
+}

@@ -30,7 +30,8 @@ import type { BenchmarkLinhaDTO, Letra } from "../shared/tipos.js";
 export const RODADAS = { auditor: "auditor-v1", juiz: "juiz-pt-v1", escritor: "escritor-pt-v1" } as const;
 export const CANDIDATOS = {
   auditor: ["nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-ultra-550b-a55b", "openai/gpt-oss-20b", "meta/muse-glimmer-30b", "stepfun-ai/step-5-preview"],
-  juiz: ["nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-ultra-550b-a55b", "openai/gpt-oss-20b", "meta/muse-glimmer-30b", "z-ai/glm-5.3-flash", "deepseek-ai/deepseek-v4.1-flash"],
+  // sonda de 24/10/2026: Super 404 (saiu da conta), glm e deepseek em timeout; step-5-preview só como referência (preview)
+  juiz: ["nvidia/nemotron-3-ultra-550b-a55b", "openai/gpt-oss-20b", "meta/muse-glimmer-30b", "stepfun-ai/step-5-preview"],
   escritor: ["z-ai/glm-5.3-flash", "deepseek-ai/deepseek-v4.1-flash", "nvidia/nemotron-3.5-lightning-30b-a3b", "openai/gpt-oss-20b", "meta/muse-glimmer-30b"],
 };
 

@@ -197,11 +197,15 @@ const QuestionSchema = new Schema(
             auditor: Boolean, // o que o auditor principal disse ("correta?")
             ultra: Boolean, // o que o Ultra disse (null = falhou)
             regraUltra: String,
+            semJuiz: Boolean, // não havia juiz independente para desempatar (corrente sem outra opção)
             _id: false,
           },
         ],
         default: undefined,
       },
+      // V2: sem auditor independente, a questão fica "pendente" com o motivo, nunca aprovada em silêncio;
+      // a Janela B completa o desempate quando houver juiz elegível
+      pendencia: { type: String, enum: ["aguardando_auditoria_independente"] },
       _id: false,
     },
     // tipo e contexto sorteados pelo código antes de gerar (src/variacao.ts)
