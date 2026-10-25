@@ -165,6 +165,9 @@ export interface QuestaoDTO {
   origem: "oficial" | "gerada";
   prova?: string;
   numeroOriginal?: number;
+  /** banca da questão (oficial: a da prova; gerada: o estilo) e o formato (trilha única: questões de qualquer banca) */
+  banca?: string;
+  formato?: "multipla" | "certo_errado";
   textoBase?: string;
   enunciado: string;
   alternativas: { letra: Letra; texto: string }[];
@@ -660,7 +663,8 @@ export interface Api {
   painel(): Promise<PainelDTO>;
   // misto: intercala disciplinas no peso da prova; anterior = disciplina da última questão
   // subtopico: só aquele tema, novas primeiro ("crase só traz crase"); excluir = já vistas nesta sessão
-  proxima(f: { topicoId?: string; disciplina?: Disciplina; questaoId?: string; revisao?: boolean; misto?: boolean; anterior?: Disciplina; subtopico?: string; excluir?: string[] }): Promise<{
+  // banca: questões do tema de uma banca só (trilha única: o padrão é qualquer banca)
+  proxima(f: { topicoId?: string; disciplina?: Disciplina; questaoId?: string; revisao?: boolean; misto?: boolean; anterior?: Disciplina; subtopico?: string; banca?: string; excluir?: string[] }): Promise<{
     questao: QuestaoDTO | null;
     modo: "treino" | "revisao";
     aviso?: string;

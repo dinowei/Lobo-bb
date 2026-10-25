@@ -19,6 +19,7 @@ export interface SessaoTema {
   mistas: number;
   revisoes: boolean;
   trilha: boolean; // veio da trilha: o resultado diz o que acontece amanhã
+  banca?: string; // trilha única: questões do tema de uma banca só (vazio = qualquer banca)
 }
 export interface FiltroPratica {
   topicoId?: string;

@@ -109,6 +109,7 @@ app.get(
         misto: req.query.misto === "1",
         anterior: ehDisciplina(anterior) ? anterior : undefined,
         subtopico: texto(req.query.subtopico),
+        banca: texto(req.query.banca),
         excluir: texto(req.query.excluir)?.split(",").filter((x) => Types.ObjectId.isValid(x)).slice(0, 60),
       })
     );

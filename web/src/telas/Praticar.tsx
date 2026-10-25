@@ -15,6 +15,7 @@ import { ISeta } from "../componentes/Icones";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
 import { PergunteAoBinho } from "../componentes/PergunteAoBinho";
+import { BANCAS } from "../../../shared/concursos";
 
 type Etapa = "revisoes" | "tema" | "mistas" | "fim";
 type Placar = Record<Exclude<Etapa, "fim">, { n: number; a: number }>;
@@ -108,7 +109,7 @@ export function Praticar() {
     }
     if (etapa.current === "tema") {
       if (placarRef.current.tema.n < s.novas) {
-        const r = await api.proxima({ subtopico: s.subtopico, excluir });
+        const r = await api.proxima({ subtopico: s.subtopico, excluir, ...(s.banca ? { banca: s.banca } : {}) });
         if (r.questao && !r.repetida) return r;
       }
       etapa.current = "mistas";
@@ -558,6 +559,17 @@ export function Praticar() {
             </ol>
           )}
           {filtro.sessao && <button className="link" onClick={() => ir("tema", { subtopico: filtro.sessao!.subtopico })}>Página do tema</button>}
+          {filtro.sessao && (
+            // trilha única: questões do tema de qualquer banca; o aluno pode ficar numa banca só
+            <div className="filtro-banca" role="group" aria-label="Banca das questões do tema" data-testid="filtro-banca">
+              <span className="atalho">Banca:</span>
+              {[["", "Qualquer"], ...Object.values(BANCAS).map((b) => [b.id, b.nome.replace(/^Fundação /, "")])].map(([id, nome]) => (
+                <button key={id || "todas"} className="chip" aria-pressed={(filtro.sessao!.banca ?? "") === id} onClick={() => ir("praticar", { sessao: { ...filtro.sessao!, banca: id || undefined } })}>
+                  {nome}
+                </button>
+              ))}
+            </div>
+          )}
           {(filtro.topicoId || filtro.disciplina || filtro.revisao || filtro.misto || filtro.sessao) && (
             <button className="link" onClick={() => ir("praticar")}>Trocar para treino inteligente</button>
           )}

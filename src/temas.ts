@@ -10,6 +10,7 @@ import { Types } from "mongoose";
 import { Attempt, Config, Question, ReviewState, Topic } from "./models.js";
 import { ALUNO, chaveConcurso, lenteAtiva } from "./estudo.js";
 import { disciplinaDoTema } from "../shared/trilhaUnica.js";
+import { BANCAS } from "../shared/concursos.js";
 import { prontidaoDeTodos } from "../shared/prontidao.js";
 import type { ProntidaoDTO } from "../shared/prontidao.js";
 import { fichaAprovada } from "./fichas.js";
@@ -222,10 +223,15 @@ export async function paginaTema(subtopico: string): Promise<TemaDTO | null> {
 
 // próxima questão de um TEMA: só daquele subtópico, NOVAS primeiro (as não respondidas), mais antigas
 // do banco primeiro para manter a ordem estável; se acabaram as novas, repete com aviso.
-export async function proximaDoTema(subtopico: string, excluir: string[] = []) {
+// trilha única: questões do tema de QUALQUER banca; o aluno pode ficar numa banca só (oficial: banca da prova;
+// gerada: estilo da banca; as antigas, sem banca gravada, são Cesgranrio)
+export async function proximaDoTema(subtopico: string, excluir: string[] = [], banca?: string) {
   const userId = ALUNO();
   const topicos = await topicosAtivos();
-  const base = { subtopico, status: "aprovada" as const, topicId: { $in: topicos.map((t) => t._id) } };
+  const daBanca: Record<string, unknown> = banca && banca in BANCAS
+    ? { $or: [{ banca }, { banca: { $exists: false }, estiloBanca: banca }, ...(banca === "cesgranrio" ? [{ banca: { $exists: false }, estiloBanca: { $exists: false } }] : [])] }
+    : {};
+  const base: Record<string, unknown> = { subtopico, status: "aprovada", topicId: { $in: topicos.map((t) => t._id) }, ...daBanca };
   const doTema = (await Question.find(base).select("_id").lean()).map((q) => q._id);
   const respondidas = await Attempt.distinct("questionId", { userId, questionId: { $in: doTema } });
   const fora = [...respondidas, ...excluir.filter((x) => Types.ObjectId.isValid(x)).map((x) => new Types.ObjectId(x))];

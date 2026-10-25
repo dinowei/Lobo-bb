@@ -1331,6 +1331,8 @@ h1, h2, h3, .marca, .titulo-tela { font-family: var(--fonte-titulo); }
 .lista-prontidao .num { min-width: 38px; text-align: right; }
 .lista-fracos { margin: 4px 0 0; padding-left: 18px; display: grid; gap: 4px; }
 .lista-fracos .num { color: var(--suave); }
+/* sessão do tema: filtro de banca (trilha única: questões de qualquer banca) */
+.filtro-banca { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
 /* aba de concurso ainda sem matérias (TJ-SP e CVM até o material chegar) */
 .aviso-concurso-vazio { margin: 12px 0 0; padding: 10px 14px; border-radius: 12px; max-width: 68ch; background: var(--binho-fundo); box-shadow: inset 4px 0 0 var(--binho); }
 .aviso-concurso-vazio b { color: var(--binho-texto); }

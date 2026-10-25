@@ -182,6 +182,8 @@ function paraDTO(q: QuestaoDemo): QuestaoDTO {
     disciplina: q.disciplina,
     assunto: q.assunto,
     origem: "gerada",
+    banca: "cesgranrio",
+    formato: "multipla",
     textoBase: q.textoBase,
     enunciado: q.enunciado,
     alternativas: q.alternativas.map(({ letra, texto }) => ({ letra, texto })),
@@ -376,7 +378,7 @@ export const apiDemo: Api = {
         return q ? [{ disciplina: q.disciplina, subtopico: subDe(q), acertou: t.acertou, branco: t.resposta === null, tempoSeg: t.tempoSeg ?? 0 }] : [];
       });
       return resumirSimulado({ id, data: ts[0].data, concurso: "bb", banca: "cesgranrio", diagnostico: ehDiagnostico(id) }, itens);
-    }));
+    }).filter((s) => { const lente = lenteDemo(); return !lente || s.concurso === lente; })); // lente: só os do concurso
   },
 
   painel: () => {
@@ -404,7 +406,8 @@ export const apiDemo: Api = {
 
     // praticar por tema: só o subtópico, novas primeiro (igual ao servidor)
     if (f.subtopico) {
-      const doTema = ativas.filter((q) => subDe(q) === f.subtopico && !(f.excluir ?? []).includes(q.id));
+      // as questões de exemplo são todas no estilo Cesgranrio
+      const doTema = ativas.filter((q) => subDe(q) === f.subtopico && !(f.excluir ?? []).includes(q.id) && (!f.banca || f.banca === "cesgranrio"));
       const vistas = new Set(e.tentativas.map((t) => t.questaoId));
       const nova = doTema.find((q) => !vistas.has(q.id));
       const q = nova ?? doTema[0];

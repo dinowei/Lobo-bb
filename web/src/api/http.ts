@@ -68,6 +68,7 @@ export const apiHttp: Api = {
     if (f.misto) p.set("misto", "1");
     if (f.anterior) p.set("anterior", f.anterior);
     if (f.subtopico) p.set("subtopico", f.subtopico);
+    if (f.banca) p.set("banca", f.banca);
     if (f.excluir?.length) p.set("excluir", f.excluir.slice(-60).join(","));
     return req(`/proxima?${p}`);
   },

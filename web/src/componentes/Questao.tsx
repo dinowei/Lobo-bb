@@ -1,6 +1,7 @@
 // Questão: enunciado + alternativas; depois de corrigida, mostra a explicação de cada alternativa
 import type { AlternativaCorrigida, CorrecaoDTO, Letra, QuestaoDTO } from "../../../shared/tipos";
 import { NOME_DISCIPLINA } from "../../../shared/tipos";
+import { BANCAS } from "../../../shared/concursos";
 import { Figura } from "./Figura";
 import { Ouvir } from "./Ouvir";
 
@@ -22,6 +23,11 @@ export function Cabecalho({ q, traicoeira }: { q: QuestaoDTO; traicoeira?: boole
             {[1, 2, 3, 4, 5].map((i) => (<i key={i} className={i <= q.dificuldade ? "on" : ""} />))}
           </span>
         </span>
+        {q.banca && (
+          <span className="selo" data-testid="selo-banca">
+            {(BANCAS as Record<string, { nome: string }>)[q.banca]?.nome ?? q.banca} · {q.formato === "certo_errado" ? "Certo/Errado" : "múltipla escolha"}
+          </span>
+        )}
         {traicoeira && <span className="selo alerta">Traiçoeira: essa engana muita gente</span>}
         {q.notaNorma && <span className="selo atualizada">Norma atualizada</span>}
       </div>

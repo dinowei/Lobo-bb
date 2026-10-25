@@ -296,6 +296,23 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - A aba sem matérias mostra "as matérias ainda estão chegando".
   - Os **72 arquivos (um por tema)** do dono entram quando ele avisar (pasta `72 FONTES/`).
 
+- **Trilha única + abas como lentes (decisão de arquitetura do dono, 25/10):**
+  - Catálogo único de temas: 74 = 63 + 8 do TJ-SP (ids do dono) + 3 da CVM (ids `cvm_` provisórios). Os temas comuns ganharam `tjsp`/`cvm` pelas matérias da referência.
+  - Ordem por código (`bb -- trilha-ordenar`): nº de concursos (comuns primeiro), peso no edital × (1 + incidência), pré-requisitos. `data/trilha.json` passou de 51 para 74 temas; nenhum saiu.
+  - Avanço por tema, uma vez só, sem depender da ordem. O início da trilha grava o subtópico. Migração: backup validado, 0 registros antigos, 0 → 0.
+  - "Prontidão para X" (`shared/prontidao.ts`). Testes do dono: o domínio de Crase sobe todos os concursos que a cobram; a aba do TJ-SP só mostra matérias do TJ-SP.
+  - Aba "Geral" (padrão) = visão do todo; BB/TJ-SP/BACEN/CVM = lentes.
+    - Na Geral, o simulado pede o concurso e o C/E usa a Cebraspe.
+    - Histórico de simulados por concurso na lente.
+    - Questões do tema de qualquer banca, com filtro de banca e selo "banca · formato".
+  - `cvm.json` corrigido: tirei Bancários e Dir. Administrativo, que eu tinha posto e que não estão no Módulo I.
+  - **Falta no banco (precisa de embedding, depois da cadeia):** `bb -- arvore --confirmar` cria os 11 tópicos novos e liga os concursos. A simulação mostrou 36 tópicos ganhando tjsp/cvm, nada sai. Fazer com backup antes.
+- **Cadeia F8/F10 (em andamento):**
+  - BB Tecnologia 2023 ingerida.
+  - 2021 falhou (JSON inválido numa janela, nada salvo) e BNDES 2024 falhou (timeout). Repetir.
+  - Causa de fundo: a extração usa o auditor do `.env`, que ainda aponta para o Super (fora pela Decisão 0, dá 404) e cai sempre na reserva Ultra. Trocar no `.env` é decisão do dono.
+- **TJ-SP Vunesp:** o acervo só tem o caderno de 2023, sem o gabarito. O leitor de gabarito Vunesp fica para quando o gabarito chegar (o formato de pares/grade já é lido pelo `lerGabaritoOficial`).
+
 RETOMAR AQUI — ordem do dono (25/10/2026), nesta sequência:
 1. FEITO: visual da madrugada testado, com prints, commitado (`14834cb`).
 2. AGORA: PROMPT-LOBO-BB-BACEN de F8 até F14. Toda tela nova já nasce no estilo novo (cores, barra lateral, cartões do mockup).

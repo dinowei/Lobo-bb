@@ -3,7 +3,7 @@
 // As regras (XP, SM-2, prioridade, painel) vêm de shared/motor.ts — as mesmas do modo demo.
 // ============================================================
 import { Types } from "mongoose";
-import { Attempt, Question, RatingAluno, ReviewState, Topic, Report, Source, Redacao, ItemCE, RespostaCE } from "./models.js";
+import { Attempt, Question, RatingAluno, ReviewState, Topic, Report, Source, Redacao, ItemCE, RespostaCE, Simulado } from "./models.js";
 import { corrigirCE, recomendarBranco, type GabaritoCE } from "../shared/certoErrado.js";
 import { MISTURA_DIAGNOSTICO, PREFIXO_DIAGNOSTICO, ratingDoDiagnostico } from "../shared/diagnostico.js";
 import { atualizarRatings, dificuldadeExibida, pesoPorProximidade, ratingInicialQuestao, ALVO_ACIMA, RATING_ALUNO_INICIAL } from "../shared/rating.js";
@@ -98,6 +98,13 @@ async function questoesDoConcurso(mapa?: Awaited<ReturnType<typeof mapaTopicos>>
   return (await Question.distinct("_id", { topicId: { $in: [...m.values()].map((t) => t._id) } })) as Types.ObjectId[];
 }
 
+async function simuladosDaLente<T extends { id: string }>(userId: Types.ObjectId, lente: IdConcurso, lista: T[]): Promise<T[]> {
+  const docs = await Simulado.find({ userId }).select("_id concurso").lean();
+  const daLente = new Set(docs.filter((d) => (d.concurso ?? "bb") === lente).map((d) => String(d._id)));
+  const conhecidos = new Set(docs.map((d) => String(d._id)));
+  return lista.filter((s) => daLente.has(s.id) || (!conhecidos.has(s.id) && lente === "bb"));
+}
+
 // ------------------------------------------------------------
 // Certo/Errado (F10): itens aprovados do concurso ativo; recomendação de "em branco" e nota pela banca dele
 // ------------------------------------------------------------
@@ -169,6 +176,8 @@ type QuestaoDoc = {
   origem: string;
   prova?: string | null;
   numeroOriginal?: number | null;
+  banca?: string | null;
+  estiloBanca?: string | null;
   textoBase?: string | null;
   enunciado: string;
   alternativas: { letra: string; texto: string; correta: boolean; explicacao?: string | null; pegadinha?: string | null }[];
@@ -217,6 +226,8 @@ function paraDTO(q: QuestaoDoc, topicos: Map<string, { disciplina: string; assun
     origem: q.origem as "oficial" | "gerada",
     prova: q.prova ?? undefined,
     numeroOriginal: q.numeroOriginal ?? undefined,
+    banca: q.banca ?? q.estiloBanca ?? undefined,
+    formato: "multipla",
     textoBase: q.textoBase ?? undefined,
     enunciado: q.enunciado,
     alternativas: q.alternativas.map((a) => ({ letra: a.letra as Letra, texto: a.texto })),
@@ -335,7 +346,10 @@ export const apiServidor: Omit<Api, "modo"> = {
   tema: paginaTema,
   pedirPrioridadeTema: pedirPrioridade,
   definirTemaDoDia,
-  simulados: () => listarSimulados(ALUNO()),
+  simulados: async () => {
+    const lente = lenteAtiva();
+    return (await listarSimulados(ALUNO())).filter((s) => !lente || s.concurso === lente);
+  },
   concursos: async () => infoConcursos() as ConcursoInfoDTO[],
   prontidao,
   proximoItemCE,
@@ -382,7 +396,10 @@ export const apiServidor: Omit<Api, "modo"> = {
     );
     banco.repetidasNoite = await Geracao.countDocuments({ em: { $gte: inicioDaNoite() }, motivo: { $in: MOTIVOS_REPETICAO } });
     const niveis = (await RatingAluno.find({ userId, ...chaveConcurso() }).select("disciplina rating n").lean()).map((r) => ({ disciplina: r.disciplina as Disciplina, rating: Math.round(r.rating), n: r.n ?? 0 }));
-    return { ...painel, banco, alertasAdmin, redacaoCorrigidaPendente: !!redacaoCorrigidaPendente, niveis };
+    // lente: histórico só dos simulados daquele concurso (os antigos, sem concurso gravado, são do BB)
+    const lente = lenteAtiva();
+    const simulados = lente ? await simuladosDaLente(userId, lente, painel.simulados) : painel.simulados;
+    return { ...painel, simulados, banco, alertasAdmin, redacaoCorrigidaPendente: !!redacaoCorrigidaPendente, niveis };
   },
 
   async proxima(f) {
@@ -396,7 +413,7 @@ export const apiServidor: Omit<Api, "modo"> = {
 
     // praticar por TEMA: só o subtópico, novas primeiro ("crase só traz crase")
     if (f.subtopico) {
-      const r = await proximaDoTema(f.subtopico, f.excluir);
+      const r = await proximaDoTema(f.subtopico, f.excluir, f.banca);
       if (!r) return { questao: null, modo: "treino", aviso: "Este tema ainda não tem questões aprovadas. Pedi prioridade ao noturno." };
       const q = await Question.findById(r.id).lean<QuestaoDoc>();
       return {
