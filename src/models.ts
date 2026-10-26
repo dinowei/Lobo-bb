@@ -354,6 +354,7 @@ const GeracaoSchema = new Schema(
     questionId: { type: Schema.Types.ObjectId, ref: "Question" },
     tipo: String,
     contexto: String,
+    fluxo: String, // "esteira_pt" = esteira de Português em lote (teto próprio)
     ms: Number,
     em: { type: Date, default: Date.now, index: true },
   }

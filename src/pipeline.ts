@@ -198,7 +198,8 @@ export async function gerarQuestao(
 export async function geracoesHoje() {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-  return Geracao.countDocuments({ em: { $gte: hoje } });
+  // a esteira de Português em lote tem teto próprio (ESTEIRA_PT_MAX_DIA): não entra no GERACAO_MAX_DIA
+  return Geracao.countDocuments({ em: { $gte: hoje }, fluxo: { $ne: "esteira_pt" } });
 }
 export const tetoDiario = () => Number(process.env.GERACAO_MAX_DIA) || 60;
 
@@ -514,7 +515,7 @@ export { TIPO_CRASE };
 
 // Histórico SÓ das aprovadas no banco: contagem de uso por regra e as regras da última
 // aprovada (para não repetir). Tentativa descartada não conta.
-async function historicoRegras(topicId: Types.ObjectId, area: AreaPT): Promise<HistoricoCrase> {
+export async function historicoRegras(topicId: Types.ObjectId, area: AreaPT): Promise<HistoricoCrase> {
   const idPorNome = new Map(area.regras.map((r) => [r.nome, r.id]));
   const aprovadas = await Question.find({ topicId, "variacao.tipo": area.tipo, status: "aprovada" })
     .sort({ _id: 1 })

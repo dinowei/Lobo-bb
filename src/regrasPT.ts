@@ -90,7 +90,7 @@ function explicarPorRegras(regra: RegraPT, trecho: string, frase?: string) {
 
 // E4: a introdução sai de uma das estruturas de data/variacoes.json ("estruturasPortugues", com "{contexto}"),
 // sorteada pelo código; a padrão fica quando a lista não existe
-const estruturasPT = () => {
+export const estruturasPT = () => {
   const lista = carregarVariacoes().estruturasPortugues;
   return lista?.length ? lista : [ESTRUTURA_CRASE_PADRAO];
 };

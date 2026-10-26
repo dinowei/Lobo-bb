@@ -246,11 +246,14 @@ export function construirCrase(
   gabarito: Letra,
   contexto: string,
   historico: HistoricoCrase = { uso: new Map(), anterior: new Set() },
-  estruturas: string[] = [ESTRUTURA_CRASE_PADRAO]
+  estruturas: string[] = [ESTRUTURA_CRASE_PADRAO],
+  permitidas?: Set<string>, // esteira em lote: só as regras que o LanguageTool julga bem (benchmark)
+  espelhoDe?: (certa: string) => string[] // esteira: o erro "espelho" da regra certa não entra junto (entregaria a resposta)
 ): CraseMontada {
-  const sorteaveis = REGRAS_CRASE.filter((r) => !FORA_DO_SORTEIO.has(r.id));
+  const sorteaveis = REGRAS_CRASE.filter((r) => !FORA_DO_SORTEIO.has(r.id) && (!permitidas || permitidas.has(r.id)));
   const [certa] = menosUsadas(sorteaveis.filter((r) => r.correta), 1, historico);
-  const erros = embaralhar(menosUsadas(sorteaveis.filter((r) => !r.correta), 4, historico));
+  const fora = new Set(espelhoDe?.(certa.id) ?? []);
+  const erros = embaralhar(menosUsadas(sorteaveis.filter((r) => !r.correta && !fora.has(r.id)), 4, historico));
   const frases = (["A", "B", "C", "D", "E"] as Letra[]).map((letra) => ({
     letra,
     regra: letra === gabarito ? certa : erros.shift()!,

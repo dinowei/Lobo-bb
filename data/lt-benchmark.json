@@ -1,0 +1,107 @@
+{
+  "em": "2026-10-26T09:17:39.433Z",
+  "limiar": 0.95,
+  "regras": {
+    "obrigatoria_regencia": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "locucao_feminina": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "horas_exatas": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "aquele": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "sem_crase_verbo": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "sem_crase_masculino": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "sem_crase_repetidas": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "erro_verbo": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "erro_masculino": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "erro_pronome_pessoal": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "erro_repetidas": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "erro_indefinido": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "erro_plural": {
+      "n": 20,
+      "concordou": 0,
+      "taxa": 0,
+      "divergentes": [
+        "O gerente enviou o aviso à clientes conforme combinado. → nada",
+        "O gerente enviou o aviso à clientes como pede o manual. → nada",
+        "O gerente enviou o aviso à clientes segundo o supervisor. → nada",
+        "O assistente enviou o aviso à clientes segundo o supervisor. → nada"
+      ]
+    },
+    "erro_demonstrativo": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "erro_falta_obrigatoria": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    },
+    "erro_falta_horas": {
+      "n": 20,
+      "concordou": 20,
+      "taxa": 1,
+      "divergentes": []
+    }
+  }
+}

@@ -10,5 +10,7 @@ logs/
 backups/
 # índice local do acervo (texto das páginas dos PDFs do dono): só no PC
 acervo-indice/
+# ferramentas locais baixadas (LanguageTool + Java): só no PC
+ferramentas/
 # rascunhos de inspeção dos agentes (fora do projeto)
 scratchpad/

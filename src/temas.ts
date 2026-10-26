@@ -221,8 +221,10 @@ export async function paginaTema(subtopico: string): Promise<TemaDTO | null> {
   };
 }
 
-// próxima questão de um TEMA: só daquele subtópico, NOVAS primeiro (as não respondidas), mais antigas
-// do banco primeiro para manter a ordem estável; se acabaram as novas, repete com aviso.
+export const ORDEM_FONTE_TEMA: Record<string, unknown>[] = [{ origem: "oficial" }, { origem: "cursinho" }, { origem: { $nin: ["oficial", "cursinho"] } }];
+
+// próxima questão de um TEMA: só daquele subtópico, NOVAS primeiro (as não respondidas), oficiais antes
+// das de cursinho e estas antes das geradas; se acabaram as novas, repete com aviso.
 // trilha única: questões do tema de QUALQUER banca; o aluno pode ficar numa banca só (oficial: banca da prova;
 // gerada: estilo da banca; as antigas, sem banca gravada, são Cesgranrio)
 export async function proximaDoTema(subtopico: string, excluir: string[] = [], banca?: string) {
@@ -235,8 +237,12 @@ export async function proximaDoTema(subtopico: string, excluir: string[] = [], b
   const doTema = (await Question.find(base).select("_id").lean()).map((q) => q._id);
   const respondidas = await Attempt.distinct("questionId", { userId, questionId: { $in: doTema } });
   const fora = [...respondidas, ...excluir.filter((x) => Types.ObjectId.isValid(x)).map((x) => new Types.ObjectId(x))];
-  const [nova] = await Question.aggregate([{ $match: { ...base, _id: { $nin: fora } } }, { $sample: { size: 1 } }, { $project: { _id: 1 } }]);
-  if (nova) return { id: String(nova._id), nova: true };
+  // ordem de fonte (decisão do dono, 26/10/2026): oficiais primeiro, depois cursinho, e as geradas só completam;
+  // dentro de cada faixa, sorteio
+  for (const faixa of ORDEM_FONTE_TEMA) {
+    const [nova] = await Question.aggregate([{ $match: { ...base, ...faixa, _id: { $nin: fora } } }, { $sample: { size: 1 } }, { $project: { _id: 1 } }]);
+    if (nova) return { id: String(nova._id), nova: true };
+  }
   const [repetida] = await Question.aggregate([{ $match: { ...base, _id: { $nin: excluir.filter((x) => Types.ObjectId.isValid(x)).map((x) => new Types.ObjectId(x)) } } }, { $sample: { size: 1 } }, { $project: { _id: 1 } }]);
   return repetida ? { id: String(repetida._id), nova: false } : null;
 }

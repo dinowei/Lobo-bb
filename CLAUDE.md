@@ -15,6 +15,7 @@ App pessoal de estudo para concursos: Escriturário do Banco do Brasil, Escreven
 - `src/variacao.ts` + `data/variacoes.json`: sorteio de tipo e contexto compatível (tabela de pares permitidos) e cota de 40% de duas etapas em cálculo
 - `src/construcao.ts`: Matemática por construção (Juros compostos, Descontos): o código sorteia números e distratores
 - `src/portugues.ts`: Português por construção (Crase): banco de regras; o código sorteia 1 regra correta + 4 de erro
+- `src/esteiraPT.ts` + `src/moldesPT.ts` + `data/moldes-crase.json` + `src/languagetool.ts`: esteira de Português em lote (moldes → posição → LanguageTool local → anti-repetição → amostra 1/10)
 - `src/verificacao.ts`: confere a conta com mathjs (regra 10)
 - `src/similaridade.ts` + `src/cenarios.ts` + `data/cenarios.json`: filtro anti-repetição (regra 16) e cenário (perfil + situação) sorteado, o menos usado no tópico
 - Coleção `geracoes` (model `Geracao`): toda tentativa de gerar; dá o teto diário `GERACAO_MAX_DIA` e os descartes no `status`
@@ -54,8 +55,19 @@ App pessoal de estudo para concursos: Escriturário do Banco do Brasil, Escreven
 10. Em questões de cálculo, o valor correto é verificado por código (mathjs), nunca só pela IA.
 11. Variedade é decidida pelo código: tipo e contexto são sorteados de `data/variacoes.json` e só saem pares permitidos na tabela de compatibilidade. Contexto novo ou tipo novo entra na tabela antes de ser usado.
 12. Questões por construção (Matemática e Crase): números, alternativas, gabarito e dificuldade vêm do código (dificuldade = nº de etapas + 1). A IA só escreve o texto e não pode alterar número nem a regra atribuída a cada alternativa.
-13. Crase por construção só é aprovada se o auditor, julgando cada frase isoladamente e sem saber a regra, disser "correta" para exatamente uma frase, a do gabarito. Depois passa pela revisão completa.
-14. Nas questões por construção de Português, explicação, pegadinha, correção e explicação geral vêm do banco de regras (`src/portugues.ts`), nunca da IA. As frases são escritas pelo `ESCRITOR_PT_MODEL`, que precisa ser diferente do auditor. Cada frase passa pela trava de posição (o "à" exatamente onde a regra manda) antes do auditor; a que não bate é reescrita uma vez.
+13. Português por construção (decisão do dono, 26/10/2026) roda na **esteira em lote** (`src/esteiraPT.ts`, `bb -- esteira-pt`), começando pela Crase. As questões oficiais do tema vêm primeiro; a esteira só gera para o dono ter ≥ 15 novas (`ESTEIRA_PT_NOVAS`), com teto diário próprio (`ESTEIRA_PT_MAX_DIA`, fora do `GERACAO_MAX_DIA`).
+    - **Gatilho:** o juiz obrigatório de cada frase é o **LanguageTool local** (`src/languagetool.ts`, servidor em `ferramentas/`, nunca serviço externo). Ele conta como família independente.
+    - **Divergência:** se o LanguageTool e a regra do código discordam, a frase é descartada sem ir à IA. A frase certa tem de sair limpa; a de erro tem de ser apontada exatamente no "a/à" do trecho e em nenhum outro lugar.
+    - **Quais regras entram:** só as que o LanguageTool acerta em ≥ 95% no benchmark (`bb -- lt-benchmark`, `data/lt-benchmark.json`) e que não estão em `FORA_DO_SORTEIO`. A regra de pronome de tratamento continua fora, por decisão do dono.
+    - **Juiz de IA:** passa a fazer **auditoria por amostra**. 1 em cada 10 aprovadas é julgada frase a frase, às cegas; uma frase que discorda descarta a questão. Se a concordância acumulada cair abaixo de 95% (com ≥ 10 frases), a esteira PARA e registra. Para liberar: `bb -- esteira-pt --retomar`.
+    - **Relatório:** traz a taxa de cada filtro (posição, LanguageTool, repetição, amostra).
+14. Nas questões por construção de Português:
+    - **Explicações:** explicação, pegadinha, correção e explicação geral vêm do banco de regras (`src/portugues.ts`), nunca da IA.
+    - **Frases:** o código monta a frase e o gabarito a partir dos **moldes** (`data/moldes-crase.json`, validados por `src/moldesPT.ts`). Molde novo entra na tabela antes de ser usado (regra 11).
+    - **Lacunas críticas** (gênero, verbo, hora, nome da norma): só o código preenche.
+    - **IA:** só amplia o vocabulário das lacunas **neutras** (sujeito, complemento), validado por código, e nunca mexe na estrutura.
+    - **Trava de posição:** toda frase passa por ela (o "à" exatamente onde a regra manda) antes do LanguageTool.
+    - **Fluxo antigo:** o escritor por frase (`ESCRITOR_PT_MODEL` + juiz frase a frase) segue só para Concordância, Regência e Pontuação até elas ganharem moldes.
 15. Figura é dado desenhado por código (tabela, planilha, gráfico, tela de programa), nunca imagem gerada por IA. A IA não copia a figura no enunciado. Figura oficial extraída do PDF só entra no treino depois do OK do dono (tela Figuras).
 16. Questão nova passa pelo filtro de similaridade (`src/similaridade.ts`) antes do auditor: cosseno do embedding contra o mesmo tópico e as oficiais da disciplina, trechos em comum (Jaccard) e, nas por construção, a impressão estrutural (tipo, contexto, parâmetros) que não se repete no tópico. Paráfrase de oficial é descartada. Template não copia o cenário de questão oficial. Limites no `.env` (`SIMILAR_*`).
 

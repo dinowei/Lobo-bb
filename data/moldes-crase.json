@@ -1,0 +1,66 @@
+{
+  "_comentario": "Esteira de Português em lote (decisão do dono, 26/10/2026). Cada molde é de UMA regra de src/portugues.ts. O trecho da regra fica entre colchetes; {lacuna} vem do vocabulário abaixo. Lacunas 'criticas' decidem a regra (gênero, verbo, hora) e só o código as preenche; as 'neutras' a IA pode ampliar (só palavras, nunca a estrutura). Molde novo entra aqui antes de ser usado (regra 11).",
+  "moldes": [
+    { "id": "obr_dirigir", "regra": "obrigatoria_regencia", "texto": "{sujeito} [dirigiu-se à {lugar_fa}] {final}." },
+    { "id": "obr_obedecer", "regra": "obrigatoria_regencia", "texto": "{sujeito} [obedeceu à {norma_fa}] {final}." },
+    { "id": "obr_ir", "regra": "obrigatoria_regencia", "texto": "{sujeito} [foi à {lugar_fa}] {final}." },
+    { "id": "obr_chegar", "regra": "obrigatoria_regencia", "texto": "{sujeito} [chegou à {lugar_fa}] {final}." },
+
+    { "id": "loc_vista", "regra": "locucao_feminina", "texto": "{sujeito} pagou o {bem_o} [à vista] {final}." },
+    { "id": "loc_disposicao", "regra": "locucao_feminina", "texto": "{sujeito} ficou [à disposição] do cliente {final}." },
+    { "id": "loc_pressas", "regra": "locucao_feminina", "texto": "{sujeito} conferiu os documentos [às pressas] {final}." },
+    { "id": "loc_noite", "regra": "locucao_feminina", "texto": "{sujeito} revisou o {doc_o} [à noite] {final}." },
+
+    { "id": "hora_abre", "regra": "horas_exatas", "texto": "A {lugar_fa} abre [às {hora} horas] {final}." },
+    { "id": "hora_reuniao", "regra": "horas_exatas", "texto": "A reunião com {sujeito_min} começa [às {hora} horas] {final}." },
+
+    { "id": "aq_referir", "regra": "aquele", "texto": "{sujeito} [referiu-se àquele {doc_o}] {final}." },
+    { "id": "aq_obedecer", "regra": "aquele", "texto": "{sujeito} [obedeceu àquele {doc_o}] {final}." },
+
+    { "id": "verbo_comecar", "regra": "sem_crase_verbo", "texto": "{sujeito} [começou a {verbo}] o {doc_o} {final}." },
+    { "id": "verbo_passar", "regra": "sem_crase_verbo", "texto": "{sujeito} [passou a {verbo}] o {doc_o} {final}." },
+
+    { "id": "masc_prazo", "regra": "sem_crase_masculino", "texto": "{sujeito} [comprou o {bem_o} a prazo] {final}." },
+    { "id": "masc_credito", "regra": "sem_crase_masculino", "texto": "{sujeito} [vendeu o {bem_o} a prazo] {final}." },
+
+    { "id": "erro_verbo_comecar", "regra": "erro_verbo", "texto": "{sujeito} [começou à {verbo}] o {doc_o} {final}." },
+    { "id": "erro_verbo_passar", "regra": "erro_verbo", "texto": "{sujeito} [passou à {verbo}] o {doc_o} {final}." },
+
+    { "id": "erro_masc_prazo", "regra": "erro_masculino", "texto": "{sujeito} [vendeu o {bem_o} à prazo] {final}." },
+    { "id": "erro_masc_comprar", "regra": "erro_masculino", "texto": "{sujeito} [comprou o {bem_o} à prazo] {final}." },
+
+    { "id": "erro_pron_entregar", "regra": "erro_pronome_pessoal", "texto": "{sujeito} [entregou o {doc_o} à ela] {final}." },
+    { "id": "erro_pron_enviar", "regra": "erro_pronome_pessoal", "texto": "{sujeito} [enviou o {doc_o} à ela] {final}." },
+
+    { "id": "erro_indef_encaminhar", "regra": "erro_indefinido", "texto": "{sujeito} [encaminhou o {doc_o} à uma {pessoa_f}] {final}." },
+    { "id": "erro_indef_entregar", "regra": "erro_indefinido", "texto": "{sujeito} [entregou o {doc_o} à uma {pessoa_f}] {final}." },
+
+    { "id": "erro_demo_dirigir", "regra": "erro_demonstrativo", "texto": "{sujeito} [dirigiu-se à esta {lugar_fa}] {final}." },
+    { "id": "erro_demo_essa", "regra": "erro_demonstrativo", "texto": "{sujeito} [dirigiu-se à essa {lugar_fa}] {final}." },
+
+    { "id": "erro_falta_obedecer", "regra": "erro_falta_obrigatoria", "texto": "{sujeito} [obedeceu a {norma_fa}] {final}." },
+
+    { "id": "erro_hora_abre", "regra": "erro_falta_horas", "texto": "A {lugar_fa} abre [as {hora} horas] {final}." },
+    { "id": "erro_hora_reuniao", "regra": "erro_falta_horas", "texto": "A reunião com {sujeito_min} começa [as {hora} horas] {final}." },
+
+    { "id": "rep_frente", "regra": "sem_crase_repetidas", "texto": "{sujeito} conversou com o cliente [frente a frente] {final}." },
+    { "id": "erro_rep_frente", "regra": "erro_repetidas", "texto": "{sujeito} conversou com o cliente [frente à frente] {final}." },
+    { "id": "erro_plural_enviar", "regra": "erro_plural", "texto": "{sujeito} [enviou o aviso à clientes] {final}." }
+  ],
+  "vocabulario": {
+    "criticas": {
+      "lugar_fa": ["agência", "gerência", "tesouraria", "ouvidoria", "diretoria", "superintendência", "auditoria", "controladoria"],
+      "norma_fa": ["norma", "regra", "política", "cartilha", "portaria", "diretoria"],
+      "bem_o": ["seguro", "carro", "consórcio", "equipamento", "imóvel", "terreno", "veículo"],
+      "doc_o": ["contrato", "relatório", "extrato", "boleto", "comprovante", "parecer", "formulário"],
+      "verbo": ["analisar", "conferir", "revisar", "digitalizar", "arquivar", "assinar"],
+      "pessoa_f": ["cliente", "correntista", "gerente", "consultora", "estagiária"],
+      "hora": ["8", "9", "10", "11", "14", "15", "16"]
+    },
+    "neutras": {
+      "sujeito": ["O gerente", "A escriturária", "O caixa", "A consultora", "O correntista", "A supervisora", "O assistente", "A gerente de contas"],
+      "sujeito_min": ["os clientes", "a equipe", "os correntistas", "a diretoria regional", "os consultores"],
+      "final": ["conforme combinado", "como pede o manual", "com atenção", "por solicitação do cliente", "para evitar atrasos", "como de costume", "segundo o supervisor", "para concluir o atendimento"]
+    }
+  }
+}

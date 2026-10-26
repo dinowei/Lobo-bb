@@ -77,6 +77,7 @@ import { migrarRatings, relatorioCalibragem } from "./rating.js";
 import { ordenarTrilhaUnica, relatorioIncidencia } from "./incidencia.js";
 import { migrarInicioTrilha } from "./temas.js";
 import { derivarCE } from "./certoErrado.js";
+import { benchmarkLT, retomarEsteira, rodarEsteiraPT } from "./esteiraPT.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
@@ -119,7 +120,9 @@ BB Estudos — comandos (npm run bb -- <comando>)
   importar-cursinho <pdf> --nome "<nome>" [--formato multipla|ce] [--banca x] [--disciplina x]   questões de cursinho (camada C, fora do simulado fiel)
   janela-b [--forcar]                            Janela B (padrão 18:00–19:00): sem noite = essencial; com noite = recupera pendentes
   fila-ingestao [--add itens.json]               provas/leis que o noturno ingere, uma por noite (lista ou acrescenta)
-  derivar-ce [--n 6]                             itens Certo/Errado de múltiplas aprovadas (código monta, IA reescreve, auditor julga às cegas)
+  lt-benchmark [--n 20]                          LanguageTool local nas regras de Crase; liga as regras com ≥ 95% (data/lt-benchmark.json)
+  esteira-pt [--candidatas 300] [--alvo 15] [--retomar]   Crase em lote: moldes → posição → LanguageTool → anti-repetição → amostra 1/10
+  derivar-ce [--n 6]                           itens Certo/Errado de múltiplas aprovadas (código monta, IA reescreve, auditor julga às cegas)
   migrar-trilha-unica --simular|--confirmar      início da trilha: nº do tema (por concurso) → subtópico (por aluno); rodar ANTES do trilha-ordenar
   trilha-ordenar --simular|--confirmar           trilha única: ordem por código (comuns, peso × incidência, pré-requisitos) → data/trilha.json
   incidencia                                     quantas vezes cada subtópico caiu nas oficiais, por banca e ano → docs/INCIDENCIA.md
@@ -179,6 +182,9 @@ async function main() {
       add: { type: "string" },
       formato: { type: "string" },
       forcar: { type: "boolean" },
+      candidatas: { type: "string" },
+      alvo: { type: "string" },
+      retomar: { type: "boolean" },
       comentario: { type: "string" },
       tipo: { type: "string" },
       titulo: { type: "string" },
@@ -506,6 +512,26 @@ async function main() {
         return;
       }
 
+      case "lt-benchmark": {
+        // LanguageTool local nas regras de Crase (frases montadas pelos moldes); grava data/lt-benchmark.json
+        const r = await benchmarkLT(o.n ? Number(o.n) : 20);
+        console.log(`\n${r.ligadas.size} regra(s) ligada(s) na esteira.`);
+        return;
+      }
+
+      case "esteira-pt": {
+        // esteira de Português em lote: moldes → posição → LanguageTool → anti-repetição → amostra 1/10
+        if (o.retomar) {
+          await retomarEsteira();
+          console.log("Esteira de Português liberada (amostra zerada).");
+          return;
+        }
+        return await naFila(rotulo, async () => {
+          const r = await rodarEsteiraPT({ candidatas: o.candidatas ? Number(o.candidatas) : undefined, alvo: o.alvo ? Number(o.alvo) : undefined });
+          console.log(`\nEsteira PT: ${r.resumo}`);
+        });
+      }
+
       case "derivar-ce": {
         // F10: itens Certo/Errado a partir de múltiplas aprovadas (--n = nº de questões; 5 itens cada)
         return await naFila(rotulo, async () => {
@@ -711,6 +737,14 @@ async function main() {
           if (preenchidos) console.log(`✔ Concurso/banca preenchidos em ${preenchidos} registro(s) novo(s).`);
           // subtópico das questões novas: código primeiro, ambíguas com o modelo
           await etapa(etapas, "classificação", etapaClassificacao);
+          // Português em lote (Crase): moldes → posição → LanguageTool local → anti-repetição → amostra 1/10
+          await etapa(etapas, "esteira de Português", async () => {
+            if (!sobraTempo(ate, 90)) return null;
+            const r = await rodarEsteiraPT();
+            if (!r.contagem.frases && r.resumo.startsWith("nada a gerar")) return null;
+            if (/fora do ar|não encontrado|PARADA|benchmark/.test(r.resumo) && !r.contagem.aprovadas) throw new Error(r.resumo);
+            return r.resumo;
+          });
           // ordem da noite: questões → explicações alternativas → aulas → cartões → fontes atuais → temas → áudio
           // (a fila roda na ordem de criação, então esta é também a ordem de execução)
           const { gerar: n, explicar_outro_jeito: extras, aula: aulas, cartoes, fonte_atual: fontesAtuais, tema: temas, voz: audios } = await planejarEtapasDaNoite({

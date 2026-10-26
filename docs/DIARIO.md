@@ -402,12 +402,46 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
 - **E11, golden set do chat com 30 casos:** os 12 do BB mais 18 das leis novas (Administrativo 7, Constitucional 2, Penal 4, Processo Penal 1, Processo Civil 2, CVM 2). Cada artigo foi conferido no texto oficial baixado; 5 casos são pegadinhas sem base. A rodada (IA, em série) vai depois das cadeias.
 - Backup: um segundo backup no mesmo dia ganha o sufixo `-HHmm` (antes era recusado e parava a cadeia). A retenção é por dia. Tem teste.
 
-RETOMAR AQUI — PROMPT-FECHAMENTO (25/10/2026):
-1. Cadeias em fila (um job de IA por vez; nada entre 00:45 e 05:30):
-   - 2: BNDES, BACEN C/E, explicar, classificar, incidência, 20 Crase, derivar-ce, Janela B.
-   - 3: 12 leis.
-   - 4: cursinho, explicar, classificar e a amostra de 80 (E3).
-   - 5: lotes de provas da E10, com incidência depois de cada lote.
-   - Os logs ficam no scratchpad da sessão (`cadeia2..4.log`).
-2. Depois: conferir os resultados das cadeias (E2, E3, E4, E7, E9, E10); E11 (fichas dos 74 temas, golden set do chat com 30 perguntas, áudio); E14 (fechamento).
-3. BLOQUEADO pelo dono: BNB 2024 item 17; gabarito TJ-SP 2023; cotas TJ-SP.
+## 26/10/2026 — Noite real (E6) e esteira de Português em lote
+
+- **Noite de 26/10 (E6: SIM):** rodou sozinha pelo Agendador e terminou às 05:20, com código 0.
+  - Etapas: backup ok, acervo ok, ingestão pulada (fila vazia), classificação ok, geração e pré-geração ok, derivação C/E 17 de 20 aprovados.
+  - Fichas: "nada a fazer".
+  - Banco: 417 aprovadas; backup final com 10 coleções, 812 documentos.
+- **Cadeias de 25/10:** a sessão caiu às ~20:45 durante a cadeia 4. Antes disso, o cursinho entrou com 81 questões (Bancários QC) e 57 (Mat. Financeira QC). As cadeias 5 e 6 não chegaram a rodar.
+- **Esteira de Português em lote (decisão do dono, 26/10): Crase pronta.**
+  - LanguageTool 6.6 + Java Temurin 21, oficiais, em `ferramentas/` (fora do Git); servidor só em `localhost:8081`.
+  - O PC tem ~4 GB de RAM: com 1 GB de heap o Java ia para o disco e cada frase levava 5–25 s. Agora sobe com 512 MB e coletor serial (`garantirLT`) e confere as frases em lote (25 por chamada).
+  - Moldes em `data/moldes-crase.json`: o código monta frase e gabarito; a IA só amplia o sujeito.
+  - Benchmark do LanguageTool (`bb -- lt-benchmark`, `data/lt-benchmark.json`):
+    - 15 regras com 100%;
+    - "à clientes" (plural) com 0%: fica fora;
+    - a falta de crase obrigatória ficou em 100% depois de tirar o molde "foi a", que o LanguageTool não pega;
+    - "à Vossa Senhoria" o LanguageTool acerta, mas fica fora por decisão do dono.
+  - Lote de prova 1: 15 de 15 aprovadas, mas com defeitos. Rejeitei as 15 (nenhuma tinha sido respondida):
+    - o vocabulário da IA trouxe "segundo instruções" e "com os stakeholders" → agora só o sujeito vem da IA, com validação;
+    - par certo/errado da mesma estrutura ("frente a frente" × "frente à frente") → regra do núcleo do trecho e regra dos erros espelho (`ESPELHOS`).
+  - Lote 2: 6 aprovadas, 4 delas com espelho → rejeitadas.
+  - Lote 3 (final): **15 aprovadas num lote só**, em ~10 min.
+    - Taxas: 750 frases → posição 0% · LanguageTool 0% (as regras já vêm filtradas pelo benchmark).
+    - 18 candidatas → 3 parecidas (17% de repetição).
+    - Amostra de IA: 15/15 frases concordam no acumulado.
+  - No noturno: etapa "esteira de Português" depois da classificação. Ela só gera se a Crase tiver menos de 15 novas para o dono (hoje são 40).
+  - Oficiais primeiro: `proximaDoTema` sorteia nas novas na ordem oficial → cursinho → gerada.
+  - A regra 13/14 do CLAUDE.md foi atualizada.
+  - Pendências pequenas:
+    - às vezes uma palavra se repete entre o sujeito e o complemento ("O correntista … à uma correntista");
+    - algumas introduções saem esquisitas ("relatório sobre aviso sobre…").
+  - Concordância, Regência e Pontuação continuam no fluxo antigo até ganharem moldes.
+
+RETOMAR AQUI (26/10/2026):
+1. Esteira de conteúdo (decisão do dono, 26/10), nesta ordem:
+   - meta por tema (≥ 15 novas + ficha + áudio da ficha) e o painel "Cobertura da trilha";
+   - ordem de fonte;
+   - C/E com no máximo 2–3 itens por questão;
+   - orçamento por modelo no lugar do `GERACAO_MAX_DIA`;
+   - amostra 1/10 nos fluxos validados;
+   - Código Penal por partes;
+   - depois dos 20 primeiros temas: E12 + E14 e congelar funcionalidades.
+2. Retomar as cadeias que não rodaram: lotes da E10 (BNDES, Caixa, Banrisul, BASA, Cebraspe, FGV), amostra de 80 da E3, golden set do chat de 30, fichas.
+3. BLOQUEADO pelo dono: BNB 2024 item 17; gabarito TJ-SP 2023; gabarito CNU; cotas TJ-SP.
