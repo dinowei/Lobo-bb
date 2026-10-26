@@ -67,6 +67,15 @@ export const adminJanelas = {
   salvar: (c: JanelasDTO["config"]["janelaB"]) => req<JanelasDTO>("/janelas", { method: "POST", body: JSON.stringify(c) }),
 };
 
+// Cobertura da trilha (esteira de conteúdo): meta por tema e o tema em que a esteira trabalha
+export type CoberturaDTO = {
+  nHoje: number | null;
+  resumo: { concurso: string; total: number; prontos: number; faltando: number; bloqueados: number }[];
+  temas: { n: number; subtopico: string; nome: string; concursos: string[]; aprovadas: number; novas: number; ficha: boolean; audioFicha: boolean; bloqueios: string[]; situacao: "pronto" | "faltando" | "bloqueado"; faltas: string[] }[];
+  proximo: { n: number; subtopico: string; nome: string; faltas: string[] } | null;
+};
+export const adminCobertura = { ler: () => req<CoberturaDTO>("/cobertura") };
+
 export const adminFiguras = {
   listar: () => req<QuestaoComFigurasDTO[]>("/figuras"),
   amostras: () => req<AmostraFiguraDTO[]>("/figuras/amostras"),

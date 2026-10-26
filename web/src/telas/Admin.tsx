@@ -15,15 +15,16 @@ import type {
   StatusTarefa,
   TarefaDTO,
 } from "../../../shared/tipos";
-import { adminJanelas, adminTelas } from "../api/admin";
+import { adminCobertura, adminJanelas, adminTelas, type CoberturaDTO } from "../api/admin";
 import { Markdown } from "../componentes/Markdown";
 import { useApp } from "../estado";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
-import { BANCAS, type IdBanca } from "../../../shared/concursos";
+import { BANCAS, SIGLA_CONCURSO, type IdBanca, type IdConcurso } from "../../../shared/concursos";
 
-type Aba = "ia" | "fila" | "janelas" | "benchmark" | "pendencias" | "concursos" | "convites" | "contas";
+type Aba = "cobertura" | "ia" | "fila" | "janelas" | "benchmark" | "pendencias" | "concursos" | "convites" | "contas";
 const ABAS: { id: Aba; rotulo: string }[] = [
+  { id: "cobertura", rotulo: "Cobertura" },
   { id: "ia", rotulo: "IA" },
   { id: "fila", rotulo: "Fila" },
   { id: "janelas", rotulo: "Janelas" },
@@ -146,6 +147,7 @@ export function Admin() {
         ))}
       </div>
       <section role="tabpanel" id={`painel-${aba}`} aria-labelledby={`aba-${aba}`} className="painel-aba">
+        {aba === "cobertura" && <AbaCobertura />}
         {aba === "ia" && <AbaIA />}
         {aba === "fila" && <AbaFila />}
         {aba === "benchmark" && <AbaBenchmark />}
@@ -306,6 +308,66 @@ function AbaContas() {
 
 // ---------- Janelas (E8): A = noite (01:00–05:30, tarefa do Windows); B = recuperação, horário e teto aqui ----------
 const SIMBOLO_ETAPA = { ok: "✔", pulada: "·", falhou: "✖" } as const;
+
+// Cobertura da trilha: meta de pronto por tema (≥ 15 novas + ficha + áudio da ficha), por concurso,
+// e o tema em que a esteira de conteúdo está trabalhando
+const NOME_SITUACAO = { pronto: "Pronto", faltando: "Faltando", bloqueado: "Bloqueado" } as const;
+function AbaCobertura() {
+  const { dados, erro, recarregar } = useDados(adminCobertura.ler);
+  const [concurso, setConcurso] = useState("geral");
+  const [situacao, setSituacao] = useState<"" | CoberturaDTO["temas"][number]["situacao"]>("");
+  const sigla = (c: string) => (c === "geral" ? "Geral" : SIGLA_CONCURSO[c as IdConcurso] ?? c);
+  const temas = (dados?.temas ?? []).filter((t) => (concurso === "geral" || t.concursos.includes(concurso)) && (!situacao || t.situacao === situacao));
+  return (
+    <Estado erro={erro} carregando={!dados} tentar={recarregar}>
+      <div className="secao" data-testid="admin-cobertura">
+        <div className="linha-titulo"><h2>Cobertura da trilha</h2></div>
+        <p className="sub" style={{ marginTop: 0 }}>Tema pronto = 15 questões novas para você, ficha aprovada e áudio da ficha. A esteira trabalha no tema mais próximo do seu dia que ainda falta; com todos prontos, só mantém.</p>
+        <div className="grade-cobertura">
+          {dados?.resumo.map((r) => (
+            <button key={r.concurso} className={`cartao-cobertura${concurso === r.concurso ? " ativo" : ""}`} aria-pressed={concurso === r.concurso} onClick={() => setConcurso(r.concurso)}>
+              <span className="rotulo">{sigla(r.concurso)}</span>
+              <b className="num">{r.prontos}<small>/{r.total}</small></b>
+              <span className="barra-cobertura" aria-hidden="true"><i style={{ width: pct(r.total ? r.prontos / r.total : 0) }} /></span>
+              <small className="num">{r.faltando} faltando · {r.bloqueados} bloqueados</small>
+            </button>
+          ))}
+        </div>
+        {dados?.proximo ? (
+          <p className="esteira-agora" data-testid="esteira-agora">
+            <span className="selo verde">Esteira agora</span> Tema {dados.proximo.n}: <b>{dados.proximo.nome}</b> · falta {dados.proximo.faltas.join(", ")}
+          </p>
+        ) : <p className="esteira-agora"><span className="selo verde">Esteira</span> Todos os temas prontos ou bloqueados: só manutenção.</p>}
+      </div>
+      <div className="secao">
+        <div className="linha-titulo">
+          <h2>Temas · {sigla(concurso)}</h2>
+          <div className="chips" role="group" aria-label="Situação">
+            {(["", "faltando", "bloqueado", "pronto"] as const).map((s) => (
+              <button key={s || "todos"} className="chip" aria-pressed={situacao === s} onClick={() => setSituacao(s)}>{s ? NOME_SITUACAO[s] : "Todos"}</button>
+            ))}
+          </div>
+        </div>
+        <ul className="lista-cobertura" data-testid="lista-cobertura">
+          {temas.map((t) => (
+            <li key={t.subtopico} className={`cobertura-${t.situacao}${t.n === dados?.nHoje ? " hoje" : ""}`}>
+              <span className="num n-tema">{t.n}</span>
+              <div className="cobertura-corpo">
+                <div><b>{t.nome}</b> <span className={`selo situacao-${t.situacao}`}>{NOME_SITUACAO[t.situacao]}</span>{t.n === dados?.nHoje && <span className="selo">tema do dia</span>}</div>
+                <div className="metas-tema">
+                  <span className="meta-novas"><span className="barra-cobertura" aria-hidden="true"><i style={{ width: pct(Math.min(1, t.novas / 15)) }} /></span><span className="num">{Math.min(t.novas, 15)}/15 novas</span></span>
+                  <span className={t.ficha ? "ok" : "falta"}>{t.ficha ? "✓" : "✗"} ficha</span>
+                  <span className={t.audioFicha ? "ok" : "falta"}>{t.audioFicha ? "✓" : "✗"} áudio</span>
+                </div>
+                {t.bloqueios.length > 0 && t.situacao !== "pronto" && <small className="bloqueio">Bloqueio: {t.bloqueios.join("; ")}</small>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Estado>
+  );
+}
 
 function AbaJanelas() {
   const { avisar } = useApp();

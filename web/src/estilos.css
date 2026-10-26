@@ -1638,6 +1638,38 @@ h2.inline { display: inline; }
 small.sobe { color: var(--certo); }
 small.desce { color: var(--errado); }
 
+/* Admin → Cobertura da trilha (verde institucional: metas e controle) */
+.grade-cobertura { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 6px 0 14px; }
+.cartao-cobertura { display: grid; gap: 6px; padding: 12px 14px; text-align: left; border-radius: var(--raio); border: 1px solid var(--linha); background: var(--superficie); color: var(--texto); }
+.cartao-cobertura .rotulo { font-size: 12px; font-weight: 600; color: var(--texto-2); text-transform: uppercase; letter-spacing: .04em; }
+.cartao-cobertura b { font-family: var(--fonte-titulo); font-size: 28px; letter-spacing: -0.02em; }
+.cartao-cobertura b small { font-size: 15px; color: var(--texto-2); font-weight: 500; }
+.cartao-cobertura small { font-size: 12px; color: var(--texto-2); }
+.cartao-cobertura.ativo { background: var(--verde); color: var(--verde-tinta); border-color: transparent; }
+.cartao-cobertura.ativo .rotulo, .cartao-cobertura.ativo small, .cartao-cobertura.ativo b small { color: var(--verde-tinta); }
+.barra-cobertura { display: block; height: 6px; border-radius: 99px; background: var(--linha); overflow: hidden; }
+.barra-cobertura i { display: block; height: 100%; border-radius: inherit; background: var(--verde-texto); }
+.cartao-cobertura.ativo .barra-cobertura { background: color-mix(in srgb, var(--verde-tinta) 18%, transparent); }
+.cartao-cobertura.ativo .barra-cobertura i { background: var(--verde-tinta); }
+.esteira-agora { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+.selo.verde { background: var(--verde); color: var(--verde-tinta); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.lista-cobertura { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.lista-cobertura li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: var(--raio-p); border: 1px solid var(--linha); background: var(--superficie); }
+.lista-cobertura li.hoje { border-color: var(--verde-texto); }
+.n-tema { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: var(--superficie-alt); font-size: 12.5px; font-weight: 700; }
+.cobertura-corpo { display: grid; gap: 6px; min-width: 0; flex: 1; font-size: 13.5px; }
+.cobertura-corpo .selo { margin-left: 6px; }
+.situacao-pronto { background: var(--sucesso-fundo); color: var(--sucesso-texto); }
+.situacao-faltando { background: var(--atencao-fundo); color: var(--atencao-texto); }
+.situacao-bloqueado { background: var(--superficie-alt); color: var(--texto-2); }
+.metas-tema { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 12.5px; color: var(--texto-2); }
+.meta-novas { display: inline-flex; align-items: center; gap: 8px; }
+.meta-novas .barra-cobertura { width: 90px; }
+.metas-tema .ok { color: var(--sucesso-texto); }
+.metas-tema .falta { color: var(--texto-2); }
+.bloqueio { color: var(--texto-2); font-size: 12px; }
+
 /* Espaço da Lo (turquesa): seu dia no destaque da Lo, recados, playlist com transcrição, biblioteca */
 .lo-grade { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 16px; align-items: stretch; margin-bottom: 16px; }
 .lo-seu-dia { min-height: 0; grid-area: auto; } /* .seu-dia tem grid-area no Painel */

@@ -26,6 +26,7 @@ import { caminhoMaterial } from "./temas.js";
 import { ajustarConcurso, carregarConfigConcursos, historicoConcursos, infoConcursos } from "./concursosConfig.js";
 import { painelJanelas, salvarJanelas } from "./janelaB.js";
 import { ID_AUDIO } from "./espacoLo.js";
+import { coberturaTrilha } from "./cobertura.js";
 import type { IdConcurso } from "../shared/concursos.js";
 import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro, type NotaCartao } from "../shared/tipos.js";
 
@@ -144,6 +145,8 @@ app.post("/api/ce/responder", rota(async (req, res) => {
 }));
 // E8: Janelas (A = noite, B = recuperação): horário e teto da B, relatórios com as etapas
 app.get("/api/admin/janelas", rota(async (_req, res) => res.json(await painelJanelas())));
+// esteira de conteúdo: meta por tema (≥ 15 novas + ficha + áudio da ficha) e o tema em que a esteira trabalha
+app.get("/api/admin/cobertura", rota(async (_req, res) => res.json(await coberturaTrilha())));
 app.post("/api/admin/janelas", rota(async (req, res) => {
   const b = (req.body ?? {}) as { inicio?: unknown; fim?: unknown; tetoChamadas?: unknown };
   try {
