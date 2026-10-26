@@ -467,7 +467,23 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
    - "Relatório da esteira" no fim: temas prontos × total por concurso, chamadas × capacidade, descarte por motivo.
    - Também roda à mão com `bb -- esteira relatorio`.
 
-RETOMAR AQUI (26/10/2026):
-1. Esteira de conteúdo: deixar a noite trabalhar; conferir de manhã o relatório da esteira e a aba Cobertura. Falta: livros CVM/BCB por capítulo. Quando os 20 primeiros temas baterem a meta: E12 + E14 e congelar funcionalidades.
-2. Retomar as cadeias que não rodaram: lotes da E10 (BNDES, Caixa, Banrisul, BASA, Cebraspe, FGV), amostra de 80 da E3, golden set do chat de 30, fichas.
-3. BLOQUEADO pelo dono: BNB 2024 item 17; gabarito TJ-SP 2023; gabarito CNU; cotas TJ-SP.
+## 26/10/2026 — Fechamento de versão v1.0-estudo (congelada)
+
+- Esteira de conteúdo (rodada de 6 temas): Concordância PRONTO (agora são 2 de 74 prontos). Regência e Pontuação chegaram a 15 novas; as fichas de Pontuação, Coesão e Interpretação foram barradas pelo material.
+- Item 0: SIM. Backup restaurado num MongoDB local em memória (o usuário do Atlas não cria outras bases), 15/15 coleções iguais. O backup passou a levar respostas C/E, simulados, espaco_lo, itens C/E e fichas; backup antigo continua restaurável (teste). `402a79c`.
+- Item 1: SIM. `vercel.json` com CSP igual à do Express (0 violações no build de produção), cache imutável, `index.html` sem cache, `npm ci`, Node 22.x. `66256f3`.
+- Item 2: SIM.
+  - `npm run smoke`: 31,5 s local, contra o servidor de produção num banco em memória.
+  - `/api/saude` mostra a versão e o último noturno.
+  - Selo "noturno atrasado" e Admin → Erros, sem dados sensíveis.
+  - Commits `fa86dbb` e `2395528`.
+  - O cookie não precisou de correção (`SameSite=Lax`, sem `Domain`).
+- Item 3: PARCIAL. A vigência só vale para tema normativo; teste escrito antes, falhou, corrigi e passa. A ficha de Interpretação regerada 2x foi rejeitada por outro motivo (só 2 de 5 trechos literais no material). Nenhuma outra ficha caiu pela vigência. `1b4eaf7`.
+- Item 4: SIM. `IA_TETO_DIA` (300), disjuntor de 5 falhas → 30 min com registro, e o segundo noturno sai sem fazer nada. Os três têm teste. `120715d`.
+- Item 5: SIM. Tarefa com acordar o PC, rodar se perdido e limite de 5 h; idempotência provada (classificação e C/E); logs e backups com 14 dias; alerta do Atlas acima de 70% no relatório. `923cc09`.
+- Item 6:
+  - Varredura de segredos no histórico: 3 URIs, todas de exemplo (.env.example, teste "fake", teste de limpeza). Nenhum segredo real.
+  - `npm audit`: `body-parser` 2.4.0 (alta corrigida sem trocar a versão maior); sobra 1 moderada em dependência de desenvolvimento (`fast-uri`).
+  - Tag `v1.0-estudo` e `docs/RETOMAR.md`.
+
+RETOMAR AQUI (26/10/2026): ver `docs/RETOMAR.md` (versão v1.0-estudo congelada). Daqui em diante: só esteira de conteúdo e correções.

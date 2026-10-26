@@ -180,6 +180,15 @@ Resolvidas (uma linha cada):
   2. Rode `schtasks /query /tn "Lobo Binho - Noturno Local" /v /fo LIST`. O PC precisa estar ligado ou em suspensão, com a conta logada.
   3. Se a Janela B estiver agendada, ela recupera às 18:00.
   4. Trava presa: `bb -- limpar-trava-orfa <pid>`.
+- **Energia do PC (para o noturno das 01:00):** sem mexer em nada além da tarefa e da energia.
+  1. Configurações → Sistema → Energia: tela "Nunca" é opcional; o PC precisa poder **suspender** (não hibernar nem desligar).
+  2. Painel de Controle → Opções de Energia → *Alterar configurações do plano* → *Alterar configurações de energia avançadas* → Suspender → **Permitir temporizadores de ativação = Ativar** (na bateria e na tomada).
+  3. Deixe o notebook **na tomada** e a sua conta **logada** (bloquear a tela pode; sair da conta não).
+  4. A tarefa "Lobo Binho - Noturno Local" já está com: acordar o computador, executar assim que possível se perdido, parar se passar de 5 h.
+- **Freios (v1.0):**
+  - teto diário global de chamadas de IA (`IA_TETO_DIA`, padrão 300);
+  - disjuntor: 5 falhas seguidas do mesmo modelo → 30 min fora, registrado em Admin → Erros;
+  - o segundo noturno simultâneo sai sem fazer nada.
 - **Prova travada na fila:** quando uma prova falha, ela vai para a Config `fila_ingestao_falhas`. Corrija e enfileire de novo.
 - **A IA está fora:** a corrente pula sozinha. Se cair inteira, as tarefas esperam a próxima janela.
 - **O banco está cheio:** `bb -- uso-banco` e `bb -- uso-banco ajustar`; alerta em 80%.
@@ -187,4 +196,4 @@ Resolvidas (uma linha cada):
 
 ## 10. Retomar aqui
 
-Ver o "RETOMAR AQUI" no fim de `docs/DIARIO.md`.
+Versão congelada **v1.0-estudo** (26/10/2026): como subir, publicar, voltar e as pendências em `docs/RETOMAR.md`. O dia a dia fica no "RETOMAR AQUI" de `docs/DIARIO.md`.
