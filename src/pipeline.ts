@@ -201,10 +201,12 @@ export async function geracoesHoje() {
   // a esteira de Português em lote tem teto próprio (ESTEIRA_PT_MAX_DIA): não entra no GERACAO_MAX_DIA
   return Geracao.countDocuments({ em: { $gte: hoje }, fluxo: { $ne: "esteira_pt" } });
 }
-export const tetoDiario = () => Number(process.env.GERACAO_MAX_DIA) || 60;
+// Decisão do dono (26/10/2026): o ritmo é o orçamento por modelo (balde em src/corrente.ts); o teto fixo
+// só vale se GERACAO_MAX_DIA estiver definido de propósito no .env (0 = sem teto fixo)
+export const tetoDiario = () => Number(process.env.GERACAO_MAX_DIA) || 0;
 
 async function tentarGerar(topicId: string, dificuldade: number, estado: EstadoGeracao): Promise<Resultado> {
-  if (!estado.noturno && (await geracoesHoje()) >= tetoDiario())
+  if (!estado.noturno && tetoDiario() > 0 && (await geracoesHoje()) >= tetoDiario())
     return { ok: false, motivo: "teto_diario", detalhes: [`já foram ${tetoDiario()} gerações hoje (GERACAO_MAX_DIA)`] };
   const inicio = Date.now();
   let r: Resultado;

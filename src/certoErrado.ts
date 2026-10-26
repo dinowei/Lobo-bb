@@ -8,7 +8,7 @@ import { z } from "zod";
 import { ItemCE, Question, Topic } from "./models.js";
 import { chatJSONFuncao } from "./corrente.js";
 import { hashTexto } from "./extrair.js";
-import { derivarItens, type ItemDerivado } from "../shared/certoErrado.js";
+import { derivarItens, escolherItensDiversos, type ItemDerivado } from "../shared/certoErrado.js";
 
 const ESCRITOR = `Você reescreve uma alternativa de questão de concurso como UMA afirmação autônoma, no estilo Certo/Errado da Cebraspe.
 Junte o comando da questão e a alternativa numa frase completa que faça sentido sozinha, SEM mudar o sentido:
@@ -47,9 +47,9 @@ export function checarAfirmacao(afirmacao: string, textoAlternativa: string): st
 
 export const LIMITE_IRMAOS = 0.85;
 
-export async function derivarCE(opcoes: { questoes: number }) {
+export async function derivarCE(opcoes: { questoes: number; subtopico?: string }) {
   const ja = new Set((await ItemCE.distinct("derivadaDe", { origem: "derivada" })).map(String));
-  const qs = (await Question.find({ status: "aprovada", "alternativas.explicacao": { $exists: true } })
+  const qs = (await Question.find({ status: "aprovada", "alternativas.explicacao": { $exists: true }, ...(opcoes.subtopico ? { subtopico: opcoes.subtopico } : {}) })
     .select("topicId subtopico concursos textoBase enunciado alternativas camada")
     .lean())
     .filter((q) => !ja.has(String(q._id)) && q.alternativas.every((a) => a.explicacao?.trim()));
@@ -66,7 +66,8 @@ export async function derivarCE(opcoes: { questoes: number }) {
 
   for (const q of fila) {
     let itens: ItemDerivado[];
-    try { itens = derivarItens(q); } catch (e) { recusa(`não deriva: ${(e as Error).message}`); continue; }
+    // diversidade: no máximo 2–3 itens por questão (a certa + as erradas que testam pontos diferentes)
+    try { itens = escolherItensDiversos(derivarItens(q), Number(process.env.CE_ITENS_POR_QUESTAO) || 3); } catch (e) { recusa(`não deriva: ${(e as Error).message}`); continue; }
     const aceitos: Set<string>[] = [];
     for (const it of itens) {
       rel.itens++;

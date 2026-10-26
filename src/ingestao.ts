@@ -203,6 +203,7 @@ export type MetaFonte = {
   url?: string;
   vigenteDesde?: Date;
   disciplina?: string; // restringe a classificação a uma disciplina (recomendado)
+  assunto?: string; // fonte recortada para um tema: todos os trechos vão para este tópico (sem similaridade)
 };
 
 // Trechos sem tópico de uma fonte (ingerida antes do "forcar") vão para o tópico mais próximo da
@@ -251,6 +252,8 @@ export async function ingerirFonte(caminho: string, meta: MetaFonte) {
   console.log(`… ${paginas.length} página(s) → ${trechos.length} trechos`);
 
   const topicos = await topicosComVetor(meta.disciplina);
+  const fixo = meta.assunto ? await Topic.findOne({ assunto: meta.assunto, ativo: true }).select("_id").lean() : null;
+  if (meta.assunto && !fixo) throw new Error(`Tópico ativo não encontrado para o recorte: ${meta.assunto}`);
   const vetores = await embedLote(
     trechos.map((t) => t.texto),
     "passage"
@@ -263,10 +266,10 @@ export async function ingerirFonte(caminho: string, meta: MetaFonte) {
     embedding: vetores[i],
     // com a disciplina declarada, todo trecho vai para o tópico mais próximo dela: a similaridade
     // tópico (consulta curta) × artigo de lei fica abaixo de EMBED_MIN_SIM e o trecho sumiria da busca
-    topicIds: classificar(vetores[i], topicos, { forcar: !!meta.disciplina }),
+    topicIds: fixo ? [fixo._id] : classificar(vetores[i], topicos, { forcar: !!meta.disciplina }),
     revogada: false,
   }));
-  const { disciplina: _ignorada, ...metaFonte } = meta;
+  const { disciplina: _ignorada, assunto: _tema, ...metaFonte } = meta;
   const fonte = await Source.create({
     ...metaFonte,
     hashArquivo: hash,
@@ -1139,7 +1142,7 @@ export async function mostrarStatus() {
       "desc. repetição": repeticoes.get(String(t._id)) ?? 0,
     }))
   );
-  console.log(`${fontes} fonte(s) ativa(s) · ${orfaos} trecho(s) sem tópico · ${hoje}/${tetoDiario()} gerações hoje (GERACAO_MAX_DIA)`);
+  console.log(`${fontes} fonte(s) ativa(s) · ${orfaos} trecho(s) sem tópico · ${hoje} gerações hoje${tetoDiario() ? ` (teto fixo ${tetoDiario()}, GERACAO_MAX_DIA)` : " (orçamento por modelo, sem teto fixo)"}`);
   // totais do banco de questões por status e por origem (relatórios e docs/MESTRE.md)
   const contar = async (campo: "status" | "origem") =>
     (await Question.aggregate<{ _id: string; n: number }>([{ $group: { _id: `$${campo}`, n: { $sum: 1 } } }, { $sort: { n: -1 } }])).map((g) => `${g._id} ${g.n}`).join(" · ");

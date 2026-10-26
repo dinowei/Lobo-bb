@@ -3,7 +3,7 @@
 // as novas para o dono, a ficha aprovada, o áudio da ficha e o que bloqueia; as regras são puras
 // (shared/cobertura.ts). Admin → Cobertura e a etapa da noite leem daqui.
 // ============================================================
-import { Attempt, Audio, Chunk, DISCIPLINAS_COM_FONTE_OBRIGATORIA, Ficha, Question, Topic } from "./models.js";
+import { Attempt, Audio, Chunk, DISCIPLINAS_COM_FONTE_OBRIGATORIA, Ficha, ItemCE, Question, RespostaCE, Topic } from "./models.js";
 import { ALUNO } from "./estudo.js";
 import { trilha } from "./temas.js";
 import { hashFala, vozPadrao } from "./voz.js";
@@ -16,21 +16,33 @@ import conteudo from "../data/temas.json" with { type: "json" };
 
 const CONTEUDO = conteudo.temas as unknown as Record<string, { ficha?: { texto: string }; materiais?: unknown[]; semMaterial?: string }>;
 
+// texto da ficha do tema como o Espaço da Lo toca (é este texto que vira o áudio da ficha)
+export async function textoFichaDoTema(subtopico: string): Promise<string | null> {
+  const s = SUBTOPICO_POR_ID.get(subtopico);
+  if (!s) return null;
+  const f = await Ficha.findOne({ subtopico, status: "aprovada" }).sort({ createdAt: -1 }).select("afirmacoes").lean();
+  const afirmacoes = f ? (f.afirmacoes ?? []).map((a) => a.texto ?? "") : CONTEUDO[subtopico]?.ficha ? [CONTEUDO[subtopico].ficha!.texto] : null;
+  return afirmacoes ? textoFicha(s.nome, afirmacoes) : null;
+}
+
 export type CoberturaDTO = { nHoje: number | null; resumo: ResumoCobertura[]; temas: LinhaCobertura[]; proximo: { n: number; subtopico: string; nome: string; faltas: string[] } | null };
 
 export async function coberturaTrilha(): Promise<CoberturaDTO> {
   const voz = vozPadrao();
-  const [t, topicos, questoes, respondidas, fichas] = await Promise.all([
+  const [t, topicos, questoes, itensCE, respondidas, respondidosCE, fichas] = await Promise.all([
     trilha(),
     Topic.find({ ativo: true }).select("_id assunto disciplina").lean(),
     Question.find({ status: "aprovada", subtopico: { $ne: null } }).select("_id subtopico").lean(),
+    ItemCE.find({ status: "aprovada", subtopico: { $ne: null } }).select("_id subtopico").lean(),
     Attempt.distinct("questionId", { userId: ALUNO() }),
+    RespostaCE.distinct("itemId", { userId: ALUNO() }),
     Ficha.find({ status: "aprovada" }).sort({ createdAt: -1 }).select("subtopico afirmacoes").lean(),
   ]);
-  const feitas = new Set(respondidas.map(String));
+  // contam para a meta as múltiplas e os itens Certo/Errado (oficiais, derivados e de cursinho)
+  const feitas = new Set([...respondidas, ...respondidosCE].map(String));
   const aprovadas = new Map<string, number>();
   const novas = new Map<string, number>();
-  for (const q of questoes) {
+  for (const q of [...questoes, ...itensCE]) {
     const s = q.subtopico!;
     aprovadas.set(s, (aprovadas.get(s) ?? 0) + 1);
     if (!feitas.has(String(q._id))) novas.set(s, (novas.get(s) ?? 0) + 1);

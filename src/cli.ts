@@ -78,6 +78,8 @@ import { ordenarTrilhaUnica, relatorioIncidencia } from "./incidencia.js";
 import { migrarInicioTrilha } from "./temas.js";
 import { derivarCE } from "./certoErrado.js";
 import { benchmarkLT, retomarEsteira, rodarEsteiraPT } from "./esteiraPT.js";
+import { relatorioDiario, rodarEsteiraConteudo } from "./esteiraConteudo.js";
+import { gravarCapacidade, medirCapacidade, usoDeHoje } from "./capacidade.js";
 import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
@@ -120,7 +122,9 @@ BB Estudos — comandos (npm run bb -- <comando>)
   importar-cursinho <pdf> --nome "<nome>" [--formato multipla|ce] [--banca x] [--disciplina x]   questões de cursinho (camada C, fora do simulado fiel)
   janela-b [--forcar]                            Janela B (padrão 18:00–19:00): sem noite = essencial; com noite = recupera pendentes
   fila-ingestao [--add itens.json]               provas/leis que o noturno ingere, uma por noite (lista ou acrescenta)
-  lt-benchmark [--n 20]                          LanguageTool local nas regras de Crase; liga as regras com ≥ 95% (data/lt-benchmark.json)
+  capacidade [--n 7] [--confirmar]               limite real de cada modelo (minutos com 429 na telemetria); grava o orçamento por modelo
+  esteira [--n 3]                              esteira de conteúdo: até n temas, do mais próximo do dia sem a meta (≥ 15 novas + ficha + áudio)
+  lt-benchmark [--n 20]                        LanguageTool local nas regras de Crase; liga as regras com ≥ 95% (data/lt-benchmark.json)
   esteira-pt [--candidatas 300] [--alvo 15] [--retomar]   Crase em lote: moldes → posição → LanguageTool → anti-repetição → amostra 1/10
   derivar-ce [--n 6]                           itens Certo/Errado de múltiplas aprovadas (código monta, IA reescreve, auditor julga às cegas)
   migrar-trilha-unica --simular|--confirmar      início da trilha: nº do tema (por concurso) → subtópico (por aluno); rodar ANTES do trilha-ordenar
@@ -512,6 +516,24 @@ async function main() {
         return;
       }
 
+      case "capacidade": {
+        // limite real de cada modelo grátis (minutos com 429 na telemetria); --confirmar grava o orçamento
+        const medidas = await medirCapacidade(o.n ? Number(o.n) : 7);
+        console.table(medidas.map((m) => ({ modelo: m.modelo, chamadas: m.chamadas, "429": m.recusas429, "chamadas/min": m.rpm, base: m.base })));
+        if (o.confirmar) console.log(`✔ Orçamento gravado para ${await gravarCapacidade(medidas)} modelo(s).`);
+        console.table((await usoDeHoje()).map((u) => ({ modelo: u.modelo, "usadas hoje": u.usadas, capacidade: u.capacidade, uso: `${Math.round(u.fracao * 100)}%` })));
+        return;
+      }
+
+      case "esteira": {
+        // esteira de conteúdo: tema mais próximo do dia sem a meta → C/E → geração → ficha → áudio da ficha
+        if (args[0] === "relatorio") return console.log((await relatorioDiario()).texto.split(" | ").join("\n"));
+        return await naFila(rotulo, async () => {
+          const r = await rodarEsteiraConteudo({ maxTemas: o.n ? Number(o.n) : 3 });
+          console.log(`\nEsteira de conteúdo: ${r.resumo}`);
+        });
+      }
+
       case "lt-benchmark": {
         // LanguageTool local nas regras de Crase (frases montadas pelos moldes); grava data/lt-benchmark.json
         const r = await benchmarkLT(o.n ? Number(o.n) : 20);
@@ -737,13 +759,12 @@ async function main() {
           if (preenchidos) console.log(`✔ Concurso/banca preenchidos em ${preenchidos} registro(s) novo(s).`);
           // subtópico das questões novas: código primeiro, ambíguas com o modelo
           await etapa(etapas, "classificação", etapaClassificacao);
-          // Português em lote (Crase): moldes → posição → LanguageTool local → anti-repetição → amostra 1/10
-          await etapa(etapas, "esteira de Português", async () => {
-            if (!sobraTempo(ate, 90)) return null;
-            const r = await rodarEsteiraPT();
-            if (!r.contagem.frases && r.resumo.startsWith("nada a gerar")) return null;
-            if (/fora do ar|não encontrado|PARADA|benchmark/.test(r.resumo) && !r.contagem.aprovadas) throw new Error(r.resumo);
-            return r.resumo;
+          // esteira de conteúdo: o tema mais próximo do dia que ainda não bateu a meta (≥ 15 novas + ficha + áudio),
+          // na ordem de fonte mais barata (Crase pela esteira de Português); deixa 2h30 para a fila de sempre
+          await etapa(etapas, "esteira de conteúdo", async () => {
+            if (!sobraTempo(ate, 180)) return null;
+            const r = await rodarEsteiraConteudo({ ate: ate ? new Date(+ate - 150 * 60_000) : undefined, noturno: true });
+            return r.feitos.length ? r.resumo : null;
           });
           // ordem da noite: questões → explicações alternativas → aulas → cartões → fontes atuais → temas → áudio
           // (a fila roda na ordem de criação, então esta é também a ordem de execução)
@@ -774,6 +795,8 @@ async function main() {
             const alvos = await alvosDaTrilha(await Topic.find({ ativo: true }).select("_id assunto").lean());
             return etapaFichas(alvos[0]?.subtopico ?? null, 2);
           });
+          // relatório diário da esteira: temas prontos × total, chamadas × capacidade, descarte por motivo
+          await etapa(etapas, "relatório da esteira", async () => (await relatorioDiario()).texto);
           try {
             const noite = await relatorioDaNoite(inicio);
             const aprovadas = await Question.countDocuments({ status: "aprovada" });
@@ -876,6 +899,9 @@ async function main() {
         }
         return await naFila(rotulo, async () => {
           console.log(`Ingerindo uma única fonte: ${f.id} (${f.titulo}).`);
+          // recorte de um tema (ex.: Código Penal por partes): o catálogo diz o tópico de todos os trechos
+          const catalogo = JSON.parse(await readFile("data/fontes-oficiais.json", "utf8")) as { fontes?: { id: string; assunto?: string }[] } | { id: string; assunto?: string }[];
+          const doCatalogo = (Array.isArray(catalogo) ? catalogo : catalogo.fontes ?? []).find((x) => x.id === f.id);
           await ingerirFonte(caminho, {
             tipo: f.tipo,
             titulo: f.titulo,
@@ -883,6 +909,7 @@ async function main() {
             orgao: f.orgao,
             ano: f.ano,
             url: f.url,
+            assunto: doCatalogo?.assunto,
           });
         });
       }

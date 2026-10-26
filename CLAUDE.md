@@ -16,6 +16,8 @@ App pessoal de estudo para concursos: Escriturário do Banco do Brasil, Escreven
 - `src/construcao.ts`: Matemática por construção (Juros compostos, Descontos): o código sorteia números e distratores
 - `src/portugues.ts`: Português por construção (Crase): banco de regras; o código sorteia 1 regra correta + 4 de erro
 - `src/esteiraPT.ts` + `src/moldesPT.ts` + `data/moldes-crase.json` + `src/languagetool.ts`: esteira de Português em lote (moldes → posição → LanguageTool local → anti-repetição → amostra 1/10)
+- `src/esteiraConteudo.ts` + `src/cobertura.ts` + `shared/cobertura.ts`: esteira de conteúdo (meta por tema: ≥ 15 novas + ficha + áudio da ficha; trabalha no tema mais próximo do dia; ordem de fonte oficial → C/E → cursinho → geração), Admin → Cobertura e relatório diário (`bb -- esteira`, `bb -- esteira relatorio`)
+- `src/capacidade.ts` + `shared/orcamento.ts`: orçamento por modelo (balde no ritmo medido, `bb -- capacidade`); `GERACAO_MAX_DIA` só vale se definido no `.env`
 - `src/verificacao.ts`: confere a conta com mathjs (regra 10)
 - `src/similaridade.ts` + `src/cenarios.ts` + `data/cenarios.json`: filtro anti-repetição (regra 16) e cenário (perfil + situação) sorteado, o menos usado no tópico
 - Coleção `geracoes` (model `Geracao`): toda tentativa de gerar; dá o teto diário `GERACAO_MAX_DIA` e os descartes no `status`

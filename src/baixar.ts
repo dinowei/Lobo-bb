@@ -35,6 +35,8 @@ const FonteZ = z.object({
   planalto: z.string().url().optional(),
   url: z.string().url().optional(), // endereço oficial direto (HTML ou PDF)
   incluirArtigos: z.array(z.string()).optional(), // recorte explícito para não ingerir artigos sem relação com a decisão
+  faixaArtigos: z.tuple([z.number().int(), z.number().int()]).optional(), // recorte contínuo [de, até] (ex.: [312, 359])
+  assunto: z.string().optional(), // todos os trechos vão para este tópico (o recorte já é do tema; a similaridade erra)
   dou: z.string().optional(), // consulta exata na busca do DOU
   tituloDou: z.string().optional(), // título do ato no DOU (confere o resultado certo)
   douUrl: z.string().optional(), // endereço direto do ato no DOU (quando a busca não traz o ato antigo)
@@ -120,6 +122,16 @@ export function selecionarArtigos(texto: string, artigos: string[]): string {
     return texto.slice(de, ate).trim();
   });
   return selecionados.join("\n\n");
+}
+
+// faixa contínua de artigos (ex.: Código Penal, arts. 312 a 359): do cabeçalho do primeiro até o primeiro
+// artigo depois do último; "313-A", "359-H" etc. entram sozinhos porque estão dentro da faixa
+export function selecionarFaixa(texto: string, de: number, ate: number): string {
+  const cabecalhos = [...texto.matchAll(/(^|\n)\s*Art\.\s*(\d+)/gim)].map((m) => ({ inicio: (m.index ?? 0) + m[1].length, numero: Number(m[2]) }));
+  const i = cabecalhos.findIndex((h) => h.numero === de);
+  if (i < 0) throw new Error(`artigo ${de} não encontrado para a faixa`);
+  const fim = cabecalhos.slice(i).find((h) => h.numero > ate);
+  return texto.slice(cabecalhos[i].inicio, fim?.inicio ?? texto.length).trim();
 }
 
 // ---------- DOU ----------
@@ -239,6 +251,7 @@ export async function baixarFontes(apenas: string[] = [], pasta = "fontes"): Pro
       // texto limpo (sem o riscado e sem os artigos revogados) é o que vai para a ingestão
       let texto = html ? htmlParaTexto(html).replace(/[ \t ]+/g, " ").replace(/\n\s*\n+/g, "\n").trim() : "";
       if (html && f.incluirArtigos?.length) texto = selecionarArtigos(texto, f.incluirArtigos);
+      if (html && f.faixaArtigos) texto = selecionarFaixa(texto, f.faixaArtigos[0], f.faixaArtigos[1]);
       if (f.revogados?.length) texto = semArtigos(texto, f.revogados);
       if (pdf && pdf.length < 1_000) throw new Error(`PDF curto demais (${pdf.length} bytes): página mudou?`);
       if (pdf && (f.incluirArtigos?.length || f.revogados?.length)) throw new Error("PDF exige fonte consolidada; não é possível aplicar recortes HTML nele.");

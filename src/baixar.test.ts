@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { extrairHtmlCompiladoBcb, hostOficial, selecionarArtigos } from "./baixar.js";
+import { extrairHtmlCompiladoBcb, hostOficial, selecionarArtigos, selecionarFaixa } from "./baixar.js";
 
 test("só aceita HTTPS nos hosts oficiais, incluindo normativos e MCR do BCB", () => {
   assert.equal(hostOficial("https://www.planalto.gov.br/lei"), true);
@@ -16,6 +16,15 @@ test("recorta os artigos indicados, sem trazer os artigos vizinhos", () => {
   assert.match(trecho, /Art\. 30\. CDB um/);
   assert.match(trecho, /Art\. 33\. CDB quatro/);
   assert.doesNotMatch(trecho, /Art\. 29|Art\. 34/);
+});
+
+test("faixa de artigos: 312 a 359 traz 313-A e 359-H, sem o 311 nem o 360", () => {
+  const cp = "Art. 311. antes.\nArt. 312 - Peculato.\nArt. 313-A. Inserção de dados falsos.\nArt. 316 - Concussão.\nArt. 359-H. Oferta pública.\nArt. 360 - Ressalvada a legislação especial.";
+  const t = selecionarFaixa(cp, 312, 359);
+  assert.match(t, /^Art\. 312 - Peculato/);
+  assert.match(t, /313-A[\s\S]*316[\s\S]*359-H/);
+  assert.doesNotMatch(t, /Art\. 311|Art\. 360/);
+  assert.throws(() => selecionarFaixa(cp, 1, 120), /artigo 1 não encontrado/);
 });
 
 test("recorte falha fechado quando artigo pedido não existe", () => {

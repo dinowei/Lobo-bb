@@ -44,6 +44,32 @@ export interface ItemDerivado { letraOrigem: string; base: string; gabarito: Res
 
 // A certa vira Certo, as erradas viram Errado, com a explicação já auditada da alternativa.
 // O código monta; a IA só reescreve "base" como afirmação autônoma (sem mudar o sentido) e o auditor julga às cegas.
+// Diversidade antes de gerar (esteira de conteúdo, decisão do dono 26/10/2026): no máximo 2–3 itens por
+// questão. Fica a correta (vira item "C") e as erradas que testam pontos MAIS diferentes entre si, medidas
+// pela explicação de cada alternativa (menor sobreposição de palavras com as já escolhidas).
+const palavrasDe = (s: string) => new Set(s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").match(/\p{L}{4,}/gu) ?? []);
+const sobreposicao = (a: Set<string>, b: Set<string>) => {
+  const inter = [...a].filter((x) => b.has(x)).length;
+  return inter / Math.max(1, Math.min(a.size, b.size));
+};
+export function escolherItensDiversos(itens: ItemDerivado[], max = 3): ItemDerivado[] {
+  const escolhidos = itens.filter((i) => i.gabarito === "C").slice(0, 1);
+  const resto = itens.filter((i) => i.gabarito !== "C");
+  while (escolhidos.length < max && resto.length) {
+    const ja = escolhidos.map((e) => palavrasDe(e.explicacao));
+    // a errada cuja explicação menos se parece com as escolhidas (empate: a primeira, pela letra)
+    let melhor = 0;
+    let menor = Infinity;
+    resto.forEach((r, k) => {
+      const p = palavrasDe(r.explicacao);
+      const s = ja.length ? Math.max(...ja.map((x) => sobreposicao(p, x))) : 0;
+      if (s < menor) { menor = s; melhor = k; }
+    });
+    escolhidos.push(resto.splice(melhor, 1)[0]);
+  }
+  return escolhidos.sort((a, b) => a.letraOrigem.localeCompare(b.letraOrigem));
+}
+
 export function derivarItens(q: { enunciado: string; alternativas: AlternativaFonte[] }): ItemDerivado[] {
   if (q.alternativas.filter((a) => a.correta).length !== 1) throw new Error("A questão precisa de exatamente uma alternativa correta");
   return q.alternativas.map((a) => {

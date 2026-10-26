@@ -434,14 +434,40 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
     - algumas introduções saem esquisitas ("relatório sobre aviso sobre…").
   - Concordância, Regência e Pontuação continuam no fluxo antigo até ganharem moldes.
 
+## 26/10/2026 (manhã) — Esteira de conteúdo (decisão do dono)
+
+1. **Meta de pronto e Cobertura (commit `b023d8b`):**
+   - Pronto = ≥ 15 novas para o dono (múltiplas e itens C/E) + ficha aprovada + áudio da ficha.
+   - Admin → Cobertura: cartões por concurso, "Esteira agora", lista com filtros. e2e e prints 1440/360.
+   - Dados reais: 0 de 74 prontos, 59 faltando e 15 bloqueados (13 por falta de material do acervo para a ficha, 2 por falta de fonte ou tópico).
+2. **Ordem de fonte:**
+   - No tema, as novas saem oficial → cursinho → gerada.
+   - A esteira deriva C/E do próprio tema antes de gerar.
+   - Na Crase, a geração vai pela esteira de Português.
+3. **Diversidade:**
+   - Derivação C/E com no máximo 3 itens por questão (`CE_ITENS_POR_QUESTAO`): a certa + as erradas cujas explicações menos se parecem.
+   - Antes eram 5 por questão, e 19 de 50 caíam como "irmão quase igual".
+4. **Capacidade real (`bb -- capacidade`):**
+   - Nenhum 429 em 7 dias de telemetria. Com um job por vez, as chamadas saem em série e quem limita é a latência, não o provedor.
+   - O orçamento grava só limite visto (minutos com 429); sem isso, 40/min (conta grátis da NVIDIA).
+   - O balde fica na corrente: espera curta ou passa a vez ao próximo modelo.
+   - `GERACAO_MAX_DIA` deixou de ser teto padrão (só vale se definido no `.env`, que hoje não define).
+5. **Amostra 1/10:** só na esteira de Português, o único fluxo com benchmark que o valida (LanguageTool 100%). Derivação C/E, geração e Matemática por construção seguem com auditoria completa, porque nelas o auditor é a única checagem de sentido.
+6. **Código Penal por partes:**
+   - Parte Geral (arts. 1º a 120): 56 trechos → "Direito Penal: parte geral".
+   - Arts. 312 a 359: 47 trechos → "Crimes contra a administração pública".
+   - O resto ficou fora; o CP inteiro foi revogado (267 trechos, nada o citava).
+   - Novos campos `faixaArtigos` e `assunto` no catálogo de fontes (testados).
+   - Livros CVM/BCB por capítulo: ainda não feito.
+7. **Primeira rodada real da esteira (`bb -- esteira --n 2`):**
+   - Tema 2 (Classes de palavras) ficou **PRONTO**: ficha aprovada e áudio gravado.
+   - Tema 1 (Interpretação): ficha pendente (material só de cursinho, abaixo do mínimo de afirmações vigentes). A esteira só tenta de novo depois de 3 dias.
+8. **Noite:**
+   - A etapa "esteira de conteúdo" vem depois da classificação e deixa 2h30 para a fila de sempre.
+   - "Relatório da esteira" no fim: temas prontos × total por concurso, chamadas × capacidade, descarte por motivo.
+   - Também roda à mão com `bb -- esteira relatorio`.
+
 RETOMAR AQUI (26/10/2026):
-1. Esteira de conteúdo (decisão do dono, 26/10), nesta ordem:
-   - meta por tema (≥ 15 novas + ficha + áudio da ficha) e o painel "Cobertura da trilha";
-   - ordem de fonte;
-   - C/E com no máximo 2–3 itens por questão;
-   - orçamento por modelo no lugar do `GERACAO_MAX_DIA`;
-   - amostra 1/10 nos fluxos validados;
-   - Código Penal por partes;
-   - depois dos 20 primeiros temas: E12 + E14 e congelar funcionalidades.
+1. Esteira de conteúdo: deixar a noite trabalhar; conferir de manhã o relatório da esteira e a aba Cobertura. Falta: livros CVM/BCB por capítulo. Quando os 20 primeiros temas baterem a meta: E12 + E14 e congelar funcionalidades.
 2. Retomar as cadeias que não rodaram: lotes da E10 (BNDES, Caixa, Banrisul, BASA, Cebraspe, FGV), amostra de 80 da E3, golden set do chat de 30, fichas.
 3. BLOQUEADO pelo dono: BNB 2024 item 17; gabarito TJ-SP 2023; gabarito CNU; cotas TJ-SP.

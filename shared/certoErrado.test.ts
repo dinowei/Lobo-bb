@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { corrigirCE, derivarItens, recomendarBranco } from "./certoErrado.js";
+import { corrigirCE, derivarItens, escolherItensDiversos, recomendarBranco } from "./certoErrado.js";
 
 test("nota C/E na Cebraspe: um erro anula um acerto; branco zero; anulado vale para todos", () => {
   const r = corrigirCE([
@@ -39,4 +39,20 @@ test("derivação: a certa vira C, as erradas viram E, com a explicação da alt
   assert.match(itens[1].base, /Pix[\s\S]*dias úteis/);
   assert.throws(() => derivarItens({ ...q, alternativas: [{ ...q.alternativas[0], explicacao: "" }, q.alternativas[1]] }), /regra 5/);
   assert.throws(() => derivarItens({ ...q, alternativas: q.alternativas.map((a) => ({ ...a, correta: true })) }), /exatamente uma/);
+});
+
+test("diversidade: no máximo 3 itens por questão — a certa + as erradas que testam pontos diferentes", () => {
+  const item = (letraOrigem: string, gabarito: "C" | "E", explicacao: string) => ({ letraOrigem, base: "", gabarito, explicacao });
+  const itens = [
+    item("A", "E", "A taxa Selic é definida pelo Copom em reuniões periódicas."),
+    item("B", "C", "O Pix funciona todos os dias, inclusive feriados, 24 horas."),
+    item("C", "E", "A taxa Selic é definida pelo Copom, não pelo Conselho Monetário."),
+    item("D", "E", "Cheque especial é crédito rotativo ligado à conta corrente."),
+    item("E", "E", "O FGC garante depósitos até o limite por CPF e instituição."),
+  ];
+  const escolhidos = escolherItensDiversos(itens);
+  assert.equal(escolhidos.length, 3);
+  assert.ok(escolhidos.some((i) => i.gabarito === "C"), "a certa sempre entra");
+  assert.ok(!(escolhidos.some((i) => i.letraOrigem === "A") && escolhidos.some((i) => i.letraOrigem === "C")), "duas erradas sobre o mesmo ponto (Selic/Copom) não entram juntas");
+  assert.equal(escolherItensDiversos(itens, 2).length, 2);
 });

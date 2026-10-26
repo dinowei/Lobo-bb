@@ -8,6 +8,7 @@
 // ============================================================
 import type OpenAI from "openai";
 import { ChamadaModelo, Config } from "./models.js";
+import { consumir, novoBalde, type Balde } from "../shared/orcamento.js";
 import { chatJSON, gerador, auditor, escritorPT, SemModeloDisponivel, desativados, ehFalhaDeInfra } from "./llm.js";
 import {
   correntesDoEnv,
@@ -104,6 +105,31 @@ async function atualizarDescansoPorTaxa(agora = Date.now()) {
   }
 }
 
+// Orçamento por modelo (decisão do dono, 26/10/2026): balde que enche no ritmo medido (Config
+// "capacidade_modelos", gravada por `bb -- capacidade --confirmar`); sem medida, MODELO_RPM_PADRAO.
+const baldes = new Map<string, Balde>();
+let capacidades: { lidasEm: number; rpm: Record<string, number> } = { lidasEm: 0, rpm: {} };
+async function rpmDe(modelo: string, agora = Date.now()) {
+  if (agora - capacidades.lidasEm > 10 * 60_000) {
+    try {
+      const v = (await Config.findById("capacidade_modelos").lean())?.valor as Record<string, { rpm: number }> | undefined;
+      capacidades = { lidasEm: agora, rpm: Object.fromEntries(Object.entries(v ?? {}).map(([m, x]) => [m, x.rpm])) };
+    } catch {
+      capacidades = { lidasEm: agora, rpm: capacidades.rpm };
+    }
+  }
+  return capacidades.rpm[modelo] || Number(process.env.MODELO_RPM_PADRAO) || 40;
+}
+// gasta uma ficha do modelo; devolve quanto falta esperar (0 = pode chamar agora)
+export async function reservarChamada(modelo: string, agora = Date.now()): Promise<number> {
+  const rpm = await rpmDe(modelo, agora);
+  const atual = baldes.get(modelo);
+  const r = consumir(atual && atual.porMinuto === rpm ? atual : novoBalde(rpm, agora), agora);
+  baldes.set(modelo, r.balde);
+  return r.ok ? 0 : r.esperaMs;
+}
+const dormir = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 const CLIENTE: Record<Funcao, () => OpenAI> = {
   gerador,
   tutor: gerador,
@@ -155,6 +181,16 @@ export async function chatJSONFuncao(
   for (const [i, modelo] of candidatos.entries()) {
     const temProximo = i < candidatos.length - 1;
     const reserva = modelo !== corrente[0];
+    // balde do modelo vazio: espera curta (≤ 15 s) ou passa a vez; o último da corrente espera (até 60 s)
+    const espera = await reservarChamada(modelo);
+    if (espera > 0) {
+      if (temProximo && espera > 15_000) {
+        console.info(`  ⌛ ${modelo}: orçamento do minuto usado; passando a vez`);
+        continue;
+      }
+      await dormir(Math.min(espera, 60_000));
+      await reservarChamada(modelo);
+    }
     try {
       const json = await chatJSON(client, modelo, system, user, temperature, maxTokens, {
         pensar: opcoes.pensar,
