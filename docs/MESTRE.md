@@ -2,6 +2,8 @@
 
 Este é o único documento de estado do projeto. As regras de código e o mapa estão no `CLAUDE.md`, e o dia a dia está em `docs/DIARIO.md`. O histórico dos docs antigos fica na tag git `docs-antes-da-limpeza`.
 
+**Último bom conhecido:** commit `0602669` (26/10/2026), com backup `backups/2026-10-26-0859` restaurado numa base temporária e conferido coleção por coleção (`bb -- backup-testar`). Para voltar a ele, ver `docs/RETOMAR.md`.
+
 Marcas usadas:
 - [CONFIRMADO]: medido no banco, código, teste ou commit, com data.
 - [HISTÓRICO]: fato antigo.

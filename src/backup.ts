@@ -10,7 +10,7 @@ import { Transform, Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { FUNCOES } from "./catalogo.js";
-import { Attempt, CartaoRevisao, Config, Question, Redacao, Report, ReviewState, RatingAluno, Topic, User } from "./models.js";
+import { Attempt, CartaoRevisao, Config, EspacoLo, Ficha, ItemCE, Question, Redacao, Report, RespostaCE, ReviewState, RatingAluno, Simulado, Topic, User } from "./models.js";
 
 const RETENCAO_PADRAO = 14;
 const specColecoes: { nome: string; filtro: Filter<any>; sanitizar?: (doc: Document) => Document | null }[] = [
@@ -25,6 +25,13 @@ const specColecoes: { nome: string; filtro: Filter<any>; sanitizar?: (doc: Docum
   { nome: Topic.collection.name, filtro: {} },
   { nome: CartaoRevisao.collection.name, filtro: {} },
   { nome: Report.collection.name, filtro: {} },
+  // fechamento v1.0 (26/10/2026): progresso que surgiu depois (Certo/Errado, simulados, posição dos áudios)
+  // e o conteúdo que a IA levou noites para aprovar (itens C/E, fichas)
+  { nome: RespostaCE.collection.name, filtro: {} },
+  { nome: Simulado.collection.name, filtro: {} },
+  { nome: EspacoLo.collection.name, filtro: {} },
+  { nome: ItemCE.collection.name, filtro: {} },
+  { nome: Ficha.collection.name, filtro: {} },
 ];
 
 export const COLECOES_BACKUP = specColecoes.map((c) => c.nome);
@@ -275,9 +282,11 @@ async function lerBackup(raizOriginal: string, caminhoOriginal: string): Promise
   const validacao = ManifestoZ.safeParse(brutoManifesto);
   if (!validacao.success) throw erroSeguro("Manifesto inválido; nenhum dado foi restaurado.");
   const manifesto = validacao.data;
+  // backup antigo (antes das coleções novas) continua restaurável: o que não está nele fica como está;
+  // coleção desconhecida ou repetida derruba tudo antes de qualquer escrita
   const nomes = manifesto.colecoes.map((c) => c.nome);
-  if (nomes.length !== specColecoes.length || new Set(nomes).size !== nomes.length || specColecoes.some((s) => !nomes.includes(s.nome))) {
-    throw erroSeguro("Manifesto não contém exatamente as coleções esperadas; nenhum dado foi restaurado.");
+  if (!nomes.length || new Set(nomes).size !== nomes.length || nomes.some((n) => !COLECOES_BACKUP.includes(n))) {
+    throw erroSeguro("Manifesto com coleções inesperadas; nenhum dado foi restaurado.");
   }
 
   const documentos = new Map<string, Document[]>();
@@ -328,7 +337,7 @@ async function aplicarDocumentos(db: Db, documentos: Map<string, Document[]>) {
   const contagemFinal: { nome: string; quantidade: number }[] = [];
   for (const spec of specColecoes) {
     const docs = documentos.get(spec.nome);
-    if (!docs) throw erroSeguro("Backup incompleto; restauração cancelada.");
+    if (!docs) continue; // coleção que não existia quando o backup foi feito: fica como está
     const colecao = db.collection(spec.nome);
     await colecao.deleteMany(spec.filtro);
     if (docs.length) await colecao.insertMany(docs, { ordered: true });
@@ -337,6 +346,27 @@ async function aplicarDocumentos(db: Db, documentos: Map<string, Document[]>) {
     contagemFinal.push({ nome: spec.nome, quantidade });
   }
   return contagemFinal;
+}
+
+// "Backup que nunca foi restaurado não conta como backup" (fechamento v1.0): restaura numa base TEMPORÁRIA,
+// compara a contagem de cada coleção com o manifesto e apaga a temporária (e o rollback vazio dela).
+export async function testarRestauracao(dbReal: Db, temporaria: Db, opcoes: BackupOptions = {}) {
+  if (temporaria.databaseName === dbReal.databaseName || !temporaria.databaseName.startsWith("restauro_teste")) {
+    throw erroSeguro("A base temporária precisa se chamar restauro_teste* e ser diferente da real.");
+  }
+  const backup = await criarBackupAtlas(dbReal, opcoes);
+  await temporaria.dropDatabase();
+  let resultado: Awaited<ReturnType<typeof restaurarBackupAtlas>> | null = null;
+  try {
+    resultado = await restaurarBackupAtlas(temporaria, backup.diretorio, opcoes);
+    const comparacao = backup.manifesto.colecoes.map((c) => ({
+      nome: c.nome, backup: c.quantidade, restaurado: resultado!.depois.find((d) => d.nome === c.nome)?.quantidade ?? -1,
+    }));
+    return { diretorio: backup.diretorio, comparacao, ok: comparacao.every((c) => c.backup === c.restaurado) };
+  } finally {
+    await temporaria.dropDatabase();
+    if (resultado) await rm(resultado.diretorioRollback, { recursive: true, force: true });
+  }
 }
 
 export async function restaurarBackupAtlas(db: Db, pasta: string, opcoes: BackupOptions = {}) {

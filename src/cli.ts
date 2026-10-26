@@ -84,7 +84,7 @@ import { relatorioDaNoite, META_BANCO } from "./adminTelas.js";
 import { rodarAuditor, rodarJuiz, rodarEscritor, escreverRelatorio } from "./benchmark.js";
 import { baixarFontes, type Registro } from "./baixar.js";
 import { telemetriaPendente } from "./telemetria.js";
-import { criarBackupAtlas, simularRestauracao, restaurarBackupAtlas } from "./backup.js";
+import { criarBackupAtlas, simularRestauracao, restaurarBackupAtlas, testarRestauracao } from "./backup.js";
 import { readFile, writeFile } from "node:fs/promises";
 
 const AJUDA = `
@@ -705,6 +705,26 @@ async function main() {
 
       case "status":
         return await mostrarStatus();
+
+      case "backup-testar": {
+        // backup + restauração numa base temporária + comparação por coleção + a temporária apagada.
+        // A temporária é um MongoDB local em memória: o usuário do Atlas não cria outras bases (e não gasta espaço)
+        const { MongoMemoryServer } = await import("mongodb-memory-server");
+        const { MongoClient } = await import("mongodb");
+        const memoria = await MongoMemoryServer.create({ instance: { launchTimeout: 90_000 } }); // PC de 4 GB: sobe devagar
+        const cliente = await MongoClient.connect(memoria.getUri());
+        let r: Awaited<ReturnType<typeof testarRestauracao>>;
+        try {
+          r = await testarRestauracao(mongoose.connection.db!, cliente.db("restauro_teste_lobo"));
+        } finally {
+          await cliente.close();
+          await memoria.stop();
+        }
+        console.table(r.comparacao);
+        console.log(r.ok ? `✔ Backup ${r.diretorio} restaurado numa base temporária com as mesmas contagens; temporária apagada.` : "✖ Contagens diferentes: o backup NÃO está bom.");
+        if (!r.ok) process.exitCode = 1;
+        return;
+      }
 
       case "backup": {
         const backup = await criarBackupAtlas(mongoose.connection.db!);

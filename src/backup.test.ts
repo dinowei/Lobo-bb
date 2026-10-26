@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdtemp, mkdir, readFile, readdir, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EJSON, ObjectId } from "bson";
 import type { Db, Document } from "mongodb";
 import { gunzipSync } from "node:zlib";
-import { Attempt, Config, RatingAluno, Redacao, ReviewState, User } from "./models.js";
+import { Attempt, Config, Ficha, RatingAluno, Redacao, ReviewState, User } from "./models.js";
 import { COLECOES_BACKUP, criarBackupAtlas, restaurarBackupAtlas, simularRestauracao } from "./backup.js";
 
 // as coleções do banco falso seguem a lista do backup (questões e tópicos entraram antes da migração BB + BACEN)
@@ -152,6 +152,30 @@ test("restauração exige dados validados, mostra contagens e preserva rollback 
     );
     assert.equal(alvo.documentos[0].email, "estado-antes-do-rollback@example.test");
     assert.equal(tentativas.documentos[0].xp.toString(), "99");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("backup antigo (sem as coleções novas) continua restaurável e não mexe no que não tem", async () => {
+  const root = await pastaTemporaria();
+  try {
+    const db = bancoComDados();
+    const backup = await criarBackupAtlas(db as unknown as Db, opcoes(root));
+    // simula um backup de antes do fechamento v1.0: o manifesto não tinha "fichas"
+    const caminho = join(backup.diretorio, "manifest.json");
+    const manifesto = JSON.parse(await readFile(caminho, "utf8")) as { colecoes: { nome: string }[] };
+    manifesto.colecoes = manifesto.colecoes.filter((c) => c.nome !== Ficha.collection.name);
+    await writeFile(caminho, JSON.stringify(manifesto));
+    const fichas = db.collection(Ficha.collection.name);
+    fichas.documentos = [{ _id: new ObjectId("6ad19950d40dcba3f8f47f40"), subtopico: "crase" }];
+    const r = await restaurarBackupAtlas(db as unknown as Db, backup.diretorio, opcoes(root, new Date("2026-10-26T03:00:00.000Z")));
+    assert.ok(!r.depois.some((c) => c.nome === Ficha.collection.name));
+    assert.equal(fichas.documentos.length, 1, "a coleção que o backup não tinha ficou como estava");
+    // coleção desconhecida no manifesto derruba tudo antes de escrever
+    manifesto.colecoes.push({ nome: "invasora" } as never);
+    await writeFile(caminho, JSON.stringify(manifesto));
+    await assert.rejects(restaurarBackupAtlas(db as unknown as Db, backup.diretorio, opcoes(root)), /inesperadas|inválido/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
