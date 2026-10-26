@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit && npm --prefix web exec tsc -- --noEmit",
     "lighthouse": "lighthouse http://localhost:5181/#painel --form-factor=mobile --only-categories=performance,accessibility,best-practices --chrome-flags=--headless=new --view",
     "test": "tsx --test \"shared/**/*.test.ts\" \"src/**/*.test.ts\"",
+    "smoke": "tsx scripts/smoke.ts",
     "setup": "npm install && npm --prefix web install"
   },
   "keywords": [],

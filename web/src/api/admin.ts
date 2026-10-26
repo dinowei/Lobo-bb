@@ -76,6 +76,10 @@ export type CoberturaDTO = {
 };
 export const adminCobertura = { ler: () => req<CoberturaDTO>("/cobertura") };
 
+// Erros do servidor (fechamento v1.0): os últimos 50, sem dados sensíveis
+export type ErroServidorDTO = { em: string; metodo: string; rota: string; status: number; mensagem: string; origem: string };
+export const adminErros = { ler: () => req<ErroServidorDTO[]>("/erros") };
+
 export const adminFiguras = {
   listar: () => req<QuestaoComFigurasDTO[]>("/figuras"),
   amostras: () => req<AmostraFiguraDTO[]>("/figuras/amostras"),

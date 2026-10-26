@@ -15,19 +15,39 @@ import type {
   StatusTarefa,
   TarefaDTO,
 } from "../../../shared/tipos";
-import { adminCobertura, adminJanelas, adminTelas, type CoberturaDTO } from "../api/admin";
+import { adminCobertura, adminErros, adminJanelas, adminTelas, type CoberturaDTO } from "../api/admin";
+import { noturnoAtrasado, type SaudeDTO } from "../../../shared/saude";
 import { Markdown } from "../componentes/Markdown";
 import { useApp } from "../estado";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
 import { BANCAS, SIGLA_CONCURSO, type IdBanca, type IdConcurso } from "../../../shared/concursos";
 
-type Aba = "cobertura" | "ia" | "fila" | "janelas" | "benchmark" | "pendencias" | "concursos" | "convites" | "contas";
+// versão no ar e o selo discreto "noturno atrasado" (último noturno OK há mais de 36 h), do /api/saude
+function SeloSaude() {
+  const [s, setS] = useState<SaudeDTO | null>(null);
+  useEffect(() => {
+    fetch("/api/saude").then((r) => r.json()).then(setS).catch(() => undefined);
+  }, []);
+  if (!s) return null;
+  const atrasado = noturnoAtrasado(s.ultimoNoturnoOk);
+  return (
+    <p className="selos-saude" data-testid="selo-saude">
+      <span className="selo">versão {s.versao}</span>
+      {atrasado ? (
+        <span className="selo noturno-atrasado" data-testid="noturno-atrasado">noturno atrasado{s.ultimoNoturnoOk ? ` · último OK ${new Date(s.ultimoNoturnoOk).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}` : " · nunca rodou"}</span>
+      ) : <span className="selo">último noturno {new Date(s.ultimoNoturnoOk!).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>}
+    </p>
+  );
+}
+
+type Aba = "cobertura" | "ia" | "fila" | "janelas" | "erros" | "benchmark" | "pendencias" | "concursos" | "convites" | "contas";
 const ABAS: { id: Aba; rotulo: string }[] = [
   { id: "cobertura", rotulo: "Cobertura" },
   { id: "ia", rotulo: "IA" },
   { id: "fila", rotulo: "Fila" },
   { id: "janelas", rotulo: "Janelas" },
+  { id: "erros", rotulo: "Erros" },
   { id: "benchmark", rotulo: "Benchmark" },
   { id: "pendencias", rotulo: "Pendências" },
   { id: "concursos", rotulo: "Concursos" },
@@ -124,6 +144,7 @@ export function Admin() {
         <div>
           <h1>Admin</h1>
           <p>Modelos, fila do noturno, benchmark e o que espera a sua decisão.</p>
+          <SeloSaude />
         </div>
       </div>
       <div className="abas" role="tablist" aria-label="Seções do Admin">
@@ -154,6 +175,7 @@ export function Admin() {
         {aba === "pendencias" && <AbaPendencias irPara={escolher} />}
         {aba === "concursos" && <AbaConcursos />}
         {aba === "janelas" && <AbaJanelas />}
+        {aba === "erros" && <AbaErros />}
         {aba === "convites" && <AbaConvites />}
         {aba === "contas" && <AbaContas />}
       </section>
@@ -364,6 +386,30 @@ function AbaCobertura() {
             </li>
           ))}
         </ul>
+      </div>
+    </Estado>
+  );
+}
+
+// Erros do servidor: os últimos 50, já sem dados sensíveis (o servidor limpa antes de guardar)
+function AbaErros() {
+  const { dados, erro, recarregar } = useDados(adminErros.ler);
+  return (
+    <Estado erro={erro} carregando={!dados} tentar={recarregar}>
+      <div className="secao" data-testid="admin-erros">
+        <div className="linha-titulo"><h2>Erros do servidor</h2><button className="botao-linha" onClick={recarregar}>Atualizar</button></div>
+        <p className="sub" style={{ marginTop: 0 }}>Os últimos 50, do mais novo para o mais antigo. Sem e-mail, senha, chave ou endereço do banco: o servidor limpa antes de guardar.</p>
+        {!dados?.length ? <p className="sub">Nenhum erro registrado.</p> : (
+          <ul className="lista-erros">
+            {dados.map((e, i) => (
+              <li key={`${e.em}-${i}`}>
+                <div><span className="selo">{e.status}</span> <b>{e.metodo} {e.rota}</b> <span className="sub">{quando(e.em)}</span></div>
+                <div className="mensagem-erro">{e.mensagem}</div>
+                {e.origem && <small className="sub">{e.origem}</small>}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </Estado>
   );

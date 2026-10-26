@@ -27,6 +27,11 @@ import { ajustarConcurso, carregarConfigConcursos, historicoConcursos, infoConcu
 import { painelJanelas, salvarJanelas } from "./janelaB.js";
 import { ID_AUDIO } from "./espacoLo.js";
 import { coberturaTrilha } from "./cobertura.js";
+import { Relatorio } from "./models.js";
+import { guardarErro, registroDoErro, ultimosErros } from "./errosServidor.js";
+import { desfazerSmoke, responderSmoke } from "./smoke.js";
+import { execFileSync } from "node:child_process";
+import type { SaudeDTO } from "../shared/saude.js";
 import type { IdConcurso } from "../shared/concursos.js";
 import { DISCIPLINAS, LETRAS, MOTIVOS_ERRO, type Confianca, type Disciplina, type Letra, type Modo, type MotivoContestacao, type MotivoErro, type NotaCartao } from "../shared/tipos.js";
 
@@ -63,9 +68,31 @@ const texto = (v: unknown) => (typeof v === "string" && v ? v : undefined);
 const ehLetra = (v: unknown): v is Letra => (LETRAS as readonly unknown[]).includes(v);
 
 // health check do provedor: 503 enquanto o banco não está conectado
-app.get("/api/saude", (_req, res) => {
+// versão = commit: o Render informa RENDER_GIT_COMMIT; no PC, o git
+const VERSAO = (() => {
+  if (process.env.RENDER_GIT_COMMIT) return process.env.RENDER_GIT_COMMIT.slice(0, 7);
+  try {
+    return execFileSync("git", ["rev-parse", "--short", "HEAD"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  } catch {
+    return "desconhecida";
+  }
+})();
+
+// fechamento v1.0: banco ok, versão (commit) e hora do último noturno OK (relatório da janela A);
+// o health check do Render usa esta rota (render.yaml)
+app.get("/api/saude", async (_req, res) => {
   const ok = mongoose.connection.readyState === 1;
-  res.status(ok ? 200 : 503).json({ ok });
+  let ultimoNoturnoOk: string | null = null;
+  if (ok) {
+    try {
+      const r = await Relatorio.findOne({ janela: { $ne: "B" } }).sort({ fim: -1 }).select("fim").lean();
+      ultimoNoturnoOk = r ? (r.fim as Date).toISOString() : null;
+    } catch {
+      /* saúde nunca falha por causa do relatório */
+    }
+  }
+  const corpo: SaudeDTO = { ok, banco: ok, versao: VERSAO, ultimoNoturnoOk };
+  res.status(ok ? 200 : 503).json(corpo);
 });
 
 app.get("/api/topicos", rota(async (_req, res) => res.json(await apiServidor.topicos())));
@@ -145,6 +172,8 @@ app.post("/api/ce/responder", rota(async (req, res) => {
 }));
 // E8: Janelas (A = noite, B = recuperação): horário e teto da B, relatórios com as etapas
 app.get("/api/admin/janelas", rota(async (_req, res) => res.json(await painelJanelas())));
+app.post("/api/smoke/desfazer", rota(async (_req, res) => res.json(await desfazerSmoke())));
+app.get("/api/admin/erros", rota(async (_req, res) => res.json(await ultimosErros(50))));
 // esteira de conteúdo: meta por tema (≥ 15 novas + ficha + áudio da ficha) e o tema em que a esteira trabalha
 app.get("/api/admin/cobertura", rota(async (_req, res) => res.json(await coberturaTrilha())));
 app.post("/api/admin/janelas", rota(async (req, res) => {
@@ -190,8 +219,10 @@ app.post(
     const { questaoId, resposta, confianca, tempoSeg, modo } = req.body ?? {};
     if (!texto(questaoId) || !ehLetra(resposta) || ![1, 2, 3].includes(confianca))
       return res.status(400).json({ erro: "Envie questaoId, resposta (A–E) e confianca (1–3)." });
+    // teste de fumaça: guarda o estado de antes para desfazer só esta tentativa (POST /api/smoke/desfazer)
+    const responder = req.get("x-smoke") === "1" ? responderSmoke : apiServidor.responder;
     res.json(
-      await apiServidor.responder({
+      await responder({
         questaoId,
         resposta,
         confianca: confianca as Confianca,
@@ -444,9 +475,11 @@ if (existsSync(site)) {
   });
 }
 
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error(err);
-  res.status(500).json({ erro: err.message });
+app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+  // log estruturado sem dados sensíveis; os últimos vão para Admin → Erros
+  const r = registroDoErro(err, req);
+  void guardarErro(r);
+  res.status(500).json({ erro: r.mensagem });
 });
 
 // Escuta em process.env.PORT LOGO na partida (o Render procura a porta aberta nos primeiros segundos) e só

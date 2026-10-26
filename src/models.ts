@@ -298,6 +298,8 @@ const AttemptSchema = new Schema(
     // em que concurso/banca a resposta foi dada (Elo e Desempenho por concurso); antigas = BB/Cesgranrio
     concurso: { type: String, enum: IDS_CONCURSO },
     banca: String,
+    // teste de fumaça (npm run smoke): o estado de antes, para desfazer só esta tentativa (src/smoke.ts)
+    smoke: Schema.Types.Mixed,
   },
   { timestamps: true }
 );
@@ -457,6 +459,14 @@ const AudioSchema = new Schema(
 AudioSchema.index({ hash: 1, voz: 1 }, { unique: true });
 AudioSchema.index({ ouvidas: 1, ultimaVez: 1 });
 export const Audio = model("Audio", AudioSchema, "audios");
+
+// Erros do servidor (fechamento v1.0): os últimos, já sem dados sensíveis (src/errosServidor.ts).
+// Coleção limitada: o Mongo descarta os mais antigos sozinho (no máximo 200 guardados; a tela mostra 50).
+const ErroServidorSchema = new Schema(
+  { em: String, metodo: String, rota: String, status: Number, mensagem: String, origem: String },
+  { capped: { size: 512 * 1024, max: 200 }, versionKey: false }
+);
+export const ErroServidor = model("ErroServidor", ErroServidorSchema, "erros_servidor");
 
 // Espaço da Lo, por aluno: posição de cada áudio ("continuar de onde parei", ouvido/não ouvido) e a base dos
 // recados (selos e hora da última visita). Chave de `audios` = id do áudio (shared/espacoLo.ts, só [a-z0-9_-]).
