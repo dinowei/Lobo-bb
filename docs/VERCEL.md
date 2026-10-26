@@ -7,8 +7,9 @@
 - `web/vercel.json`:
   - rewrite `/api/*` → `https://lobo-binho.onrender.com/api/*`: o cookie de login fica no domínio do site (mesmo site, sem CORS);
   - volta para `index.html` nas rotas do app;
-  - cabeçalhos de segurança: `nosniff`, `DENY` para iframe, `Referrer-Policy`, `Permissions-Policy` (microfone só no próprio site) e HSTS;
-  - cache: `/assets/*` por 1 ano (`immutable`; o nome tem hash). `index.html` e `sw.js` com `no-cache`.
+  - cabeçalhos de segurança: `nosniff`, `DENY` para iframe, `Referrer-Policy`, `Permissions-Policy` (microfone só no próprio site), HSTS e a CSP, que é a mesma do Express (`src/server.ts`). Prova: `scripts/checar-csp.ts` (build de produção com os cabeçalhos injetados: 0 violações);
+  - cache: `/assets/*` por 1 ano (`immutable`; o nome tem hash). `index.html` e `sw.js` com `no-cache`;
+  - versões travadas: Node `22.x` em `engines` (raiz e `web/`), lockfiles commitados e `installCommand: npm ci`.
 - PWA com versão: o build grava a versão (`__VERSAO__`) e registra `/sw.js?v=<versão>`. O service worker usa um cache por versão e apaga os antigos ao ativar, então **deploy novo nunca serve JS velho**.
 - Abertura instantânea (`VITE_SERVIDOR_REMOTO=1`):
   - **com um painel já guardado neste aparelho**, o site abre na hora com ele e o aviso "Acordando o servidor". Ele não cai no modo demo e, quando o Render responde (até ~1 min), entra de verdade;
