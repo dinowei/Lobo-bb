@@ -9,7 +9,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
-import { Ficha } from "./models.js";
+import { DISCIPLINAS_COM_FONTE_OBRIGATORIA, Ficha, Topic } from "./models.js";
 import { chatJSONFuncao } from "./corrente.js";
 import { validarOuReparar } from "./llm.js";
 import { paginasIndexadas } from "./acervo.js";
@@ -62,10 +62,17 @@ function materialDoTema(subtopico: string): MaterialTema[] {
   return t.temas[subtopico]?.materiais ?? [];
 }
 
+// tema normativo = a regra vem de lei, resolução ou edital (Bancários, Atualidades, Vendas/CDC, Direito, CVM);
+// em Português, Matemática ou Informática a "regra" é da gramática/técnica e não tem vigência
+export function temaNormativo(disciplinas: string[]): boolean {
+  return disciplinas.some((d) => (DISCIPLINAS_COM_FONTE_OBRIGATORIA as readonly string[]).includes(d) || d.startsWith("direito_") || d === "mercado_valores_mobiliarios" || d.includes("legislacao") || d.includes("normas"));
+}
+
 // regra normativa só é "vigente" quando vem de lei do acervo (texto que o dono guardou como atual);
-// de cursinho fica sem vigência confirmada (pendente) — a lei é a autoridade
-function vigencia(classe: Afirmacao["classe"], tipoCamada: "A" | "B" | "C"): boolean | null {
-  if (classe !== "regra_normativa") return true;
+// de cursinho fica sem vigência confirmada (pendente) — a lei é a autoridade. Só vale para tema normativo
+// (fechamento v1.0: a ficha de Interpretação caía porque regra de gramática de cursinho virava "pendente").
+export function vigencia(classe: Afirmacao["classe"], tipoCamada: "A" | "B" | "C", normativa = true): boolean | null {
+  if (classe !== "regra_normativa" || !normativa) return true;
   return tipoCamada === "A" ? true : null;
 }
 
@@ -73,6 +80,7 @@ export async function gerarFicha(subtopico: string, log: (s: string) => void = c
   const s = SUBTOPICO_POR_ID.get(subtopico);
   if (!s) throw new Error(`Subtópico desconhecido: ${subtopico}`);
   const material = materialDoTema(subtopico);
+  const normativa = temaNormativo((await Topic.find({ assunto: { $in: s.topicos } }).select("disciplina").lean()).map((t) => t.disciplina));
   const trechos = material.flatMap((m) => {
     const [de, ate] = m.paginas.split(/[–-]/).map(Number);
     const pags = paginasIndexadas(m.arquivo, de, Math.min(ate || de, de + 3)); // até 4 páginas por trecho
@@ -105,7 +113,7 @@ export async function gerarFicha(subtopico: string, log: (s: string) => void = c
     const pagina = t?.porPagina.find((p) => trechoNoTexto(a.trechoLiteral, p.texto))?.pagina ?? t?.pagina ?? 0;
     const af: Afirmacao = {
       afirmacao: a.afirmacao, classe: a.classe, fonteId: t?.arquivo ?? null, pagina, trechoLiteral: a.trechoLiteral,
-      vigente: t ? vigencia(a.classe, t.camada) : null, confianca: "media", conflito: false, origem: t?.camada === "C" ? "didatica" : "oficial", status: "pendente",
+      vigente: t ? vigencia(a.classe, t.camada, normativa) : null, confianca: "media", conflito: false, origem: t?.camada === "C" ? "didatica" : "oficial", status: "pendente",
     };
     return { af, achado, camada: t?.camada ?? "C", decisao: decidirAfirmacao(af, achado) };
   });
@@ -128,7 +136,7 @@ export async function gerarFicha(subtopico: string, log: (s: string) => void = c
         if (!v?.sustentada) return [];
         if (v.classeCerta) return [c];
         if (!v.classeSugerida) return [];
-        const af = { ...c.af, classe: v.classeSugerida, vigente: vigencia(v.classeSugerida, c.camada as "A" | "B" | "C") };
+        const af = { ...c.af, classe: v.classeSugerida, vigente: vigencia(v.classeSugerida, c.camada as "A" | "B" | "C", normativa) };
         return [{ ...c, af, decisao: decidirAfirmacao(af, c.achado) }];
       });
       contratoAuditor = {
