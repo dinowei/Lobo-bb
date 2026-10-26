@@ -10,7 +10,7 @@ const memoria = await MongoMemoryServer.create({ instance: { launchTimeout: 90_0
 const uri = memoria.getUri("smoke-local");
 await mongoose.connect(uri);
 const { Topic, Question } = await import("../src/models.js");
-const topico = await Topic.create({ disciplina: "lingua_portuguesa", assunto: "Crase", ativo: true, peso: 5 });
+const topico = await Topic.create({ disciplina: "lingua_portuguesa", assunto: "Crase", ativo: true });
 await Question.create({
   topicId: topico._id, origem: "gerada", dificuldade: 3, enunciado: "O acento grave está correto em:", gabarito: "B", explicacaoGeral: "g", status: "aprovada", subtopico: "crase",
   alternativas: ["A", "B", "C", "D", "E"].map((l) => ({ letra: l, texto: `frase ${l}`, correta: l === "B", explicacao: `porque ${l}` })),
