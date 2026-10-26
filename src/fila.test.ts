@@ -1,6 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { comandoBloqueadoNaJanelaNoturna, travaOrfa, VENCE_EM_MS } from "./fila.js";
+import { comandoBloqueadoNaJanelaNoturna, outroNoturnoRodando, travaOrfa, VENCE_EM_MS } from "./fila.js";
+
+test("trava de concorrência: com outro noturno vivo, o segundo sai; trava de outro job ou órfã não conta", () => {
+  const agora = Date.now();
+  const vivo = () => true;
+  const trava = (comando: string, pid = 10, desde = new Date(agora - 60_000)) => ({ _id: "job_de_ia", pid, host: "pc", comando, desde });
+  assert.equal(outroNoturnoRodando(trava("bb noturno --ate 05:25"), agora, "pc", vivo), true);
+  assert.equal(outroNoturnoRodando(trava("bb esteira --n 3"), agora, "pc", vivo), false, "outro job: o noturno espera na fila");
+  assert.equal(outroNoturnoRodando(trava("bb noturno"), agora, "pc", () => false), false, "processo morto: trava órfã");
+  assert.equal(outroNoturnoRodando(trava("bb noturno", 10, new Date(agora - VENCE_EM_MS - 1)), agora, "pc", vivo), false, "trava vencida");
+  assert.equal(outroNoturnoRodando(null, agora, "pc", vivo), false);
+});
 
 test("trava de IA com dono e validade: PID morto nesta máquina ou mais de 6 h = órfã; viva e recente fica", () => {
   const agora = Date.UTC(2026, 9, 22, 12);

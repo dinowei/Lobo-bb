@@ -19,6 +19,15 @@ export function travaOrfa(atual: { pid: number; host: string; desde: Date | stri
   return null;
 }
 
+// Fechamento v1.0: dois noturnos ao mesmo tempo → o segundo sai sem fazer nada (não espera na fila)
+const ehNoturno = (comando: string) => /^(?:bb\s+)?noturno(?:\s|$)/i.test(comando.trim());
+export function outroNoturnoRodando(atual: Trava | null, agora: number, host: string, vivo: (pid: number) => boolean): boolean {
+  return !!atual && ehNoturno(atual.comando) && !travaOrfa(atual, agora, host, vivo);
+}
+export async function noturnoJaRodando(): Promise<boolean> {
+  return outroNoturnoRodando(await colecao().findOne({ _id: ID }), Date.now(), hostname(), processoVivo);
+}
+
 const colecao = () => mongoose.connection.db!.collection<Trava>("fila_jobs");
 
 function minutosEmBrasilia(agora: Date): number {

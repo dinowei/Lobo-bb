@@ -16,7 +16,7 @@ import {
 } from "./catalogo.js";
 import { classificarErro, percentil, agregar } from "./telemetria.js";
 import { esperaAntesDe, extrasDeRaciocinio } from "./llm.js";
-import { anotarResultado, correnteAtiva, foraAgora } from "./corrente.js";
+import { anotarResultado, correnteAtiva, foraAgora, passouDoTeto, tetoGlobalDia } from "./corrente.js";
 import { destinoDaTarefa } from "./noturno.js";
 
 const LIGHTNING = "nvidia/nemotron-3.5-lightning-30b-a3b";
@@ -155,16 +155,23 @@ test("parâmetro de raciocínio vem do catálogo de cada modelo (sondagem de 17/
   assert.deepEqual(extrasDeRaciocinio("fora/do-catalogo", true, 500), { reasoning_budget: 500 }); // comportamento antigo
 });
 
-test("descanso: 3 falhas de infraestrutura seguidas tiram o modelo por 10 min; sucesso limpa", () => {
+test("disjuntor: 5 falhas seguidas do mesmo modelo tiram ele por 30 min e registram; sucesso limpa", () => {
   const t0 = 1_000_000;
-  anotarResultado("x/teste", false, t0);
-  anotarResultado("x/teste", false, t0);
-  assert.ok(!foraAgora(t0).has("x/teste"));
-  anotarResultado("x/teste", false, t0);
+  for (let i = 0; i < 4; i++) assert.equal(anotarResultado("x/teste", false, t0), false);
+  assert.ok(!foraAgora(t0).has("x/teste"), "4 falhas ainda não abrem o disjuntor");
+  assert.equal(anotarResultado("x/teste", false, t0), true, "a 5ª abre (e o chamador registra)");
   assert.ok(foraAgora(t0 + 60_000).has("x/teste"));
-  assert.ok(!foraAgora(t0 + 11 * 60_000).has("x/teste"));
+  assert.ok(foraAgora(t0 + 29 * 60_000).has("x/teste"));
+  assert.ok(!foraAgora(t0 + 31 * 60_000).has("x/teste"));
   anotarResultado("x/teste", true, t0);
   assert.ok(!foraAgora(t0).has("x/teste"));
+});
+
+test("teto diário global de chamadas: padrão 300; bate e para", () => {
+  assert.equal(tetoGlobalDia(), Number(process.env.IA_TETO_DIA) || 300);
+  assert.equal(passouDoTeto(299, 300), false);
+  assert.equal(passouDoTeto(300, 300), true);
+  assert.equal(passouDoTeto(10_000, 0), false, "0 = sem teto");
 });
 
 test("noturno: infraestrutura volta para a fila (10, 30, 90 min) até 3 vezes; qualidade descarta", () => {

@@ -43,21 +43,48 @@ export async function correnteAtiva(
   return valor;
 }
 
-// ---------- descanso: 3 falhas de infraestrutura seguidas → 10 min fora da corrente ----------
-const FALHAS_PARA_DESCANSO = 3;
-const DESCANSO_MS = 10 * 60_000;
+// ---------- disjuntor (fechamento v1.0): 5 falhas de infraestrutura seguidas → 30 min fora e registro ----------
+const FALHAS_PARA_DESCANSO = 5;
+const DESCANSO_MS = 30 * 60_000;
 const falhasSeguidas = new Map<string, number>();
 const descansaAte = new Map<string, number>();
-export function anotarResultado(modelo: string, ok: boolean, agora = Date.now()) {
+// devolve true quando o disjuntor ABRE (o chamador registra)
+export function anotarResultado(modelo: string, ok: boolean, agora = Date.now()): boolean {
   if (ok) {
     falhasSeguidas.delete(modelo);
     descansaAte.delete(modelo);
-    return;
+    return false;
   }
   const n = (falhasSeguidas.get(modelo) ?? 0) + 1;
-  if (n < FALHAS_PARA_DESCANSO) return void falhasSeguidas.set(modelo, n);
+  if (n < FALHAS_PARA_DESCANSO) {
+    falhasSeguidas.set(modelo, n);
+    return false;
+  }
   falhasSeguidas.delete(modelo);
   descansaAte.set(modelo, agora + DESCANSO_MS);
+  return true;
+}
+
+// ---------- teto diário global de chamadas (fechamento v1.0): padrão 300, IA_TETO_DIA (0 = sem teto) ----------
+export const tetoGlobalDia = () => (process.env.IA_TETO_DIA !== undefined ? Number(process.env.IA_TETO_DIA) : 300);
+export const passouDoTeto = (usadas: number, teto: number) => teto > 0 && usadas >= teto;
+let contagemDia = { dia: "", usadas: 0, avisou: false };
+async function contarChamadaDoDia(): Promise<boolean> {
+  const dia = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+  if (contagemDia.dia !== dia) {
+    // começo do dia (ou do processo): parte do que a telemetria já registrou hoje (sem voz e embeddings)
+    const desde = new Date(`${dia}T00:00:00-03:00`);
+    let usadas = 0;
+    try { usadas = await ChamadaModelo.countDocuments({ em: { $gte: desde }, funcao: { $nin: ["voz", "embed", "benchmark"] } }); } catch { /* sem telemetria: conta do zero */ }
+    contagemDia = { dia, usadas, avisou: false };
+  }
+  if (passouDoTeto(contagemDia.usadas, tetoGlobalDia())) {
+    if (!contagemDia.avisou) console.warn(JSON.stringify({ nivel: "aviso", evento: "teto_diario_global", usadas: contagemDia.usadas, teto: tetoGlobalDia() }));
+    contagemDia.avisou = true;
+    return false;
+  }
+  contagemDia.usadas++;
+  return true;
 }
 export function foraAgora(agora = Date.now()): Set<string> {
   const fora = new Set(desativados);
@@ -176,6 +203,7 @@ export async function chatJSONFuncao(
     throw new SemModeloDisponivel(
       `nenhum modelo elegível para ${funcao} (corrente: ${corrente.join(", ") || "vazia"}${excluirFamilias.length ? `; família proibida: ${excluirFamilias.join(", ")}` : ""})`
     );
+  if (!(await contarChamadaDoDia())) throw new SemModeloDisponivel(`teto diário global de ${tetoGlobalDia()} chamadas de IA atingido (IA_TETO_DIA)`);
   const client = CLIENTE[funcao]();
   let ultimo: unknown;
   for (const [i, modelo] of candidatos.entries()) {
@@ -206,7 +234,11 @@ export async function chatJSONFuncao(
       return { json, modelo, familia: familiaDe(modelo), client, reserva };
     } catch (e) {
       ultimo = e;
-      if (ehFalhaDeInfra(e)) anotarResultado(modelo, false);
+      if (ehFalhaDeInfra(e) && anotarResultado(modelo, false)) {
+        // disjuntor aberto: registra (log estruturado + Admin → Erros)
+        console.warn(JSON.stringify({ nivel: "aviso", evento: "disjuntor", modelo, pausaMin: 30 }));
+        void import("./errosServidor.js").then(({ guardarErro }) => guardarErro({ em: new Date().toISOString(), metodo: "IA", rota: modelo, status: 503, mensagem: `disjuntor: 5 falhas seguidas de ${modelo}; fora da corrente por 30 min`, origem: "src/corrente.ts" })).catch(() => undefined);
+      }
       if (temProximo) console.warn(`  ↪ ${modelo} falhou (${String(e).replace(/\s+/g, " ").slice(0, 100)}); tentando ${candidatos[i + 1]}`);
     }
   }

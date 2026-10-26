@@ -44,7 +44,7 @@ function perguntar(texto: string, oculto = false): Promise<string> {
 }
 import { join } from "node:path";
 import { listarModelos } from "./llm.js";
-import { limparTravaOrfa, naFila } from "./fila.js";
+import { limparTravaOrfa, naFila, noturnoJaRodando } from "./fila.js";
 import { extrairFigurasOficiais } from "./figuras.js";
 import { indexarQuestoes, calibrar } from "./similaridade.js";
 import { carregarCatalogo, CORRENTE_DEFINITIVA } from "./catalogo.js";
@@ -765,6 +765,11 @@ async function main() {
           ate = new Date();
           ate.setHours(h, m || 0, 0, 0);
           if (+ate <= Date.now()) ate.setDate(ate.getDate() + 1);
+        }
+        // trava de concorrência: outro noturno vivo → este sai sem fazer nada
+        if (await noturnoJaRodando()) {
+          console.log("↷ Outro noturno já está rodando; este sai sem fazer nada.");
+          return;
         }
         return await naFila(rotulo, async () => {
           const inicio = new Date();
