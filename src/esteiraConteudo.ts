@@ -6,6 +6,7 @@
 // ============================================================
 import { Ficha, Geracao, Topic } from "./models.js";
 import { usoDeHoje } from "./capacidade.js";
+import { usoBanco } from "./usoBanco.js";
 import { coberturaTrilha, textoFichaDoTema } from "./cobertura.js";
 import { derivarCE } from "./certoErrado.js";
 import { gerarQuestao } from "./pipeline.js";
@@ -76,16 +77,21 @@ export async function rodarEsteiraConteudo(opts: { ate?: Date; maxTemas?: number
 export async function relatorioDiario() {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-  const [cob, uso, descartes] = await Promise.all([
+  const [cob, uso, descartes, banco] = await Promise.all([
     coberturaTrilha(),
     usoDeHoje(),
     Geracao.aggregate<{ _id: string; n: number }>([{ $match: { em: { $gte: hoje }, resultado: { $ne: "aprovada" } } }, { $group: { _id: { $ifNull: ["$motivo", "$resultado"] }, n: { $sum: 1 } } }, { $sort: { n: -1 } }]),
+    usoBanco().catch(() => null),
   ]);
+  // Atlas: alerta no relatório acima de 70% (a escrita para em 80%)
+  const atlas = banco ? `${Math.round(banco.fracao * 100)}% (${Math.round(banco.usadoMB)} de ${banco.limiteMB} MB)${atlasEmAlerta(banco.fracao) ? " ⚠ ACIMA DE 70%" : ""}` : "sem medida";
   const temas = cob.resumo.map((r) => `${r.concurso === "geral" ? "Geral" : r.concurso.toUpperCase()} ${r.prontos}/${r.total}`).join(" · ");
   const chamadas = uso.map((u) => `${u.modelo.split("/").pop()} ${u.usadas}/${u.capacidade}`).join(" · ") || "nenhuma";
   const motivos = descartes.slice(0, 6).map((d) => `${d._id} ${d.n}`).join(" · ") || "nenhum";
-  return { temas, chamadas, motivos, texto: `temas prontos: ${temas} | chamadas usadas/capacidade: ${chamadas} | descartes: ${motivos}` };
+  return { temas, chamadas, motivos, atlas, texto: `temas prontos: ${temas} | chamadas usadas/capacidade: ${chamadas} | descartes: ${motivos} | Atlas: ${atlas}` };
 }
+export const LIMITE_ALERTA_ATLAS = 0.7;
+export const atlasEmAlerta = (fracao: number) => fracao > LIMITE_ALERTA_ATLAS;
 
 // geração só para completar: Crase pela esteira de Português; os demais pelo pipeline de sempre, no tipo do tema
 async function gerarParaOTema(subtopico: string, faltam: number, noturno: boolean, log: (s: string) => void): Promise<string> {

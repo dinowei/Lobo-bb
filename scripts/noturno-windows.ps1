@@ -17,6 +17,10 @@ try {
   New-Item -ItemType Directory -Path $logDir -Force | Out-Null
   $logFile = Join-Path $logDir ("{0}.log" -f (Get-BrasiliaNow).ToString("yyyy-MM-dd"))
   [System.IO.File]::AppendAllText($logFile, "", $utf8NoBom)
+  # rotação (fechamento v1.0): só os logs dos últimos 14 dias ficam (os backups já mantêm 14 dias)
+  Get-ChildItem -Path $logDir -Filter "????-??-??.log" -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-14) } |
+    Remove-Item -Force -ErrorAction SilentlyContinue
 } catch {
   $logFile = Join-Path $env:TEMP ("lobo-noturno-{0}.log" -f (Get-BrasiliaNow).ToString("yyyy-MM-dd"))
 }
