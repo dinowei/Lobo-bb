@@ -48,11 +48,12 @@ export interface Ajustes {
   vozLoManual: boolean; // distingue preferência explícita do padrão herdado
   tema: "escuro" | "claro" | "sistema"; // aparência (padrão escuro, como sempre)
   fonteTitulo: "sora" | "outfit"; // fonte dos títulos em avaliação pelo dono (Inter segue no texto)
+  estudando: string; // v1.1: tema escolhido à mão (subtópico); vazio = o Painel segue o próximo da Grade
 }
 const AJUSTES_PADRAO: Ajustes = {
   nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70, linhasRedacaoMax: 30, cicloFoco: "25/5",
   horasPorDia: 2, diasSemana: [1, 2, 3, 4, 5, 6], inicioPlano: "", velocidadeVoz: 1, vozLo: "Louise", vozLoManual: false,
-  tema: "escuro", fonteTitulo: "sora",
+  tema: "escuro", fonteTitulo: "sora", estudando: "",
 };
 const CHAVE_AJUSTES = "lobo-ajustes";
 function lerAjustes(): Ajustes {

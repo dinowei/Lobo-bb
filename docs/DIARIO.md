@@ -511,3 +511,7 @@ RETOMAR AQUI (26/10/2026): ver `docs/RETOMAR.md` (versão v1.0-estudo congelada)
   - Tela Grade (grupo Binho): aba por matéria, status, % nas últimas, próximo passo, subtemas do edital, "próximo da sequência" em destaque; lentes de concurso filtram.
   - Plano segue a grade (`filaDaGrade` + item `tema`): matéria por matéria, tema por tema; sem a grade carregada, o rodízio antigo continua igual (nada apagado; o plano é calculado, não guardado).
   - e2e-trilha com Grade e Plano; prints em `docs/telas/v1.1/grade-{desktop,celular}.png`.
+- Item 2, ajustes do dono (27/10):
+  - "Concluído provisório": tema com < 15 aprovadas que bate a meta (≥ 70% em todas, mínimo 5). Marca discreta, não conta no "x/y" da aba, libera o próximo da sequência. Quando chegam questões novas, a meta passa a ser todas as aprovadas e o tema volta a "em andamento" (e a próximo, se for o primeiro aberto). Vira "concluído" com ≥ 15 aprovadas e ≥ 70% nas últimas 15 (20+ aprovadas: últimas 20).
+  - Tema do dia do Painel = próximo da sequência da Grade (mesma fonte do Plano). "Fazer deste o tema do dia" ou "Treinar este tema" fora da sequência = escolha manual (`ajustes.estudando`): o Painel mostra esse tema com "a sequência segue em X · Voltar à sequência"; Grade e Plano não mudam; não chama mais `/api/trilha/inicio`. Tema escolhido que fecha sai sozinho.
+  - Testes: `shared/grade.test.ts` (provisório, volta com questão nova, tema do dia manual sem mudar a sequência) e e2e-trilha. Suíte 300 ok / 0 falha.

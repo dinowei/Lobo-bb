@@ -6,6 +6,7 @@ import { NOME_DISCIPLINA } from "../../../shared/tipos";
 import { textoDaAula } from "../../../shared/fala";
 import { MISTAS_FIM } from "../../../shared/trilha";
 import { useApp } from "../estado";
+import { useTemaDoDia } from "../useGrade";
 import { Ouvir } from "../componentes/Ouvir";
 import { Markdown } from "../componentes/Markdown";
 import { ISeta } from "../componentes/Icones";
@@ -14,12 +15,13 @@ import { Pose } from "../componentes/Pose";
 const NOME_CAMADA = { A: "oficial", B: "material oficial", C: "cursinho" } as const;
 
 export function Tema() {
-  const { api, filtro, ir, avisar } = useApp();
+  const { api, filtro, ir, avisar, ajustes, salvarAjustes } = useApp();
   const sub = filtro.subtopico;
   const [t, setT] = useState<TemaDTO | null | undefined>(undefined);
   const [aula, setAula] = useState<AulaDTO | null>(null);
   const [pedido, setPedido] = useState(false);
   const [trilha, setTrilha] = useState<TrilhaDTO | null>(null);
+  const { temaHoje, proximo } = useTemaDoDia(trilha);
 
   useEffect(() => {
     if (!sub) return setT(null);
@@ -43,25 +45,24 @@ export function Tema() {
   );
 
   const e = t.estudo;
-  const treinar = (revisoes = false) => ir("praticar", {
-    sessao: { subtopico: t.subtopico, nome: t.nome, disciplina: t.disciplina, novas: 20, mistas: MISTAS_FIM, revisoes, trilha: false },
-  });
-  const ehDoDia = trilha?.hoje?.subtopico === t.subtopico;
-  // sessão completa do tema do dia (igual ao botão do Painel): revisões → novas do tema → +5 mistas → amanhã
-  const estudarHoje = () => trilha?.hoje && ir("praticar", {
+  const treinar = (revisoes = false) => {
+    // treinar um tema fora da sequência = escolha manual (o Painel mostra o que você está estudando)
+    const estudando = proximo && proximo.subtopico !== t.subtopico ? t.subtopico : "";
+    if (estudando !== ajustes.estudando) salvarAjustes({ ...ajustes, estudando });
+    ir("praticar", { sessao: { subtopico: t.subtopico, nome: t.nome, disciplina: t.disciplina, novas: 20, mistas: MISTAS_FIM, revisoes, trilha: false } });
+  };
+  // v1.1: tema do dia = próximo da Grade (ou o escolhido à mão); a sessão só traz o tema
+  const ehDoDia = temaHoje?.subtopico === t.subtopico;
+  const estudarHoje = () => temaHoje && ir("praticar", {
     sessao: {
-      subtopico: t.subtopico, nome: trilha.hoje.nome, disciplina: t.disciplina, revisoes: true, trilha: true,
-      novas: Math.max(5, trilha.hoje.tamanho - trilha.hoje.novasFeitasHoje), mistas: trilha.hoje.mistas,
+      subtopico: t.subtopico, nome: temaHoje.nome, disciplina: t.disciplina, revisoes: true, trilha: true,
+      novas: Math.max(5, temaHoje.tamanho - temaHoje.novasFeitasHoje), mistas: temaHoje.mistas,
     },
   });
-  const fazerDoDia = async () => {
-    try {
-      await api.definirTemaDoDia(t.subtopico);
-      setTrilha(await api.trilha());
-      avisar(`${t.nome} agora é o tema do dia. Daqui a trilha segue pela regra.`);
-    } catch (err) {
-      avisar(err instanceof Error ? err.message : "Não deu para mudar a trilha agora.");
-    }
+  // escolha manual: o Painel mostra este tema; a sequência da Grade (e o Plano) não muda
+  const fazerDoDia = () => {
+    salvarAjustes({ ...ajustes, estudando: t.subtopico });
+    avisar(`${t.nome} agora é o seu tema do dia. A sequência da Grade continua${proximo ? ` em ${proximo.nome}` : ""}.`);
   };
   const pedirPrioridade = async () => {
     try {
@@ -97,7 +98,7 @@ export function Tema() {
             <button className="botao-laranja" onClick={() => treinar()} data-testid="treinar-tema">Treinar este tema <ISeta /></button>
           )}
           {t.n && trilha && !ehDoDia && trilha.modo !== "domingo" && (
-            <button className="botao-linha" onClick={fazerDoDia} data-testid="fazer-do-dia" title={`Hoje a trilha está em: ${trilha.hoje?.nome ?? "—"}`}>Fazer deste o tema do dia</button>
+            <button className="botao-linha" onClick={fazerDoDia} data-testid="fazer-do-dia" title={`Hoje a sequência está em: ${proximo?.nome ?? "—"}`}>Fazer deste o tema do dia</button>
           )}
         </div>
       </header>

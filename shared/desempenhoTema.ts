@@ -35,6 +35,7 @@ export interface DesempenhoTemaDTO {
   simulado: Placar;
   porOrigem: Record<OrigemTema, Placar>;
   ultimas: Placar; // v1.1: as últimas ULTIMAS_DO_TEMA respostas do tema (fora de simulado): base de "concluído"
+  recentes: boolean[]; // as mesmas respostas, da mais nova para a mais antiga (janela de 15 ou 20 em shared/grade.ts)
 }
 export const ULTIMAS_DO_TEMA = 20;
 
@@ -77,7 +78,8 @@ export function desempenhoPorTema(
     for (const t of doTema) if (t.simulado) somar(simulado, t.acertou);
     const treino = doTema.filter((t) => !t.simulado);
     const ultimas = vazio();
-    for (const t of [...treino].sort((a, b) => b.data.localeCompare(a.data)).slice(0, ULTIMAS_DO_TEMA)) somar(ultimas, t.acertou);
+    const recentes = [...treino].sort((a, b) => b.data.localeCompare(a.data)).slice(0, ULTIMAS_DO_TEMA).map((t) => t.acertou);
+    for (const acertou of recentes) somar(ultimas, acertou);
     const s = SUBTOPICO_POR_ID.get(sub);
     return {
       subtopico: sub,
@@ -93,6 +95,7 @@ export function desempenhoPorTema(
       simulado,
       porOrigem,
       ultimas,
+      recentes,
     };
   });
 }

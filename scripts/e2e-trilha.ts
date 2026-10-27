@@ -14,6 +14,7 @@ import type { CorrecaoDTO, QuestaoDTO, TemaDTO, TopicoDTO, TrilhaDTO } from "../
 const WEB = process.env.E2E_WEB ?? "http://localhost:5182";
 const PASTA = "docs/telas/trilha";
 const PASTA_V11 = "docs/telas/v1.1";
+const PRIMEIRO = [...TRILHA].sort((a, b) => a.n - b.n)[0]; // próximo da sequência da Grade sem respostas
 mkdirSync(PASTA, { recursive: true });
 
 const topicos: TopicoDTO[] = [
@@ -129,12 +130,16 @@ try {
     p.setDefaultTimeout(30_000);
     const e: Estado = { pedidos: [], respondidas: [], revisoes: 2, foraDoTema: [] };
     await servidorFalso(p, e);
+    // v1.1: o aluno escolheu Crase à mão (fora da sequência da Grade, que começa no tema 1)
+    await p.addInitScript(() => { if (!localStorage.getItem("lobo-ajustes")) localStorage.setItem("lobo-ajustes", JSON.stringify({ estudando: "crase" })); });
     await p.goto(`${WEB}/#painel`, { waitUntil: "domcontentloaded", timeout: 120_000 });
 
-    // Painel: o botão principal é o tema do dia
+    // Painel: o botão principal é o tema do dia (o escolhido), e a sequência continua no 1º tema
     const botao = p.locator("[data-testid=tema-do-dia]");
     await botao.waitFor();
+    await p.locator(".acao-trilha", { hasText: "Crase" }).waitFor();
     assert.match(await p.locator(".acao-trilha").innerText(), /Tema 22: Crase/);
+    assert.match(await p.locator("[data-testid=tema-escolhido]").innerText(), new RegExp(`a sequência segue em ${PRIMEIRO.nome}`));
     await p.screenshot({ path: `${PASTA}/painel-${tela.nome}.png`, fullPage: tela.nome === "celular" });
     await botao.click();
 
@@ -197,7 +202,8 @@ try {
     await ctx.close();
   }
 
-  // busca "crase" → Praticar só de crase; e "Fazer deste o tema do dia" chama a API da trilha
+  // sem escolha: o tema do dia do Painel é o próximo da Grade; busca "crase" → Praticar só de crase;
+  // "Fazer deste o tema do dia" é escolha manual (não chama a API da trilha, não muda a sequência)
   {
     const ctx = await navegador.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "dark", locale: "pt-BR" });
     const p = await ctx.newPage();
@@ -207,6 +213,9 @@ try {
     let inicio: unknown = null;
     await p.route((u) => u.pathname === "/api/trilha/inicio", (r) => { inicio = r.request().postDataJSON(); return r.fulfill({ json: { ok: true } }); });
     await p.goto(`${WEB}/#painel`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    await p.locator(".acao-trilha", { hasText: PRIMEIRO.nome }).waitFor();
+    assert.match(await p.locator(".acao-trilha").innerText(), new RegExp(`Tema ${PRIMEIRO.n}: ${PRIMEIRO.nome}`));
+    assert.equal(await p.locator("[data-testid=tema-escolhido]").count(), 0);
     await p.locator("#busca").fill("crase");
     await p.locator("[data-testid=busca-tema-crase]").click();
     await responder(p);
@@ -217,9 +226,16 @@ try {
     await p.reload();
     await p.locator("[data-testid=fazer-do-dia]").click();
     await p.waitForTimeout(500);
-    assert.deepEqual(inicio, { subtopico: "pontuacao" });
+    assert.equal(inicio, null, "escolha manual não mexe na trilha do servidor");
+    assert.equal(await p.evaluate(() => JSON.parse(localStorage.getItem("lobo-ajustes") ?? "{}").estudando), "pontuacao");
     assert.match(await p.locator(".faixa-aviso").innerText(), /Só 12 questões aprovadas/);
-    console.log("✔ busca \"crase\" → Praticar só de crase; \"Fazer deste o tema do dia\" e aviso de < 15 aprovadas");
+    await p.evaluate(() => { location.hash = "#painel"; });
+    await p.locator(".acao-trilha", { hasText: "Pontuação" }).waitFor();
+    assert.match(await p.locator("[data-testid=tema-escolhido]").innerText(), new RegExp(`a sequência segue em ${PRIMEIRO.nome}`));
+    // a Grade continua destacando o mesmo próximo
+    await p.evaluate(() => { location.hash = "#grade"; });
+    await p.locator(`[data-testid=grade-tema-${PRIMEIRO.subtopico}].proximo`).waitFor();
+    console.log("✔ Painel = próximo da Grade; busca \"crase\" → só crase; escolha manual no Painel sem mudar a sequência; aviso < 15 aprovadas");
     await ctx.close();
   }
 } catch (e) {

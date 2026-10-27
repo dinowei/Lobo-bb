@@ -1649,6 +1649,7 @@ small.desce { color: var(--errado); }
 .status-concluido { background: var(--sucesso-fundo); color: var(--sucesso-texto); }
 .status-em_andamento { background: var(--binho-fundo); color: var(--binho-texto); }
 .status-nao_iniciado { background: var(--superficie-alt); color: var(--texto-2); }
+.status-provisorio { background: transparent; color: var(--sucesso-texto); box-shadow: inset 0 0 0 1px var(--sucesso-fundo); }
 .subtemas { color: var(--texto-2); font-size: 12px; }
 @media (max-width: 760px) { .lista-grade li { flex-wrap: wrap; } .lista-grade li > button { width: 100%; justify-content: center; } }
 

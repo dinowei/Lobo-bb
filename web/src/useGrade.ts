@@ -2,7 +2,8 @@
 // Usada pela tela Grade e pelo Plano (cronograma matéria por matéria). A lente do concurso filtra os temas.
 import { useEffect, useMemo, useState } from "react";
 import { useApp } from "./estado";
-import { montarGrade, type MateriaGrade } from "../../shared/grade";
+import { montarGrade, temaDoDia, type MateriaGrade, type TemaGrade } from "../../shared/grade";
+import { tamanhoSessao } from "../../shared/trilha";
 import { SUBTOPICO_POR_ID } from "../../shared/subtopicos";
 import { disciplinaDoTema } from "../../shared/trilhaUnica";
 import type { DesempenhoTemaDTO } from "../../shared/desempenhoTema";
@@ -52,9 +53,28 @@ export function useGrade(): { grade: MateriaGrade[] | null; erro: boolean; recar
         const disciplina = (des.get(t.subtopico)?.disciplina ?? (s ? disciplinaDoTema(s) : null)) as Disciplina | null;
         return { n: t.n, subtopico: t.subtopico, nome: t.nome, disciplina, subtemas: subtemasDe(t.subtopico, dados.topicos, ids) };
       });
-    const placar = new Map(dados.desempenho.map((d) => [d.subtopico, { respondidas: d.respondidas, ultimas: d.ultimas ?? { n: 0, a: 0 }, aprovadas: d.aprovadas }]));
+    const placar = new Map(dados.desempenho.map((d) => [d.subtopico, { respondidas: d.respondidas, recentes: d.recentes ?? [], aprovadas: d.aprovadas }]));
     return montarGrade(temas, placar);
   }, [dados, concurso]);
 
   return { grade, erro, recarregar: () => setVez((v) => v + 1) };
+}
+
+// tema do dia (Painel e página do tema): o próximo da sequência da Grade, a mesma fonte do Plano. Escolha manual
+// (ajustes.estudando) aparece no lugar, sem mudar a sequência. Os números do dia vêm da trilha quando é o mesmo tema.
+export function useTemaDoDia(trilha: TrilhaDTO | null): { temaHoje: TrilhaDTO["hoje"]; manual: boolean; proximo: TemaGrade | null } {
+  const { ajustes } = useApp();
+  const { grade } = useGrade();
+  return useMemo(() => {
+    if (!grade) return { temaHoje: null, manual: false, proximo: null };
+    const dia = temaDoDia(grade, ajustes.estudando || null);
+    const proximo = grade.flatMap((m) => m.temas).find((t) => t.proximoDaSequencia) ?? null;
+    if (!dia) return { temaHoje: null, manual: false, proximo };
+    const t = dia.tema;
+    const temaHoje: TrilhaDTO["hoje"] = trilha?.hoje?.subtopico === t.subtopico ? trilha.hoje : {
+      n: t.n, subtopico: t.subtopico, nome: t.nome, disciplina: t.disciplina, estado: "novo", refazer: false, diaNoTema: 1,
+      aprovadas: t.aprovadas, novasFeitasHoje: 0, acertosHoje: 0, tamanho: tamanhoSessao("novo"), mistas: 0,
+    };
+    return { temaHoje, manual: dia.manual, proximo };
+  }, [grade, ajustes.estudando, trilha]);
 }

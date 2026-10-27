@@ -8,6 +8,7 @@ import { dificuldadeDoRating } from "../../../shared/rating";
 import { diagnosticoPendente } from "../../../shared/diagnostico";
 import { NOME_FASE, planoDeHoje } from "../../../shared/plano";
 import { hojeLocal, usePlano } from "../usePlano";
+import { useTemaDoDia } from "../useGrade";
 import { textoItem } from "../itensPlano";
 import { Ilustracao } from "../componentes/Ilustracoes";
 import { ICheck, IDir, IEsq, ISeta, IFolha } from "../componentes/Icones";
@@ -59,7 +60,7 @@ function Prontidao() {
 }
 
 export function Painel() {
-  const { painel, ajustes, ir, usuario, api, concurso } = useApp();
+  const { painel, ajustes, salvarAjustes, ir, usuario, api, concurso } = useApp();
   // 1ª visita depois de entrar (por conta; sem conta, por navegador): o Binho acena uma vez
   const chaveVisita = `lobo-boas-vindas-${usuario?.email ?? "local"}`;
   const [primeiraVisita] = useState(() => {
@@ -90,9 +91,10 @@ export function Painel() {
   useEffect(() => {
     api.trilha().then(setTrilha).catch(() => setTrilha(null));
   }, [api, painel?.totalRespondidas]);
+  // v1.1: tema do dia = próximo da sequência da Grade (mesma fonte do Plano); escolha manual aparece no lugar
+  const { temaHoje, manual, proximo } = useTemaDoDia(trilha);
   if (!painel) return <div className="carregando">Carregando painel…</div>;
-  const temaHoje = trilha?.hoje ?? null;
-  // sessão do tema do dia: revisões → novas do tema (já descontadas as de hoje) → +5 mistas da matéria
+  // sessão do tema do dia: revisões do tema → novas do tema (já descontadas as de hoje), só do tema
   const estudarTemaDoDia = () => temaHoje && ir("praticar", {
     sessao: {
       subtopico: temaHoje.subtopico, nome: temaHoje.nome, disciplina: temaHoje.disciplina,
@@ -144,7 +146,6 @@ export function Painel() {
           <h3>{temaHoje ? temaHoje.nome : trilha?.modo === "domingo" ? "Revisões e erros" : deHoje?.itens[0] ? textoItem(deHoje.itens[0]) : "Treino livre"}</h3>
           <ul className="itens-plano">
             <li><span aria-hidden="true">▷</span> <b className="num">{temaHoje ? temaHoje.tamanho - Math.min(temaHoje.tamanho, temaHoje.novasFeitasHoje) : painel.revisoesHoje}</b> {temaHoje ? "questões novas do tema" : "revisões para hoje"}</li>
-            <li><span aria-hidden="true">?</span> <b className="num">{temaHoje?.mistas ?? 5}</b> mistas da matéria no fim</li>
           </ul>
           {temaHoje ? (
             <div className="acao-trilha">
@@ -157,6 +158,12 @@ export function Painel() {
                 {trilha?.modo === "sabado" ? "Sábado: retomada · " : ""}Tema {temaHoje.n}: <b>{temaHoje.nome}</b>
                 {temaHoje.estado === "reforco" ? ` · ${temaHoje.refazer ? "refazer" : "reforço"}` : ""}
               </small>
+              {manual && proximo && (
+                <small className="sub" data-testid="tema-escolhido">
+                  Você escolheu este tema; a sequência segue em {proximo.nome}.{" "}
+                  <button className="link" onClick={() => salvarAjustes({ ...ajustes, estudando: "" })}>Voltar à sequência</button>
+                </small>
+              )}
               <div className="acoes-plano">
                 <button className="botao-laranja" onClick={estudarTemaDoDia} data-testid="tema-do-dia">Estudar o tema do dia <ISeta /></button>
                 <button className="link" onClick={() => ir("tema", { subtopico: temaHoje.subtopico })}>Ver o tema</button>
