@@ -420,6 +420,12 @@ export const apiDemo: Api = {
       return espera({ questao: q ? paraDTO(q) : null, modo: "treino" as const });
     }
 
+    // v1.1: revisão dentro do tema = só as vencidas daquele tema (igual ao servidor)
+    if (f.subtopico && f.revisao) {
+      const agora = Date.now();
+      const q = ativas.find((x) => subDe(x) === f.subtopico && !(f.excluir ?? []).includes(x.id) && e.revisoes[x.id] && new Date(e.revisoes[x.id].proxima).getTime() <= agora);
+      return espera(q ? { questao: paraDTO(q), modo: "revisao" as const } : { questao: null, modo: "revisao" as const, aviso: "Nenhuma revisão vencida neste tema." });
+    }
     // praticar por tema: só o subtópico, novas primeiro (igual ao servidor)
     if (f.subtopico) {
       // as questões de exemplo são todas no estilo Cesgranrio

@@ -16,6 +16,7 @@ import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
 import { PergunteAoBinho } from "../componentes/PergunteAoBinho";
 import { BANCAS } from "../../../shared/concursos";
+import { pedidoDaEtapa } from "../../../shared/sessaoTema";
 
 type Etapa = "revisoes" | "tema" | "mistas" | "fim";
 type Placar = Record<Exclude<Etapa, "fim">, { n: number; a: number }>;
@@ -38,7 +39,6 @@ function ResultadoSessao({ s, placar, xp }: { s: SessaoTema; placar: Placar; xp:
       <h2>Sessão de {s.nome} fechada</h2>
       {s.revisoes && linha("Revisões", placar.revisoes)}
       {linha(`${s.nome} (novas)`, placar.tema)}
-      {linha(`+${s.mistas} da matéria`, placar.mistas)}
       <p className="num">+{xp} XP na sessão</p>
       {placar.tema.n < s.novas && <p className="atalho">Acabaram as questões novas deste tema por hoje. O noturno prepara mais.</p>}
       {hoje && <p className="amanha" data-testid="amanha"><b>E agora?</b> {amanha(hoje, hoje.novasFeitasHoje, hoje.acertosHoje)}</p>}
@@ -100,23 +100,17 @@ export function Praticar() {
   const [fimSessao, setFimSessao] = useState(false);
 
   // próxima da sessão: avança de etapa quando a atual acaba (sem revisão, sem novas do tema, cota cheia)
+  // v1.1: dentro do tema, SÓ o tema (revisões do tema → novas do tema); sem "+N da matéria" misturado
   const proximaDaSessao = useCallback(async (s: SessaoTema) => {
     const excluir = vistas.current;
     if (etapa.current === "revisoes") {
-      const r = await api.proxima({ revisao: true });
-      if (r.questao && !excluir.includes(r.questao.id)) return r;
+      const r = await api.proxima(pedidoDaEtapa("revisoes", s, excluir));
+      if (r.questao && r.modo === "revisao" && !excluir.includes(r.questao.id)) return r;
       etapa.current = "tema";
     }
-    if (etapa.current === "tema") {
-      if (placarRef.current.tema.n < s.novas) {
-        const r = await api.proxima({ subtopico: s.subtopico, excluir, ...(s.banca ? { banca: s.banca } : {}) });
-        if (r.questao && !r.repetida) return r;
-      }
-      etapa.current = "mistas";
-    }
-    if (etapa.current === "mistas" && placarRef.current.mistas.n < s.mistas) {
-      const r = await api.proxima(s.disciplina ? { disciplina: s.disciplina, excluir } : { misto: true, excluir });
-      if (r.questao) return r;
+    if (etapa.current === "tema" && placarRef.current.tema.n < s.novas) {
+      const r = await api.proxima(pedidoDaEtapa("tema", s, excluir));
+      if (r.questao && !r.repetida) return r;
     }
     etapa.current = "fim";
     return null;
@@ -555,7 +549,6 @@ export function Praticar() {
             <ol className="etapas-sessao" aria-label="Etapas da sessão">
               {filtro.sessao.revisoes && <li className={etapaDaQuestao.current === "revisoes" && !fimSessao ? "atual" : ""}>Revisões <span className="num">{placar.revisoes.n}</span></li>}
               <li className={etapaDaQuestao.current === "tema" && !fimSessao ? "atual" : ""}>{filtro.sessao.nome} <span className="num">{placar.tema.n}/{filtro.sessao.novas}</span></li>
-              <li className={etapaDaQuestao.current === "mistas" && !fimSessao ? "atual" : ""}>+{filtro.sessao.mistas} da matéria <span className="num">{placar.mistas.n}/{filtro.sessao.mistas}</span></li>
             </ol>
           )}
           {filtro.sessao && <button className="link" onClick={() => ir("tema", { subtopico: filtro.sessao!.subtopico })}>Página do tema</button>}

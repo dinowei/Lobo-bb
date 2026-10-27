@@ -25,7 +25,7 @@ const questao = (id: string, topicoId: string, assunto: string, enunciado: strin
 });
 
 type Tipo = "revisao" | "crase" | "lp";
-interface Estado { pedidos: { tipo: Tipo; url: string }[]; respondidas: { id: string; tipo: Tipo; acertou: boolean }[]; revisoes: number }
+interface Estado { pedidos: { tipo: Tipo; url: string }[]; respondidas: { id: string; tipo: Tipo; acertou: boolean }[]; revisoes: number; foraDoTema: string[] }
 
 function servidorFalso(p: Page, e: Estado) {
   const tipoDe = new Map<string, Tipo>();
@@ -51,14 +51,14 @@ function servidorFalso(p: Page, e: Estado) {
       case "/api/proxima": {
         const q = u.searchParams;
         let tipo: Tipo;
+        // v1.1: dentro do tema, TODO pedido leva o tema (revisões do tema, novas do tema); nada de outra matéria
+        if (q.get("subtopico") !== "crase") e.foraDoTema.push(u.search);
         if (q.get("revisao") === "1") {
           if (e.revisoes <= 0) return j({ questao: null, modo: "revisao", aviso: "Nenhuma revisão vencida agora." });
           tipo = "revisao";
         } else if (q.get("subtopico")) {
-          assert.equal(q.get("subtopico"), "crase", "o tema pedido é crase");
           tipo = "crase";
         } else {
-          assert.equal(q.get("disciplina"), "lingua_portuguesa", "as mistas são da matéria do tema");
           tipo = "lp";
         }
         e.pedidos.push({ tipo, url: u.search });
@@ -126,7 +126,7 @@ try {
     const ctx = await navegador.newContext({ viewport: { width: tela.w, height: tela.h }, colorScheme: "dark", locale: "pt-BR" });
     const p = await ctx.newPage();
     p.setDefaultTimeout(30_000);
-    const e: Estado = { pedidos: [], respondidas: [], revisoes: 2 };
+    const e: Estado = { pedidos: [], respondidas: [], revisoes: 2, foraDoTema: [] };
     await servidorFalso(p, e);
     await p.goto(`${WEB}/#painel`, { waitUntil: "domcontentloaded", timeout: 120_000 });
 
@@ -146,11 +146,10 @@ try {
     }
     // conta o que foi RESPONDIDO (no dev o StrictMode dispara a 1ª busca duas vezes)
     const ordem = e.respondidas.map((x) => x.tipo);
-    const lp = ordem.indexOf("lp");
-    assert.deepEqual(ordem.slice(0, 2), ["revisao", "revisao"], "revisões vencidas primeiro");
+    assert.deepEqual(ordem.slice(0, 2), ["revisao", "revisao"], "revisões vencidas do tema primeiro");
     assert.equal(ordem.filter((t) => t === "crase").length, 20, "20 de crase");
-    assert.equal(ordem.filter((t) => t === "lp").length, 5, "+5 de Português");
-    assert.ok(ordem.slice(2, lp).every((t) => t === "crase"), `crase só traz crase, antes das mistas: ${ordem.join(",")}`);
+    assert.equal(ordem.filter((t) => t === "lp").length, 0, "nenhuma questão de outro tema (v1.1)");
+    assert.deepEqual(e.foraDoTema, [], `todo pedido da sessão leva o tema: ${e.foraDoTema.join(" ")}`);
     assert.ok(e.pedidos.filter((x) => x.tipo === "crase").every((x) => /subtopico=crase/.test(x.url)));
     const res = await p.locator("[data-testid=resultado-sessao]").innerText();
     assert.match(res, /Crase \(novas\)\s*16\/20/);
@@ -178,7 +177,7 @@ try {
     assert.match(await linha.innerText(), /80%/);
     assert.match(await linha.innerText(), /concluído/);
     await p.screenshot({ path: `${PASTA}/desempenho-${tela.nome}.png`, fullPage: true });
-    console.log(`✔ ${tela.nome}: painel → tema do dia → revisões → 20 de crase → +5 de Português → resultado → página do tema → desempenho`);
+    console.log(`✔ ${tela.nome}: painel → tema do dia → revisões do tema → 20 de crase (só crase) → resultado → página do tema → desempenho`);
     await ctx.close();
   }
 
@@ -187,7 +186,7 @@ try {
     const ctx = await navegador.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "dark", locale: "pt-BR" });
     const p = await ctx.newPage();
     p.setDefaultTimeout(30_000);
-    const e: Estado = { pedidos: [], respondidas: [], revisoes: 0 };
+    const e: Estado = { pedidos: [], respondidas: [], revisoes: 0, foraDoTema: [] };
     await servidorFalso(p, e);
     let inicio: unknown = null;
     await p.route((u) => u.pathname === "/api/trilha/inicio", (r) => { inicio = r.request().postDataJSON(); return r.fulfill({ json: { ok: true } }); });

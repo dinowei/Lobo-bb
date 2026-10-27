@@ -413,6 +413,15 @@ export const apiServidor: Omit<Api, "modo"> = {
     }
 
     // praticar por TEMA: só o subtópico, novas primeiro ("crase só traz crase")
+    // v1.1: revisão dentro do tema = só as vencidas DAQUELE tema (nunca de outra matéria)
+    if (f.subtopico && f.revisao) {
+      const doTema = await Question.find({ subtopico: f.subtopico, status: "aprovada" }).select("_id").lean();
+      const fora = new Set(f.excluir ?? []);
+      const vencidas = await ReviewState.find({ userId, proximaRevisao: { $lte: new Date() }, questionId: { $in: doTema.map((q) => q._id) } }).sort({ proximaRevisao: 1 }).limit(30).lean();
+      const v = vencidas.find((x) => !fora.has(String(x.questionId)));
+      const q = v ? await Question.findById(v.questionId).lean<QuestaoDoc>() : null;
+      return q ? { questao: paraDTO(q, topicos), modo: "revisao" } : { questao: null, modo: "revisao", aviso: "Nenhuma revisão vencida neste tema." };
+    }
     if (f.subtopico) {
       const r = await proximaDoTema(f.subtopico, f.excluir, f.banca);
       if (!r) return { questao: null, modo: "treino", aviso: "Este tema ainda não tem questões aprovadas. Pedi prioridade ao noturno." };
