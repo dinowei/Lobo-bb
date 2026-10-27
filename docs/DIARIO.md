@@ -487,3 +487,27 @@ O histórico completo (16 a 20/10/2026, viagem, adendos e PROMPT-FECHAMENTO F0 a
   - Tag `v1.0-estudo` e `docs/RETOMAR.md`.
 
 RETOMAR AQUI (26/10/2026): ver `docs/RETOMAR.md` (versão v1.0-estudo congelada). Daqui em diante: só esteira de conteúdo e correções.
+
+## 27/10/2026: v1.1 (estudo sequencial)
+- Item 1: SIM. Sessão do tema só traz o tema: revisões do tema → novas do tema; a mistura ficou só em Simulado e Revisões. Teste `shared/sessaoTema.test.ts` + e2e-trilha (0 pedidos sem o tema). `52bc66e`, Render `dep-dbgceufb9u1s73cst1h0` live.
+- Item 2: SIM. Grade curricular sem IA (`shared/grade.ts`): 12 matérias, todos os temas da trilha encaixaram.
+
+  | Matéria | Disciplinas |
+  |---|---|
+  | Português | lingua_portuguesa |
+  | Matemática e Financeira | matematica, matematica_financeira, probabilidade_estatistica |
+  | Raciocínio Lógico | raciocinio_logico |
+  | Informática | informatica, fluencia_dados |
+  | Conhecimentos Bancários | conhecimentos_bancarios |
+  | Atualidades | atualidades_mercado_financeiro, atualidades |
+  | Vendas e Negociação | vendas_negociacao |
+  | Direito | constitucional, administrativo, penal, processual civil, processual penal, fundamentos |
+  | Inglês | lingua_inglesa |
+  | Específicas TJ-SP | normas_corregedoria |
+  | Específicas CVM | mercado_valores_mobiliarios |
+  | Específicas BACEN | gestao_publica, suporte_tecnico_administrativo |
+
+  - Tema concluído = ≥ 70% nas últimas 20 do tema (`CONCLUIR_ACERTO`/`CONCLUIR_ULTIMAS`; tema com < 20 aprovadas fecha com todas, mínimo 5). Testado.
+  - Tela Grade (grupo Binho): aba por matéria, status, % nas últimas, próximo passo, subtemas do edital, "próximo da sequência" em destaque; lentes de concurso filtram.
+  - Plano segue a grade (`filaDaGrade` + item `tema`): matéria por matéria, tema por tema; sem a grade carregada, o rodízio antigo continua igual (nada apagado; o plano é calculado, não guardado).
+  - e2e-trilha com Grade e Plano; prints em `docs/telas/v1.1/grade-{desktop,celular}.png`.

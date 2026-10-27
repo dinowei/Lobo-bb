@@ -26,7 +26,10 @@ export function Plano() {
           <p>
             {plano.totalSemanas
               ? `Semana ${plano.semanaAtual} de ${plano.totalSemanas} · fase: ${NOME_FASE[plano.fase]}. As últimas ${SEMANAS_RETA_FINAL} semanas são só revisão, erros, redação e 2 simulados por semana.`
-              : "Sem data de prova: ciclo de estudos contínuo, no peso de cada matéria × onde você está mais fraco."}{" "}
+              : "Sem data de prova: ciclo de estudos contínuo."}{" "}
+            {plano.semanas.some((s) => s.dias.some((d) => d.itens.some((i) => i.tipo === "tema")))
+              ? "As questões seguem a Grade: uma matéria por vez, um tema por vez, até fechar (70% nas últimas 20)."
+              : "As questões seguem o peso de cada matéria × onde você está mais fraco."}{" "}
             Atrasou? O plano se refaz sozinho com o que falta.
           </p>
         </div>

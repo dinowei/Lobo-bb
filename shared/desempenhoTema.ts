@@ -34,7 +34,9 @@ export interface DesempenhoTemaDTO {
   selo: Selo;
   simulado: Placar;
   porOrigem: Record<OrigemTema, Placar>;
+  ultimas: Placar; // v1.1: as últimas ULTIMAS_DO_TEMA respostas do tema (fora de simulado): base de "concluído"
 }
+export const ULTIMAS_DO_TEMA = 20;
 
 export const seloDe = (p: Placar): Selo => (!p.n ? "sem_dados" : p.a / p.n >= 0.7 ? "concluido" : p.a / p.n >= 0.5 ? "reforco" : "retomar");
 export const NOME_SELO: Record<Selo, string> = { concluido: "concluído", reforco: "reforço", retomar: "retomar", sem_dados: "sem dados" };
@@ -74,6 +76,8 @@ export function desempenhoPorTema(
     }
     for (const t of doTema) if (t.simulado) somar(simulado, t.acertou);
     const treino = doTema.filter((t) => !t.simulado);
+    const ultimas = vazio();
+    for (const t of [...treino].sort((a, b) => b.data.localeCompare(a.data)).slice(0, ULTIMAS_DO_TEMA)) somar(ultimas, t.acertou);
     const s = SUBTOPICO_POR_ID.get(sub);
     return {
       subtopico: sub,
@@ -88,6 +92,7 @@ export function desempenhoPorTema(
       selo: seloDe(novasTotal),
       simulado,
       porOrigem,
+      ultimas,
     };
   });
 }

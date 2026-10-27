@@ -66,3 +66,26 @@ test("atrasou? o plano recalcula do estado atual (mais tópicos faltando = mais 
   assert.equal(poucos.semanas[3].fase, "aprofundamento");
   assert.equal(muitos.semanas[3].fase, "base");
 });
+
+test("v1.1: com a grade, o plano segue matéria por matéria, tema por tema (sem rodízio), e o plano antigo vale sem ela", () => {
+  const grade = [
+    { subtopico: "concordancia", nome: "Concordância", disciplina: "lingua_portuguesa" as const, faltam: 20 },
+    { subtopico: "regencia", nome: "Regência", disciplina: "lingua_portuguesa" as const, faltam: 20 },
+    { subtopico: "porcentagem", nome: "Porcentagem", disciplina: "matematica" as const, faltam: 20 },
+  ];
+  const p = gerarPlano({ ...base, grade });
+  const itens = p.semanas.flatMap((s) => s.dias.flatMap((d) => d.itens));
+  const ultimoTema = itens.map((i) => i.tipo).lastIndexOf("tema");
+  assert.ok(!itens.slice(0, ultimoTema).some((i) => i.tipo === "questoes"), "enquanto há fila, nada de rodízio");
+  const temas = itens.filter((i) => i.tipo === "tema").map((i) => (i.tipo === "tema" ? i.subtopico : ""));
+  assert.equal(temas[0], "concordancia", "hoje começa pelo tema da vez");
+  // ordem preservada: nunca volta a um tema anterior
+  const ordem = [...new Set(temas)];
+  assert.deepEqual(ordem.slice(0, 3), ["concordancia", "regencia", "porcentagem"]);
+  const soma = (s: string) => itens.reduce((m, i) => m + (i.tipo === "tema" && i.subtopico === s ? i.questoes : 0), 0);
+  assert.equal(soma("concordancia"), 20);
+  // a entrada não é alterada (a fila é copiada)
+  assert.equal(grade[0].faltam, 20);
+  // sem grade: o rodízio de antes, igual
+  assert.deepEqual(gerarPlano(base), gerarPlano({ ...base, grade: [] }));
+});

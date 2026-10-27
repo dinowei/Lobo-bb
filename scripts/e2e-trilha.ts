@@ -1,7 +1,7 @@
 // E2E da F4 (trilha e praticar por tema) no Edge, com a API simulada no próprio teste (nada toca no
 // progresso real): Painel → "Estudar o tema do dia" → revisões → 20 de Crase ("crase só traz crase")
-// → +5 de Português → resultado com o que acontece amanhã → página do tema → Desempenho por tema.
-// Prints 1440 e 360 em docs/telas/trilha/.
+// (nada de outra matéria, v1.1) → resultado com o que acontece amanhã → página do tema → Desempenho por tema
+// → Grade → Plano pela grade. Prints 1440 e 360 em docs/telas/trilha/ e docs/telas/v1.1/.
 // uso: npx tsx scripts/e2e-trilha.ts   (com o servidor "bb-web" :5182 de pé)
 import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
@@ -13,6 +13,7 @@ import type { CorrecaoDTO, QuestaoDTO, TemaDTO, TopicoDTO, TrilhaDTO } from "../
 
 const WEB = process.env.E2E_WEB ?? "http://localhost:5182";
 const PASTA = "docs/telas/trilha";
+const PASTA_V11 = "docs/telas/v1.1";
 mkdirSync(PASTA, { recursive: true });
 
 const topicos: TopicoDTO[] = [
@@ -44,7 +45,7 @@ function servidorFalso(p: Page, e: Estado) {
           rodada: 1, modo: "tema", concluidos: 21, total: 51, filaRetomada: [], revisoesVencidas: e.revisoes,
           hoje: { n: 22, subtopico: "crase", nome: "Crase", disciplina: "lingua_portuguesa", estado: "novo", refazer: false, diaNoTema: 1, aprovadas: 24,
             novasFeitasHoje: crase.length, acertosHoje: crase.filter((x) => x.acertou).length, tamanho: 20, mistas: 5 },
-          temas: [{ n: 22, subtopico: "crase", nome: "Crase", estado: "novo", acerto: null, aprovadas: 24 }],
+          temas: TRILHA.map((x) => ({ n: x.n, subtopico: x.subtopico, nome: x.nome, estado: "novo" as const, acerto: null, aprovadas: x.subtopico === "crase" ? 24 : 0 })),
         };
         return j(t);
       }
@@ -177,7 +178,22 @@ try {
     assert.match(await linha.innerText(), /80%/);
     assert.match(await linha.innerText(), /concluído/);
     await p.screenshot({ path: `${PASTA}/desempenho-${tela.nome}.png`, fullPage: true });
-    console.log(`✔ ${tela.nome}: painel → tema do dia → revisões do tema → 20 de crase (só crase) → resultado → página do tema → desempenho`);
+
+    // v1.1: Grade (aba de Português; Crase concluída com 16/20) e Plano seguindo a grade
+    await p.evaluate(() => { location.hash = "#grade"; });
+    await p.locator("[data-testid=grade-aba-portugues]").click();
+    const crase = p.locator("[data-testid=grade-tema-crase]");
+    await crase.waitFor();
+    assert.match(await crase.innerText(), /concluído[\s\S]*80% nas últimas/);
+    assert.ok((await p.locator(".lista-grade li.proximo").count()) <= 1, "um só próximo da sequência");
+    assert.equal(await p.locator("[data-testid^=grade-aba-]").count(), 12, "12 matérias");
+    mkdirSync(PASTA_V11, { recursive: true });
+    await p.screenshot({ path: `${PASTA_V11}/grade-${tela.nome}.png`, fullPage: true });
+    await p.evaluate(() => { location.hash = "#plano"; });
+    const semana = p.locator(".plano-dias", { hasText: "questões do tema" }).first();
+    await semana.waitFor();
+    assert.doesNotMatch(await semana.innerText(), /Crase: \d+ questões do tema/, "tema concluído fica fora do cronograma");
+    console.log(`✔ ${tela.nome}: painel → tema do dia → revisões do tema → 20 de crase (só crase) → resultado → página do tema → desempenho → grade → plano pela grade`);
     await ctx.close();
   }
 

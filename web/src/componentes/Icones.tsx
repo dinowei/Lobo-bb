@@ -17,7 +17,8 @@ const base = ({ tam = 18, ...p }: P) => ({
 
 export const ICasa = (p: P) => (<svg {...base(p)}><path d="M4 10.5 12 4l8 6.5V20H4z" /><path d="M10 20v-5h4v5" /></svg>);
 export const IBalao = (p: P) => (<svg {...base(p)}><path d="M5 5h14v10H10l-5 4z" /></svg>);
-export const ICalendario = (p: P) => (<svg {...base(p)}><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></svg>);
+export const IGrade = (p: P) => (<svg {...base(p)}><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M4 9.5h16M4 14.5h16M9.5 4v16" /></svg>);
+export const ICalendario =(p: P) => (<svg {...base(p)}><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></svg>);
 export const IRelogio = (p: P) => (<svg {...base(p)}><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></svg>);
 export const IAlvo = (p: P) => (<svg {...base(p)}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="4" /><circle cx="12" cy="12" r=".6" fill="currentColor" /></svg>);
 export const ISino = (p: P) => (<svg {...base(p)}><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" /><path d="M10 20a2 2 0 0 0 4 0" /></svg>);

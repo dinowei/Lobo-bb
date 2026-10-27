@@ -3,7 +3,7 @@ import { useApp, type Tela } from "./estado";
 import { CONCURSOS, IDS_CONCURSO, SIGLA_CONCURSO } from "../../shared/concursos";
 import { Pose } from "./componentes/Pose";
 import {
-  IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, ICheck, IEngrenagem, IEscudo, IFogo, IFone, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
+  IAlvo, IBalao, IBandeira, ICalendario, ICartoes, ICasa, ICheck, IEngrenagem, IEscudo, IFogo, IFone, IGrade, ILupa, IMais, IRaio, IRedacao, ISeta, ISino, ITrofeu,
 } from "./componentes/Icones";
 import { ErroTela, Esqueleto } from "./componentes/ErroTela";
 import { MiniLo } from "./componentes/MiniLo";
@@ -28,11 +28,12 @@ const Admin = carregar(() => import("./telas/Admin"), "Admin");
 const Tema = carregar(() => import("./telas/Tema"), "Tema");
 const CertoErrado = carregar(() => import("./telas/CertoErrado"), "CertoErrado");
 const EspacoLo = carregar(() => import("./telas/EspacoLo"), "EspacoLo");
+const Grade = carregar(() => import("./telas/Grade"), "Grade");
 
 const TITULO: Record<Tela, string> = {
   painel: "Painel", plano: "Plano", praticar: "Praticar", "certo-errado": "Certo ou Errado", revisoes: "Revisões", cartoes: "Cartões", simulados: "Simulados",
   diagnostico: "Raio-X", erros: "Caderno de erros", redacao: "Redação", conquistas: "Conquistas", ajustes: "Ajustes", figuras: "Figuras", admin: "Admin", tema: "Tema",
-  "espaco-lo": "Espaço da Lo",
+  "espaco-lo": "Espaço da Lo", grade: "Grade",
 };
 
 function useOnline() {
@@ -54,6 +55,7 @@ const NAV: { tela: Tela; rotulo: string; Icone: typeof ICasa; grupo: Grupo }[] =
   { tela: "plano", rotulo: "Plano", Icone: IBandeira, grupo: "binho" },
   { tela: "praticar", rotulo: "Praticar", Icone: IBalao, grupo: "binho" },
   { tela: "revisoes", rotulo: "Revisões", Icone: ICalendario, grupo: "lo" },
+  { tela: "grade", rotulo: "Grade", Icone: IGrade, grupo: "binho" },
   { tela: "cartoes", rotulo: "Cartões", Icone: ICartoes, grupo: "binho" },
   { tela: "certo-errado", rotulo: "Certo ou Errado", Icone: ICheck, grupo: "binho" },
   { tela: "simulados", rotulo: "Simulados", Icone: IAlvo, grupo: "binho" },
@@ -178,6 +180,7 @@ export function App() {
               {tela === "admin" && (ehAdmin ? <Admin /> : <Painel />)}
               {tela === "tema" && <Tema />}
               {tela === "espaco-lo" && <EspacoLo />}
+              {tela === "grade" && <Grade />}
             </Suspense>
           </ErroTela>
         </main>

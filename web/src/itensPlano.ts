@@ -6,6 +6,7 @@ import type { FiltroPratica, Tela } from "./estado";
 export function textoItem(i: ItemPlano) {
   switch (i.tipo) {
     case "questoes": return `${i.questoes} questões de ${NOME_DISCIPLINA[i.disciplina]}`;
+    case "tema": return `${i.nome}: ${i.questoes} questões do tema`;
     case "revisao": return `Revisão espaçada (${i.minutos} min)`;
     case "erros": return `Caderno de erros (${i.minutos} min)`;
     case "redacao": return `Uma redação (${i.minutos} min)`;
@@ -16,6 +17,7 @@ export function textoItem(i: ItemPlano) {
 export function destinoItem(i: ItemPlano): [Tela, FiltroPratica?] {
   switch (i.tipo) {
     case "questoes": return ["praticar", { disciplina: i.disciplina }];
+    case "tema": return ["tema", { subtopico: i.subtopico }];
     case "revisao": return ["praticar", { revisao: true }];
     case "erros": return ["erros"];
     case "redacao": return ["redacao"];

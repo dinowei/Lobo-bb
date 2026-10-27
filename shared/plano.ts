@@ -13,6 +13,7 @@ export const TOPICOS_POR_SEMANA_BASE = 6; // ritmo para cobrir tópicos novos na
 
 export type ItemPlano =
   | { tipo: "questoes"; disciplina: Disciplina; minutos: number; questoes: number }
+  | { tipo: "tema"; subtopico: string; nome: string; disciplina: Disciplina; minutos: number; questoes: number } // v1.1: segue a grade
   | { tipo: "revisao" | "erros"; minutos: number }
   | { tipo: "redacao"; minutos: number }
   | { tipo: "simulado"; minutos: number; questoes: number };
@@ -28,6 +29,9 @@ export interface EntradaPlano {
   diasSemana: number[]; // 0 = domingo … 6 = sábado
   disciplinas: { disciplina: Disciplina; dominio: number; rating?: number; topicos: number; topicosVistos: number }[];
   semanasAMostrar?: number; // padrão 4
+  // v1.1 (estudo sequencial): fila da grade (filaDaGrade). Com ela, o tempo de questões vai para o tema da vez,
+  // matéria por matéria; sem ela (grade ainda não carregou), vale o rodízio por peso de antes
+  grade?: { subtopico: string; nome: string; disciplina: Disciplina; faltam: number }[];
 }
 
 const somarDias = (dia: string, n: number) => {
@@ -75,8 +79,27 @@ function diaDeQuestoes(minutos: number, pesos: Map<Disciplina, number>, giro: nu
   return escolhidas.map((disciplina) => ({ tipo: "questoes", disciplina, minutos: porBloco, questoes: Math.max(5, Math.round(porBloco / MINUTOS_POR_QUESTAO)) }));
 }
 
+// Grade: o tempo livre do dia vai para o tema da vez; quando as questões planejadas cobrem o que falta,
+// o mesmo dia segue para o próximo tema da fila (a fila é consumida ao longo dos dias)
+function diaDaGrade(minutos: number, fila: { subtopico: string; nome: string; disciplina: Disciplina; faltam: number }[]): ItemPlano[] {
+  const itens: ItemPlano[] = [];
+  let q = Math.floor(minutos / MINUTOS_POR_QUESTAO);
+  while (q >= 5 && fila.length) {
+    const t = fila[0];
+    // sobra de menos de 5 não fica para o dia seguinte: fecha hoje (passa do dia em até 4 questões)
+    const n = t.faltam - Math.min(q, t.faltam) < 5 ? t.faltam : q;
+    itens.push({ tipo: "tema", subtopico: t.subtopico, nome: t.nome, disciplina: t.disciplina, minutos: n * MINUTOS_POR_QUESTAO, questoes: n });
+    q -= n;
+    t.faltam -= n;
+    if (t.faltam <= 0) fila.shift();
+  }
+  return itens;
+}
+
 export function gerarPlano(e: EntradaPlano): Plano {
   const pesos = pesosDoPlano(e.disciplinas);
+  const fila = (e.grade ?? []).map((t) => ({ ...t }));
+  const comGrade = fila.length > 0;
   const minutosDia = Math.max(15, Math.round(e.horasPorDia * 60));
   const dias = new Set(e.diasSemana.length ? e.diasSemana : [1, 2, 3, 4, 5]);
   const prova = e.dataProva && e.dataProva > e.hoje ? e.dataProva : undefined;
@@ -118,7 +141,13 @@ export function gerarPlano(e: EntradaPlano): Plano {
           livre -= rev;
         }
       }
-      itens.push(...diaDeQuestoes(livre, pesos, s * 7 + i));
+      if (comGrade) {
+        const doTema = diaDaGrade(livre, fila);
+        itens.push(...doTema);
+        livre -= doTema.reduce((m, x) => m + x.minutos, 0);
+        // a grade inteira já está planejada: o que sobra vai para o rodízio de sempre
+        if (!fila.length) itens.push(...diaDeQuestoes(livre, pesos, s * 7 + i));
+      } else itens.push(...diaDeQuestoes(livre, pesos, s * 7 + i));
       return { data, itens };
     });
     semanas.push({ numero: s, inicio, fase, dias: diasPlano });

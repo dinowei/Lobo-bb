@@ -7,8 +7,8 @@ import { Entrar } from "./telas/Entrar";
 import { preferenciaVozLoSalva, type VozLo } from "../../shared/voz";
 import { concursoAtivo, guardarConcurso, type IdConcursoAtivo } from "./concursoAtivo";
 
-export type Tela = "painel" | "plano" | "praticar" | "certo-errado" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin" | "tema" | "espaco-lo";
-export const TELAS: Tela[] = ["painel", "plano", "praticar", "certo-errado", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin", "tema", "espaco-lo"];
+export type Tela = "painel" | "plano" | "praticar" | "certo-errado" | "revisoes" | "cartoes" | "simulados" | "diagnostico" | "erros" | "redacao" | "conquistas" | "ajustes" | "figuras" | "admin" | "tema" | "espaco-lo" | "grade";
+export const TELAS: Tela[] = ["painel", "plano", "praticar", "certo-errado", "revisoes", "cartoes", "simulados", "diagnostico", "erros", "redacao", "conquistas", "ajustes", "figuras", "admin", "tema", "espaco-lo", "grade"];
 // sessão montada pela trilha ("Estudar o tema do dia") ou por "Treinar este tema":
 // revisões vencidas → N novas do tema → +M mistas da matéria → resultado
 export interface SessaoTema {
