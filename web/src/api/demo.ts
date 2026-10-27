@@ -604,8 +604,8 @@ export const apiDemo: Api = {
     const e = ler();
     // v1.1: "Prova completa" (padrão) sem restrição; "Só o que estudei" = temas concluídos (ou em andamento);
     // o Raio-X (diagnóstico) olha tudo (igual ao servidor)
-    const mistura = !opcoes?.diagnostico && opcoes?.modo === "estudado" ? misturaDemo(e) : null;
-    const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id) && questaoAtiva(q) && (!mistura || mistura.has(subDe(q))));
+    const estudados = !opcoes?.diagnostico && opcoes?.modo === "estudado" ? misturaDemo(e) : null;
+    const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id) && questaoAtiva(q) && (!estudados || estudados.has(subDe(q))));
     const comQuestao = TOPICOS.filter((t) => ativas.some((q) => topicoDe(q) === t.id));
     const cotas = cotasPorDisciplina(Math.min(n, ativas.length), comQuestao);
     const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : MISTURA_SIMULADO;

@@ -7,7 +7,7 @@
     "build": "npm --prefix web run build",
     "start": "node --import tsx src/server.ts",
     "bb": "tsx src/cli.ts",
-    "typecheck": "tsc --noEmit && npm --prefix web exec tsc -- --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p web",
     "lighthouse": "lighthouse http://localhost:5181/#painel --form-factor=mobile --only-categories=performance,accessibility,best-practices --chrome-flags=--headless=new --view",
     "test": "tsx --test \"shared/**/*.test.ts\" \"src/**/*.test.ts\"",
     "smoke": "tsx scripts/smoke.ts",

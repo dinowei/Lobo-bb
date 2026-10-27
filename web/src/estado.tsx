@@ -320,7 +320,7 @@ export function Provedor({ children }: { children: ReactNode }) {
       if (vivo) setEstudando(s);
     })();
     return () => { vivo = false; };
-  }, [api, pronto, usuario?.id]);
+  }, [api, pronto, usuario?.email]);
   const definirEstudando = useCallback((subtopico: string) => {
     setEstudando(subtopico);
     api?.definirEstudando(subtopico).catch(() => avisar("Não deu para guardar o tema escolhido agora."));
