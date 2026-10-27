@@ -47,6 +47,7 @@ import { desempenhoPorTema, diaLocal, diasDaTrilha, type TentativaTema } from ".
 import { resumirSimulado } from "../../../shared/simulados";
 import { itensDoTema, montarRecados, unicos, registrarPosicao, resumirDia, rolarVisita, type EstadoTema, type EstadoVisita, type PosicaoAudio } from "../../../shared/espacoLo";
 import { textoDaAula } from "../../../shared/fala";
+import { errosDoTema, ordenarParaEstudo, subtemaDaQuestao, subtemasDoTema, temasParaMistura } from "../../../shared/estudoTema";
 import temasJson from "../../../data/temas.json";
 
 const CHAVE = "lobo-demo-v1";
@@ -279,6 +280,9 @@ const aprovadasDemo = (e: Estado) => {
   return m;
 };
 const discDoSubDemo = (s: string) => QUESTOES_DEMO.find((q) => subDe(q) === s)?.disciplina ?? null;
+// v1.1 (item 3): temas que podem entrar em Revisões e Simulados (igual ao servidor)
+const misturaDemo = (e: Estado) =>
+  temasParaMistura(new Map(desempenhoPorTema(tentativasTema(e), aprovadasDemo(e), discDoSubDemo).map((d) => [d.subtopico, { respondidas: d.respondidas, recentes: d.recentes, aprovadas: d.aprovadas }])));
 
 export const apiDemo: Api = {
   modo: "demo",
@@ -426,15 +430,27 @@ export const apiDemo: Api = {
       const q = ativas.find((x) => subDe(x) === f.subtopico && !(f.excluir ?? []).includes(x.id) && e.revisoes[x.id] && new Date(e.revisoes[x.id].proxima).getTime() <= agora);
       return espera(q ? { questao: paraDTO(q), modo: "revisao" as const } : { questao: null, modo: "revisao" as const, aviso: "Nenhuma revisão vencida neste tema." });
     }
-    // praticar por tema: só o subtópico, novas primeiro (igual ao servidor)
+    // v1.1 (item 3): revisão dos erros do tema (última resposta errada), igual ao servidor
+    if (f.subtopico && f.erros) {
+      const doTema = new Set(ativas.filter((q) => subDe(q) === f.subtopico).map((q) => q.id));
+      const id = errosDoTema(e.tentativas.filter((t) => doTema.has(t.questaoId))).find((x) => !(f.excluir ?? []).includes(x));
+      const q = id ? porId.get(id) : undefined;
+      return espera(q ? { questao: paraDTO(q), modo: "treino" as const } : { questao: null, modo: "treino" as const, aviso: "Nenhum erro para revisar neste tema." });
+    }
+    // praticar por tema: só o subtópico, novas primeiro, por subtema e fácil → difícil (igual ao servidor)
     if (f.subtopico) {
       // as questões de exemplo são todas no estilo Cesgranrio
       const doTema = ativas.filter((q) => subDe(q) === f.subtopico && !(f.excluir ?? []).includes(q.id) && (!f.banca || f.banca === "cesgranrio"));
       const vistas = new Set(e.tentativas.map((t) => t.questaoId));
-      const nova = doTema.find((q) => !vistas.has(q.id));
+      const subtemas = subtemasDoTema(f.subtopico, topicosAtivos(), TRILHA.map((t) => t.subtopico));
+      const [primeira] = ordenarParaEstudo(doTema.filter((q) => !vistas.has(q.id)).map((q) => ({
+        q, dificuldade: q.dificuldade, origem: "gerada", subtema: subtemaDaQuestao([q.enunciado, ...q.alternativas.map((a) => a.texto)].join(" "), subtemas),
+      })));
+      const nova = primeira?.q;
       const q = nova ?? doTema[0];
       if (!q) return espera({ questao: null, modo: "treino" as const, aviso: "Este tema ainda não tem questões no modo demo." });
-      return espera({ questao: paraDTO(q), modo: "treino" as const, aviso: nova ? undefined : "Acabaram as novas deste tema; repetindo uma.", repetida: !nova });
+      const subtema = primeira && primeira.subtema >= 0 ? subtemas[primeira.subtema] : undefined;
+      return espera({ questao: { ...paraDTO(q), ...(subtema ? { subtema } : {}) }, modo: "treino" as const, aviso: nova ? undefined : "Acabaram as novas deste tema; repetindo uma.", repetida: !nova });
     }
 
     // treino misturado (mesma regra do servidor)
@@ -447,8 +463,9 @@ export const apiDemo: Api = {
     const semFiltro = !f.topicoId && !f.disciplina;
     if (f.revisao || semFiltro) {
       const agora = Date.now();
+      const mistura = misturaDemo(e); // só temas concluídos (ou em andamento, se nenhum concluído)
       const vencidas = ativas
-        .filter((q) => e.revisoes[q.id] && new Date(e.revisoes[q.id].proxima).getTime() <= agora)
+        .filter((q) => e.revisoes[q.id] && new Date(e.revisoes[q.id].proxima).getTime() <= agora && (!mistura || mistura.has(subDe(q))))
         .sort((a, b) => e.revisoes[a.id].proxima.localeCompare(e.revisoes[b.id].proxima));
       if (vencidas.length) {
         const dto = paraDTO(vencidas[0]);
@@ -572,7 +589,9 @@ export const apiDemo: Api = {
 
   async simulado(n, opcoes) {
     const e = ler();
-    const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id) && questaoAtiva(q));
+    // v1.1 (item 3): só temas concluídos (ou em andamento); o Raio-X (diagnóstico) olha tudo (igual ao servidor)
+    const mistura = opcoes?.diagnostico ? null : misturaDemo(e);
+    const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id) && questaoAtiva(q) && (!mistura || mistura.has(subDe(q))));
     const comQuestao = TOPICOS.filter((t) => ativas.some((q) => topicoDe(q) === t.id));
     const cotas = cotasPorDisciplina(Math.min(n, ativas.length), comQuestao);
     const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : MISTURA_SIMULADO;

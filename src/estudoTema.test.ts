@@ -1,0 +1,79 @@
+// v1.1, item 3, no servidor, num MongoDB EM MEMÓRIA (nada de produção). Roda com ISOLAMENTO=1.
+// Sessão do tema: novas por subtema (fácil → difícil), revisão dos erros do tema; mistura só de temas abertos.
+import { after, before, test } from "node:test";
+import assert from "node:assert/strict";
+import mongoose, { Types } from "mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
+
+const ligado = process.env.ISOLAMENTO === "1";
+let memoria: MongoMemoryServer | null = null;
+
+before(async () => {
+  if (!ligado) return;
+  process.env.ALUNO_ID = "0000000000000000000000aa";
+  memoria = await MongoMemoryServer.create();
+  await mongoose.connect(memoria.getUri(), { dbName: "estudo-tema-teste" });
+});
+after(async () => {
+  if (!ligado) return;
+  await mongoose.disconnect();
+  await memoria?.stop();
+});
+
+test("sessão do tema: subtema do edital → fácil a difícil; erros do tema; revisão e simulado só de temas abertos", { skip: !ligado }, async () => {
+  const db = mongoose.connection.db!;
+  const { apiServidor } = await import("./estudo.js");
+  const aluno = new Types.ObjectId(process.env.ALUNO_ID);
+  const conc = new Types.ObjectId(), mat = new Types.ObjectId();
+  await db.collection("topics").insertMany([
+    { _id: conc, disciplina: "lingua_portuguesa", assunto: "Concordância verbal e nominal", subtopicos: ["Concordância verbal", "Concordância nominal"], ativo: true },
+    { _id: mat, disciplina: "matematica", assunto: "Porcentagem", subtopicos: [], ativo: true },
+  ]);
+  const alt = (t: string) => ["A", "B", "C", "D", "E"].map((l) => ({ letra: l, texto: `${t} ${l}`, correta: l === "A", explicacao: "x" }));
+  const q = (subtopico: string, topicId: Types.ObjectId, enunciado: string, dificuldade: number) =>
+    ({ _id: new Types.ObjectId(), topicId, subtopico, origem: "gerada", status: "aprovada", enunciado, dificuldade, gabarito: "A", alternativas: alt("opção"), explicacaoGeral: "x" });
+  const nominalFacil = q("concordancia", conc, "Concordância nominal: bastante ou bastantes?", 1);
+  const verbalDificil = q("concordancia", conc, "Concordância verbal com sujeito posposto", 4);
+  const verbalFacil = q("concordancia", conc, "Concordância verbal do verbo haver", 2);
+  const porcento = q("porcentagem", mat, "Quanto é 10% de 50?", 1);
+  await db.collection("questions").insertMany([nominalFacil, verbalDificil, verbalFacil, porcento]);
+
+  // 1) novas do tema: subtema "Concordância verbal" (1º do edital) antes do nominal, e a fácil antes da difícil
+  const ordem: string[] = [];
+  for (let i = 0; i < 3; i++) {
+    const r = await apiServidor.proxima({ subtopico: "concordancia", excluir: ordem });
+    ordem.push(r.questao!.id);
+    if (i === 0) assert.equal(r.questao!.subtema, "Concordância verbal");
+  }
+  assert.deepEqual(ordem, [verbalFacil._id, verbalDificil._id, nominalFacil._id].map(String));
+
+  // 2) erros do tema: a última resposta errada volta; corrigida sai; nada de outra matéria
+  const t = (questionId: Types.ObjectId, topicId: Types.ObjectId, acertou: boolean, dia: number) =>
+    ({ userId: aluno, questionId, topicId, resposta: acertou ? "A" : "B", acertou, modo: "treino", tempoSeg: 30, createdAt: new Date(Date.UTC(2026, 9, dia)) });
+  await db.collection("attempts").insertMany([
+    t(verbalFacil._id, conc, false, 1), t(verbalFacil._id, conc, true, 2), // corrigida
+    t(verbalDificil._id, conc, false, 3),
+    t(nominalFacil._id, conc, true, 3),
+    t(porcento._id, mat, false, 3),
+  ]);
+  const e1 = await apiServidor.proxima({ subtopico: "concordancia", erros: true });
+  assert.equal(e1.questao?.id, String(verbalDificil._id));
+  const e2 = await apiServidor.proxima({ subtopico: "concordancia", erros: true, excluir: [String(verbalDificil._id)] });
+  assert.equal(e2.questao, null);
+  assert.match(e2.aviso ?? "", /Nenhum erro/);
+
+  // 3) mistura: Concordância em andamento (nenhum concluído) entra; Porcentagem também foi respondida,
+  // então as duas estão em andamento; um tema nunca respondido não entra
+  const nunca = q("crase", conc, "Crase antes de palavra feminina", 1);
+  await db.collection("questions").insertOne(nunca);
+  const vencida = new Date(Date.UTC(2026, 0, 1));
+  await db.collection("reviewstates").insertMany([
+    { userId: aluno, questionId: nunca._id, proximaRevisao: vencida, intervalo: 1, facilidade: 2.5, repeticoes: 0 },
+    { userId: aluno, questionId: verbalDificil._id, proximaRevisao: vencida, intervalo: 1, facilidade: 2.5, repeticoes: 0 },
+  ]);
+  const rev = await apiServidor.proxima({ revisao: true });
+  assert.equal(rev.questao?.id, String(verbalDificil._id), "revisão de tema não iniciado não entra na mistura");
+  const sim = await apiServidor.simulado(10);
+  assert.ok(sim.length > 0);
+  assert.ok(sim.every((x) => x.id !== String(nunca._id)), "simulado sem tema não iniciado");
+});

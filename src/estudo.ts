@@ -56,7 +56,7 @@ import { explicarSobDemanda } from "./outroJeito.js";
 import { perguntarAoBinho } from "./chatBinho.js";
 import { avaliarCartao, filaCartoes } from "./cartoes.js";
 import { fontesDaQuestao } from "./fontesAtuais.js";
-import { definirTemaDoDia, desempenhoTemas, paginaTema, pedirPrioridade, prontidao, proximaDoTema, trilha } from "./temas.js";
+import { definirTemaDoDia, desempenhoTemas, paginaTema, pedirPrioridade, prontidao, proximaDoTema, proximoErroDoTema, temasDaMistura, trilha } from "./temas.js";
 import { listarSimulados, salvarSimulado } from "./simulados.js";
 import { espacoLo, salvarPosicaoAudio } from "./espacoLo.js";
 
@@ -422,12 +422,18 @@ export const apiServidor: Omit<Api, "modo"> = {
       const q = v ? await Question.findById(v.questionId).lean<QuestaoDoc>() : null;
       return q ? { questao: paraDTO(q, topicos), modo: "revisao" } : { questao: null, modo: "revisao", aviso: "Nenhuma revisão vencida neste tema." };
     }
+    // v1.1 (item 3): revisão dos erros do tema, no fim da sessão do tema
+    if (f.subtopico && f.erros) {
+      const id = await proximoErroDoTema(f.subtopico, f.excluir);
+      const q = id ? await Question.findOne({ _id: oid(id), status: "aprovada" }).lean<QuestaoDoc>() : null;
+      return q ? { questao: paraDTO(q, topicos), modo: "treino" } : { questao: null, modo: "treino", aviso: "Nenhum erro para revisar neste tema." };
+    }
     if (f.subtopico) {
       const r = await proximaDoTema(f.subtopico, f.excluir, f.banca);
       if (!r) return { questao: null, modo: "treino", aviso: "Este tema ainda não tem questões aprovadas. Pedi prioridade ao noturno." };
       const q = await Question.findById(r.id).lean<QuestaoDoc>();
       return {
-        questao: q ? paraDTO(q, topicos) : null,
+        questao: q ? { ...paraDTO(q, topicos), ...(r.subtema ? { subtema: r.subtema } : {}) } : null,
         modo: "treino",
         aviso: r.nova ? undefined : "Acabaram as novas deste tema; repetindo uma. O noturno prepara mais.",
         repetida: !r.nova,
@@ -445,7 +451,12 @@ export const apiServidor: Omit<Api, "modo"> = {
     // 1. revisões vencidas
     const semFiltro = !f.topicoId && !f.disciplina;
     if (f.revisao || semFiltro) {
-      const vencidas = await ReviewState.find({ userId, proximaRevisao: { $lte: new Date() }, questionId: { $in: await questoesDoConcurso(topicos) } })
+      // v1.1 (item 3): a revisão misturada só traz temas concluídos (ou em andamento, se nenhum concluído)
+      const mistura = await temasDaMistura();
+      const permitidas = mistura
+        ? ((await Question.distinct("_id", { _id: { $in: await questoesDoConcurso(topicos) }, subtopico: { $in: [...mistura] } })) as Types.ObjectId[])
+        : await questoesDoConcurso(topicos);
+      const vencidas = await ReviewState.find({ userId, proximaRevisao: { $lte: new Date() }, questionId: { $in: permitidas } })
         .sort({ proximaRevisao: 1 })
         .limit(30)
         .lean();
@@ -585,6 +596,10 @@ export const apiServidor: Omit<Api, "modo"> = {
     // Raio-X: só dificuldade média (completa com outras se faltar)
     const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : MISTURA_SIMULADO;
     const mapa = await mapaTopicos();
+    // v1.1 (item 3): simulado só com temas concluídos (ou em andamento, se nenhum concluído); o Raio-X
+    // (diagnóstico) continua olhando tudo, é ele que mostra onde começar
+    const temas = opcoes?.diagnostico ? null : await temasDaMistura();
+    const daMistura = temas ? { subtopico: { $in: [...temas] } } : {};
     const escolhidas: QuestaoDoc[] = [];
     const FAIXAS = { facil: [1, 2], media: [3], dificil: [4, 5] } as const;
     for (const [disc, k] of cotas) {
@@ -594,14 +609,14 @@ export const apiServidor: Omit<Api, "modo"> = {
       for (const [faixa, q] of cotasPorFaixa(k, mistura)) {
         if (!q) continue;
         daDisc.push(...(await Question.aggregate<QuestaoDoc>([
-          { $match: { topicId: { $in: ids }, status: "aprovada", origem: { $ne: "cursinho" }, dificuldade: { $in: [...FAIXAS[faixa]] } } },
+          { $match: { topicId: { $in: ids }, status: "aprovada", origem: { $ne: "cursinho" }, dificuldade: { $in: [...FAIXAS[faixa]] }, ...daMistura } },
           { $sample: { size: q } },
         ])));
       }
       // faltou numa faixa: completa com qualquer dificuldade da mesma disciplina
       if (daDisc.length < k)
         daDisc.push(...(await Question.aggregate<QuestaoDoc>([
-          { $match: { topicId: { $in: ids }, status: "aprovada", origem: { $ne: "cursinho" }, _id: { $nin: daDisc.map((q) => q._id) } } },
+          { $match: { topicId: { $in: ids }, status: "aprovada", origem: { $ne: "cursinho" }, _id: { $nin: daDisc.map((q) => q._id) }, ...daMistura } },
           { $sample: { size: k - daDisc.length } },
         ])));
       escolhidas.push(...daDisc);
@@ -610,7 +625,7 @@ export const apiServidor: Omit<Api, "modo"> = {
       // completa só com disciplinas da prova (fora do edital não entra em simulado nem no Raio-X)
       const daProva = validos.filter((t) => (COTAS_PROVA[t.disciplina] ?? 0) > 0).map((t) => oid(t.id));
       const extra = await Question.aggregate<QuestaoDoc>([
-        { $match: { status: "aprovada", origem: { $ne: "cursinho" }, topicId: { $in: daProva }, _id: { $nin: escolhidas.map((q) => q._id) } } },
+        { $match: { status: "aprovada", origem: { $ne: "cursinho" }, topicId: { $in: daProva }, _id: { $nin: escolhidas.map((q) => q._id) }, ...daMistura } },
         { $sample: { size: n - escolhidas.length } },
       ]);
       escolhidas.push(...extra);

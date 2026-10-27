@@ -18,6 +18,7 @@ import { SUBTOPICO_POR_ID } from "../shared/subtopicos.js";
 import { concursosDoTema, linkYoutube, MINIMO_NOVAS, MISTAS_FIM, situacaoTrilha, tamanhoSessao, TRILHA, type InicioTrilha } from "../shared/trilha.js";
 import { desempenhoPorTema, diaLocal, diasDaTrilha, type OrigemTema, type TentativaTema } from "../shared/desempenhoTema.js";
 import type { Disciplina, TemaDTO, TrilhaDTO } from "../shared/tipos.js";
+import { errosDoTema, ordenarParaEstudo, subtemaDaQuestao, subtemasDoTema, temasParaMistura } from "../shared/estudoTema.js";
 import conteudo from "../data/temas.json" with { type: "json" };
 
 type ConteudoTema = {
@@ -35,6 +36,34 @@ const CONTEUDO = conteudo.temas as unknown as Record<string, ConteudoTema>; // J
 // trilha única: o domínio por tema é UM número, com as tentativas de todos os tópicos (a lente filtra depois)
 async function topicosAtivos() {
   return Topic.find({ ativo: true }).select("_id disciplina assunto").lean();
+}
+
+// subtemas do tema (subtópicos do edital dos assuntos dele), na ordem do edital
+async function subtemasDe(subtopico: string) {
+  const assuntos = SUBTOPICO_POR_ID.get(subtopico)?.topicos ?? [];
+  const topicos = await Topic.find({ ativo: true, assunto: { $in: assuntos } }).select("assunto subtopicos").lean();
+  return subtemasDoTema(subtopico, topicos.map((t) => ({ assunto: t.assunto, subtopicos: t.subtopicos ?? [] })), TRILHA.map((t) => t.subtopico));
+}
+
+// revisão dos erros do tema (item 3): questões do tema cuja última resposta foi errada, fora as já vistas na etapa
+export async function proximoErroDoTema(subtopico: string, excluir: string[] = []) {
+  const userId = ALUNO();
+  const doTema = (await Question.find({ subtopico, status: "aprovada" }).select("_id").lean()).map((q) => q._id);
+  const ts = await Attempt.find({ userId, questionId: { $in: doTema } }).select("questionId acertou createdAt").lean();
+  const erros = errosDoTema(ts.map((t) => ({ questaoId: String(t.questionId), acertou: !!t.acertou, data: new Date(t.createdAt as Date).toISOString() })));
+  return erros.find((id) => !excluir.includes(id)) ?? null;
+}
+
+// mistura (Revisões e Simulados, item 3): só temas concluídos (ou em andamento, se nenhum concluído).
+// Cache curto: a revisão pede uma questão por vez.
+let cacheMistura: { em: number; aluno: string; temas: Set<string> | null } | null = null;
+export async function temasDaMistura(): Promise<Set<string> | null> {
+  const aluno = String(ALUNO());
+  if (cacheMistura && cacheMistura.aluno === aluno && Date.now() - cacheMistura.em < 60_000) return cacheMistura.temas;
+  const des = await desempenhoTemas();
+  const temas = temasParaMistura(new Map(des.map((d) => [d.subtopico, { respondidas: d.respondidas, recentes: d.recentes, aprovadas: d.aprovadas }])));
+  cacheMistura = { em: Date.now(), aluno, temas };
+  return temas;
 }
 
 const origemDe = (q: { origem?: string | null; derivadaDe?: unknown; camada?: string | null }): OrigemTema =>
@@ -221,10 +250,8 @@ export async function paginaTema(subtopico: string): Promise<TemaDTO | null> {
   };
 }
 
-export const ORDEM_FONTE_TEMA: Record<string, unknown>[] = [{ origem: "oficial" }, { origem: "cursinho" }, { origem: { $nin: ["oficial", "cursinho"] } }];
-
-// próxima questão de um TEMA: só daquele subtópico, NOVAS primeiro (as não respondidas), oficiais antes
-// das de cursinho e estas antes das geradas; se acabaram as novas, repete com aviso.
+// próxima questão de um TEMA: só daquele subtópico, NOVAS primeiro (as não respondidas), por subtema e
+// dificuldade (shared/estudoTema.ts); se acabaram as novas, repete com aviso.
 // trilha única: questões do tema de QUALQUER banca; o aluno pode ficar numa banca só (oficial: banca da prova;
 // gerada: estilo da banca; as antigas, sem banca gravada, são Cesgranrio)
 export async function proximaDoTema(subtopico: string, excluir: string[] = [], banca?: string) {
@@ -237,11 +264,17 @@ export async function proximaDoTema(subtopico: string, excluir: string[] = [], b
   const doTema = (await Question.find(base).select("_id").lean()).map((q) => q._id);
   const respondidas = await Attempt.distinct("questionId", { userId, questionId: { $in: doTema } });
   const fora = [...respondidas, ...excluir.filter((x) => Types.ObjectId.isValid(x)).map((x) => new Types.ObjectId(x))];
-  // ordem de fonte (decisão do dono, 26/10/2026): oficiais primeiro, depois cursinho, e as geradas só completam;
-  // dentro de cada faixa, sorteio
-  for (const faixa of ORDEM_FONTE_TEMA) {
-    const [nova] = await Question.aggregate([{ $match: { ...base, ...faixa, _id: { $nin: fora } } }, { $sample: { size: 1 } }, { $project: { _id: 1 } }]);
-    if (nova) return { id: String(nova._id), nova: true };
+  // v1.1 (item 3): novas por SUBTEMA na ordem do edital, fácil → difícil; empate pela fonte (oficial, cursinho,
+  // gerada: decisão do dono, 26/10/2026). O subtema é achado por código (palavras do edital), sem IA.
+  const novas = await Question.find({ ...base, _id: { $nin: fora } }).select("_id textoBase enunciado alternativas.texto dificuldade origem camada derivadaDe").lean();
+  if (novas.length) {
+    const subtemas = await subtemasDe(subtopico);
+    const ordem = ordenarParaEstudo(novas.map((q) => ({
+      id: String(q._id), dificuldade: q.dificuldade ?? 3, origem: origemDe(q),
+      subtema: subtemaDaQuestao([q.enunciado, ...(q.alternativas ?? []).map((a) => a.texto)].join(" "), subtemas),
+    })));
+    const q = ordem[0];
+    return { id: q.id, nova: true, subtema: q.subtema >= 0 ? subtemas[q.subtema] : undefined };
   }
   const [repetida] = await Question.aggregate([{ $match: { ...base, _id: { $nin: excluir.filter((x) => Types.ObjectId.isValid(x)).map((x) => new Types.ObjectId(x)) } } }, { $sample: { size: 1 } }, { $project: { _id: 1 } }]);
   return repetida ? { id: String(repetida._id), nova: false } : null;

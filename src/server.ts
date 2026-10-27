@@ -136,6 +136,7 @@ app.get(
         questaoId: texto(req.query.questaoId),
         disciplina: ehDisciplina(disciplina) ? disciplina : undefined,
         revisao: req.query.revisao === "1",
+        erros: req.query.erros === "1",
         misto: req.query.misto === "1",
         anterior: ehDisciplina(anterior) ? anterior : undefined,
         subtopico: texto(req.query.subtopico),

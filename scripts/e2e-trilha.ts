@@ -26,7 +26,7 @@ const questao = (id: string, topicoId: string, assunto: string, enunciado: strin
   alternativas: ["A", "B", "C", "D", "E"].map((l) => ({ letra: l as "A", texto: `Frase ${l} da questão ${id}` })),
 });
 
-type Tipo = "revisao" | "crase" | "lp";
+type Tipo = "revisao" | "crase" | "lp" | "erro";
 interface Estado { pedidos: { tipo: Tipo; url: string }[]; respondidas: { id: string; tipo: Tipo; acertou: boolean }[]; revisoes: number; foraDoTema: string[] }
 
 function servidorFalso(p: Page, e: Estado) {
@@ -55,6 +55,15 @@ function servidorFalso(p: Page, e: Estado) {
         let tipo: Tipo;
         // v1.1: dentro do tema, TODO pedido leva o tema (revisões do tema, novas do tema); nada de outra matéria
         if (q.get("subtopico") !== "crase") e.foraDoTema.push(u.search);
+        // v1.1 (item 3): revisão dos erros do tema = as de crase erradas, fora as já vistas nesta etapa
+        if (q.get("erros") === "1") {
+          const vistos = (q.get("excluir") ?? "").split(",");
+          const erro = e.respondidas.find((x) => x.tipo === "crase" && !x.acertou && !vistos.includes(x.id));
+          e.pedidos.push({ tipo: "erro", url: u.search });
+          if (!erro) return j({ questao: null, modo: "treino", aviso: "Nenhum erro para revisar neste tema." });
+          tipoDe.set(erro.id, "erro");
+          return j({ questao: questao(erro.id, "t-crase", "Regência verbal e nominal e crase", "De novo: em qual frase a crase está correta?"), modo: "treino" });
+        }
         if (q.get("revisao") === "1") {
           if (e.revisoes <= 0) return j({ questao: null, modo: "revisao", aviso: "Nenhuma revisão vencida agora." });
           tipo = "revisao";
@@ -155,6 +164,10 @@ try {
     assert.deepEqual(ordem.slice(0, 2), ["revisao", "revisao"], "revisões vencidas do tema primeiro");
     assert.equal(ordem.filter((t) => t === "crase").length, 20, "20 de crase");
     assert.equal(ordem.filter((t) => t === "lp").length, 0, "nenhuma questão de outro tema (v1.1)");
+    // item 3: depois das novas, a revisão dos erros do tema (as 4 erradas voltam, e só elas)
+    assert.deepEqual(ordem.slice(22), ["erro", "erro", "erro", "erro"], "erros do tema no fim");
+    assert.match(await p.locator("[data-testid=resultado-sessao]").innerText(), /Revisão dos erros\s*4\/4/);
+    await p.locator("[data-testid=status-tema]", { hasText: "concluído" }).waitFor();
     assert.deepEqual(e.foraDoTema, [], `todo pedido da sessão leva o tema: ${e.foraDoTema.join(" ")}`);
     assert.ok(e.pedidos.filter((x) => x.tipo === "crase").every((x) => /subtopico=crase/.test(x.url)));
     const res = await p.locator("[data-testid=resultado-sessao]").innerText();

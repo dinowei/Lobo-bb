@@ -17,18 +17,29 @@ import { Pose } from "../componentes/Pose";
 import { PergunteAoBinho } from "../componentes/PergunteAoBinho";
 import { BANCAS } from "../../../shared/concursos";
 import { pedidoDaEtapa } from "../../../shared/sessaoTema";
+import { ERROS_POR_SESSAO } from "../../../shared/estudoTema";
+import { NOME_STATUS, proximoPasso, statusTema, type StatusTema } from "../../../shared/grade";
 
-type Etapa = "revisoes" | "tema" | "mistas" | "fim";
+type Etapa = "revisoes" | "tema" | "erros" | "fim";
 type Placar = Record<Exclude<Etapa, "fim">, { n: number; a: number }>;
-const placarVazio = (): Placar => ({ revisoes: { n: 0, a: 0 }, tema: { n: 0, a: 0 }, mistas: { n: 0, a: 0 } });
+const placarVazio = (): Placar => ({ revisoes: { n: 0, a: 0 }, tema: { n: 0, a: 0 }, erros: { n: 0, a: 0 } });
 
-// fim da sessão do tema: placar por etapa e, vindo da trilha, o que acontece amanhã (regra em shared/trilha.ts)
+// fim da sessão do tema: placar por etapa, o status do tema (regra da Grade, shared/grade.ts) e, vindo da
+// trilha, o que acontece amanhã (regra em shared/trilha.ts)
 function ResultadoSessao({ s, placar, xp }: { s: SessaoTema; placar: Placar; xp: number }) {
   const { api, ir } = useApp();
   const [trilha, setTrilha] = useState<TrilhaDTO | null>(null);
+  const [status, setStatus] = useState<{ status: StatusTema; proximo: string } | null>(null);
   useEffect(() => {
     if (s.trilha) api.trilha().then(setTrilha).catch(() => setTrilha(null));
-  }, [api, s.trilha]);
+    api.desempenhoTemas().then((ds) => {
+      const d = ds.find((x) => x.subtopico === s.subtopico);
+      if (!d) return;
+      const p = { respondidas: d.respondidas, recentes: d.recentes ?? [], aprovadas: d.aprovadas };
+      const st = statusTema(p);
+      setStatus({ status: st, proximo: proximoPasso(st, p) });
+    }).catch(() => setStatus(null));
+  }, [api, s.trilha, s.subtopico]);
   const linha = (rotulo: string, p: { n: number; a: number }) => (
     <div className="linha-resultado"><span>{rotulo}</span><b className="num">{p.a}/{p.n}{p.n ? ` · ${pct(p.a / p.n)}` : ""}</b></div>
   );
@@ -39,6 +50,12 @@ function ResultadoSessao({ s, placar, xp }: { s: SessaoTema; placar: Placar; xp:
       <h2>Sessão de {s.nome} fechada</h2>
       {s.revisoes && linha("Revisões", placar.revisoes)}
       {linha(`${s.nome} (novas)`, placar.tema)}
+      {placar.erros.n > 0 && linha("Revisão dos erros", placar.erros)}
+      {status && (
+        <p data-testid="status-tema">
+          <span className={`selo status-${status.status}`}>{NOME_STATUS[status.status]}</span> {status.proximo}
+        </p>
+      )}
       <p className="num">+{xp} XP na sessão</p>
       {placar.tema.n < s.novas && <p className="atalho">Acabaram as questões novas deste tema por hoje. O noturno prepara mais.</p>}
       {hoje && <p className="amanha" data-testid="amanha"><b>E agora?</b> {amanha(hoje, hoje.novasFeitasHoje, hoje.acertosHoje)}</p>}
@@ -95,12 +112,14 @@ export function Praticar() {
   const etapa = useRef<Etapa>("tema");
   const etapaDaQuestao = useRef<Etapa>("tema");
   const vistas = useRef<string[]>([]);
+  const errosVistos = useRef<string[]>([]); // na etapa de erros, as erradas da própria sessão também voltam
   const placarRef = useRef<Placar>(placarVazio());
   const [placar, setPlacar] = useState<Placar>(placarVazio);
   const [fimSessao, setFimSessao] = useState(false);
 
   // próxima da sessão: avança de etapa quando a atual acaba (sem revisão, sem novas do tema, cota cheia)
-  // v1.1: dentro do tema, SÓ o tema (revisões do tema → novas do tema); sem "+N da matéria" misturado
+  // v1.1: dentro do tema, SÓ o tema: revisões do tema → novas do tema (por subtema, fácil → difícil)
+  // → revisão dos erros do tema (as que ainda estão erradas, inclusive as de hoje)
   const proximaDaSessao = useCallback(async (s: SessaoTema) => {
     const excluir = vistas.current;
     if (etapa.current === "revisoes") {
@@ -108,9 +127,16 @@ export function Praticar() {
       if (r.questao && r.modo === "revisao" && !excluir.includes(r.questao.id)) return r;
       etapa.current = "tema";
     }
-    if (etapa.current === "tema" && placarRef.current.tema.n < s.novas) {
-      const r = await api.proxima(pedidoDaEtapa("tema", s, excluir));
-      if (r.questao && !r.repetida) return r;
+    if (etapa.current === "tema") {
+      if (placarRef.current.tema.n < s.novas) {
+        const r = await api.proxima(pedidoDaEtapa("tema", s, excluir));
+        if (r.questao && !r.repetida) return r;
+      }
+      etapa.current = "erros";
+    }
+    if (etapa.current === "erros" && placarRef.current.erros.n < ERROS_POR_SESSAO) {
+      const r = await api.proxima(pedidoDaEtapa("erros", s, errosVistos.current));
+      if (r.questao && !errosVistos.current.includes(r.questao.id)) return r;
     }
     etapa.current = "fim";
     return null;
@@ -141,6 +167,7 @@ export function Praticar() {
         r = rs;
         etapaDaQuestao.current = etapa.current;
         if (r.questao) vistas.current = [...vistas.current, r.questao.id];
+        if (r.questao && etapa.current === "erros") errosVistos.current = [...errosVistos.current, r.questao.id];
       } else r = (pre && (await pre)) || (await api.proxima(f.misto ? { ...f, anterior: ultimaDisciplina.current } : f));
     } catch {
       // sem rede ou servidor fora: mensagem humana, e "Tentar de novo" pelo botão da tela vazia
@@ -164,6 +191,7 @@ export function Praticar() {
     setSessao({ total: 0, acertos: 0, xp: 0 });
     etapa.current = filtro.sessao?.revisoes ? "revisoes" : "tema";
     vistas.current = [];
+    errosVistos.current = [];
     placarRef.current = placarVazio();
     setPlacar(placarVazio());
     setFimSessao(false);
@@ -549,8 +577,10 @@ export function Praticar() {
             <ol className="etapas-sessao" aria-label="Etapas da sessão">
               {filtro.sessao.revisoes && <li className={etapaDaQuestao.current === "revisoes" && !fimSessao ? "atual" : ""}>Revisões <span className="num">{placar.revisoes.n}</span></li>}
               <li className={etapaDaQuestao.current === "tema" && !fimSessao ? "atual" : ""}>{filtro.sessao.nome} <span className="num">{placar.tema.n}/{filtro.sessao.novas}</span></li>
+              <li className={etapaDaQuestao.current === "erros" && !fimSessao ? "atual" : ""}>Erros do tema <span className="num">{placar.erros.n}</span></li>
             </ol>
           )}
+          {filtro.sessao && q?.subtema && !fimSessao && <div className="atalho" data-testid="subtema">Subtema: {q.subtema}</div>}
           {filtro.sessao && <button className="link" onClick={() => ir("tema", { subtopico: filtro.sessao!.subtopico })}>Página do tema</button>}
           {filtro.sessao && (
             // trilha única: questões do tema de qualquer banca; o aluno pode ficar numa banca só

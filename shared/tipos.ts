@@ -179,6 +179,8 @@ export interface QuestaoDTO {
   figuras?: FiguraDTO[];
   /** errou por desatenção: volta na revisão com tempo-alvo */
   tempoAlvoSeg?: number;
+  /** sessão do tema (v1.1): subtema do edital em que a questão caiu (achado por código) */
+  subtema?: string;
 }
 
 export interface AlternativaCorrigida {
@@ -665,7 +667,8 @@ export interface Api {
   // misto: intercala disciplinas no peso da prova; anterior = disciplina da última questão
   // subtopico: só aquele tema, novas primeiro ("crase só traz crase"); excluir = já vistas nesta sessão
   // banca: questões do tema de uma banca só (trilha única: o padrão é qualquer banca)
-  proxima(f: { topicoId?: string; disciplina?: Disciplina; questaoId?: string; revisao?: boolean; misto?: boolean; anterior?: Disciplina; subtopico?: string; banca?: string; excluir?: string[] }): Promise<{
+  // erros + subtopico (v1.1): revisão dos erros do tema (questões cuja última resposta foi errada)
+  proxima(f: { topicoId?: string; disciplina?: Disciplina; questaoId?: string; revisao?: boolean; erros?: boolean; misto?: boolean; anterior?: Disciplina; subtopico?: string; banca?: string; excluir?: string[] }): Promise<{
     questao: QuestaoDTO | null;
     modo: "treino" | "revisao";
     aviso?: string;

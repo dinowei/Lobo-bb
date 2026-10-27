@@ -69,6 +69,7 @@ export const apiHttp: Api = {
     if (f.disciplina) p.set("disciplina", f.disciplina);
     if (f.questaoId) p.set("questaoId", f.questaoId);
     if (f.revisao) p.set("revisao", "1");
+    if (f.erros) p.set("erros", "1");
     if (f.misto) p.set("misto", "1");
     if (f.anterior) p.set("anterior", f.anterior);
     if (f.subtopico) p.set("subtopico", f.subtopico);
