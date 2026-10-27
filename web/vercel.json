@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://lobo-binho.onrender.com/api/:path*" },
+    { "source": "/api/(.*)", "destination": "https://lobo-binho.onrender.com/api/$1" },
     { "source": "/((?!api/|assets/|icones/|sw\\.js|manifest\\.webmanifest|favicon\\.ico).*)", "destination": "/index.html" }
   ],
   "headers": [
