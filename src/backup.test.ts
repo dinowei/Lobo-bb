@@ -13,6 +13,13 @@ import { COLECOES_BACKUP, criarBackupAtlas, restaurarBackupAtlas, simularRestaur
 // as coleções do banco falso seguem a lista do backup (questões e tópicos entraram antes da migração BB + BACEN)
 const nomes = COLECOES_BACKUP;
 const copiar = <T>(v: T): T => EJSON.parse(EJSON.stringify(v, { relaxed: false }), { relaxed: false }) as T;
+// filtro mínimo do Mongo para o banco falso: igualdade, $or e { campo: { $regex } }
+const casa = (d: Document, filtro: Document): boolean =>
+  Object.entries(filtro).every(([k, v]) => {
+    if (k === "$or") return (v as Document[]).some((f) => casa(d, f));
+    if (v && typeof v === "object" && "$regex" in v) return typeof d[k] === "string" && new RegExp(String(v.$regex)).test(d[k]);
+    return d[k] === v;
+  });
 
 class ColecaoFalsa {
   documentos: Document[];
@@ -22,7 +29,7 @@ class ColecaoFalsa {
   constructor(documentos: Document[] = []) { this.documentos = copiar(documentos); }
 
   find(filtro: Document = {}): AsyncIterable<Document> {
-    const documentos = this.documentos.filter((d) => Object.entries(filtro).every(([k, v]) => d[k] === v));
+    const documentos = this.documentos.filter((d) => casa(d, filtro));
     const falhar = this.falharLeitura;
     return {
       async *[Symbol.asyncIterator]() {
@@ -33,11 +40,11 @@ class ColecaoFalsa {
   }
 
   async countDocuments(filtro: Document = {}): Promise<number> {
-    return this.documentos.filter((d) => Object.entries(filtro).every(([k, v]) => d[k] === v)).length;
+    return this.documentos.filter((d) => casa(d, filtro)).length;
   }
 
   async deleteMany(filtro: Document = {}): Promise<void> {
-    this.documentos = this.documentos.filter((d) => !Object.entries(filtro).every(([k, v]) => d[k] === v));
+    this.documentos = this.documentos.filter((d) => !casa(d, filtro));
   }
 
   async insertMany(docs: Document[]): Promise<void> {
@@ -69,6 +76,8 @@ function bancoComDados(): BancoFalso {
   db.collection(Config.collection.name).documentos = [
     { _id: "correntes", em: new Date("2026-10-19T12:00:00Z"), valor: { ativa: true, aprovadaEm: "2026-10-19T12:00:00.000Z", correntes: { gerador: ["vendor/model-a"], auditor: ["vendor/model-b"] }, token: "TOKEN_SENTINEL_NAO_EXPORTAR" } },
     { _id: "outro-config", valor: { apiKey: "OUTRA_CHAVE_SENTINEL" } },
+    // v1.1: o tema escolhido à mão é progresso do aluno e entra no backup (só o subtópico)
+    { _id: "estudando:6ad19950d40dcba3f8f47f20", valor: { subtopico: "crase", extra: "NAO_EXPORTAR_EXTRA" } },
   ];
   return db;
 }
@@ -89,7 +98,8 @@ test("exporta gzip íntegro, manifest com hashes e simulação com as mesmas con
     const db = bancoComDados();
     const backup = await criarBackupAtlas(db as unknown as Db, opcoes(root));
     assert.equal(backup.manifesto.colecoes.length, COLECOES_BACKUP.length); // inclui questões e tópicos (vazios aqui)
-    assert.equal(backup.manifesto.colecoes.reduce((s, c) => s + c.quantidade, 0), 6);
+    assert.equal(backup.manifesto.colecoes.reduce((s, c) => s + c.quantidade, 0), 7);
+    assert.ok(COLECOES_BACKUP.includes("aulas_tema"), "v1.1: aula completa por tema no backup");
 
     const config = backup.manifesto.colecoes.find((c) => c.nome === Config.collection.name)!;
     const caminho = join(backup.diretorio, config.arquivo);
@@ -98,6 +108,8 @@ test("exporta gzip íntegro, manifest com hashes e simulação com as mesmas con
     assert.equal(createHash("sha256").update(bytes).digest("hex"), config.sha256);
     const jsonConfig = gunzipSync(bytes).toString("utf8");
     assert.equal(jsonConfig.includes("TOKEN_SENTINEL_NAO_EXPORTAR"), false);
+    assert.ok(jsonConfig.includes("estudando:6ad19950d40dcba3f8f47f20") && jsonConfig.includes("crase"), "tema escolhido à mão no backup");
+    assert.equal(jsonConfig.includes("NAO_EXPORTAR_EXTRA"), false, "só o subtópico");
     assert.equal(jsonConfig.includes("OUTRA_CHAVE_SENTINEL"), false);
     const usuarios = backup.manifesto.colecoes.find((c) => c.nome === User.collection.name)!;
     const jsonUsuario = gunzipSync(await readFile(join(backup.diretorio, usuarios.arquivo))).toString("utf8");

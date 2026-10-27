@@ -23,7 +23,12 @@ export function useGrade(): { grade: MateriaGrade[] | null; erro: boolean; recar
     let vivo = true;
     setErro(false);
     Promise.all([api.trilha(), api.desempenhoTemas(), api.topicos()])
-      .then(([trilha, desempenho, topicos]) => vivo && setDados({ trilha, desempenho, topicos }))
+      .then(([trilha, desempenho, topicos]) => {
+        if (!vivo) return;
+        // resposta incompleta (servidor antigo, sem trilha): sem grade, e quem usa cai no comportamento de antes
+        if (!Array.isArray(trilha?.temas) || !Array.isArray(desempenho) || !Array.isArray(topicos)) return setErro(true);
+        setDados({ trilha, desempenho, topicos });
+      })
       .catch(() => vivo && setErro(true));
     return () => { vivo = false; };
   }, [api, vez]);

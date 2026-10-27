@@ -10,7 +10,7 @@ import { Transform, Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { FUNCOES } from "./catalogo.js";
-import { Attempt, CartaoRevisao, Config, EspacoLo, Ficha, ItemCE, Question, Redacao, Report, RespostaCE, ReviewState, RatingAluno, Simulado, Topic, User } from "./models.js";
+import { Attempt, AulaTema, CartaoRevisao, Config, EspacoLo, Ficha, ItemCE, Question, Redacao, Report, RespostaCE, ReviewState, RatingAluno, Simulado, Topic, User } from "./models.js";
 
 const RETENCAO_PADRAO = 14;
 const specColecoes: { nome: string; filtro: Filter<any>; sanitizar?: (doc: Document) => Document | null }[] = [
@@ -19,7 +19,8 @@ const specColecoes: { nome: string; filtro: Filter<any>; sanitizar?: (doc: Docum
   { nome: ReviewState.collection.name, filtro: {} },
   { nome: Redacao.collection.name, filtro: {} },
   { nome: RatingAluno.collection.name, filtro: {} },
-  { nome: Config.collection.name, filtro: { _id: "correntes" }, sanitizar: configCorrenteSegura },
+  // correntes (sem segredo) e, desde a v1.1, o tema escolhido à mão por aluno ("estudando:<aluno>")
+  { nome: Config.collection.name, filtro: { $or: [{ _id: "correntes" }, { _id: { $regex: "^estudando:" } }] }, sanitizar: configCorrenteSegura },
   // banco de questões e árvore de tópicos: a migração para BB + BACEN mexe neles (backup antes de migrar)
   { nome: Question.collection.name, filtro: {} },
   { nome: Topic.collection.name, filtro: {} },
@@ -32,6 +33,8 @@ const specColecoes: { nome: string; filtro: Filter<any>; sanitizar?: (doc: Docum
   { nome: EspacoLo.collection.name, filtro: {} },
   { nome: ItemCE.collection.name, filtro: {} },
   { nome: Ficha.collection.name, filtro: {} },
+  // fechamento v1.1: aula completa por tema (seções auditadas)
+  { nome: AulaTema.collection.name, filtro: {} },
 ];
 
 export const COLECOES_BACKUP = specColecoes.map((c) => c.nome);
@@ -94,6 +97,11 @@ function limparCorrente(valor: unknown, profundidade = 0): Record<string, unknow
 }
 
 function configCorrenteSegura(doc: Document): Document | null {
+  // "estudando:<aluno>" só guarda o subtópico escolhido: vai como está
+  if (typeof doc._id === "string" && doc._id.startsWith("estudando:")) {
+    const subtopico = typeof doc.valor?.subtopico === "string" ? doc.valor.subtopico : "";
+    return { _id: doc._id, valor: { subtopico }, ...(doc.em instanceof Date ? { em: doc.em } : {}) };
+  }
   if (doc._id !== "correntes") return null;
   const valor = limparCorrente(doc.valor);
   if (!valor) return null;

@@ -2,7 +2,7 @@
 
 Este é o único documento de estado do projeto. As regras de código e o mapa estão no `CLAUDE.md`, e o dia a dia está em `docs/DIARIO.md`. O histórico dos docs antigos fica na tag git `docs-antes-da-limpeza`.
 
-**Último bom conhecido:** commit `0602669` (26/10/2026), com backup `backups/2026-10-26-0859` restaurado numa base temporária e conferido coleção por coleção (`bb -- backup-testar`). Para voltar a ele, ver `docs/RETOMAR.md`.
+**Último bom conhecido:** tag `v1.1` (27/10/2026), com Render live e Vercel Ready no mesmo commit e o backup restaurado numa base temporária e conferido coleção por coleção (`bb -- backup-testar`, ver DIARIO). A anterior, `v1.0-estudo` (`b65df5e`), volta em menos de 5 minutos: passo a passo em `docs/RETOMAR.md`.
 
 Marcas usadas:
 - [CONFIRMADO]: medido no banco, código, teste ou commit, com data.
@@ -101,11 +101,17 @@ Regras de ouro (detalhe no `CLAUDE.md`, regras 1 a 19):
   - "Seu dia" e "Recados" montados por código;
   - "Ouvir no almoço" com transcrição e "continuar de onde parei";
   - "Áudios da Lo", com ouvido / não ouvido;
-- abertura instantânea com o Painel guardado enquanto o Render acorda (`web/vercel.json`, `docs/VERCEL.md`).
+- abertura instantânea com o Painel guardado enquanto o Render acorda (`web/vercel.json`, `docs/VERCEL.md`);
+- **v1.1, estudo sequencial (27/10):**
+  - Grade (12 matérias → temas → subtemas), com tema concluído (≥ 70% nas últimas 20; 15 a 19 aprovadas: últimas 15) e "concluído provisório" (menos de 15 aprovadas).
+  - Plano e tema do dia seguem o próximo da sequência; a escolha manual do tema fica no servidor, por aluno.
+  - Sessão do tema: só o tema; revisões do tema → novas por subtema, fácil → difícil → revisão dos erros → status.
+  - Revisões misturadas só de temas abertos; Simulado "Prova completa" (padrão) ou "Só o que estudei".
 
 **Quase:**
 - fichas para todos os temas (o noturno faz uma à frente do dono);
-- golden set do chat com 30 casos;
+- chat do tema (ficha + questões erradas, regra 19): pronto, "em ajuste" até a gate (golden 30 + 5 do tema) passar no noturno;
+- aula completa por tema: prova em Concordância e Porcentagem no noturno de 28/10; esteira só depois do OK do dono;
 - provas Cebraspe/FGV em lotes (cadeia 5 de 25/10).
 
 **Falta (do dono):** ver a seção 6.
@@ -134,9 +140,9 @@ Resolvidas (uma linha cada):
    - Mandar o edital, para a cota por matéria de `data/concursos/tjsp.json`.
 3. **CNU 2024:** colocar os gabaritos na pasta do CNU (só os cadernos estão lá).
 4. **Janela B no Windows:** criar a tarefa "Lobo Binho - Janela B", diária às 18:00, com `npm run bb -- janela-b` na pasta do projeto. Deixe o noturno rodando oculto ("Executar estando o usuário conectado ou não").
-5. **Publicar**
-   - Seguir `docs/VERCEL.md`: criar o projeto na Vercel apontando para `web/`.
-   - Render: *Manual Deploy* → *Deploy latest commit*. Conferir `/api/saude`.
+5. **Smoke com a sua conta:** `SMOKE_URL=https://lobo-binho-dineilton-s-projects.vercel.app SMOKE_EMAIL=... SMOKE_SENHA=... npm run smoke` (o site pede login).
+   - **Health check do Render:** *Settings → Health Check Path* = `/api/saude`.
+   - **Aula completa:** ver a prova (Concordância e Porcentagem) e dar ou não o OK para a esteira.
 6. **Os 72 arquivos por tema:** pôr em `72 FONTES/` e avisar.
 7. **CVM:** os ids `cvm_*` são provisórios até o edital do Agente Executivo.
 
@@ -145,7 +151,8 @@ Resolvidas (uma linha cada):
 - **Rodar no PC:** `npm run setup` uma vez; `npm run dev` (API :3333 + site :5173); `npm test` e `npm run typecheck`, um de cada vez.
 - **Publicar**
   - Render, deploy manual: o `Dockerfile` roda `node --import tsx src/server.ts`.
-  - A Vercel serve o site e repassa `/api` para o Render (`web/vercel.json`).
+  - A Vercel serve o site e repassa `/api` para o Render (`web/vercel.json`, fonte única: a regra de rota do painel da Vercel fica desativada).
+  - "No ar" = Render live + Vercel Ready, os dois conferidos, e `/api/saude` pela Vercel com a versão certa.
   - Segredos só nos painéis.
 - **Montar do zero**
   1. Atlas M0 e `bb -- indice`.
@@ -185,8 +192,8 @@ Resolvidas (uma linha cada):
   2. Painel de Controle → Opções de Energia → *Alterar configurações do plano* → *Alterar configurações de energia avançadas* → Suspender → **Permitir temporizadores de ativação = Ativar** (na bateria e na tomada).
   3. Deixe o notebook **na tomada** e a sua conta **logada** (bloquear a tela pode; sair da conta não).
   4. A tarefa "Lobo Binho - Noturno Local" já está com: acordar o computador, executar assim que possível se perdido, parar se passar de 5 h.
-- **Freios (v1.0):**
-  - teto diário global de chamadas de IA (`IA_TETO_DIA`, padrão 300);
+- **Freios (v1.0, ajustados na v1.1):**
+  - teto diário global de chamadas de IA (`IA_TETO_DIA` = 1984, 2 × o maior dia dos últimos 7) com reserva de 120 para o aluno (`IA_RESERVA_PRIORITARIA`): noturno e esteira param em 1864;
   - disjuntor: 5 falhas seguidas do mesmo modelo → 30 min fora, registrado em Admin → Erros;
   - o segundo noturno simultâneo sai sem fazer nada.
 - **Prova travada na fila:** quando uma prova falha, ela vai para a Config `fila_ingestao_falhas`. Corrija e enfileire de novo.
@@ -196,4 +203,4 @@ Resolvidas (uma linha cada):
 
 ## 10. Retomar aqui
 
-Versão congelada **v1.0-estudo** (26/10/2026): como subir, publicar, voltar e as pendências em `docs/RETOMAR.md`. O dia a dia fica no "RETOMAR AQUI" de `docs/DIARIO.md`.
+Versão fechada **v1.1** (27/10/2026; a anterior é `v1.0-estudo`): como subir, publicar, voltar em menos de 5 minutos e as pendências em `docs/RETOMAR.md`. O dia a dia fica no "RETOMAR AQUI" de `docs/DIARIO.md`. A v1.2 (visual das telas novas) começa com perguntas ao dono.
