@@ -48,13 +48,14 @@ export function useGrade(): { grade: MateriaGrade[] | null; erro: boolean; recar
 }
 
 // tema do dia (Painel e página do tema): o próximo da sequência da Grade, a mesma fonte do Plano. Escolha manual
-// (ajustes.estudando) aparece no lugar, sem mudar a sequência. Os números do dia vêm da trilha quando é o mesmo tema.
+// ("estudando", guardado por aluno no servidor) aparece no lugar, sem mudar a sequência. Os números do dia vêm da
+// trilha quando é o mesmo tema.
 export function useTemaDoDia(trilha: TrilhaDTO | null): { temaHoje: TrilhaDTO["hoje"]; manual: boolean; proximo: TemaGrade | null } {
-  const { ajustes } = useApp();
+  const { estudando } = useApp();
   const { grade } = useGrade();
   return useMemo(() => {
     if (!grade) return { temaHoje: null, manual: false, proximo: null };
-    const dia = temaDoDia(grade, ajustes.estudando || null);
+    const dia = temaDoDia(grade, estudando || null);
     const proximo = grade.flatMap((m) => m.temas).find((t) => t.proximoDaSequencia) ?? null;
     if (!dia) return { temaHoje: null, manual: false, proximo };
     const t = dia.tema;
@@ -63,5 +64,5 @@ export function useTemaDoDia(trilha: TrilhaDTO | null): { temaHoje: TrilhaDTO["h
       aprovadas: t.aprovadas, novasFeitasHoje: 0, acertosHoje: 0, tamanho: tamanhoSessao("novo"), mistas: 0,
     };
     return { temaHoje, manual: dia.manual, proximo };
-  }, [grade, ajustes.estudando, trilha]);
+  }, [grade, estudando, trilha]);
 }

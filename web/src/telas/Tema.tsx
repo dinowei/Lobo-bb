@@ -15,7 +15,7 @@ import { Pose } from "../componentes/Pose";
 const NOME_CAMADA = { A: "oficial", B: "material oficial", C: "cursinho" } as const;
 
 export function Tema() {
-  const { api, filtro, ir, avisar, ajustes, salvarAjustes } = useApp();
+  const { api, filtro, ir, avisar, estudando: estudandoAgora, definirEstudando } = useApp();
   const sub = filtro.subtopico;
   const [t, setT] = useState<TemaDTO | null | undefined>(undefined);
   const [aula, setAula] = useState<AulaDTO | null>(null);
@@ -48,7 +48,7 @@ export function Tema() {
   const treinar = (revisoes = false) => {
     // treinar um tema fora da sequência = escolha manual (o Painel mostra o que você está estudando)
     const estudando = proximo && proximo.subtopico !== t.subtopico ? t.subtopico : "";
-    if (estudando !== ajustes.estudando) salvarAjustes({ ...ajustes, estudando });
+    if (estudando !== estudandoAgora) definirEstudando(estudando);
     ir("praticar", { sessao: { subtopico: t.subtopico, nome: t.nome, disciplina: t.disciplina, novas: 20, mistas: MISTAS_FIM, revisoes, trilha: false } });
   };
   // v1.1: tema do dia = próximo da Grade (ou o escolhido à mão); a sessão só traz o tema
@@ -61,7 +61,7 @@ export function Tema() {
   });
   // escolha manual: o Painel mostra este tema; a sequência da Grade (e o Plano) não muda
   const fazerDoDia = () => {
-    salvarAjustes({ ...ajustes, estudando: t.subtopico });
+    definirEstudando(t.subtopico);
     avisar(`${t.nome} agora é o seu tema do dia. A sequência da Grade continua${proximo ? ` em ${proximo.nome}` : ""}.`);
   };
   const pedirPrioridade = async () => {

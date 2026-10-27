@@ -27,7 +27,8 @@ const questao = (id: string, topicoId: string, assunto: string, enunciado: strin
 });
 
 type Tipo = "revisao" | "crase" | "lp" | "erro";
-interface Estado { pedidos: { tipo: Tipo; url: string }[]; respondidas: { id: string; tipo: Tipo; acertou: boolean }[]; revisoes: number; foraDoTema: string[] }
+// estudando: o tema escolhido à mão, guardado "no servidor" (por aluno: vale no celular e no PC)
+interface Estado { pedidos: { tipo: Tipo; url: string }[]; respondidas: { id: string; tipo: Tipo; acertou: boolean }[]; revisoes: number; foraDoTema: string[]; estudando: string; simulados: string[] }
 
 function servidorFalso(p: Page, e: Estado) {
   const tipoDe = new Map<string, Tipo>();
@@ -38,6 +39,10 @@ function servidorFalso(p: Page, e: Estado) {
     const crase = e.respondidas.filter((x) => x.tipo === "crase");
     switch (u.pathname) {
       case "/api/saude": return j({ ok: true });
+      case "/api/estudando":
+        if (r.request().method() === "POST") { e.estudando = (r.request().postDataJSON() as { subtopico: string }).subtopico; return j({ ok: true }); }
+        return j({ subtopico: e.estudando });
+      case "/api/simulado": e.simulados.push(u.search); return j([]);
       case "/api/auth/eu": return j({ login: false, usuario: null });
       case "/api/painel": return j(calcularPainel({ topicos, tentativas: [], revisoes: [] }));
       case "/api/topicos": return j(topicos);
@@ -137,10 +142,9 @@ try {
     const ctx = await navegador.newContext({ viewport: { width: tela.w, height: tela.h }, colorScheme: "dark", locale: "pt-BR" });
     const p = await ctx.newPage();
     p.setDefaultTimeout(30_000);
-    const e: Estado = { pedidos: [], respondidas: [], revisoes: 2, foraDoTema: [] };
+    // v1.1: o aluno escolheu Crase à mão (fora da sequência da Grade, que começa no tema 1); fica no servidor
+    const e: Estado = { pedidos: [], respondidas: [], revisoes: 2, foraDoTema: [], estudando: "crase", simulados: [] };
     await servidorFalso(p, e);
-    // v1.1: o aluno escolheu Crase à mão (fora da sequência da Grade, que começa no tema 1)
-    await p.addInitScript(() => { if (!localStorage.getItem("lobo-ajustes")) localStorage.setItem("lobo-ajustes", JSON.stringify({ estudando: "crase" })); });
     await p.goto(`${WEB}/#painel`, { waitUntil: "domcontentloaded", timeout: 120_000 });
 
     // Painel: o botão principal é o tema do dia (o escolhido), e a sequência continua no 1º tema
@@ -221,7 +225,7 @@ try {
     const ctx = await navegador.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "dark", locale: "pt-BR" });
     const p = await ctx.newPage();
     p.setDefaultTimeout(30_000);
-    const e: Estado = { pedidos: [], respondidas: [], revisoes: 0, foraDoTema: [] };
+    const e: Estado = { pedidos: [], respondidas: [], revisoes: 0, foraDoTema: [], estudando: "", simulados: [] };
     await servidorFalso(p, e);
     let inicio: unknown = null;
     await p.route((u) => u.pathname === "/api/trilha/inicio", (r) => { inicio = r.request().postDataJSON(); return r.fulfill({ json: { ok: true } }); });
@@ -240,7 +244,8 @@ try {
     await p.locator("[data-testid=fazer-do-dia]").click();
     await p.waitForTimeout(500);
     assert.equal(inicio, null, "escolha manual não mexe na trilha do servidor");
-    assert.equal(await p.evaluate(() => JSON.parse(localStorage.getItem("lobo-ajustes") ?? "{}").estudando), "pontuacao");
+    assert.equal(e.estudando, "pontuacao", "escolha guardada no servidor, por aluno");
+    assert.equal(await p.evaluate(() => JSON.parse(localStorage.getItem("lobo-ajustes") ?? "{}").estudando), undefined, "nada no navegador");
     assert.match(await p.locator(".faixa-aviso").innerText(), /Só 12 questões aprovadas/);
     await p.evaluate(() => { location.hash = "#painel"; });
     await p.locator(".acao-trilha", { hasText: "Pontuação" }).waitFor();
@@ -249,7 +254,49 @@ try {
     await p.evaluate(() => { location.hash = "#grade"; });
     await p.locator(`[data-testid=grade-tema-${PRIMEIRO.subtopico}].proximo`).waitFor();
     console.log("✔ Painel = próximo da Grade; busca \"crase\" → só crase; escolha manual no Painel sem mudar a sequência; aviso < 15 aprovadas");
+
+    // Simulado: "Prova completa" é o padrão; "Só o que estudei" vai com modo=estudado
+    await p.evaluate(() => { location.hash = "#simulados"; });
+    await p.locator("[data-testid=simulado-escolha-concurso] button", { hasText: "BB" }).click();
+    const modos = p.locator("[data-testid=modo-simulado] [role=radio]");
+    await modos.first().waitFor();
+    assert.equal(await modos.first().getAttribute("aria-checked"), "true", "Prova completa é o padrão");
+    await p.locator(".opcoes-tamanho .opcao").first().click();
+    await p.waitForTimeout(400);
+    assert.doesNotMatch(e.simulados.at(-1) ?? "", /modo=estudado/);
+    await p.locator("button", { hasText: /^Novo simulado/ }).click().catch(() => { /* sem questões, a tela pode já estar na escolha */ });
+    await p.locator("[data-testid=modo-simulado] [role=radio]", { hasText: "Só o que estudei" }).click();
+    await p.locator(".opcoes-tamanho .opcao").first().click();
+    await p.waitForTimeout(400);
+    assert.match(e.simulados.at(-1) ?? "", /modo=estudado/);
+    console.log("✔ Simulado: Prova completa (padrão) e Só o que estudei (modo=estudado)");
     await ctx.close();
+
+    // "outro aparelho" (novo navegador, mesmo aluno): o Painel já abre no tema escolhido, que veio do servidor
+    const ctx2 = await navegador.newContext({ viewport: { width: 360, height: 780 }, colorScheme: "dark", locale: "pt-BR" });
+    const p2 = await ctx2.newPage();
+    p2.setDefaultTimeout(30_000);
+    await servidorFalso(p2, e);
+    await p2.goto(`${WEB}/#painel`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    await p2.locator(".acao-trilha", { hasText: "Pontuação" }).waitFor();
+    await p2.locator("[data-testid=tema-escolhido]").waitFor();
+    await ctx2.close();
+
+    // migração: escolha que ficou nos ajustes do navegador (versão de 27/10) sobe uma vez para o servidor
+    const e3: Estado = { pedidos: [], respondidas: [], revisoes: 0, foraDoTema: [], estudando: "", simulados: [] };
+    const ctx3 = await navegador.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: "dark", locale: "pt-BR" });
+    const p3 = await ctx3.newPage();
+    p3.setDefaultTimeout(30_000);
+    await servidorFalso(p3, e3);
+    await p3.addInitScript(() => { if (!sessionStorage.getItem("semeado")) { sessionStorage.setItem("semeado", "1"); localStorage.setItem("lobo-ajustes", JSON.stringify({ nome: "Teste", estudando: "crase" })); } });
+    await p3.goto(`${WEB}/#painel`, { waitUntil: "domcontentloaded", timeout: 120_000 });
+    await p3.locator(".acao-trilha", { hasText: "Crase" }).waitFor();
+    assert.equal(e3.estudando, "crase", "valor antigo subiu para o servidor");
+    const local = await p3.evaluate(() => JSON.parse(localStorage.getItem("lobo-ajustes") ?? "{}"));
+    assert.equal(local.estudando, undefined, "e saiu do navegador");
+    assert.equal(local.nome, "Teste", "os outros ajustes ficam");
+    await ctx3.close();
+    console.log("✔ tema escolhido à mão: no servidor por aluno (outro aparelho vê) e migração do valor antigo do navegador");
   }
 } catch (e) {
   falhou = true;

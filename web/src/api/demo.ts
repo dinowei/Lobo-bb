@@ -52,6 +52,7 @@ import temasJson from "../../../data/temas.json";
 
 const CHAVE = "lobo-demo-v1";
 const CHAVE_INICIO = "lobo-demo-trilha-inicio";
+const CHAVE_ESTUDANDO = "lobo-demo-estudando";
 const CHAVE_ESPACO_LO = "lobo-demo-espaco-lo";
 const CONTEUDO_TEMAS = temasJson.temas as unknown as Record<string, { pontos?: string[]; ficha?: { texto: string } }>;
 
@@ -387,6 +388,18 @@ export const apiDemo: Api = {
     return espera(undefined);
   },
 
+  // v1.1: tema escolhido à mão; no demo fica no navegador
+  estudando: () => {
+    let s = "";
+    try { s = localStorage.getItem(CHAVE_ESTUDANDO) ?? ""; } catch { /* sem storage: segue a Grade */ }
+    return espera(TRILHA.some((x) => x.subtopico === s) ? s : "");
+  },
+  definirEstudando: (subtopico) => {
+    if (subtopico && !TRILHA.some((x) => x.subtopico === subtopico)) return Promise.reject(new Error("Esse tema não está na trilha."));
+    try { localStorage.setItem(CHAVE_ESTUDANDO, subtopico); } catch { /* sem storage */ }
+    return espera(undefined);
+  },
+
   // no demo o resumo é recalculado das tentativas (mesma função do servidor)
   simulados: () => {
     const e = ler();
@@ -589,8 +602,9 @@ export const apiDemo: Api = {
 
   async simulado(n, opcoes) {
     const e = ler();
-    // v1.1 (item 3): só temas concluídos (ou em andamento); o Raio-X (diagnóstico) olha tudo (igual ao servidor)
-    const mistura = opcoes?.diagnostico ? null : misturaDemo(e);
+    // v1.1: "Prova completa" (padrão) sem restrição; "Só o que estudei" = temas concluídos (ou em andamento);
+    // o Raio-X (diagnóstico) olha tudo (igual ao servidor)
+    const mistura = !opcoes?.diagnostico && opcoes?.modo === "estudado" ? misturaDemo(e) : null;
     const ativas = QUESTOES_DEMO.filter((q) => !e.contestadas.includes(q.id) && questaoAtiva(q) && (!mistura || mistura.has(subDe(q))));
     const comQuestao = TOPICOS.filter((t) => ativas.some((q) => topicoDe(q) === t.id));
     const cotas = cotasPorDisciplina(Math.min(n, ativas.length), comQuestao);

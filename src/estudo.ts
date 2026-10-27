@@ -56,7 +56,7 @@ import { explicarSobDemanda } from "./outroJeito.js";
 import { perguntarAoBinho } from "./chatBinho.js";
 import { avaliarCartao, filaCartoes } from "./cartoes.js";
 import { fontesDaQuestao } from "./fontesAtuais.js";
-import { definirTemaDoDia, desempenhoTemas, paginaTema, pedirPrioridade, prontidao, proximaDoTema, proximoErroDoTema, temasDaMistura, trilha } from "./temas.js";
+import { definirEstudando, definirTemaDoDia, desempenhoTemas, estudando, paginaTema, pedirPrioridade, prontidao, proximaDoTema, proximoErroDoTema, temasDaMistura, trilha } from "./temas.js";
 import { listarSimulados, salvarSimulado } from "./simulados.js";
 import { espacoLo, salvarPosicaoAudio } from "./espacoLo.js";
 
@@ -347,6 +347,8 @@ export const apiServidor: Omit<Api, "modo"> = {
   tema: paginaTema,
   pedirPrioridadeTema: pedirPrioridade,
   definirTemaDoDia,
+  estudando,
+  definirEstudando,
   simulados: async () => {
     const lente = lenteAtiva();
     return (await listarSimulados(ALUNO())).filter((s) => !lente || s.concurso === lente);
@@ -596,9 +598,9 @@ export const apiServidor: Omit<Api, "modo"> = {
     // Raio-X: só dificuldade média (completa com outras se faltar)
     const mistura = opcoes?.diagnostico ? MISTURA_DIAGNOSTICO : MISTURA_SIMULADO;
     const mapa = await mapaTopicos();
-    // v1.1 (item 3): simulado só com temas concluídos (ou em andamento, se nenhum concluído); o Raio-X
-    // (diagnóstico) continua olhando tudo, é ele que mostra onde começar
-    const temas = opcoes?.diagnostico ? null : await temasDaMistura();
+    // v1.1: "Prova completa" (padrão) = todas as matérias nas cotas, sem restrição de tema; "Só o que estudei" =
+    // temas concluídos (ou em andamento, se nenhum concluído). O Raio-X (diagnóstico) olha tudo.
+    const temas = !opcoes?.diagnostico && opcoes?.modo === "estudado" ? await temasDaMistura() : null;
     const daMistura = temas ? { subtopico: { $in: [...temas] } } : {};
     const escolhidas: QuestaoDoc[] = [];
     const FAIXAS = { facil: [1, 2], media: [3], dificil: [4, 5] } as const;

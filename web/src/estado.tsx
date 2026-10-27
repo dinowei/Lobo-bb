@@ -48,12 +48,11 @@ export interface Ajustes {
   vozLoManual: boolean; // distingue preferência explícita do padrão herdado
   tema: "escuro" | "claro" | "sistema"; // aparência (padrão escuro, como sempre)
   fonteTitulo: "sora" | "outfit"; // fonte dos títulos em avaliação pelo dono (Inter segue no texto)
-  estudando: string; // v1.1: tema escolhido à mão (subtópico); vazio = o Painel segue o próximo da Grade
 }
 const AJUSTES_PADRAO: Ajustes = {
   nome: "Dinei", metaDiaria: 20, dataProva: "", duracaoProvaMin: 0, linhaDeCorte: 70, linhasRedacaoMax: 30, cicloFoco: "25/5",
   horasPorDia: 2, diasSemana: [1, 2, 3, 4, 5, 6], inicioPlano: "", velocidadeVoz: 1, vozLo: "Louise", vozLoManual: false,
-  tema: "escuro", fonteTitulo: "sora", estudando: "",
+  tema: "escuro", fonteTitulo: "sora",
 };
 const CHAVE_AJUSTES = "lobo-ajustes";
 function lerAjustes(): Ajustes {
@@ -91,6 +90,9 @@ interface Ctx {
   // F5: aba BB / BACEN (o servidor recebe no cabeçalho X-Concurso; o demo lê do mesmo lugar)
   concurso: IdConcursoAtivo;
   trocarConcurso: (c: IdConcursoAtivo) => void;
+  // v1.1: tema escolhido à mão (subtópico; "" = seguir a Grade). Servidor: por aluno; demo: no navegador
+  estudando: string;
+  definirEstudando: (subtopico: string) => void;
 }
 const Contexto = createContext<Ctx | null>(null);
 export const useApp = () => {
@@ -298,6 +300,32 @@ export function Provedor({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // tema escolhido à mão: vem da API (servidor = por aluno). Migração: o valor que ficou nos ajustes locais
+  // (versão de 27/10) sobe uma vez para o servidor e sai do navegador
+  const [estudando, setEstudando] = useState("");
+  const pronto = !!api && login !== "verificando" && login !== "pedir";
+  useEffect(() => {
+    if (!api || !pronto) return;
+    let vivo = true;
+    (async () => {
+      let s = await api.estudando().catch(() => "");
+      try {
+        const salvo = JSON.parse(localStorage.getItem(CHAVE_AJUSTES) ?? "{}") as Record<string, unknown>;
+        if (typeof salvo.estudando === "string") {
+          if (!s && salvo.estudando) { await api.definirEstudando(salvo.estudando); s = salvo.estudando; }
+          delete salvo.estudando;
+          localStorage.setItem(CHAVE_AJUSTES, JSON.stringify(salvo));
+        }
+      } catch { /* sem storage ou tema fora da trilha: segue o do servidor */ }
+      if (vivo) setEstudando(s);
+    })();
+    return () => { vivo = false; };
+  }, [api, pronto, usuario?.id]);
+  const definirEstudando = useCallback((subtopico: string) => {
+    setEstudando(subtopico);
+    api?.definirEstudando(subtopico).catch(() => avisar("Não deu para guardar o tema escolhido agora."));
+  }, [api]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // trocar de aba: guarda (o próximo pedido já vai com o novo concurso), recarrega o painel; a tela atual
   // remonta (App usa o concurso como chave) e busca de novo os dados dela
   const trocarConcurso = useCallback((c: IdConcursoAtivo) => {
@@ -314,7 +342,7 @@ export function Provedor({ children }: { children: ReactNode }) {
   return (
     <Contexto.Provider
       value={{
-        concurso, trocarConcurso,
+        concurso, trocarConcurso, estudando, definirEstudando,
         api, painel, recarregar, tela, filtro, ir, guardarSaida, ajustes, salvarAjustes, avisar, desfazivel, toasts, subiuNivel,
         fecharNivel: () => setSubiuNivel(null),
         usuario, ehAdmin, sair, atualizarUsuario: setUsuario, acordando: login === "acordando",

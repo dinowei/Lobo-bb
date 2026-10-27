@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import type { Letra, QuestaoDTO, ResultadoSimuladoDTO } from "../../../shared/tipos";
-import { NOME_DISCIPLINA } from "../../../shared/tipos";
+import type { Letra, ModoSimulado, QuestaoDTO, ResultadoSimuladoDTO } from "../../../shared/tipos";
+import { NOME_DISCIPLINA, NOME_MODO_SIMULADO } from "../../../shared/tipos";
 import { useApp } from "../estado";
 import { Alternativas, Cabecalho, Licao } from "../componentes/Questao";
 import { IEsq, IDir, ISeta } from "../componentes/Icones";
@@ -34,6 +34,7 @@ export function Simulados() {
   const [limiteSeg, setLimiteSeg] = useState(0); // 0 = sem contagem regressiva
   const [confirmarFim, setConfirmarFim] = useState(false);
   const [mistura, setMistura] = useState<Mistura | null>(null);
+  const [modo, setModo] = useState<ModoSimulado>("completa"); // v1.1: prova completa (padrão) ou só o que estudei
   // cronômetro só anda com a aba visível (horas líquidas honestas)
   const relogio = useRef<RelogioAtivo>(null as unknown as RelogioAtivo);
   if (!relogio.current) relogio.current = new RelogioAtivo();
@@ -67,7 +68,7 @@ export function Simulados() {
   }, [seg, limiteSeg, questoes, resultado]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function comecar(n: number) {
-    const qs = await api.simulado(n);
+    const qs = await api.simulado(n, { modo });
     if (qs.length < n) avisar(`O banco tem ${qs.length} questões disponíveis agora; o simulado ficou com ${qs.length}.`);
     setQuestoes(qs);
     setRespostas({});
@@ -271,6 +272,15 @@ export function Simulados() {
           </div>
         </div>
       ) : (
+        <>
+        <div className="chips" role="radiogroup" aria-label="Que questões entram" style={{ marginBottom: 10 }} data-testid="modo-simulado">
+          {(["completa", "estudado"] as const).map((m) => (
+            <button key={m} role="radio" className="chip" aria-checked={modo === m} aria-pressed={modo === m} onClick={() => setModo(m)}>{NOME_MODO_SIMULADO[m]}</button>
+          ))}
+          <span className="atalho">
+            {modo === "completa" ? "Todas as matérias, nas cotas da prova." : "Só temas concluídos (ou em andamento, se nenhum concluído)."}
+          </span>
+        </div>
         <div className="opcoes-tamanho" style={{ marginBottom: 22 }}>
           {TAMANHOS.map((t) => (
             <button key={t.n} className="opcao" onClick={() => comecar(t.n)}>
@@ -280,6 +290,7 @@ export function Simulados() {
             </button>
           ))}
         </div>
+        </>
       )}
       <div className="secao rolagem historico-resultados">
         <h2>Histórico</h2>

@@ -60,7 +60,7 @@ function Prontidao() {
 }
 
 export function Painel() {
-  const { painel, ajustes, salvarAjustes, ir, usuario, api, concurso } = useApp();
+  const { painel, ajustes, definirEstudando, ir, usuario, api, concurso } = useApp();
   // 1ª visita depois de entrar (por conta; sem conta, por navegador): o Binho acena uma vez
   const chaveVisita = `lobo-boas-vindas-${usuario?.email ?? "local"}`;
   const [primeiraVisita] = useState(() => {
@@ -161,7 +161,7 @@ export function Painel() {
               {manual && proximo && (
                 <small className="sub" data-testid="tema-escolhido">
                   Você escolheu este tema; a sequência segue em {proximo.nome}.{" "}
-                  <button className="link" onClick={() => salvarAjustes({ ...ajustes, estudando: "" })}>Voltar à sequência</button>
+                  <button className="link" onClick={() => definirEstudando("")}>Voltar à sequência</button>
                 </small>
               )}
               <div className="acoes-plano">

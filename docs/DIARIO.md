@@ -521,3 +521,7 @@ RETOMAR AQUI (26/10/2026): ver `docs/RETOMAR.md` (versão v1.0-estudo congelada)
   - Revisões misturadas e Simulados: só temas concluídos (inclui provisório); se nenhum concluído, os em andamento; nunca tema não iniciado. O Raio-X (diagnóstico) continua olhando tudo. Cache de 60 s no servidor.
   - `shared/estudoTema.ts` (+ testes), `src/estudoTema.test.ts` (servidor em memória: ordem, erros, mistura), e2e-trilha com a etapa de erros (4 erradas voltam, 4/4) e status "concluído".
   - Atenção: o número "revisões para hoje" do Painel ainda conta todas as vencidas; as de temas em andamento continuam vindo dentro da sessão do tema.
+- Item 3, ajustes do dono (27/10):
+  - Simulado em dois modos: "Prova completa" (padrão: todas as matérias nas cotas da prova, sem restrição de tema) e "Só o que estudei" (temas concluídos/provisórios; se nenhum, os em andamento). Raio-X segue olhando tudo. API: `simulado(n, { modo })`, `?modo=estudado`.
+  - Tema escolhido à mão ("estudando") agora fica no servidor, por aluno (`config` `estudando:<aluno>`, rotas `GET/POST /api/estudando`): vale no celular e no PC. No demo, no navegador. O valor que ficou nos ajustes locais (versão da manhã) sobe uma vez para o servidor e sai do navegador.
+  - Testes: `src/estudoTema.test.ts` (Mongo em memória: completa inclui tema não iniciado, estudado não; estudando por aluno, A ≠ B, tema inválido recusado) e e2e-trilha (padrão = completa, modo=estudado; outro aparelho vê a escolha; migração). Suíte 305 ok / 0 falha; ISOLAMENTO 205 ok / 0 falha.

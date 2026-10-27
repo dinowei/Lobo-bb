@@ -158,6 +158,9 @@ export interface QuestaoComFigurasDTO {
   figuras: FiguraConferenciaDTO[];
 }
 
+export type ModoSimulado = "completa" | "estudado";
+export const NOME_MODO_SIMULADO: Record<ModoSimulado, string> = { completa: "Prova completa", estudado: "Só o que estudei" };
+
 export interface QuestaoDTO {
   id: string;
   topicoId: string;
@@ -680,6 +683,10 @@ export interface Api {
   pedirPrioridadeTema(subtopico: string): Promise<void>;
   // põe a trilha neste tema (ele vira o tema do dia; dali em diante a regra decide)
   definirTemaDoDia(subtopico: string): Promise<void>;
+  // v1.1: tema escolhido à mão ("estudando"), por aluno: no servidor vale no celular e no PC; no demo, no navegador.
+  // "" = seguir a sequência da Grade. Não muda a sequência.
+  estudando(): Promise<string>;
+  definirEstudando(subtopico: string): Promise<void>;
   // histórico dos simulados com o detalhe guardado (evolução, tabela, CSV)
   simulados(): Promise<ResumoSimulado[]>;
   // concursos disponíveis (abas BB/BACEN): banca em uso e área
@@ -697,7 +704,9 @@ export interface Api {
   // motivo do último erro nessa questão; devolve a ação (aula/tópico, comparação, palavra-chave, revisão antecipada)
   motivoErro(questaoId: string, motivo: MotivoErro): Promise<AcaoMotivoDTO>;
   // diagnostico: Raio-X de 30 questões médias; na correção, define o nível inicial por disciplina
-  simulado(n: number, opcoes?: { diagnostico?: boolean }): Promise<QuestaoDTO[]>;
+  // v1.1: modo "completa" (padrão: todas as matérias nas cotas da prova, sem restrição de tema) ou "estudado"
+  // (só temas concluídos/provisórios; se nenhum, os em andamento). O Raio-X (diagnostico) olha tudo.
+  simulado(n: number, opcoes?: { diagnostico?: boolean; modo?: ModoSimulado }): Promise<QuestaoDTO[]>;
   corrigirSimulado(r: { questaoId: string; resposta: Letra | null; tempoSeg: number }[], opcoes?: { diagnostico?: boolean }): Promise<ResultadoSimuladoDTO>;
   // mistura de dificuldade do simulado: a das oficiais (≥ 30 com dificuldade) ou a estimativa 20/50/30
   misturaSimulado(): Promise<{ facil: number; media: number; dificil: number; estimativa: boolean; base: number }>;

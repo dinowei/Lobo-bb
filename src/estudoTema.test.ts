@@ -73,7 +73,28 @@ test("sessão do tema: subtema do edital → fácil a difícil; erros do tema; r
   ]);
   const rev = await apiServidor.proxima({ revisao: true });
   assert.equal(rev.questao?.id, String(verbalDificil._id), "revisão de tema não iniciado não entra na mistura");
-  const sim = await apiServidor.simulado(10);
-  assert.ok(sim.length > 0);
-  assert.ok(sim.every((x) => x.id !== String(nunca._id)), "simulado sem tema não iniciado");
+  // Simulado "Só o que estudei": sem tema não iniciado
+  const estudado = await apiServidor.simulado(10, { modo: "estudado" });
+  assert.ok(estudado.length > 0);
+  assert.ok(estudado.every((x) => x.id !== String(nunca._id)), "só o que estudei: sem tema não iniciado");
+  // "Prova completa" (padrão): todas as matérias, sem restrição de tema (o não iniciado entra)
+  for (const completa of [await apiServidor.simulado(10), await apiServidor.simulado(10, { modo: "completa" })]) {
+    assert.ok(completa.some((x) => x.id === String(nunca._id)), "prova completa: sem restrição de tema");
+    assert.equal(completa.length, 5, "as 5 questões do banco");
+  }
+});
+
+test("tema escolhido à mão (\"estudando\"): guardado no servidor por aluno, vale em qualquer aparelho", { skip: !ligado }, async () => {
+  const { apiServidor } = await import("./estudo.js");
+  const { comUsuario } = await import("./auth.js");
+  const a = { id: new Types.ObjectId(), nome: "A", email: "a@teste", papel: "aluno" as const };
+  const b = { id: new Types.ObjectId(), nome: "B", email: "b@teste", papel: "aluno" as const };
+  assert.equal(await comUsuario(a, () => apiServidor.estudando()), "", "sem escolha: segue a Grade");
+  await comUsuario(a, () => apiServidor.definirEstudando("crase"));
+  // "outro aparelho" = outra requisição do mesmo aluno: lê o mesmo valor
+  assert.equal(await comUsuario(a, () => apiServidor.estudando()), "crase");
+  assert.equal(await comUsuario(b, () => apiServidor.estudando()), "", "por aluno: B não vê a escolha de A");
+  await assert.rejects(comUsuario(a, () => apiServidor.definirEstudando("tema-inventado")), /não está na trilha/);
+  await comUsuario(a, () => apiServidor.definirEstudando(""));
+  assert.equal(await comUsuario(a, () => apiServidor.estudando()), "", "voltar à sequência");
 });

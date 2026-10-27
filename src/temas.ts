@@ -112,6 +112,18 @@ export async function pedirPrioridade(subtopico: string) {
 // onde a trilha começa (por aluno; a trilha é única): "Fazer deste o tema do dia" na página do tema.
 // Grava o SUBTÓPICO, que não muda quando a ordem da trilha muda.
 const chaveInicio = (userId: unknown = ALUNO()) => `trilha_inicio:${String(userId)}`;
+
+// v1.1: tema escolhido à mão ("estudando"), por aluno, para valer no celular e no PC; "" = seguir a Grade
+const chaveEstudando = () => `estudando:${String(ALUNO())}`;
+export async function estudando(): Promise<string> {
+  const c = await Config.findById(chaveEstudando()).lean();
+  const s = (c?.valor as { subtopico?: string } | undefined)?.subtopico ?? "";
+  return TRILHA.some((x) => x.subtopico === s) ? s : "";
+}
+export async function definirEstudando(subtopico: string) {
+  if (subtopico && !TRILHA.some((x) => x.subtopico === subtopico)) throw new Error("Esse tema não está na trilha.");
+  await Config.updateOne({ _id: chaveEstudando() }, { $set: { valor: { subtopico }, em: new Date() } }, { upsert: true });
+}
 export async function definirTemaDoDia(subtopico: string) {
   if (!TRILHA.some((x) => x.subtopico === subtopico)) throw new Error("Esse tema não está na trilha.");
   const valor: InicioTrilha = { subtopico, desde: diaLocal(new Date()) };

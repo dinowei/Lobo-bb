@@ -154,6 +154,12 @@ app.post("/api/trilha/inicio", rota(async (req, res) => {
   await apiServidor.definirTemaDoDia(String((req.body as { subtopico?: unknown })?.subtopico ?? ""));
   res.json({ ok: true });
 }));
+// v1.1: tema escolhido à mão, por aluno (vale no celular e no PC)
+app.get("/api/estudando", rota(async (_req, res) => res.json({ subtopico: await apiServidor.estudando() })));
+app.post("/api/estudando", rota(async (req, res) => {
+  await apiServidor.definirEstudando(String((req.body as { subtopico?: unknown })?.subtopico ?? ""));
+  res.json({ ok: true });
+}));
 // concursos (F5): banca em uso e área de cada um; o admin troca com registro
 app.get("/api/concursos", (_req, res) => res.json(infoConcursos()));
 app.get("/api/prontidao", rota(async (_req, res) => res.json(await apiServidor.prontidao())));
@@ -284,7 +290,7 @@ app.post(
 app.get(
   "/api/simulado",
   rota(async (req, res) =>
-    res.json(await apiServidor.simulado(Math.min(120, Math.max(1, Number(req.query.n) || 20)), { diagnostico: req.query.diagnostico === "1" }))
+    res.json(await apiServidor.simulado(Math.min(120, Math.max(1, Number(req.query.n) || 20)), { diagnostico: req.query.diagnostico === "1", modo: req.query.modo === "estudado" ? "estudado" : "completa" }))
   )
 );
 app.get("/api/simulado/mistura", rota(async (_req, res) => res.json(await apiServidor.misturaSimulado())));
