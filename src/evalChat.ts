@@ -2,8 +2,9 @@ import { readFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { Types } from "mongoose";
 import { z } from "zod";
-import { DISCIPLINAS, ChatUso, Chunk, RespostaBinho, Source, Topic } from "./models.js";
-import { FORA_DO_EDITAL, OCUPADO, SEM_BASE, perguntarAoBinho, type DiagnosticoBinho } from "./chatBinho.js";
+import { DISCIPLINAS, ChatUso, Chunk, Question, RespostaBinho, Source, Topic } from "./models.js";
+import { FORA_DO_EDITAL, OCUPADO, SEM_BASE, contextoDoTema, perguntarAoBinho, type DiagnosticoBinho } from "./chatBinho.js";
+import { SUBTOPICO_POR_ID } from "../shared/subtopicos.js";
 
 const CasoChatZ = z.object({
   id: z.string().min(1),
@@ -98,6 +99,94 @@ export type ResultadoEvalChat = {
 // Invenção aceita = pergunta sem base que saiu com resposta de conteúdo para o aluno
 export function ehInvencaoAceita(caso: CasoChat, resposta?: string) {
   return caso.resultadoEsperado === "nao_achei" && !!resposta && resposta !== SEM_BASE && resposta !== FORA_DO_EDITAL && resposta !== OCUPADO;
+}
+
+// ============================================================
+// v1.1 (item 5): 5 casos DENTRO do tema (docs/eval/chat-tema.json). O contexto do tema vem de
+// contextoDoTema; as "questões erradas" são as primeiras aprovadas do tema (nenhuma tentativa é gravada).
+// ============================================================
+export const TAMANHO_TEMA = 5;
+const CasoTemaZ = z.object({
+  id: z.string().min(1),
+  subtopico: z.string().min(1),
+  pergunta: z.string().min(3).max(500),
+  erros: z.number().int().min(0).max(3).default(0),
+  resultadoEsperado: z.enum(["resposta_com_fonte", "resposta_util", "nao_achei", "cita_gabarito"]),
+  indicadoresEsperados: z.array(z.string().min(1)).optional(),
+});
+export type CasoTema = z.infer<typeof CasoTemaZ>;
+export const validarCasosTema = (valor: unknown) => z.object({ versao: z.literal(1), casos: z.array(CasoTemaZ).length(TAMANHO_TEMA) }).parse(valor).casos;
+
+// cita_gabarito: a resposta diz a letra do gabarito de uma questão errada e não afirma outra letra como a certa
+// (regra 19: o tutor nunca contradiz o gabarito)
+export function verificarCasoTema(caso: CasoTema, resposta: string | undefined, citacoes: { titulo: string; trecho: string }[] = [], gabaritos: string[] = []) {
+  if (!resposta || resposta === OCUPADO) return { aprovado: false, invencao: false };
+  const naoAchou = resposta === SEM_BASE;
+  if (caso.resultadoEsperado === "nao_achei") return { aprovado: naoAchou, invencao: !naoAchou && resposta !== FORA_DO_EDITAL };
+  if (naoAchou) return { aprovado: false, invencao: false };
+  const corpo = compactar(`${resposta}\n${citacoes.map((c) => c.trecho).join("\n")}`);
+  const indicadores = (caso.indicadoresEsperados ?? []).every((i) => corpo.includes(compactar(i)));
+  if (caso.resultadoEsperado === "resposta_com_fonte") return { aprovado: citacoes.length > 0 && indicadores, invencao: false };
+  if (caso.resultadoEsperado === "resposta_util") return { aprovado: indicadores, invencao: false };
+  const letra = "(?:a\\s+)?(?:letra|alternativa|op[cç][aã]o)?\\s*\\(?([A-E])\\)?(?![\\p{L}])";
+  const citadas = [...resposta.matchAll(new RegExp(`\\b(?:letra|alternativa|gabarito|op[cç][aã]o)\\s*(?:[ée]\\s*)?(?:a\\s+)?(?:letra\\s+)?\\(?([A-E])\\)?(?![\\p{L}])`, "giu"))].map((m) => m[1].toUpperCase());
+  const afirmadas = [...resposta.matchAll(new RegExp(`\\b(?:resposta\\s+(?:certa|correta)|gabarito|alternativa\\s+correta)\\s*(?:[ée]|:|seria)\\s*${letra}`, "giu"))].map((m) => m[1].toUpperCase());
+  const contradiz = afirmadas.some((l) => !gabaritos.includes(l));
+  return { aprovado: citadas.some((l) => gabaritos.includes(l)) && !contradiz, invencao: contradiz };
+}
+
+// gate do chat do tema (v1.1): golden 30 com 0 invenções aceitas e ≥ 85% aprovados; 5 do tema com 0 contradições e
+// ≥ 4 aprovados. Falha de infraestrutura (teto de IA, rede) não decide nada: "indefinido", roda de novo depois.
+export function decidirGate(
+  golden: { casos: number; respostasAprovadas: number; invencoesAceitas: number; falhasInfraestrutura: number },
+  tema: { casos: number; aprovados: number; invencoes: number; falhasInfraestrutura: number }
+): "liberado" | "em_ajuste" | "indefinido" {
+  if (golden.falhasInfraestrutura || tema.falhasInfraestrutura) return "indefinido";
+  const ok = golden.invencoesAceitas === 0 && golden.respostasAprovadas / golden.casos >= 0.85 && tema.invencoes === 0 && tema.aprovados >= 4;
+  return ok ? "liberado" : "em_ajuste";
+}
+
+export type ResultadoEvalTema = { casos: number; aprovados: number; invencoes: number; falhasInfraestrutura: number; segundos: number; itens: { id: string; estado: "aprovado" | "reprovado" | "infra"; segundos: number; resumo: string }[] };
+
+export async function executarEvalChatTema(): Promise<ResultadoEvalTema> {
+  const casos = validarCasosTema(JSON.parse(await readFile(new URL("../docs/eval/chat-tema.json", import.meta.url), "utf8")));
+  const uid = new Types.ObjectId(randomBytes(12).toString("hex"));
+  const limiteOriginal = process.env.CHAT_BINHO_MAX_DIA;
+  process.env.CHAT_BINHO_MAX_DIA = String(Math.max(TAMANHO_TEMA, Number(limiteOriginal) || 15));
+  const r: ResultadoEvalTema = { casos: casos.length, aprovados: 0, invencoes: 0, falhasInfraestrutura: 0, segundos: 0, itens: [] };
+  try {
+    for (const caso of casos) {
+      const s = SUBTOPICO_POR_ID.get(caso.subtopico);
+      if (!s) throw new Error(`${caso.id}: tema desconhecido ${caso.subtopico}`);
+      const topico = await Topic.findOne({ assunto: { $in: s.topicos }, ativo: true }).select("_id").lean();
+      if (!topico) throw new Error(`${caso.id}: tópico do tema ${caso.subtopico} não encontrado.`);
+      const errados = caso.erros ? await Question.find({ subtopico: caso.subtopico, status: "aprovada" }).sort({ _id: 1 }).limit(caso.erros).select("_id gabarito").lean() : [];
+      const tema = await contextoDoTema(caso.subtopico, String(uid), errados.map((q) => String(q._id)));
+      const eventos: DiagnosticoBinho[] = [];
+      const inicio = Date.now();
+      const resp = await perguntarAoBinho(String(topico._id), String(uid), caso.pergunta, (e) => eventos.push(e), tema);
+      const segundos = Number(((Date.now() - inicio) / 1000).toFixed(1));
+      const infra = !!resp.mensagem || eventos.some((e) => e.tipo === "falha_infra");
+      const v = verificarCasoTema(caso, resp.resposta, resp.citacoes, errados.map((q) => q.gabarito));
+      if (infra) r.falhasInfraestrutura++;
+      if (v.aprovado) r.aprovados++;
+      if (v.invencao) r.invencoes++;
+      r.segundos += segundos;
+      const texto = resp.resposta ?? resp.mensagem ?? "";
+      const resumo = texto === SEM_BASE ? "[não achei]" : texto.replace(/\s+/g, " ").slice(0, 160);
+      const fontes = (resp.citacoes ?? []).map((c) => c.titulo.slice(0, 50)).join(" | ");
+      r.itens.push({ id: caso.id, estado: infra ? "infra" : v.aprovado ? "aprovado" : "reprovado", segundos, resumo: `${resumo}${fontes ? ` {fontes: ${fontes}}` : ""}` });
+    }
+  } finally {
+    try {
+      await Promise.all([ChatUso.deleteMany({ userId: uid }), RespostaBinho.deleteMany({ userId: uid })]);
+    } finally {
+      if (limiteOriginal === undefined) delete process.env.CHAT_BINHO_MAX_DIA;
+      else process.env.CHAT_BINHO_MAX_DIA = limiteOriginal;
+    }
+  }
+  r.segundos = Number(r.segundos.toFixed(1));
+  return r;
 }
 
 export async function executarEvalChat(quantidade = TAMANHO_GOLDEN, ids: string[] = []): Promise<ResultadoEvalChat> {

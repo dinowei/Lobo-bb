@@ -117,10 +117,10 @@ app.post(
 app.post(
   "/api/binho/perguntar",
   rota(async (req, res) => {
-    const { topicoId, pergunta } = req.body ?? {};
+    const { topicoId, pergunta, subtopico } = req.body ?? {};
     if (!texto(topicoId) || !Types.ObjectId.isValid(topicoId) || typeof pergunta !== "string" || pergunta.trim().length < 3 || pergunta.length > 500)
       return res.status(400).json({ erro: "Envie o tópico e uma pergunta de 3 a 500 caracteres." });
-    res.json(await apiServidor.perguntarBinho(topicoId, pergunta));
+    res.json(await apiServidor.perguntarBinho(topicoId, pergunta, typeof subtopico === "string" && subtopico ? subtopico : undefined));
   })
 );
 

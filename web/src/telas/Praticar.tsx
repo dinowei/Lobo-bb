@@ -463,7 +463,7 @@ export function Praticar() {
                     <button className="botao-laranja" onClick={abrirQuestoes}>Ir para as questões <ISeta /></button>
                   </>
                 )}
-                <PergunteAoBinho topicoId={q.topicoId} assunto={q.assunto} />
+                <PergunteAoBinho topicoId={q.topicoId} assunto={q.assunto} tema={filtro.sessao ? { subtopico: filtro.sessao.subtopico, nome: filtro.sessao.nome } : undefined} />
               </article>
             ) : <>
 

@@ -7,6 +7,7 @@ import { textoDaAula } from "../../../shared/fala";
 import { MISTAS_FIM } from "../../../shared/trilha";
 import { useApp } from "../estado";
 import { useTemaDoDia } from "../useGrade";
+import { PergunteAoBinho } from "../componentes/PergunteAoBinho";
 import { Ouvir } from "../componentes/Ouvir";
 import { Markdown } from "../componentes/Markdown";
 import { ISeta } from "../componentes/Icones";
@@ -177,6 +178,8 @@ export function Tema() {
             <a className="botao-linha" href={e.youtube} target="_blank" rel="noopener" data-testid="youtube">Buscar aula no YouTube</a>
           </div>
           {!!e.oficiaisNoAcervo.length && <p className="atalho">Caiu em prova: {e.oficiaisNoAcervo.join(" · ")}</p>}
+          {/* v1.1: chat do tema (aula, ficha do tema e questões que você errou, com a fonte) */}
+          {t.topicoIds[0] && <PergunteAoBinho topicoId={t.topicoIds[0]} assunto={t.nome} tema={{ subtopico: t.subtopico, nome: t.nome }} />}
         </section>
 
         <section className="secao" aria-labelledby="titulo-pratica">

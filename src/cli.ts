@@ -60,8 +60,8 @@ import { gerarAulas, planejarAulas } from "./aulas.js";
 import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
 import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, reclassificarSemFonte, relatorioFontesAtuais } from "./fontesAtuais.js";
 import { limparAudios, limparCacheDeOutrasVozes, planejarVoz, tetoAudioMB } from "./voz.js";
-import { perguntarAoBinho } from "./chatBinho.js";
-import { executarEvalChat } from "./evalChat.js";
+import { perguntarAoBinho, registrarGateChatTema } from "./chatBinho.js";
+import { decidirGate, executarEvalChat, executarEvalChatTema } from "./evalChat.js";
 import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
 import type { Disciplina, MotivoContestacao } from "../shared/tipos.js";
 import { executarEvalGerador } from "./evalGerador.js";
@@ -111,6 +111,8 @@ BB Estudos — comandos (npm run bb -- <comando>)
   fontes-atuais migrar|conferir [--n 5] [--disciplina id]|relatorio  fonte da prova + fonte atual de cada questão
   vincular-fonte --fonte "<título exato>" --assunto "<tópico exato>" --simular|--confirmar  prévia e vínculo aditivo
   eval-chat [--n 30] [--casos a,b]  roda o golden set do Binho em série, sem guardar respostas de avaliação
+  eval-chat tema                    os 5 casos dentro do tema (ficha do tema + questões erradas), v1.1
+  eval-chat gate                    golden 30 + 5 do tema; libera o chat do tema só se passar (senão "em ajuste")
   eval-gerador [--n 1] [--assuntos "A;B"]  gera nos 8 tópicos de maior peso e mostra aprovação e motivos
   binho --assunto "<tópico>" --pergunta "<texto>"  o chat "Pergunte ao Binho" como o dono
   contestar <id> --motivo <m> [--comentario "..."] --simular|--confirmar  tira a questão de circulação
@@ -636,6 +638,26 @@ async function main() {
       }
 
       case "eval-chat": {
+        if (args[0] === "gate") {
+          // v1.1 (item 5): golden 30 + 5 do tema; só libera o chat do tema se passar (sem falha de infraestrutura)
+          const g = await executarEvalChat();
+          const t = await executarEvalChatTema();
+          const decisao = decidirGate(g, t);
+          const resumoG = `${g.respostasAprovadas}/${g.casos} aprovados, ${g.invencoesAceitas} invenção(ões) aceita(s), ${g.falhasInfraestrutura} falha(s) de infra`;
+          const resumoT = `${t.aprovados}/${t.casos} aprovados, ${t.invencoes} contradição(ões), ${t.falhasInfraestrutura} falha(s) de infra`;
+          for (const item of [...g.itens, ...t.itens]) console.log(`  ${item.estado.padEnd(9)} ${item.id} (${item.segundos}s) — ${item.resumo}`);
+          console.log(`\nGolden: ${resumoG}.\nTema: ${resumoT}.`);
+          if (decisao === "indefinido") return console.log("Gate INDEFINIDA (falha de infraestrutura): nada mudou; rode de novo depois.");
+          await registrarGateChatTema({ liberado: decisao === "liberado", golden: resumoG, tema: resumoT });
+          return console.log(decisao === "liberado" ? "✔ Gate passou: chat do tema LIBERADO." : "✖ Gate não passou: chat do tema fica EM AJUSTE.");
+        }
+        if (args[0] === "tema") {
+          // v1.1 (item 5): os 5 casos dentro do tema (ficha do tema + questões erradas, regra 19)
+          const t = await executarEvalChatTema();
+          console.log(`\nChat do tema: ${t.aprovados}/${t.casos} aprovados; ${t.invencoes} invenção(ões)/contradição(ões) ACEITA(S); falhas de infraestrutura: ${t.falhasInfraestrutura}; tempo: ${t.segundos}s.`);
+          for (const item of t.itens) console.log(`  ${item.estado.padEnd(9)} ${item.id} (${item.segundos}s) — ${item.resumo}`);
+          return;
+        }
         const r = await executarEvalChat(o.n ? Number(o.n) : undefined, o.casos ? o.casos.split(",").map((s) => s.trim()).filter(Boolean) : []);
         console.log(`\nChat Binho: ${r.respostasAprovadas}/${r.casos} resultados aprovados; ${r.naoAcheiCorretos} "não achei" corretos; ${r.invencoesAceitas} invenção(ões) ACEITA(S); ${r.invencoesBarradas} invenção(ões) barrada(s); ${r.reescritas} reescrita(s).`);
         console.log(`Respostas úteis com base: ${r.respostasUteisComBase}/${r.perguntasComBase}; artigos esperados citados: ${r.artigosEsperadosEncontrados}; úteis sem base declarada: ${r.respostasUteisSemBaseDeclarada}; falhas de infraestrutura: ${r.falhasInfraestrutura}; tempo: ${r.segundos}s.`);

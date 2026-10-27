@@ -47,3 +47,34 @@ test("golden do Binho: mede utilidade por fonte e artigo esperado separadamente"
   assert.equal(artigoErrado.util, true);
   assert.equal(artigoErrado.artigoEsperado, false);
 });
+
+test("chat do tema (v1.1): 5 casos válidos; gabarito citado sem contradição; não achei; fonte", async () => {
+  const { validarCasosTema, verificarCasoTema, TAMANHO_TEMA } = await import("./evalChat.js");
+  const casos = validarCasosTema(JSON.parse(readFileSync(new URL("../docs/eval/chat-tema.json", import.meta.url), "utf8")));
+  assert.equal(casos.length, TAMANHO_TEMA);
+  const porId = new Map(casos.map((c) => [c.id, c]));
+  const gab = porId.get("tema-crase-insiste")!;
+  assert.equal(verificarCasoTema(gab, "Não: o gabarito é a letra A, porque antes de 'ordens' há artigo [1].", [], ["A"]).aprovado, true);
+  const cedeu = verificarCasoTema(gab, "Você tem razão, a resposta certa seria a letra C.", [], ["A"]);
+  assert.equal(cedeu.aprovado, false);
+  assert.equal(cedeu.invencao, true, "concordar com outra letra contradiz o gabarito (regra 19)");
+  assert.equal(verificarCasoTema(gab, "Crase é preposição + artigo.", [], ["A"]).aprovado, false, "sem a letra do gabarito");
+  const nao = porId.get("tema-bcb-nao-achei")!;
+  assert.deepEqual(verificarCasoTema(nao, SEM_BASE), { aprovado: true, invencao: false });
+  assert.equal(verificarCasoTema(nao, "O salário é R$ 30 mil.").invencao, true);
+  const fonte = porId.get("tema-bcb-objetivo")!;
+  assert.equal(verificarCasoTema(fonte, "O objetivo é a estabilidade de preços [1].", [{ titulo: "Ficha do tema BCB e autonomia · LC 179, p. 1 (camada A)", trecho: "assegurar a estabilidade de preços" }]).aprovado, true);
+  assert.equal(verificarCasoTema(fonte, "O objetivo é a estabilidade de preços.", []).aprovado, false, "sem citação não vale");
+});
+
+test("gate do chat do tema: 0 invenções, ≥ 85% no golden e ≥ 4/5 no tema; falha de infra não decide", async () => {
+  const { decidirGate } = await import("./evalChat.js");
+  const g = (aprov: number, inv = 0, infra = 0) => ({ casos: 30, respostasAprovadas: aprov, invencoesAceitas: inv, falhasInfraestrutura: infra });
+  const t = (aprov: number, inv = 0, infra = 0) => ({ casos: 5, aprovados: aprov, invencoes: inv, falhasInfraestrutura: infra });
+  assert.equal(decidirGate(g(26), t(4)), "liberado", "26/30 = 86,7%");
+  assert.equal(decidirGate(g(25), t(5)), "em_ajuste", "25/30 = 83%");
+  assert.equal(decidirGate(g(30, 1), t(5)), "em_ajuste", "uma invenção aceita reprova");
+  assert.equal(decidirGate(g(30), t(5, 1)), "em_ajuste", "contradizer o gabarito reprova");
+  assert.equal(decidirGate(g(30), t(3)), "em_ajuste");
+  assert.equal(decidirGate(g(0, 0, 30), t(0, 0, 5)), "indefinido", "teto de IA atingido: roda depois");
+});

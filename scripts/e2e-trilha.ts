@@ -28,7 +28,7 @@ const questao = (id: string, topicoId: string, assunto: string, enunciado: strin
 
 type Tipo = "revisao" | "crase" | "lp" | "erro";
 // estudando: o tema escolhido à mão, guardado "no servidor" (por aluno: vale no celular e no PC)
-interface Estado { pedidos: { tipo: Tipo; url: string }[]; respondidas: { id: string; tipo: Tipo; acertou: boolean }[]; revisoes: number; foraDoTema: string[]; estudando: string; simulados: string[] }
+interface Estado { pedidos: { tipo: Tipo; url: string }[]; respondidas: { id: string; tipo: Tipo; acertou: boolean }[]; revisoes: number; foraDoTema: string[]; estudando: string; simulados: string[]; chat?: Record<string, unknown> }
 
 function servidorFalso(p: Page, e: Estado) {
   const tipoDe = new Map<string, Tipo>();
@@ -43,6 +43,15 @@ function servidorFalso(p: Page, e: Estado) {
         if (r.request().method() === "POST") { e.estudando = (r.request().postDataJSON() as { subtopico: string }).subtopico; return j({ ok: true }); }
         return j({ subtopico: e.estudando });
       case "/api/simulado": e.simulados.push(u.search); return j([]);
+      // v1.1 (item 5): chat do tema
+      case "/api/binho/perguntar": {
+        e.chat = r.request().postDataJSON() as Record<string, unknown>;
+        return j({
+          resposta: "Antes de palavra masculina não há artigo feminino \"a\", então não tem crase [1].", origem: "nova", restantesHoje: 14,
+          citacoes: [{ titulo: "Ficha do tema Crase · material.pdf, p. 54 (camada C)", trecho: "A crase é a contração de preposição ‘a’ com artigo ‘a’." }],
+          contextoTema: { nome: "Crase", trechosDaFicha: 1, erros: 4 },
+        });
+      }
       case "/api/auth/eu": return j({ login: false, usuario: null });
       case "/api/painel": return j(calcularPainel({ topicos, tentativas: [], revisoes: [] }));
       case "/api/topicos": return j(topicos);
@@ -190,6 +199,12 @@ try {
     assert.ok(await p.locator("button", { hasText: "Estudar ouvindo" }).count());
     // ficha da rede: frase + fonte (arquivo, página, camada) com o trecho literal
     assert.match(await p.locator("[data-testid=ficha-acervo]").innerText(), /contração de preposição[\s\S]*fonte: Estrategia - Portugues para o CNU, p\. 54 \(C\)/);
+    // v1.1 (item 5): o chat da página do tema vai com o tema e mostra o contexto usado e a fonte
+    await p.locator("#pergunta-binho").fill("Por que não tem crase antes de palavra masculina?");
+    await p.locator(".pergunte-binho button", { hasText: "Perguntar" }).click();
+    await p.locator("[data-testid=contexto-tema]").waitFor();
+    assert.equal(e.chat?.subtopico, "crase", "o chat dentro do tema leva o tema");
+    assert.match(await p.locator("[data-testid=contexto-tema]").innerText(), /Tema Crase · 1 trecho\(s\) da ficha do tema · considerou 4 questão\(ões\) que você errou/);
     await p.screenshot({ path: `${PASTA}/tema-${tela.nome}.png`, fullPage: true });
 
     // Desempenho por tema (aba do Painel)

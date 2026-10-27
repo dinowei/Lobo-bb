@@ -98,3 +98,32 @@ test("tema escolhido à mão (\"estudando\"): guardado no servidor por aluno, va
   await comUsuario(a, () => apiServidor.definirEstudando(""));
   assert.equal(await comUsuario(a, () => apiServidor.estudando()), "", "voltar à sequência");
 });
+
+test("chat do tema: contexto = ficha aprovada (trecho literal + origem) e questões erradas com gabarito; trava da gate", { skip: !ligado }, async () => {
+  const db = mongoose.connection.db!;
+  const { contextoDoTema, chatDoTemaLiberado, registrarGateChatTema } = await import("./chatBinho.js");
+  const aluno = new Types.ObjectId();
+  const top = new Types.ObjectId();
+  const alt = ["A", "B", "C", "D", "E"].map((l) => ({ letra: l, texto: `op ${l}`, correta: l === "C", explicacao: l === "C" ? "Porque há artigo." : "x" }));
+  const errada = { _id: new Types.ObjectId(), topicId: top, subtopico: "crase", origem: "gerada", status: "aprovada", enunciado: "Em qual frase a crase está certa?", gabarito: "C", alternativas: alt, explicacaoGeral: "Crase = a + a." };
+  const certa = { ...errada, _id: new Types.ObjectId(), enunciado: "Outra de crase" };
+  await db.collection("questions").insertMany([errada, certa]);
+  await db.collection("attempts").insertMany([
+    { userId: aluno, questionId: errada._id, topicId: top, resposta: "A", acertou: false, modo: "treino", createdAt: new Date() },
+    { userId: aluno, questionId: certa._id, topicId: top, resposta: "C", acertou: true, modo: "treino", createdAt: new Date() },
+  ]);
+  await db.collection("fichas").insertOne({ subtopico: "crase", status: "aprovada", createdAt: new Date(), afirmacoes: [
+    { texto: "Crase é a + a.", trecho: "A crase é a contração de preposição ‘a’ com artigo ‘a’.", arquivo: "acervo/pt/crase.pdf", pagina: 54, camada: "C" },
+    { texto: "curto", trecho: "curto demais", camada: "C" },
+  ] });
+  const ctx = (await contextoDoTema("crase", String(aluno)))!;
+  assert.equal(ctx.nome, "Crase");
+  assert.deepEqual(ctx.ficha, [{ titulo: "Ficha do tema Crase · crase.pdf, p. 54 (camada C)", texto: "A crase é a contração de preposição ‘a’ com artigo ‘a’." }]);
+  assert.deepEqual(ctx.erros.map((e) => [e.id, e.gabarito]), [[String(errada._id), "C"]], "só a que ainda está errada");
+  assert.match(ctx.erros[0].explicacao, /Crase = a \+ a\. Porque há artigo\./);
+  assert.equal(await contextoDoTema("tema-que-nao-existe", String(aluno)), null);
+  // trava: começa em ajuste; só a gate libera
+  assert.equal(await chatDoTemaLiberado(), false);
+  await registrarGateChatTema({ liberado: true, golden: "30/30", tema: "5/5" });
+  assert.equal(await chatDoTemaLiberado(), true);
+});

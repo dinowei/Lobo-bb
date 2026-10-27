@@ -53,7 +53,7 @@ import type { AcaoMotivoDTO, ConcursoInfoDTO, CorrecaoCEDTO, MotivoErro, Proximo
 import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVistas, pedirTemaRedacao } from "./redacao.js";
 import { aulaDoTopico } from "./aulas.js";
 import { explicarSobDemanda } from "./outroJeito.js";
-import { perguntarAoBinho } from "./chatBinho.js";
+import { chatDoTemaLiberado, contextoDoTema, perguntarAoBinho } from "./chatBinho.js";
 import { avaliarCartao, filaCartoes } from "./cartoes.js";
 import { fontesDaQuestao } from "./fontesAtuais.js";
 import { definirEstudando, definirTemaDoDia, desempenhoTemas, estudando, paginaTema, pedirPrioridade, prontidao, proximaDoTema, proximoErroDoTema, temasDaMistura, trilha } from "./temas.js";
@@ -339,7 +339,14 @@ export const apiServidor: Omit<Api, "modo"> = {
   topicos: listarTopicos,
   aula: aulaDoTopico,
   explicarMais: (questaoId, duvida) => explicarSobDemanda(questaoId, String(ALUNO()), duvida),
-  perguntarBinho: (topicoId, pergunta) => perguntarAoBinho(topicoId, String(ALUNO()), pergunta),
+  // v1.1 (item 5): dentro de um tema, o chat abre com a ficha do tema e as questões que o aluno errou nele
+  // (só depois da gate; antes, "em ajuste" e o chat responde pelo tópico)
+  perguntarBinho: async (topicoId, pergunta, subtopico) => {
+    const aluno = String(ALUNO());
+    if (subtopico && !(await chatDoTemaLiberado())) return { ...(await perguntarAoBinho(topicoId, aluno, pergunta)), temaEmAjuste: true };
+    const tema = subtopico ? await contextoDoTema(subtopico, aluno) : null;
+    return perguntarAoBinho(topicoId, aluno, pergunta, undefined, tema);
+  },
   cartoes: filaCartoes,
   avaliarCartao,
   desempenhoTemas,

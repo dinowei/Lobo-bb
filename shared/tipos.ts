@@ -563,6 +563,9 @@ export interface RespostaBinhoDTO {
   restantesHoje?: number;
   requerServidor?: boolean;
   mensagem?: string;
+  // v1.1 (item 5): dentro de um tema, o que o Binho usou além da aula (a origem de cada trecho vai nas citações)
+  contextoTema?: { nome: string; trechosDaFicha: number; erros: number };
+  temaEmAjuste?: boolean; // gate do chat do tema ainda não passou: respondeu pelo tópico
 }
 
 export interface ExplicacaoMaisDTO {
@@ -698,7 +701,8 @@ export interface Api {
   responder(r: { questaoId: string; resposta: Letra; confianca: Confianca; tempoSeg: number; modo: Modo }): Promise<CorrecaoDTO>;
   aula(topicoId: string): Promise<AulaDTO | null>;
   explicarMais(questaoId: string, duvida?: string): Promise<ExplicacaoMaisDTO>;
-  perguntarBinho(topicoId: string, pergunta: string): Promise<RespostaBinhoDTO>;
+  // subtopico (v1.1): dentro de um tema, o chat abre com a ficha do tema e as questões que o aluno errou nele
+  perguntarBinho(topicoId: string, pergunta: string, subtopico?: string): Promise<RespostaBinhoDTO>;
   cartoes(): Promise<FilaCartoesDTO>;
   avaliarCartao(cartaoId: string, nota: NotaCartao): Promise<{ proximaRevisaoDias: number }>;
   // motivo do último erro nessa questão; devolve a ação (aula/tópico, comparação, palavra-chave, revisão antecipada)

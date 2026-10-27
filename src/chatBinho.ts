@@ -8,7 +8,10 @@
 // ============================================================
 import { Types } from "mongoose";
 import { createHash } from "node:crypto";
-import { Aula, ChatUso, Chunk, RespostaBinho, Source, Topic } from "./models.js";
+import { basename } from "node:path";
+import { Attempt, Aula, ChatUso, Chunk, Config, Ficha, Question, RespostaBinho, Source, Topic } from "./models.js";
+import { SUBTOPICO_POR_ID } from "../shared/subtopicos.js";
+import { errosDoTema } from "../shared/estudoTema.js";
 import { chatJSONFuncao } from "./corrente.js";
 import { validarOuReparar } from "./llm.js";
 import { BINHO_CHAT_SYSTEM, binhoChatUser, CONFERE_BINHO_SYSTEM, ConferenciaBinhoZ, RespostaBinhoZ } from "./prompts.js";
@@ -188,21 +191,80 @@ async function reservar(userId: Types.ObjectId, dia: string, limite: number) {
   }
 }
 
+// v1.1 (item 5): contexto do tema. A ficha aprovada entra como trechos literais citáveis (com a origem no título);
+// as questões que o aluno errou no tema entram com gabarito e explicação conferidos (regra 19: nunca contradizer).
+export const MAX_ERROS_NO_CHAT = 5;
+const MAX_TRECHOS_FICHA = 3;
+export type ContextoTema = {
+  subtopico: string;
+  nome: string;
+  ficha: { titulo: string; texto: string }[];
+  erros: { id: string; enunciado: string; gabarito: string; explicacao: string }[];
+};
+
+// Gate (v1.1, item 5): o contexto do tema só vale para o aluno depois que `bb -- eval-chat gate` passar
+// (golden 30: 0 invenções e ≥ 85% úteis; + os 5 casos do tema: 0 contradições e ≥ 4 de 5). Até lá: "em ajuste",
+// e o chat responde pelo tópico, como antes. Guardado em config "chat_tema" (cache curto).
+export const CHAVE_GATE_CHAT_TEMA = "chat_tema";
+let cacheGate: { em: number; liberado: boolean } | null = null;
+export async function chatDoTemaLiberado(): Promise<boolean> {
+  if (cacheGate && Date.now() - cacheGate.em < 60_000) return cacheGate.liberado;
+  const c = await Config.findById(CHAVE_GATE_CHAT_TEMA).lean();
+  const liberado = (c?.valor as { liberado?: boolean } | undefined)?.liberado === true;
+  cacheGate = { em: Date.now(), liberado };
+  return liberado;
+}
+export async function registrarGateChatTema(valor: { liberado: boolean; golden: string; tema: string }) {
+  await Config.updateOne({ _id: CHAVE_GATE_CHAT_TEMA }, { $set: { valor, em: new Date() } }, { upsert: true });
+  cacheGate = null;
+}
+
+// errosIds: quais questões contam como erradas (o avaliador passa as dele; o aluno, as últimas respostas erradas)
+export async function contextoDoTema(subtopico: string, alunoId: string, errosIds?: string[]): Promise<ContextoTema | null> {
+  const s = SUBTOPICO_POR_ID.get(subtopico);
+  if (!s || !Types.ObjectId.isValid(alunoId)) return null;
+  const ficha = await Ficha.findOne({ subtopico, status: "aprovada" }).sort({ createdAt: -1 }).select("afirmacoes").lean();
+  const trechosFicha = (ficha?.afirmacoes ?? [])
+    .filter((a) => a.trecho && a.trecho.length >= 20)
+    .map((a) => ({ titulo: `Ficha do tema ${s.nome} · ${basename(a.arquivo ?? "material")}${a.pagina ? `, p. ${a.pagina}` : ""}${a.camada ? ` (camada ${a.camada})` : ""}`, texto: a.trecho! }));
+  let ids = errosIds;
+  if (!ids) {
+    const doTema = (await Question.find({ subtopico, status: "aprovada" }).select("_id").lean()).map((q) => q._id);
+    const ts = await Attempt.find({ userId: new Types.ObjectId(alunoId), questionId: { $in: doTema } }).select("questionId acertou createdAt").lean();
+    // as mais recentes primeiro (as que ainda estão erradas)
+    ids = errosDoTema(ts.map((t) => ({ questaoId: String(t.questionId), acertou: !!t.acertou, data: new Date(t.createdAt as Date).toISOString() }))).reverse();
+  }
+  const validos = ids.filter((x) => Types.ObjectId.isValid(x)).slice(0, MAX_ERROS_NO_CHAT);
+  const qs = await Question.find({ _id: { $in: validos }, status: "aprovada" }).select("enunciado gabarito explicacaoGeral alternativas").lean();
+  const porId = new Map(qs.map((q) => [String(q._id), q]));
+  const erros = validos.flatMap((id) => {
+    const q = porId.get(id);
+    if (!q) return [];
+    const daCerta = q.alternativas?.find((a) => a.letra === q.gabarito)?.explicacao;
+    return [{ id, enunciado: q.enunciado.slice(0, 600), gabarito: q.gabarito, explicacao: [q.explicacaoGeral, daCerta].filter(Boolean).join(" ").slice(0, 600) }];
+  });
+  return { subtopico, nome: s.nome, ficha: trechosFicha, erros };
+}
+
 export async function perguntarAoBinho(
   topicoId: string,
   alunoId: string,
   perguntaBruta: string,
-  diagnostico?: (evento: DiagnosticoBinho) => void
+  diagnostico?: (evento: DiagnosticoBinho) => void,
+  tema?: ContextoTema | null
 ): Promise<RespostaBinhoDTO> {
   const pergunta = perguntaBruta.trim();
   if (!Types.ObjectId.isValid(topicoId) || !Types.ObjectId.isValid(alunoId)) throw new Error("Identificação inválida.");
   if (pergunta.length < 3 || pergunta.length > 500) throw new Error("A pergunta pode ter de 3 a 500 caracteres.");
   const tid = new Types.ObjectId(topicoId);
   const uid = new Types.ObjectId(alunoId);
-  const perguntaHash = hashPergunta(pergunta);
+  // dentro do tema, o cache também depende do tema e das questões erradas (regra 19: por aluno, questão e texto)
+  const perguntaHash = hashPergunta(tema ? `${tema.subtopico} ${tema.erros.map((e) => e.id).sort().join(" ")} ${pergunta}` : pergunta);
+  const comTema = (r: RespostaBinhoDTO): RespostaBinhoDTO =>
+    tema && r.resposta ? { ...r, contextoTema: { nome: tema.nome, trechosDaFicha: (r.citacoes ?? []).filter((c) => c.titulo.startsWith("Ficha do tema")).length, erros: tema.erros.length } } : r;
   const doCache = async () => {
     const c = await RespostaBinho.findOne({ userId: uid, topicId: tid, perguntaHash }).lean();
-    return c ? { resposta: c.resposta, citacoes: c.citacoes.map((x) => ({ titulo: x.titulo ?? "", trecho: x.trecho ?? "" })), origem: "cache" as const } : null;
+    return c ? comTema({ resposta: c.resposta, citacoes: c.citacoes.map((x) => ({ titulo: x.titulo ?? "", trecho: x.trecho ?? "" })), origem: "cache" as const }) : null;
   };
   const cache = await doCache();
   if (cache) return cache;
@@ -222,7 +284,8 @@ export async function perguntarAoBinho(
     }
     try {
       const aula = await Aula.findOne({ topicId: tid, status: "aprovada" }).select("conteudo pontosChave").lean();
-      const trechos = escolherTrechos(pergunta, await trechosDoTopico(tid)).map((f, i) => ({ indice: i + 1, titulo: f.titulo, texto: f.texto }));
+      const daFicha = tema ? escolherTrechos(pergunta, tema.ficha, MAX_TRECHOS_FICHA) : [];
+      const trechos = [...escolherTrechos(pergunta, await trechosDoTopico(tid)), ...daFicha].map((f, i) => ({ indice: i + 1, titulo: f.titulo, texto: f.texto }));
       const restantesHoje = Math.max(0, limite - (await usados(uid, dia)));
       const exigeTodaFrase = topic.disciplina === "conhecimentos_bancarios" || topic.disciplina === "atualidades_mercado_financeiro";
       const exigeFonte = exigeTodaFrase || /\b(?:art(?:igo)?|lei|decreto|resolucao|circular|norma|regulamento)\b/i.test(pergunta);
@@ -236,6 +299,7 @@ export async function perguntarAoBinho(
         aula: aula ? `${aula.conteudo}\n\nPontos-chave:\n- ${aula.pontosChave.join("\n- ")}` : undefined,
         fontes: trechos,
         pergunta,
+        tema: tema ? { nome: tema.nome, erros: tema.erros } : undefined,
       });
       let t = await chatJSONFuncao("tutor", BINHO_CHAT_SYSTEM, user, 0.1, 900);
       let r = (await validarOuReparar(RespostaBinhoZ, t.json, { client: t.client, model: t.modelo, system: BINHO_CHAT_SYSTEM, user })) as ReturnType<typeof RespostaBinhoZ.parse>;
@@ -309,5 +373,5 @@ export async function perguntarAoBinho(
     }
   });
   if (!iniciou) return { mensagem: OCUPADO };
-  return saida ?? { mensagem: OCUPADO };
+  return saida ? comTema(saida) : { mensagem: OCUPADO };
 }

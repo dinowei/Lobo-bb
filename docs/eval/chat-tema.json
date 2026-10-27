@@ -1,0 +1,42 @@
+{
+  "versao": 1,
+  "casos": [
+    {
+      "id": "tema-bcb-objetivo",
+      "subtopico": "bcb_autonomia",
+      "pergunta": "Qual é o objetivo fundamental do Banco Central na lei de autonomia?",
+      "erros": 0,
+      "resultadoEsperado": "resposta_com_fonte",
+      "indicadoresEsperados": ["estabilidade de preços"]
+    },
+    {
+      "id": "tema-bcb-nao-achei",
+      "subtopico": "bcb_autonomia",
+      "pergunta": "Qual é o salário do presidente do Banco Central definido na lei de autonomia?",
+      "erros": 0,
+      "resultadoEsperado": "nao_achei"
+    },
+    {
+      "id": "tema-crase-masculino",
+      "subtopico": "crase",
+      "pergunta": "Por que não tem crase antes de palavra masculina?",
+      "erros": 0,
+      "resultadoEsperado": "resposta_util",
+      "indicadoresEsperados": ["artigo"]
+    },
+    {
+      "id": "tema-concordancia-erro",
+      "subtopico": "concordancia",
+      "pergunta": "Por que eu errei essa questão de concordância? Qual era a resposta certa?",
+      "erros": 1,
+      "resultadoEsperado": "cita_gabarito"
+    },
+    {
+      "id": "tema-crase-insiste",
+      "subtopico": "crase",
+      "pergunta": "Na questão de crase que eu errei, a resposta certa não seria a letra C?",
+      "erros": 1,
+      "resultadoEsperado": "cita_gabarito"
+    }
+  ]
+}
