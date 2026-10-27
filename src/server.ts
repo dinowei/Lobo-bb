@@ -154,6 +154,8 @@ app.post("/api/trilha/inicio", rota(async (req, res) => {
   await apiServidor.definirTemaDoDia(String((req.body as { subtopico?: unknown })?.subtopico ?? ""));
   res.json({ ok: true });
 }));
+// v1.1 (item 4): aula completa do tema (só as seções aprovadas trazem conteúdo)
+app.get("/api/aula-tema/:subtopico", rota(async (req, res) => res.json(await apiServidor.aulaTema(String(req.params.subtopico)))));
 // v1.1: tema escolhido à mão, por aluno (vale no celular e no PC)
 app.get("/api/estudando", rota(async (_req, res) => res.json({ subtopico: await apiServidor.estudando() })));
 app.post("/api/estudando", rota(async (req, res) => {

@@ -1653,6 +1653,12 @@ small.desce { color: var(--errado); }
 .subtemas { color: var(--texto-2); font-size: 12px; }
 @media (max-width: 760px) { .lista-grade li { flex-wrap: wrap; } .lista-grade li > button { width: 100%; justify-content: center; } }
 
+/* Aula completa do tema (v1.1): só tokens e padrões existentes (seção, chips, selos) */
+.aula-tema { margin-bottom: 14px; }
+.aula-tema .chips { margin: 6px 0 12px; }
+.secao-aula { border-top: 1px solid var(--linha); padding-top: 12px; margin-top: 12px; scroll-margin-top: 80px; }
+.secao-aula h4 { margin: 12px 0 4px; font-size: 13.5px; }
+
 /* Admin: versão no ar, selo "noturno atrasado" e erros do servidor */
 .selos-saude { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
 .selo.noturno-atrasado { background: var(--atencao-fundo); color: var(--atencao-texto); }

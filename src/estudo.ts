@@ -54,6 +54,7 @@ import { enviarRedacao, historicoRedacoes, listarTemasRedacao, marcarRedacoesVis
 import { aulaDoTopico } from "./aulas.js";
 import { explicarSobDemanda } from "./outroJeito.js";
 import { chatDoTemaLiberado, contextoDoTema, perguntarAoBinho } from "./chatBinho.js";
+import { aulaDoTema } from "./aulaTema.js";
 import { avaliarCartao, filaCartoes } from "./cartoes.js";
 import { fontesDaQuestao } from "./fontesAtuais.js";
 import { definirEstudando, definirTemaDoDia, desempenhoTemas, estudando, paginaTema, pedirPrioridade, prontidao, proximaDoTema, proximoErroDoTema, temasDaMistura, trilha } from "./temas.js";
@@ -356,6 +357,7 @@ export const apiServidor: Omit<Api, "modo"> = {
   definirTemaDoDia,
   estudando,
   definirEstudando,
+  aulaTema: aulaDoTema,
   simulados: async () => {
     const lente = lenteAtiva();
     return (await listarSimulados(ALUNO())).filter((s) => !lente || s.concurso === lente);

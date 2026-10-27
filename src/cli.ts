@@ -48,7 +48,7 @@ import { limparTravaOrfa, naFila, noturnoJaRodando } from "./fila.js";
 import { extrairFigurasOficiais } from "./figuras.js";
 import { indexarQuestoes, calibrar } from "./similaridade.js";
 import { carregarCatalogo, CORRENTE_DEFINITIVA } from "./catalogo.js";
-import { aprovarCorrentes, desfazerCorrentes, correnteAtiva } from "./corrente.js";
+import { aprovarCorrentes, comPrioridade, desfazerCorrentes, correnteAtiva, marcarProcessoDeFundo } from "./corrente.js";
 import { sondarModelos, verificarModelos } from "./sondagem.js";
 import { alvosDaTrilha, calcularAteFila, planejarEtapasDaNoite, planejarNoite, rodarFila } from "./noturno.js";
 import { rodarJanelaB } from "./janelaB.js";
@@ -60,8 +60,9 @@ import { gerarAulas, planejarAulas } from "./aulas.js";
 import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
 import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, reclassificarSemFonte, relatorioFontesAtuais } from "./fontesAtuais.js";
 import { limparAudios, limparCacheDeOutrasVozes, planejarVoz, tetoAudioMB } from "./voz.js";
-import { perguntarAoBinho, registrarGateChatTema } from "./chatBinho.js";
-import { decidirGate, executarEvalChat, executarEvalChatTema } from "./evalChat.js";
+import { perguntarAoBinho, ultimaGateChatTema } from "./chatBinho.js";
+import { executarEvalChat, executarEvalChatTema, rodarGateChat } from "./evalChat.js";
+import { etapaProvaAulaTema, gerarAulaTema } from "./aulaTema.js";
 import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
 import type { Disciplina, MotivoContestacao } from "../shared/tipos.js";
 import { executarEvalGerador } from "./evalGerador.js";
@@ -113,6 +114,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   eval-chat [--n 30] [--casos a,b]  roda o golden set do Binho em série, sem guardar respostas de avaliação
   eval-chat tema                    os 5 casos dentro do tema (ficha do tema + questões erradas), v1.1
   eval-chat gate                    golden 30 + 5 do tema; libera o chat do tema só se passar (senão "em ajuste")
+  aula-tema <subtópico>             aula completa do tema, uma seção por subtema, auditada seção a seção (v1.1)
   eval-gerador [--n 1] [--assuntos "A;B"]  gera nos 8 tópicos de maior peso e mostra aprovação e motivos
   binho --assunto "<tópico>" --pergunta "<texto>"  o chat "Pergunte ao Binho" como o dono
   contestar <id> --motivo <m> [--comentario "..."] --simular|--confirmar  tira a questão de circulação
@@ -229,6 +231,9 @@ async function main() {
   }
 
   await mongoose.connect(exigir(process.env.MONGODB_URI, "MONGODB_URI no .env"));
+  // fechamento v1.1: comando em lote (noturno, esteira, geração…) é tarefa de FUNDO: para em teto − reserva
+  // prioritária. A avaliação do chat (gate) roda como prioritária (comPrioridade).
+  marcarProcessoDeFundo();
   // jobs de IA entram na fila (um por vez); o rótulo aparece para quem estiver esperando
   const rotulo = `bb ${[comando, ...resto].join(" ")}`.slice(0, 160);
   try {
@@ -637,28 +642,27 @@ async function main() {
         return console.log(`origem: ${r.origem}${r.restantesHoje !== undefined ? ` · restam ${r.restantesHoje} hoje` : ""}`);
       }
 
+      case "aula-tema": {
+        // v1.1 (item 4): gera (ou completa) a aula completa de um tema, seção por subtema, auditada seção a seção
+        if (!args[0]) throw new Error('Use "aula-tema <subtópico>" (ex.: aula-tema concordancia).');
+        return await naFila(rotulo, async () => console.log((await gerarAulaTema(args[0])).resumo));
+      }
+
       case "eval-chat": {
         if (args[0] === "gate") {
           // v1.1 (item 5): golden 30 + 5 do tema; só libera o chat do tema se passar (sem falha de infraestrutura)
-          const g = await executarEvalChat();
-          const t = await executarEvalChatTema();
-          const decisao = decidirGate(g, t);
-          const resumoG = `${g.respostasAprovadas}/${g.casos} aprovados, ${g.invencoesAceitas} invenção(ões) aceita(s), ${g.falhasInfraestrutura} falha(s) de infra`;
-          const resumoT = `${t.aprovados}/${t.casos} aprovados, ${t.invencoes} contradição(ões), ${t.falhasInfraestrutura} falha(s) de infra`;
-          for (const item of [...g.itens, ...t.itens]) console.log(`  ${item.estado.padEnd(9)} ${item.id} (${item.segundos}s) — ${item.resumo}`);
-          console.log(`\nGolden: ${resumoG}.\nTema: ${resumoT}.`);
-          if (decisao === "indefinido") return console.log("Gate INDEFINIDA (falha de infraestrutura): nada mudou; rode de novo depois.");
-          await registrarGateChatTema({ liberado: decisao === "liberado", golden: resumoG, tema: resumoT });
-          return console.log(decisao === "liberado" ? "✔ Gate passou: chat do tema LIBERADO." : "✖ Gate não passou: chat do tema fica EM AJUSTE.");
+          const r = await rodarGateChat();
+          for (const item of r.itens) console.log(`  ${item.estado.padEnd(9)} ${item.id} (${item.segundos}s) — ${item.resumo}`);
+          return console.log(`\n${r.texto}`);
         }
         if (args[0] === "tema") {
           // v1.1 (item 5): os 5 casos dentro do tema (ficha do tema + questões erradas, regra 19)
-          const t = await executarEvalChatTema();
+          const t = await comPrioridade(() => executarEvalChatTema());
           console.log(`\nChat do tema: ${t.aprovados}/${t.casos} aprovados; ${t.invencoes} invenção(ões)/contradição(ões) ACEITA(S); falhas de infraestrutura: ${t.falhasInfraestrutura}; tempo: ${t.segundos}s.`);
           for (const item of t.itens) console.log(`  ${item.estado.padEnd(9)} ${item.id} (${item.segundos}s) — ${item.resumo}`);
           return;
         }
-        const r = await executarEvalChat(o.n ? Number(o.n) : undefined, o.casos ? o.casos.split(",").map((s) => s.trim()).filter(Boolean) : []);
+        const r = await comPrioridade(() => executarEvalChat(o.n ? Number(o.n) : undefined, o.casos ? o.casos.split(",").map((s) => s.trim()).filter(Boolean) : []));
         console.log(`\nChat Binho: ${r.respostasAprovadas}/${r.casos} resultados aprovados; ${r.naoAcheiCorretos} "não achei" corretos; ${r.invencoesAceitas} invenção(ões) ACEITA(S); ${r.invencoesBarradas} invenção(ões) barrada(s); ${r.reescritas} reescrita(s).`);
         console.log(`Respostas úteis com base: ${r.respostasUteisComBase}/${r.perguntasComBase}; artigos esperados citados: ${r.artigosEsperadosEncontrados}; úteis sem base declarada: ${r.respostasUteisSemBaseDeclarada}; falhas de infraestrutura: ${r.falhasInfraestrutura}; tempo: ${r.segundos}s.`);
         for (const item of r.itens) console.log(`  ${item.estado.padEnd(9)} ${item.id} (${item.segundos}s) — ${item.resumo}`);
@@ -798,6 +802,16 @@ async function main() {
           const lote = `noite ${inicio.toISOString().slice(0, 10)}`;
           // E6 (F12): a noite completa, etapa por etapa, cada uma no relatório (ok / pulada / falhou)
           const etapas: EtapaNoite[] = [];
+          // fechamento v1.1: 1ª etapa, uma vez por noite e só enquanto o chat do tema não foi liberado: a gate (30 + 5)
+          await etapa(etapas, "gate do chat do tema", async () => {
+            const ultima = await ultimaGateChatTema();
+            if (ultima?.liberado) return null;
+            if (ultima?.dia === new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) && ultima.decisao !== "indefinido") return null;
+            return (await rodarGateChat()).texto;
+          });
+          // fechamento v1.1 (item 4): a PROVA da aula completa (Concordância e Porcentagem), uma vez; só vai para a
+          // esteira depois do OK do dono
+          await etapa(etapas, "aula completa (prova)", etapaProvaAulaTema);
           await etapa(etapas, "backup", etapaBackup);
           await etapa(etapas, "acervo", etapaAcervo);
           await etapa(etapas, "ingestão", async () => (sobraTempo(ate, 120) ? etapaIngestao() : null));

@@ -174,6 +174,26 @@ test("teto diário global de chamadas: padrão 300; bate e para", () => {
   assert.equal(passouDoTeto(10_000, 0), false, "0 = sem teto");
 });
 
+test("reserva prioritária (fechamento v1.1): fundo para em teto − 120; prioritária vai até o teto", async () => {
+  const { passouDoTetoDe, reservaPrioritaria, marcarProcessoDeFundo, comPrioridade, ehFundo } = await import("./corrente.js");
+  assert.equal(reservaPrioritaria(), process.env.IA_RESERVA_PRIORITARIA !== undefined ? Number(process.env.IA_RESERVA_PRIORITARIA) : 120);
+  // teto 1984 (2 × o maior dia dos últimos 7: 992 em 25/10)
+  assert.equal(passouDoTetoDe(1863, 1984, 120, true), false);
+  assert.equal(passouDoTetoDe(1864, 1984, 120, true), true, "noturno/esteira param aqui: sobram 120 para o aluno");
+  assert.equal(passouDoTetoDe(1864, 1984, 120, false), false, "chat e tutor seguem");
+  assert.equal(passouDoTetoDe(1983, 1984, 120, false), false);
+  assert.equal(passouDoTetoDe(1984, 1984, 120, false), true);
+  assert.equal(passouDoTetoDe(99_999, 0, 120, true), false, "0 = sem teto");
+  assert.equal(passouDoTetoDe(50, 100, 120, true), true, "reserva maior que o teto: fundo não roda");
+  // processo: servidor é prioritário; CLI é fundo; comPrioridade abre exceção (a gate do chat)
+  assert.equal(ehFundo(), false);
+  marcarProcessoDeFundo();
+  assert.equal(ehFundo(), true);
+  assert.equal(await comPrioridade(async () => ehFundo()), false);
+  assert.equal(ehFundo(), true);
+  marcarProcessoDeFundo(false);
+});
+
 test("noturno: infraestrutura volta para a fila (10, 30, 90 min) até 3 vezes; qualidade descarta", () => {
   const agora = new Date("2026-10-17T02:00:00");
   assert.deepEqual(destinoDaTarefa({ ok: true }, 0, agora), { status: "concluida" });

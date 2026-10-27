@@ -440,6 +440,38 @@ const AulaSchema = new Schema(
 );
 export const Aula = model("Aula", AulaSchema, "aulas");
 
+// 11b. Aula completa por TEMA (v1.1, item 4): uma seção por subtema, cada uma auditada sozinha (auditor de outra
+// família). Seção reprovada não bloqueia as aprovadas: fica "em_preparo" com os motivos. A origem (A > B > C ou
+// conceito/banco de regras) é decidida por código a partir das fontes citadas.
+const SecaoAulaTemaSchema = new Schema(
+  {
+    ordem: { type: Number, required: true },
+    subtema: { type: String, required: true },
+    status: { type: String, enum: ["aprovada", "em_preparo"], required: true },
+    conteudo: String, // Markdown com [N]
+    exemplos: { type: [String], default: [] },
+    contraexemplos: { type: [String], default: [] }, // da Lo (turquesa)
+    pegadinhas: { type: [String], default: [] },
+    resumo: String,
+    fontes: [{ titulo: String, trecho: String, camada: String, _id: false }],
+    origem: String, // "A" | "B" | "C" | "conceito"
+    palavras: Number,
+    geradaPor: String,
+    auditadaPor: String,
+    motivos: { type: [String], default: [] },
+  },
+  { _id: false }
+);
+const AulaTemaSchema = new Schema(
+  {
+    subtopico: { type: String, required: true, unique: true, index: true },
+    nome: String,
+    secoes: { type: [SecaoAulaTemaSchema], default: [] },
+  },
+  { timestamps: true }
+);
+export const AulaTema = model("AulaTema", AulaTemaSchema, "aulas_tema");
+
 // Áudio da Lo (voz da narração): MP3 comprimido, ligado ao hash do texto FALADO + voz
 // (texto mudou → hash muda → regera). Explicações e aulas são pré-geradas de noite.
 const AudioSchema = new Schema(

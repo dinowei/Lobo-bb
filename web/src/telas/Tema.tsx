@@ -8,6 +8,7 @@ import { MISTAS_FIM } from "../../../shared/trilha";
 import { useApp } from "../estado";
 import { useTemaDoDia } from "../useGrade";
 import { PergunteAoBinho } from "../componentes/PergunteAoBinho";
+import { AulaTema } from "../componentes/AulaTema";
 import { Ouvir } from "../componentes/Ouvir";
 import { Markdown } from "../componentes/Markdown";
 import { ISeta } from "../componentes/Icones";
@@ -110,6 +111,9 @@ export function Tema() {
           {pedido ? "Pedido feito: o noturno prioriza este tema." : <button className="link" onClick={pedirPrioridade}>Pedir prioridade ao noturno</button>}
         </div>
       )}
+
+      {/* v1.1 (item 4): aula completa do tema, uma seção por subtema (só aparece quando existe) */}
+      <AulaTema subtopico={t.subtopico} />
 
       <div className="tema-grade">
         <section className="secao" aria-labelledby="titulo-estudo">

@@ -7,6 +7,7 @@
 // é da família do escritor. Sem candidato elegível, a questão espera (não viola a regra).
 // ============================================================
 import type OpenAI from "openai";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { ChamadaModelo, Config } from "./models.js";
 import { consumir, novoBalde, type Balde } from "../shared/orcamento.js";
 import { chatJSON, gerador, auditor, escritorPT, SemModeloDisponivel, desativados, ehFalhaDeInfra } from "./llm.js";
@@ -68,6 +69,18 @@ export function anotarResultado(modelo: string, ok: boolean, agora = Date.now())
 // ---------- teto diário global de chamadas (fechamento v1.0): padrão 300, IA_TETO_DIA (0 = sem teto) ----------
 export const tetoGlobalDia = () => (process.env.IA_TETO_DIA !== undefined ? Number(process.env.IA_TETO_DIA) : 300);
 export const passouDoTeto = (usadas: number, teto: number) => teto > 0 && usadas >= teto;
+// Reserva (fechamento v1.1, decisão do dono): IA_RESERVA_PRIORITARIA chamadas do dia (padrão 120) ficam sempre
+// livres para as tarefas prioritárias (chat e tutor do aluno, gate do chat). Tarefa de FUNDO (noturno, esteira,
+// comandos em lote) para em teto − reserva; a prioritária vai até o teto.
+export const reservaPrioritaria = () => (process.env.IA_RESERVA_PRIORITARIA !== undefined ? Number(process.env.IA_RESERVA_PRIORITARIA) : 120);
+export const passouDoTetoDe = (usadas: number, teto: number, reserva: number, fundo: boolean) =>
+  teto > 0 && usadas >= (fundo ? Math.max(0, teto - reserva) : teto);
+// o servidor (aluno) é prioritário; o CLI marca o processo como fundo; comPrioridade abre uma exceção (a gate)
+let processoDeFundo = false;
+export const marcarProcessoDeFundo = (fundo = true) => { processoDeFundo = fundo; };
+const prioridade = new AsyncLocalStorage<boolean>();
+export const comPrioridade = <T>(fn: () => Promise<T>) => prioridade.run(true, fn);
+export const ehFundo = () => processoDeFundo && prioridade.getStore() !== true;
 let contagemDia = { dia: "", usadas: 0, avisou: false };
 async function contarChamadaDoDia(): Promise<boolean> {
   const dia = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
@@ -78,8 +91,8 @@ async function contarChamadaDoDia(): Promise<boolean> {
     try { usadas = await ChamadaModelo.countDocuments({ em: { $gte: desde }, funcao: { $nin: ["voz", "embed", "benchmark"] } }); } catch { /* sem telemetria: conta do zero */ }
     contagemDia = { dia, usadas, avisou: false };
   }
-  if (passouDoTeto(contagemDia.usadas, tetoGlobalDia())) {
-    if (!contagemDia.avisou) console.warn(JSON.stringify({ nivel: "aviso", evento: "teto_diario_global", usadas: contagemDia.usadas, teto: tetoGlobalDia() }));
+  if (passouDoTetoDe(contagemDia.usadas, tetoGlobalDia(), reservaPrioritaria(), ehFundo())) {
+    if (!contagemDia.avisou) console.warn(JSON.stringify({ nivel: "aviso", evento: ehFundo() ? "teto_diario_fundo" : "teto_diario_global", usadas: contagemDia.usadas, teto: tetoGlobalDia(), reserva: reservaPrioritaria() }));
     contagemDia.avisou = true;
     return false;
   }
@@ -203,7 +216,10 @@ export async function chatJSONFuncao(
     throw new SemModeloDisponivel(
       `nenhum modelo elegível para ${funcao} (corrente: ${corrente.join(", ") || "vazia"}${excluirFamilias.length ? `; família proibida: ${excluirFamilias.join(", ")}` : ""})`
     );
-  if (!(await contarChamadaDoDia())) throw new SemModeloDisponivel(`teto diário global de ${tetoGlobalDia()} chamadas de IA atingido (IA_TETO_DIA)`);
+  if (!(await contarChamadaDoDia()))
+    throw new SemModeloDisponivel(ehFundo()
+      ? `teto diário de fundo atingido (${tetoGlobalDia()} − reserva de ${reservaPrioritaria()} para tarefas prioritárias)`
+      : `teto diário global de ${tetoGlobalDia()} chamadas de IA atingido (IA_TETO_DIA)`);
   const client = CLIENTE[funcao]();
   let ultimo: unknown;
   for (const [i, modelo] of candidatos.entries()) {

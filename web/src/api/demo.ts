@@ -388,6 +388,8 @@ export const apiDemo: Api = {
     return espera(undefined);
   },
 
+  // v1.1 (item 4): a aula completa é gerada e auditada no servidor; o demo não tem
+  aulaTema: () => espera(null),
   // v1.1: tema escolhido à mão; no demo fica no navegador
   estudando: () => {
     let s = "";

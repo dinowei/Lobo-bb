@@ -124,6 +124,6 @@ test("chat do tema: contexto = ficha aprovada (trecho literal + origem) e quest�
   assert.equal(await contextoDoTema("tema-que-nao-existe", String(aluno)), null);
   // trava: começa em ajuste; só a gate libera
   assert.equal(await chatDoTemaLiberado(), false);
-  await registrarGateChatTema({ liberado: true, golden: "30/30", tema: "5/5" });
+  await registrarGateChatTema({ decisao: "liberado", golden: "30/30", tema: "5/5" });
   assert.equal(await chatDoTemaLiberado(), true);
 });

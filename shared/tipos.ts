@@ -158,6 +158,12 @@ export interface QuestaoComFigurasDTO {
   figuras: FiguraConferenciaDTO[];
 }
 
+// v1.1 (item 4): aula completa do tema, uma seção por subtema; seção não aprovada aparece "em preparo"
+export type SecaoAulaTemaDTO =
+  | { ordem: number; subtema: string; status: "aprovada"; conteudo: string; exemplos: string[]; contraexemplos: string[]; pegadinhas: string[]; resumo: string; fontes: { titulo: string; trecho: string; camada: string }[]; origem: string }
+  | { ordem: number; subtema: string; status: "em_preparo" };
+export interface AulaTemaDTO { subtopico: string; nome: string; secoes: SecaoAulaTemaDTO[] }
+
 export type ModoSimulado = "completa" | "estudado";
 export const NOME_MODO_SIMULADO: Record<ModoSimulado, string> = { completa: "Prova completa", estudado: "Só o que estudei" };
 
@@ -688,6 +694,7 @@ export interface Api {
   definirTemaDoDia(subtopico: string): Promise<void>;
   // v1.1: tema escolhido à mão ("estudando"), por aluno: no servidor vale no celular e no PC; no demo, no navegador.
   // "" = seguir a sequência da Grade. Não muda a sequência.
+  aulaTema(subtopico: string): Promise<AulaTemaDTO | null>;
   estudando(): Promise<string>;
   definirEstudando(subtopico: string): Promise<void>;
   // histórico dos simulados com o detalhe guardado (evolução, tabela, CSV)

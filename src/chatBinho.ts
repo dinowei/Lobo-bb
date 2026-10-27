@@ -214,9 +214,15 @@ export async function chatDoTemaLiberado(): Promise<boolean> {
   cacheGate = { em: Date.now(), liberado };
   return liberado;
 }
-export async function registrarGateChatTema(valor: { liberado: boolean; golden: string; tema: string }) {
-  await Config.updateOne({ _id: CHAVE_GATE_CHAT_TEMA }, { $set: { valor, em: new Date() } }, { upsert: true });
+// indefinida (infra) guarda a tentativa sem mexer na liberação anterior
+export async function registrarGateChatTema(r: { decisao: "liberado" | "em_ajuste" | "indefinido"; golden: string; tema: string; falhas?: { id: string; estado: string; motivo: string }[] }) {
+  const anterior = (await Config.findById(CHAVE_GATE_CHAT_TEMA).lean())?.valor as { liberado?: boolean } | undefined;
+  const liberado = r.decisao === "indefinido" ? anterior?.liberado === true : r.decisao === "liberado";
+  await Config.updateOne({ _id: CHAVE_GATE_CHAT_TEMA }, { $set: { valor: { ...r, liberado, dia: new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) }, em: new Date() } }, { upsert: true });
   cacheGate = null;
+}
+export async function ultimaGateChatTema() {
+  return (await Config.findById(CHAVE_GATE_CHAT_TEMA).lean())?.valor as { liberado?: boolean; decisao?: string; dia?: string } | undefined;
 }
 
 // errosIds: quais questões contam como erradas (o avaliador passa as dele; o aluno, as últimas respostas erradas)

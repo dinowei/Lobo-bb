@@ -90,6 +90,7 @@ export const apiHttp: Api = {
   },
   responderItemCE: (r) => post("/ce/responder", r),
   definirTemaDoDia: (subtopico) => post("/trilha/inicio", { subtopico }),
+  aulaTema: (subtopico) => req(`/aula-tema/${encodeURIComponent(subtopico)}`),
   estudando: async () => ((await req("/estudando")) as { subtopico: string }).subtopico ?? "",
   definirEstudando: async (subtopico) => { await post("/estudando", { subtopico }); },
   trilha: () => req("/trilha"),

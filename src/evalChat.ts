@@ -3,7 +3,8 @@ import { randomBytes } from "node:crypto";
 import { Types } from "mongoose";
 import { z } from "zod";
 import { DISCIPLINAS, ChatUso, Chunk, Question, RespostaBinho, Source, Topic } from "./models.js";
-import { FORA_DO_EDITAL, OCUPADO, SEM_BASE, contextoDoTema, perguntarAoBinho, type DiagnosticoBinho } from "./chatBinho.js";
+import { FORA_DO_EDITAL, OCUPADO, SEM_BASE, contextoDoTema, perguntarAoBinho, registrarGateChatTema, type DiagnosticoBinho } from "./chatBinho.js";
+import { comPrioridade } from "./corrente.js";
 import { SUBTOPICO_POR_ID } from "../shared/subtopicos.js";
 
 const CasoChatZ = z.object({
@@ -144,6 +145,23 @@ export function decidirGate(
   if (golden.falhasInfraestrutura || tema.falhasInfraestrutura) return "indefinido";
   const ok = golden.invencoesAceitas === 0 && golden.respostasAprovadas / golden.casos >= 0.85 && tema.invencoes === 0 && tema.aprovados >= 4;
   return ok ? "liberado" : "em_ajuste";
+}
+
+// roda a gate inteira (30 + 5) como tarefa PRIORITÁRIA e registra o resultado em config.chat_tema, com os casos
+// que falharam e por quê (o relatório da manhã mostra). Indefinida (infra) não muda a liberação.
+export async function rodarGateChat() {
+  return comPrioridade(async () => {
+    const g = await executarEvalChat();
+    const t = await executarEvalChatTema();
+    const decisao = decidirGate(g, t);
+    const resumoG = `${g.respostasAprovadas}/${g.casos} aprovados, ${g.invencoesAceitas} invenção(ões) aceita(s), ${g.falhasInfraestrutura} falha(s) de infra`;
+    const resumoT = `${t.aprovados}/${t.casos} aprovados, ${t.invencoes} contradição(ões), ${t.falhasInfraestrutura} falha(s) de infra`;
+    const falhas = [...g.itens, ...t.itens].filter((i) => i.estado !== "aprovado").map((i) => ({ id: i.id, estado: i.estado, motivo: i.resumo.slice(0, 220) }));
+    await registrarGateChatTema({ decisao, golden: resumoG, tema: resumoT, falhas });
+    const texto = `gate ${decisao === "liberado" ? "PASSOU: chat do tema liberado" : decisao === "em_ajuste" ? "NÃO passou: chat do tema em ajuste" : "INDEFINIDA (falha de infraestrutura)"}. Golden: ${resumoG}. Tema: ${resumoT}.` +
+      (falhas.length ? ` Falharam: ${falhas.map((f) => `${f.id} [${f.estado}] ${f.motivo}`).join(" · ")}` : "");
+    return { decisao, texto, itens: [...g.itens, ...t.itens] };
+  });
 }
 
 export type ResultadoEvalTema = { casos: number; aprovados: number; invencoes: number; falhasInfraestrutura: number; segundos: number; itens: { id: string; estado: "aprovado" | "reprovado" | "infra"; segundos: number; resumo: string }[] };

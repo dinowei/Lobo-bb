@@ -43,6 +43,14 @@ function servidorFalso(p: Page, e: Estado) {
         if (r.request().method() === "POST") { e.estudando = (r.request().postDataJSON() as { subtopico: string }).subtopico; return j({ ok: true }); }
         return j({ subtopico: e.estudando });
       case "/api/simulado": e.simulados.push(u.search); return j([]);
+      // v1.1 (item 4): aula completa de Crase (1 seção aprovada e 1 em preparo)
+      case "/api/aula-tema/crase":
+        return j({
+          subtopico: "crase", nome: "Crase", secoes: [
+            { ordem: 0, subtema: "crase obrigatória", status: "aprovada", conteudo: "Crase é a fusão da preposição **a** com o artigo **a** [1].", exemplos: ["Vou à escola.", "Refiro-me às alunas."], contraexemplos: ["Vou à pé (errado: pé é masculino)."], pegadinhas: ["Antes de verbo não há crase."], resumo: "Preposição + artigo feminino.", fontes: [{ titulo: "Ficha do tema · crase.pdf, p. 54", trecho: "A crase é a contração de preposição ‘a’ com artigo ‘a’.", camada: "C" }], origem: "C" },
+            { ordem: 1, subtema: "crase proibida", status: "em_preparo" },
+          ],
+        });
       // v1.1 (item 5): chat do tema
       case "/api/binho/perguntar": {
         e.chat = r.request().postDataJSON() as Record<string, unknown>;
@@ -199,6 +207,11 @@ try {
     assert.ok(await p.locator("button", { hasText: "Estudar ouvindo" }).count());
     // ficha da rede: frase + fonte (arquivo, página, camada) com o trecho literal
     assert.match(await p.locator("[data-testid=ficha-acervo]").innerText(), /contração de preposição[\s\S]*fonte: Estrategia - Portugues para o CNU, p\. 54 \(C\)/);
+    // v1.1 (item 4): aula completa com seções navegáveis; a que não passou na auditoria aparece "em preparo"
+    await p.locator("[data-testid=aula-tema]").waitFor();
+    assert.match(await p.locator("[data-testid=secao-aula-0]").innerText(), /Origem: material de cursinho \(C\)[\s\S]*Contraexemplos da Lo[\s\S]*Resumo/);
+    assert.match(await p.locator("[data-testid=secao-aula-1]").innerText(), /Em preparo/);
+    assert.ok(await p.locator("[data-testid=secao-aula-0] button", { hasText: "Ouvir esta seção com a Lo" }).count(), "áudio da Lo por seção");
     // v1.1 (item 5): o chat da página do tema vai com o tema e mostra o contexto usado e a fonte
     await p.locator("#pergunta-binho").fill("Por que não tem crase antes de palavra masculina?");
     await p.locator(".pergunte-binho button", { hasText: "Perguntar" }).click();
