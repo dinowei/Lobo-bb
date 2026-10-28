@@ -1,0 +1,46 @@
+{
+  "_aviso": "Banco de regras da aula completa de Concordância (decisão do dono, 28/10/2026: regras e exemplos nunca da cabeça da IA). Regra = trecho LITERAL do acervo (arquivo + página, conferido por código em acervo-indice). Exemplo oficial = alternativa de questão oficial pela letra; certo/errado vem do gabarito do banco (lido por código). Exemplo do acervo = frase literal da página. Exemplo certo passa pelo LanguageTool local. Subtema sem regra literal fica fora (em preparo).",
+  "subtopico": "concordancia",
+  "secoes": {
+    "sujeito composto": {
+      "regras": [
+        { "rotulo": "Sujeito composto posposto", "texto": "Concorda com termo mais próximo ou vai para o plural", "arquivo": "Estrategia - Revisao de Vespera INSS 2022.pdf", "pagina": 13 },
+        { "rotulo": "Núcleos de gêneros diferentes", "texto": "Quando um sujeito composto é formado por núcleos de gêneros diferentes, a concordância nominal deve ser feita no masculino plural.", "arquivo": "Estrategia - E-book BNB 2024.pdf", "pagina": 75 }
+      ],
+      "exemplos": [
+        { "acervo": { "texto": "Torna a trazer o assunto à baila o aparecimento e a grande vendagem", "arquivo": "Estrategia - Revisao de Vespera INSS 2022.pdf", "pagina": 13 }, "regra": 0 },
+        { "oficial": { "questao": "6ade1d1469825dfdb5553261", "letra": "A" }, "regra": 1 },
+        { "oficial": { "questao": "6ade46e11bf79493a4e155e4", "letra": "A" }, "regra": 1 },
+        { "oficial": { "questao": "6ade1d1469825dfdb5553261", "letra": "B" }, "regra": 1 },
+        { "oficial": { "questao": "6ade1d1469825dfdb5553261", "letra": "C" }, "regra": 1 },
+        { "oficial": { "questao": "6ade46e11bf79493a4e155e4", "letra": "B" }, "regra": 1 },
+        { "oficial": { "questao": "6ade46e11bf79493a4e155e4", "letra": "D" }, "regra": 1 },
+        { "oficial": { "questao": "6ade46e11bf79493a4e155e4", "letra": "E" }, "regra": 1 }
+      ]
+    },
+    "verbos impessoais": {
+      "regras": [
+        { "rotulo": "Concordância do impessoal", "texto": "Verbos impessoais não têm sujeito, ficam no singular.", "arquivo": "Estrategia - Revisao de Vespera INSS 2022.pdf", "pagina": 13 }
+      ],
+      "exemplos": [
+        { "acervo": { "texto": "Havia tempos que João não ligava para a mãe.", "arquivo": "Estrategia - Revisao de Vespera INSS 2022.pdf", "pagina": 13 }, "regra": 0 },
+        { "acervo": { "texto": "Durante a estação da chuva, fez frio nas estalagens dos empregados.", "arquivo": "Estrategia - Revisao de Vespera INSS 2022.pdf", "pagina": 13 }, "regra": 0 },
+        { "oficial": { "questao": "6ade46e11bf79493a4e155e3", "letra": "B" }, "regra": 0 }
+      ]
+    },
+    "haver e fazer": {
+      "regras": [
+        { "rotulo": "Haver (existir) e haver/fazer (tempo)", "texto": "Verbo HAVER no sentido de “existir” e verbos HAVER e FAZER indicando tempo decorrido: sempre flexionados na 3ª pessoa do singular.", "arquivo": "Estrategia - Revisao de Vespera TJ-SP.pdf", "pagina": 15 },
+        { "rotulo": "Haver com sentido de existir", "texto": "Com verbo HAVER com sentido de “existir” (Havia convidados na sala)", "arquivo": "Estrategia - Revisao de Vespera BB 2021 parte 2.pdf", "pagina": 18 }
+      ],
+      "exemplos": [
+        { "acervo": { "texto": "Havia convidados na sala", "arquivo": "Estrategia - Revisao de Vespera BB 2021 parte 2.pdf", "pagina": 18 }, "regra": 1 },
+        { "acervo": { "texto": "Havia tempos que João não ligava para a mãe.", "arquivo": "Estrategia - Revisao de Vespera INSS 2022.pdf", "pagina": 13 }, "regra": 0 },
+        { "oficial": { "questao": "6ade46e11bf79493a4e155e3", "letra": "B" }, "regra": 0 }
+      ]
+    }
+  },
+  "semMaterial": {
+    "concordância ideológica": "nenhuma página do acervo traz a regra (silepse / concordância ideológica) com texto literal"
+  }
+}

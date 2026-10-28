@@ -60,9 +60,10 @@ import { gerarAulas, planejarAulas } from "./aulas.js";
 import { gerarCartoesAgora, planejarCartoes } from "./cartoes.js";
 import { conferirFontesAgora, migrarReferencias, planejarFontesAtuais, reclassificarSemFonte, relatorioFontesAtuais } from "./fontesAtuais.js";
 import { limparAudios, limparCacheDeOutrasVozes, planejarVoz, tetoAudioMB } from "./voz.js";
-import { perguntarAoBinho, ultimaGateChatTema } from "./chatBinho.js";
+import { perguntarAoBinho } from "./chatBinho.js";
+import { noitesSeguidasOk, textoNoitesOk } from "../shared/noites.js";
 import { executarEvalChat, executarEvalChatTema, rodarGateChat } from "./evalChat.js";
-import { etapaProvaAulaTema, gerarAulaTema } from "./aulaTema.js";
+import { gerarAulaTema } from "./aulaTema.js";
 import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
 import type { Disciplina, MotivoContestacao } from "../shared/tipos.js";
 import { executarEvalGerador } from "./evalGerador.js";
@@ -70,7 +71,8 @@ import { cancelarConvite, listarConvites } from "./admin.js";
 import { migrarConcursos, simularMigracaoConcursos } from "./migracaoConcursos.js";
 import { migrarSimulados, simularMigracaoSimulados } from "./simulados.js";
 import { escreverMapa, indexarAcervo, mapearTemas } from "./acervo.js";
-import { gerarFicha } from "./fichas.js";
+import { gerarFicha, MOTIVO_ESCRITA_PELO_LOBO } from "./fichas.js";
+import { Ficha } from "./models.js";
 import { desempatarPendentes } from "./desempate.js";
 import { TRILHA } from "../shared/trilha.js";
 import { aplicarArvore, auditarAmostra, classificarBanco, itensClassificados, reclassificarOficiais, simularArvore } from "./subtopicos.js";
@@ -114,7 +116,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   eval-chat [--n 30] [--casos a,b]  roda o golden set do Binho em série, sem guardar respostas de avaliação
   eval-chat tema                    os 5 casos dentro do tema (ficha do tema + questões erradas), v1.1
   eval-chat gate                    golden 30 + 5 do tema; libera o chat do tema só se passar (senão "em ajuste")
-  aula-tema <subtópico>             aula completa do tema, uma seção por subtema, auditada seção a seção (v1.1)
+  aula-tema <subtópico> [refazer]   aula completa: material por código (banco de regras / mathjs), IA só redige; checagens + auditor com checklist
   eval-gerador [--n 1] [--assuntos "A;B"]  gera nos 8 tópicos de maior peso e mostra aprovação e motivos
   binho --assunto "<tópico>" --pergunta "<texto>"  o chat "Pergunte ao Binho" como o dono
   contestar <id> --motivo <m> [--comentario "..."] --simular|--confirmar  tira a questão de circulação
@@ -162,6 +164,8 @@ BB Estudos — comandos (npm run bb -- <comando>)
   acervo mapa                   mapa tema → páginas (A > B > C) em docs/CRONOGRAMA-MATERIAL.md e data/temas.json (automático)
   desempatar-pendentes          Português por construção aguardando juiz independente: desempate às cegas, o código decide
   fichas [--tema crase] [--n 3]  ficha do tema com o acervo: gerador → código confere cada trecho → auditor de outra família
+  fichas questoes [lobo] --tema X   ficha a partir das questões oficiais do tema ("lobo" = só publica com o OK do dono)
+  ficha-ok <subtópico>              OK do dono: publica a ficha "escrita pelo Lobo" pendente do tema
 `;
 
 function exigir(v: string | undefined, nome: string): string {
@@ -329,12 +333,25 @@ async function main() {
         });
       }
 
+      case "ficha-ok": {
+        // 28/10: OK do dono numa ficha "escrita pelo Lobo" (pendente por isso): publica a mais recente do tema
+        if (!args[0]) throw new Error('Use "ficha-ok <subtópico>" (só depois do OK do dono).');
+        const f = await Ficha.findOne({ subtopico: args[0], status: "pendente", motivos: MOTIVO_ESCRITA_PELO_LOBO }).sort({ createdAt: -1 });
+        if (!f) return console.log(`Nenhuma ficha "escrita pelo Lobo" pendente para ${args[0]}.`);
+        f.status = "aprovada";
+        f.motivos = [...(f.motivos ?? []), `OK do dono em ${new Date().toLocaleDateString("pt-BR")}`];
+        await f.save();
+        return console.log(`✔ Ficha de ${args[0]} publicada (${f.afirmacoes.length} afirmações).`);
+      }
+
       case "fichas": {
         // F11: ficha por subtópico com o acervo (gerador → código confere trecho → auditor de outra família)
+        // 28/10: "fichas questoes [lobo] --tema X" = a partir das questões oficiais do tema; "lobo" = só publica com OK
         const alvo = o.tema ? [o.tema] : TRILHA.map((t) => t.subtopico).slice(0, o.n ? Number(o.n) : 3);
+        const opcoesFicha = { fonte: args.includes("questoes") ? ("questoes" as const) : ("acervo" as const), escritaPeloLobo: args.includes("lobo") };
         return await naFila(rotulo, async () => {
           for (const s of alvo) {
-            const r = await gerarFicha(s);
+            const r = await gerarFicha(s, console.log, opcoesFicha);
             console.log(`${r.status === "aprovada" ? "✔" : "·"} ${s}: ${r.status}${"afirmacoes" in r && r.afirmacoes !== undefined ? ` (${r.afirmacoes} afirmações)` : ""}${r.motivos.length ? ` — ${r.motivos.join("; ")}` : ""}`);
           }
         });
@@ -643,9 +660,9 @@ async function main() {
       }
 
       case "aula-tema": {
-        // v1.1 (item 4): gera (ou completa) a aula completa de um tema, seção por subtema, auditada seção a seção
-        if (!args[0]) throw new Error('Use "aula-tema <subtópico>" (ex.: aula-tema concordancia).');
-        return await naFila(rotulo, async () => console.log((await gerarAulaTema(args[0])).resumo));
+        // aula completa (desenho de 28/10: material por código, IA só redige); "refazer" começa do zero. De dia, à mão.
+        if (!args[0]) throw new Error('Use "aula-tema <subtópico> [refazer]" (ex.: aula-tema concordancia refazer).');
+        return await naFila(rotulo, async () => console.log((await gerarAulaTema(args[0], { refazer: args[1] === "refazer" })).resumo));
       }
 
       case "eval-chat": {
@@ -802,16 +819,9 @@ async function main() {
           const lote = `noite ${inicio.toISOString().slice(0, 10)}`;
           // E6 (F12): a noite completa, etapa por etapa, cada uma no relatório (ok / pulada / falhou)
           const etapas: EtapaNoite[] = [];
-          // fechamento v1.1: 1ª etapa, uma vez por noite e só enquanto o chat do tema não foi liberado: a gate (30 + 5)
-          await etapa(etapas, "gate do chat do tema", async () => {
-            const ultima = await ultimaGateChatTema();
-            if (ultima?.liberado) return null;
-            if (ultima?.dia === new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) && ultima.decisao !== "indefinido") return null;
-            return (await rodarGateChat()).texto;
-          });
-          // fechamento v1.1 (item 4): a PROVA da aula completa (Concordância e Porcentagem), uma vez; só vai para a
-          // esteira depois do OK do dono
-          await etapa(etapas, "aula completa (prova)", etapaProvaAulaTema);
+          // A gate do chat NÃO roda aqui (decisão do dono, 28/10): dentro do noturno a fila de IA está ocupada e a janela
+          // 01:00–05:30 protegida, então o chat responde "ocupado". Ela roda de dia: `bb -- eval-chat gate`.
+          // A prova da aula completa também saiu daqui: roda de dia, à mão (`bb -- aula-tema <tema>`), até o OK do dono.
           await etapa(etapas, "backup", etapaBackup);
           await etapa(etapas, "acervo", etapaAcervo);
           await etapa(etapas, "ingestão", async () => (sobraTempo(ate, 120) ? etapaIngestao() : null));
@@ -858,6 +868,11 @@ async function main() {
           });
           // relatório diário da esteira: temas prontos × total, chamadas × capacidade, descarte por motivo
           await etapa(etapas, "relatório da esteira", async () => (await relatorioDiario()).texto);
+          // 28/10: "noites seguidas OK: N/5" (esta noite + as anteriores da janela A)
+          await etapa(etapas, "noites seguidas OK", async () => {
+            const anteriores = await Relatorio.find().sort({ inicio: -1 }).limit(40).select("janela etapas.status").lean();
+            return textoNoitesOk(noitesSeguidasOk([{ janela: "A", etapas }, ...anteriores]));
+          });
           try {
             const noite = await relatorioDaNoite(inicio);
             const aprovadas = await Question.countDocuments({ status: "aprovada" });

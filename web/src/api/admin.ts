@@ -60,6 +60,7 @@ type ConcursosAdminDTO = { concursos: ConcursoInfoDTO[]; historico: RegistroConc
 // Janelas (E8): A = noite, B = recuperação (horário e teto configuráveis)
 export type JanelasDTO = {
   config: { janelaB: { inicio: string; fim: string; tetoChamadas: number } };
+  noitesSeguidasOk?: number; // 28/10: "noites seguidas OK: N/5"
   relatorios: { lote: string; inicio: string; fim: string; janela: "A" | "B"; aprovadas: number | null; etapas: { etapa: string; status: "ok" | "pulada" | "falhou"; detalhe: string }[] }[];
 };
 export const adminJanelas = {

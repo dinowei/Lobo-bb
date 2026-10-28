@@ -551,3 +551,38 @@ RETOMAR AQUI (26/10/2026): ver `docs/RETOMAR.md` (versão v1.0-estudo congelada)
 - Item 5 (plano de volta): SIM. `docs/RETOMAR.md` com a volta para `v1.0-estudo` em < 5 min (Render rollback `dep-dbfm36gn74is73etrp2g` ~2 min; Vercel Instant Rollback `dpl_2fjxuG55Fbtmo2oeRmcQ8c9RdyCG`; conferir `/api/saude`; `git checkout v1.0-estudo` no PC para o noturno; banco não precisa de nada: a v1.1 só acrescentou). Simulação: worktree da `v1.0-estudo` com as mesmas dependências → build do site ok e `smoke-local` da v1.0 (servidor de produção, banco em memória) ok em 51 s (`/api/saude` = `b65df5e`, Painel do servidor, responde e desfaz). Risco anotado: o rewrite antigo do `vercel.json` da v1.0 pode repetir o `/api/saude*`; o RETOMAR diz o que fazer (manter a frente da v1.1, compatível com o servidor da v1.0).
 
 RETOMAR AQUI (27/10/2026): v1.1 fechada (tag `v1.1`). Noturno de 28/10, 01:00: gate do chat (1ª etapa) e prova da aula completa (Concordância e Porcentagem). De manhã: ler o relatório da noite (etapas "gate do chat do tema" e "aula completa (prova)"), tirar os prints da aula e pedir o OK do dono. v1.2 (visual) começa com perguntas.
+
+## 28/10/2026: relatório da noite e decisões da manhã
+- Noite de 28/10: 11 etapas, nenhuma falhou (01:04–04:55); 342 de 1984 chamadas; 29 questões aprovadas de 54 planejadas (63 descartadas); banco 476 → 506; cobertura 4/74 (eram 2); Admin → Erros vazio. Noites seguidas OK: 1/5 (27/10 teve "fichas" falhou).
+- Gate na noite: INDEFINIDA (35 respostas "ocupado"): dentro do noturno o chat recusa trabalho (fila ocupada pelo próprio noturno e janela 01:00–05:30). Decisão do dono: a trava fica; a gate só roda de dia. Saiu do noturno (a prova da aula também).
+- Item 1 (gate de dia, 05:47): NÃO passou → chat do tema segue "em ajuste".
+  - Golden: 20/30 aprovados (67%; meta 85%), 0 invenções aceitas, 0 falhas de infra.
+  - Tema: 2/5, 0 contradições.
+  - Falharam:
+    - "não achei" onde havia base: kb-servicos-essenciais-cmn3919, vendas-lgpd-protecao-credito, informatica-phishing, adm-9784-principios, adm-14133-modalidades, ppenal-flagrante, tema-crase-masculino, tema-crase-insiste.
+    - Respondeu sem citação conferida: adm-8112-investidura, cf-art1-fundamentos, cvm-6404-companhia.
+    - O auditor barrou o art. 316 sem citação: penal-concussao.
+    - Explicou o gabarito D certo, mas sem dizer a letra (o verificador exige a letra): tema-concordancia-erro.
+- Item 3: contador "noites seguidas OK: N/5" (`shared/noites.ts`, teste) no relatório da noite (etapa própria) e no Admin → Janelas.
+- Item 2 (aula completa, desenho novo): PARCIAL. Resultado 5/7 seções aprovadas (71%; meta 80%).
+  - Desenho:
+    - Material por código: banco de regras `data/aulas/concordancia.json`, com regra = trecho literal do acervo (conferido em acervo-indice) e exemplos das alternativas oficiais (certo/errado pelo gabarito do banco) ou literais do acervo; exemplo certo passa pelo LanguageTool local.
+    - Matemática: `src/aulaMatematica.ts` com números, exemplos e resultados conferidos com mathjs; moeda sempre R$.
+    - A IA só redige a explicação e o resumo.
+    - Checagens por código antes do auditor: moeda, LaTeX cru, frase/exemplo fora do material, número fora do material (Matemática) e [N] inexistente.
+    - Auditor com checklist (regra certa, exemplo do tema, pegadinha verdadeira, não contradiz gabarito); até 2 tentativas por seção.
+  - Porcentagem 3/3 aprovadas (1.317 palavras).
+  - Concordância 2/4 (verbos impessoais, haver e fazer):
+    - sujeito composto: a IA escreveu "verbo sempre no plural", contra a regra; o auditor barrou;
+    - concordância ideológica: sem material literal no acervo.
+  - Erros meus corrigidos no caminho (achados pelo auditor): um contraexemplo oficial ligado à regra errada (núcleos femininos) e um exemplo de porcentagem na seção de grandezas proporcionais.
+  - Defeitos que passaram e você vê nos prints: itálico cru (`*haver*`) e uma frase sem sentido em "verbos impessoais".
+  - Três rodadas de dia (≈ 60 chamadas). Prints 360/1440 enviados. Não foi para a esteira.
+- Item 4 (fichas sem material): nenhuma publicada.
+  - Pontuação (3 oficiais): rejeitada 2x; a 1ª por JSON, a 2ª com só 2 afirmações com trecho literal (mínimo 3).
+  - Coesão (5 oficiais): o auditor aprovou, mas as afirmações saíram em inglês e rasas. Voltei para "rejeitada" (motivo registrado) e o código passou a barrar afirmação em outra língua (teste).
+  - Interpretação (12 oficiais, "escrita pelo Lobo"): rejeitada pelo auditor (só 1 afirmação ficou).
+  - `bb -- fichas questoes [lobo] --tema X` e `bb -- ficha-ok <tema>` (OK do dono) ficam prontos.
+  - Achado: o acervo tem regras de pontuação com texto literal (ex.: Revisão de Véspera Caixa 2024, pp. 81–82); o mapa do tema aponta para páginas erradas.
+- Deslize: editei por script duas vezes (remoção do bloco antigo de prompts em `src/prompts.ts` e uma linha de import em `src/fichas.test.ts`), contra a regra do CLAUDE.md. Conferi no diff: só o bloco/linha mudou, sem escape perdido.
+- Verificação: typecheck (servidor e site) ok; suíte 314 ok / 0 falha; ISOLAMENTO 214/214 (uma 1ª rodada teve 4 falhas por falta de memória, com o LanguageTool aberto); build do site ok; e2e trilha e janelas verdes.

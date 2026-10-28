@@ -12,6 +12,7 @@ import { desempatarPendentes } from "./desempate.js";
 import { planejarNoite, rodarFila } from "./noturno.js";
 import { planejarPregeracoes } from "./outroJeito.js";
 import { correnteAtiva } from "./corrente.js";
+import { noitesSeguidasOk } from "../shared/noites.js";
 
 export interface ConfigJanelas { janelaB: { inicio: string; fim: string; tetoChamadas: number } }
 export const JANELAS_PADRAO: ConfigJanelas = { janelaB: { inicio: "18:00", fim: "19:00", tetoChamadas: 80 } };
@@ -99,8 +100,10 @@ export async function rodarJanelaB(opcoes: { agora?: Date; forcar?: boolean } = 
 // tela Admin → Janelas: horário, teto e os últimos relatórios (A e B) com as etapas
 export async function painelJanelas() {
   const relatorios = await Relatorio.find().sort({ inicio: -1 }).limit(8).select("lote inicio fim janela etapas progresso").lean();
+  const historico = await Relatorio.find().sort({ inicio: -1 }).limit(40).select("janela etapas.status").lean();
   return {
     config: await lerJanelas(),
+    noitesSeguidasOk: noitesSeguidasOk(historico),
     relatorios: relatorios.map((r) => ({
       lote: r.lote, inicio: (r.inicio as Date).toISOString(), fim: (r.fim as Date).toISOString(), janela: (r.janela ?? "A") as "A" | "B",
       etapas: (r.etapas ?? []).map((e) => ({ etapa: e.etapa ?? "", status: (e.status ?? "ok") as "ok" | "pulada" | "falhou", detalhe: e.detalhe ?? "" })),

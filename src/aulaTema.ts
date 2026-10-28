@@ -1,152 +1,265 @@
 // ============================================================
-// BB Estudos — aula COMPLETA por tema (v1.1, item 4)
-// Uma seção por subtema (explicação, exemplos, contraexemplos da Lo, pegadinhas da banca, resumo), escrita pela
-// corrente "tutor" e auditada SEÇÃO POR SEÇÃO por auditor de outra família. Seção reprovada fica "em preparo" e
-// não bloqueia as aprovadas. Hierarquia A > B > C com citação literal conferida por código (regras 3 e 18):
-// Bancários, Atualidades e Vendas só com fonte ingerida. A origem que o aluno vê é decidida pelo código.
-// Prova primeiro em 2 temas (PROVA_AULA_TEMA); só vai para a esteira depois do OK do dono.
+// BB Estudos — aula COMPLETA por tema, desenho de 28/10/2026 (regras 10, 12 e 14, decisão do dono)
+// Uma seção por subtema. O MATERIAL vem do código, nunca da cabeça da IA:
+//   - Português: banco de regras em data/aulas/<tema>.json — regra = trecho literal do acervo (conferido em
+//     acervo-indice); exemplo = alternativa oficial (certo/errado pelo gabarito do banco) ou frase literal do
+//     acervo; exemplo certo passa pelo LanguageTool local.
+//   - Matemática: números, exemplos, contraexemplos e resultados construídos e conferidos com mathjs
+//     (src/aulaMatematica.ts). Moeda sempre R$.
+// A IA (corrente "tutor") só redige a explicação e o resumo em volta. Checagens por código ANTES do auditor
+// reprovam na hora: moeda diferente de R$, LaTeX cru, frase/exemplo ou número fora do material, [N] inexistente.
+// Depois, auditor de outra família com checklist explícito. Até 2 tentativas por seção; depois "em preparo".
+// Esteira só depois do OK do dono (a prova roda de dia, à mão: `bb -- aula-tema <tema> refazer`).
 // ============================================================
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Types } from "mongoose";
-import { AulaTema, Chunk, DISCIPLINAS_COM_FONTE_OBRIGATORIA, Ficha, Question, Source, Topic } from "./models.js";
+import { AulaTema, Question, Topic } from "./models.js";
 import { chatJSONFuncao } from "./corrente.js";
 import { SemModeloDisponivel, ehFalhaDeInfra, validarOuReparar } from "./llm.js";
-import { CONFERE_SECAO_SYSTEM, CONFERE_SECAO_Z, SECAO_AULA_TEMA_SYSTEM, SecaoAulaTemaZ, secaoAulaTemaUser } from "./prompts.js";
-import { ancorarCitacao, contarPalavrasMarkdown } from "./aulas.js";
-import { escolherTrechos } from "./chatBinho.js";
+import { CHECKLIST_SECAO_SYSTEM, ChecklistSecaoZ, REDACAO_SECAO_SYSTEM, RedacaoSecaoZ, redacaoSecaoUser } from "./prompts.js";
+import { contarPalavrasMarkdown } from "./aulas.js";
+import { PASTA_INDICE } from "./acervo.js";
+import { checarLoteLT, garantirLT } from "./languagetool.js";
+import { numerosDoTexto } from "./verificacao.js";
+import { materialMatematica, subtemasComConstrucao } from "./aulaMatematica.js";
 import { SUBTOPICO_POR_ID } from "../shared/subtopicos.js";
-import { disciplinaDoTema } from "../shared/trilhaUnica.js";
 import { subtemasDoTema } from "../shared/estudoTema.js";
 import { TRILHA } from "../shared/trilha.js";
 import type { AulaTemaDTO } from "../shared/tipos.js";
 
-// os 2 temas da prova (decisão do dono, fechamento v1.1): Concordância e um de Matemática
+// os 2 temas da prova (decisão do dono): Concordância e Porcentagem; esteira só depois do OK
 export const PROVA_AULA_TEMA = ["concordancia", "porcentagem"] as const;
+export const TENTATIVAS_POR_SECAO = 2;
 
 type Camada = "A" | "B" | "C";
-export type FonteSecao = { indice: number; titulo: string; camada: Camada; texto: string };
-type Secao = ReturnType<typeof SecaoAulaTemaZ.parse>;
+export type RegraMaterial = { indice: number; texto: string; titulo: string; camada: Camada | "conceito" };
+export type MaterialSecao = {
+  tipo: "portugues" | "matematica";
+  regras: RegraMaterial[];
+  exemplos: string[]; // certos, com a origem
+  contraexemplos: string[];
+  pegadinhas: string[];
+  formula?: string;
+  descartados: string[]; // o que o código tirou (ex.: exemplo certo que o LanguageTool apontou)
+};
 
-const normalizar = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[“”"']/g, "\"").replace(/\s+/g, " ").trim().toLowerCase();
 
 // tipo da fonte → camada: oficial (lei, norma, edital, prova) A; material próprio B; cursinho C
 export const camadaDoTipo = (tipo?: string | null): Camada =>
-  tipo === "material_cursinho" ? "C" : tipo === "material_proprio" ? "B" : "A";
+  tipo === "material_cursinho" || tipo === "cursinho" ? "C" : tipo === "material_proprio" ? "B" : "A";
 
-// conferência determinística da seção: [N] existe, citação literal, fonte listada é citada; disciplina com fonte
-// obrigatória exige citação
-export function validarSecao(s: Secao, disciplina: string, fontes: FonteSecao[]): string | undefined {
-  const porIndice = new Map(fontes.map((f) => [f.indice, f]));
-  const citados = [...s.conteudo.matchAll(/\[(\d+)\]/g)].map((m) => Number(m[1]));
-  if (citados.some((i) => !porIndice.has(i))) return "A seção cita um índice de fonte inexistente.";
-  for (const f of s.fontes) {
-    const original = porIndice.get(f.indice);
-    if (!original) return `A citação aponta para uma fonte inexistente (${f.indice}).`;
-    if (!citados.includes(f.indice)) return `A fonte ${f.indice} foi listada mas não é citada no conteúdo.`;
-    if (!normalizar(original.texto).includes(normalizar(f.trecho))) return `A citação da fonte ${f.indice} não existe literalmente no trecho.`;
-  }
-  if ((DISCIPLINAS_COM_FONTE_OBRIGATORIA as readonly string[]).includes(disciplina) && !s.fontes.length) return "Esta disciplina exige fonte ingerida e citação literal.";
-  return undefined;
-}
-
-// origem mostrada ao aluno: a melhor camada citada (A > B > C); sem citação, "conceito"
-export function origemDaSecao(citadas: { camada: string }[]): "A" | "B" | "C" | "conceito" {
-  for (const c of ["A", "B", "C"] as const) if (citadas.some((x) => x.camada === c)) return c;
+// origem mostrada ao aluno: a melhor camada das regras (A > B > C); regra construída por código = "conceito"
+export function origemDaSecao(regras: { camada: string }[]): "A" | "B" | "C" | "conceito" {
+  for (const c of ["A", "B", "C"] as const) if (regras.some((x) => x.camada === c)) return c;
   return "conceito";
 }
 
-async function fontesDoSubtema(subtopico: string, tema: string, subtema: string, topicIds: Types.ObjectId[]): Promise<FonteSecao[]> {
-  const chunks = await Chunk.find({ topicIds: { $in: topicIds }, revogada: false }).sort({ ordem: 1, pagina: 1 }).limit(300).select("sourceId pagina texto").lean();
-  const fontes = await Source.find({ _id: { $in: [...new Set(chunks.map((c) => String(c.sourceId)))] }, revogada: false }).select("titulo tipo").lean();
-  const porId = new Map(fontes.map((f) => [String(f._id), f]));
-  const dosChunks = chunks.flatMap((c) => {
-    const f = porId.get(String(c.sourceId));
-    return f ? [{ titulo: `${f.titulo}${c.pagina ? `, p. ${c.pagina}` : ""}`, camada: camadaDoTipo(f.tipo), texto: c.texto.slice(0, 1800) }] : [];
-  });
-  const ficha = await Ficha.findOne({ subtopico, status: "aprovada" }).sort({ createdAt: -1 }).select("afirmacoes").lean();
-  const daFicha = (ficha?.afirmacoes ?? []).filter((a) => a.trecho && a.trecho.length >= 20)
-    .map((a) => ({ titulo: `Ficha do tema · ${a.arquivo?.split(/[\\/]/).pop() ?? "material"}${a.pagina ? `, p. ${a.pagina}` : ""}`, camada: (a.camada ?? "C") as Camada, texto: a.trecho! }));
-  const busca = `${tema} ${subtema}`;
-  // A antes de B antes de C entre os escolhidos (hierarquia), sem perder os mais ligados ao subtema
-  const escolhidos = [...escolherTrechos(busca, dosChunks, 6), ...escolherTrechos(busca, daFicha, 3)]
-    .sort((a, b) => a.camada.localeCompare(b.camada));
-  return escolhidos.map((f, i) => ({ indice: i + 1, ...f }));
-}
-
-async function gerarSecao(c: { disciplina: string; tema: string; subtema: string; outros: string[]; fontes: FonteSecao[]; oficiais: { enunciado: string; gabarito: string }[] }) {
-  const entrada = secaoAulaTemaUser({ disciplina: c.disciplina, tema: c.tema, subtema: c.subtema, outrosSubtemas: c.outros, fontes: c.fontes, oficiais: c.oficiais });
-  const preparar = (json: unknown): Secao => {
-    const s = SecaoAulaTemaZ.parse(json);
-    const texto = new Map(c.fontes.map((f) => [f.indice, f.texto]));
-    return { ...s, fontes: s.fontes.map((f) => ({ ...f, trecho: texto.has(f.indice) ? ancorarCitacao(f.trecho, texto.get(f.indice)!) : f.trecho })) };
-  };
-  let escritor = await chatJSONFuncao("tutor", SECAO_AULA_TEMA_SYSTEM, entrada, 0.3, 4000);
-  let secao = preparar(await validarOuReparar(SecaoAulaTemaZ, escritor.json, { client: escritor.client, model: escritor.modelo, system: SECAO_AULA_TEMA_SYSTEM, user: entrada }));
-  let erro = validarSecao(secao, c.disciplina, c.fontes);
-  if (erro) {
-    // uma correção com o mesmo modelo
-    const pedido = `${entrada}\n\nSEÇÃO QUE PRECISA DE CORREÇÃO:\n${JSON.stringify(secao).slice(0, 6000)}\n\nERRO DETERMINÍSTICO: ${erro}\nReescreva o JSON completo. Cada [N] do texto precisa de uma citação literal (20 a 120 caracteres consecutivos) do trecho [N] em "fontes"; não liste fonte que não citou.`;
-    escritor = await chatJSONFuncao("tutor", SECAO_AULA_TEMA_SYSTEM, pedido, 0.1, 4000, { preferir: escritor.modelo });
-    secao = preparar(await validarOuReparar(SecaoAulaTemaZ, escritor.json, { client: escritor.client, model: escritor.modelo, system: SECAO_AULA_TEMA_SYSTEM, user: pedido }));
-    erro = validarSecao(secao, c.disciplina, c.fontes);
+// ---------- checagens por código, antes do auditor (decisão do dono, 28/10) ----------
+const RE_MOEDA = /€|US\$|U\$|\bd[oó]lar(es)?\b|\beuros?\b/i;
+const RE_LATEX = /\\(frac|times|cdot|text|left|right|sqrt|div|le|ge|neq|approx)\b|\\\(|\\\[|\$\$/;
+const RE_ENTRE_ASPAS = /[“"]([^“”"]{12,})[”"]/g;
+export function checarTextoAula(texto: string, m: MaterialSecao): string[] {
+  const problemas: string[] = [];
+  if (RE_MOEDA.test(texto)) problemas.push("moeda diferente de R$");
+  if (RE_LATEX.test(texto)) problemas.push("LaTeX cru no texto (fórmula precisa sair em texto legível)");
+  const indices = new Set(m.regras.map((r) => r.indice));
+  for (const [, n] of texto.matchAll(/\[(\d+)\]/g)) if (!indices.has(Number(n))) { problemas.push(`cita a regra [${n}], que não existe no material`); break; }
+  // frase de exemplo entre aspas: tem de estar no material (senão é exemplo fora do material/tema)
+  const doMaterial = normalizar([...m.regras.map((r) => r.texto), ...m.exemplos, ...m.contraexemplos, ...m.pegadinhas, m.formula ?? ""].join(" \u0000 "));
+  for (const [, frase] of texto.matchAll(RE_ENTRE_ASPAS)) {
+    if (frase.trim().split(/\s+/).length < 3) continue;
+    if (!doMaterial.includes(normalizar(frase))) { problemas.push(`frase ou exemplo fora do material: “${frase.slice(0, 80)}”`); break; }
   }
-  const citadas = secao.fontes.map((f) => ({ ...f, fonte: c.fontes.find((x) => x.indice === f.indice)! }));
-  const base = {
-    subtema: c.subtema, conteudo: secao.conteudo, exemplos: secao.exemplos, contraexemplos: secao.contraexemplos, pegadinhas: secao.pegadinhas, resumo: secao.resumo,
-    fontes: citadas.map((x) => ({ titulo: x.fonte.titulo, trecho: x.trecho, camada: x.fonte.camada })),
-    origem: origemDaSecao(citadas.map((x) => x.fonte)),
-    palavras: contarPalavrasMarkdown([secao.conteudo, ...secao.exemplos, ...secao.contraexemplos, ...secao.pegadinhas, secao.resumo].join("\n")),
-    geradaPor: escritor.modelo,
-  };
-  if (erro) return { ...base, status: "em_preparo" as const, motivos: [erro] };
-  // auditor de OUTRA família, só esta seção
-  const auditor = await chatJSONFuncao("auditor", CONFERE_SECAO_SYSTEM, `${entrada}\n\nSEÇÃO A CONFERIR:\n${JSON.stringify(secao)}`, 0, 1800, { excluirFamilias: [escritor.familia] });
-  const parecer = CONFERE_SECAO_Z.parse(auditor.json);
-  return { ...base, auditadaPor: auditor.modelo, status: parecer.ok ? ("aprovada" as const) : ("em_preparo" as const), motivos: parecer.ok ? [] : parecer.problemas };
+  // Matemática: todo número da explicação tem de estar no material (a IA não cria conta nem valor)
+  if (m.tipo === "matematica") {
+    const permitidos = new Set([0, 1, 2, 3, 4, 5, 10, 100, ...numerosDoTexto([...m.exemplos, ...m.contraexemplos, ...m.pegadinhas, m.formula ?? ""].join(" "))].map((x) => Math.round(x * 1e6)));
+    const fora = numerosDoTexto(texto.replace(/\[\d+\]/g, " ").replace(/^\s*\d+[.)]\s/gm, " ")).find((x) => !permitidos.has(Math.round(x * 1e6)));
+    if (fora !== undefined) problemas.push(`número fora do material: ${fora}`);
+  }
+  return problemas;
 }
 
-// gera (ou completa) a aula do tema: seções já aprovadas ficam; as em preparo e as que faltam são (re)feitas
-export async function gerarAulaTema(subtopico: string): Promise<{ ok: boolean; resumo: string }> {
+// ---------- material de Português: banco de regras + questões oficiais + LanguageTool ----------
+type BancoPT = {
+  subtopico: string;
+  secoes: Record<string, {
+    regras: { rotulo: string; texto: string; arquivo: string; pagina: number }[];
+    exemplos: ({ acervo: { texto: string; arquivo: string; pagina: number }; regra: number } | { oficial: { questao: string; letra: string }; regra: number })[];
+  }>;
+  semMaterial?: Record<string, string>;
+};
+export const arquivoBancoPT = (subtopico: string) => join(process.cwd(), "data", "aulas", `${subtopico}.json`);
+
+let paginasPorArquivo: Map<string, { camada: Camada; paginas: string[] }> | null = null;
+function paginaDoAcervo(arquivo: string, pagina: number): { texto: string; camada: Camada } | null {
+  if (!paginasPorArquivo) {
+    paginasPorArquivo = new Map();
+    if (existsSync(PASTA_INDICE))
+      for (const f of readdirSync(PASTA_INDICE).filter((x) => x.endsWith(".json"))) {
+        const j = JSON.parse(readFileSync(join(PASTA_INDICE, f), "utf8")) as { arquivo?: string; camada?: Camada; paginas?: string[] };
+        if (j.arquivo && j.paginas) paginasPorArquivo.set(j.arquivo.split(/[\\/]/).pop()!, { camada: j.camada ?? "C", paginas: j.paginas });
+      }
+  }
+  const a = paginasPorArquivo.get(arquivo);
+  const texto = a?.paginas[pagina - 1];
+  return texto ? { texto, camada: a!.camada } : null;
+}
+const literalNaPagina = (trecho: string, pagina: string) => normalizar(pagina).includes(normalizar(trecho));
+
+// conferência pura do banco (sem banco de dados nem LanguageTool): cada regra e cada exemplo do acervo existe
+// literalmente na página indicada. Devolve o que NÃO confere.
+export function conferirBancoNoAcervo(subtopico: string): string[] {
+  const banco = JSON.parse(readFileSync(arquivoBancoPT(subtopico), "utf8")) as BancoPT;
+  const falhas: string[] = [];
+  for (const [sub, sec] of Object.entries(banco.secoes)) {
+    for (const r of sec.regras) {
+      const p = paginaDoAcervo(r.arquivo, r.pagina);
+      if (!p || !literalNaPagina(r.texto, p.texto)) falhas.push(`${sub}: regra "${r.rotulo}" (${r.arquivo} p. ${r.pagina})`);
+    }
+    for (const e of sec.exemplos) {
+      if (!("acervo" in e)) continue;
+      const p = paginaDoAcervo(e.acervo.arquivo, e.acervo.pagina);
+      if (!p || !literalNaPagina(e.acervo.texto, p.texto)) falhas.push(`${sub}: exemplo "${e.acervo.texto.slice(0, 40)}"`);
+    }
+  }
+  return falhas;
+}
+
+export async function materialPortugues(subtopico: string, subtema: string): Promise<MaterialSecao | { semMaterial: string }> {
+  const banco = JSON.parse(readFileSync(arquivoBancoPT(subtopico), "utf8")) as BancoPT;
+  const sec = banco.secoes[subtema];
+  if (!sec) return { semMaterial: banco.semMaterial?.[subtema] ?? "subtema sem regra literal no banco" };
+  const descartados: string[] = [];
+  const regras: RegraMaterial[] = [];
+  sec.regras.forEach((r) => {
+    const p = paginaDoAcervo(r.arquivo, r.pagina);
+    if (!p || !literalNaPagina(r.texto, p.texto)) { descartados.push(`regra "${r.rotulo}" não confere literalmente em ${r.arquivo} p. ${r.pagina}`); return; }
+    regras.push({ indice: regras.length + 1, texto: r.texto, titulo: `${r.arquivo.replace(/\.pdf$/i, "")}, p. ${r.pagina}`, camada: p.camada });
+  });
+  if (!regras.length) return { semMaterial: "nenhuma regra confere literalmente no acervo" };
+  const rotulo = (i: number) => sec.regras[i]?.rotulo ?? "a regra";
+  const certos: { texto: string; origem: string }[] = [];
+  const errados: { texto: string; origem: string; regra: number; prova?: string; letra?: string }[] = [];
+  for (const e of sec.exemplos) {
+    if ("acervo" in e) {
+      const p = paginaDoAcervo(e.acervo.arquivo, e.acervo.pagina);
+      if (!p || !literalNaPagina(e.acervo.texto, p.texto)) { descartados.push(`exemplo "${e.acervo.texto.slice(0, 40)}" não confere no acervo`); continue; }
+      certos.push({ texto: e.acervo.texto, origem: `${e.acervo.arquivo.replace(/\.pdf$/i, "")}, p. ${e.acervo.pagina}` });
+      continue;
+    }
+    // questão oficial: texto da alternativa e certo/errado pelo GABARITO do banco (lido por código, regra 1)
+    if (!Types.ObjectId.isValid(e.oficial.questao)) continue;
+    const q = await Question.findOne({ _id: new Types.ObjectId(e.oficial.questao), origem: "oficial", status: "aprovada" }).select("prova numeroOriginal gabarito alternativas.letra alternativas.texto").lean();
+    const alt = q?.alternativas.find((a) => a.letra === e.oficial.letra);
+    if (!q || !alt) { descartados.push(`questão oficial ${e.oficial.questao} letra ${e.oficial.letra} não encontrada`); continue; }
+    const prova = `${q.prova}${q.numeroOriginal ? `, questão ${q.numeroOriginal}` : ""}`;
+    if (alt.letra === q.gabarito) certos.push({ texto: alt.texto, origem: `${prova}, alternativa ${alt.letra} (gabarito)` });
+    else errados.push({ texto: alt.texto, origem: `${prova}, alternativa ${alt.letra}; o gabarito é ${q.gabarito}`, regra: e.regra, prova, letra: alt.letra });
+  }
+  // exemplo certo tem de sair limpo no LanguageTool local (regra 13)
+  if (certos.length) {
+    if (!(await garantirLT())) throw new Error("LanguageTool local fora do ar");
+    const lt = await checarLoteLT(certos.map((c) => c.texto));
+    for (let i = certos.length - 1; i >= 0; i--) if (lt[i]?.length) { descartados.push(`exemplo certo apontado pelo LanguageTool: "${certos[i].texto.slice(0, 50)}" (${lt[i][0].regra})`); certos.splice(i, 1); }
+  }
+  return {
+    tipo: "portugues", regras, descartados,
+    exemplos: certos.map((c) => `“${c.texto}” (${c.origem})`),
+    contraexemplos: errados.map((e) => `“${e.texto}” está errado (${e.origem}). Fere: ${rotulo(e.regra)}.`),
+    // pegadinha verdadeira por construção: a banca usou a frase como alternativa errada
+    pegadinhas: errados.slice(0, 3).map((e) => `Na prova ${e.prova}, a alternativa ${e.letra} parecia aceitável e estava errada: ${rotulo(e.regra).toLowerCase()}.`),
+  };
+}
+
+function materialDaMatematica(subtema: string): MaterialSecao | null {
+  const m = materialMatematica(subtema);
+  if (!m) return null;
+  return {
+    tipo: "matematica",
+    regras: [{ indice: 1, texto: m.formula, titulo: "Construção do Lobo (números conferidos com mathjs)", camada: "conceito" }],
+    formula: m.formula,
+    exemplos: m.exemplos.map((e) => `${e.enunciado} Passos: ${e.passos.join(" ")} Resposta: ${e.resposta}.`),
+    contraexemplos: m.contraexemplos.map((c) => c.texto),
+    pegadinhas: m.pegadinhas,
+    descartados: [],
+  };
+}
+
+// ---------- uma seção: redação da IA (até 2 tentativas) → checagens de código → auditor com checklist ----------
+async function redigirSecao(tema: string, subtema: string, m: MaterialSecao) {
+  const entrada = redacaoSecaoUser({ tema, subtema, regras: m.regras, exemplos: m.exemplos, contraexemplos: m.contraexemplos, pegadinhas: m.pegadinhas, formula: m.formula });
+  let motivos: string[] = [];
+  let ultima: { explicacao: string; resumo: string; geradaPor: string; auditadaPor?: string } | null = null;
+  for (let tentativa = 1; tentativa <= TENTATIVAS_POR_SECAO; tentativa++) {
+    const pedido = motivos.length ? `${entrada}\n\nA VERSÃO ANTERIOR FOI REPROVADA: ${motivos.join(" | ")}\nReescreva corrigindo isso, sem sair do material.` : entrada;
+    const t = await chatJSONFuncao("tutor", REDACAO_SECAO_SYSTEM, pedido, 0.2, 2500);
+    let r: ReturnType<typeof RedacaoSecaoZ.parse>;
+    try {
+      r = (await validarOuReparar(RedacaoSecaoZ, t.json, { client: t.client, model: t.modelo, system: REDACAO_SECAO_SYSTEM, user: pedido })) as ReturnType<typeof RedacaoSecaoZ.parse>;
+    } catch (e) {
+      // JSON fora do formato conta como tentativa reprovada (não derruba a seção sem a 2ª chance)
+      motivos = [`formato: ${String((e as Error).message).slice(0, 160)}`];
+      continue;
+    }
+    ultima = { explicacao: r.explicacao, resumo: r.resumo, geradaPor: t.modelo };
+    motivos = checarTextoAula(`${r.explicacao}\n${r.resumo}`, m).map((p) => `código: ${p}`);
+    if (motivos.length) continue; // reprova na hora, sem gastar o auditor
+    const a = await chatJSONFuncao("auditor", CHECKLIST_SECAO_SYSTEM, `${entrada}\n\nEXPLICAÇÃO A CONFERIR:\n${r.explicacao}\n\nRESUMO:\n${r.resumo}`, 0, 1500, { excluirFamilias: [t.familia] });
+    const c = ChecklistSecaoZ.parse(a.json);
+    ultima.auditadaPor = a.modelo;
+    const itens = { regraCerta: "regra errada", exemploDoTema: "exemplo fora do tema", pegadinhaVerdadeira: "pegadinha falsa", naoContradizGabarito: "contradiz o gabarito" } as const;
+    const falhos = (Object.keys(itens) as (keyof typeof itens)[]).filter((k) => !c[k]).map((k) => `auditor: ${itens[k]}`);
+    if (!falhos.length) return { ...ultima, aprovada: true as const, motivos: [], tentativas: tentativa };
+    motivos = [...falhos, ...c.problemas.map((p) => `auditor: ${p}`)];
+  }
+  return { explicacao: ultima?.explicacao ?? "", resumo: ultima?.resumo ?? "", geradaPor: ultima?.geradaPor ?? "", auditadaPor: ultima?.auditadaPor, aprovada: false as const, motivos, tentativas: TENTATIVAS_POR_SECAO };
+}
+
+async function materialDaSecao(subtopico: string, subtema: string): Promise<MaterialSecao | { semMaterial: string }> {
+  if (existsSync(arquivoBancoPT(subtopico))) return materialPortugues(subtopico, subtema);
+  if (subtemasComConstrucao().includes(subtema)) return materialDaMatematica(subtema)!;
+  return { semMaterial: "tema ainda sem material por código (banco de regras ou construção)" };
+}
+
+// gera a aula do tema. refazer = ignora as seções aprovadas antes (a prova do desenho novo começa do zero)
+export async function gerarAulaTema(subtopico: string, opcoes: { refazer?: boolean } = {}): Promise<{ ok: boolean; resumo: string }> {
   const s = SUBTOPICO_POR_ID.get(subtopico);
   if (!s) throw new Error(`Tema desconhecido: ${subtopico}`);
-  const disciplina = disciplinaDoTema(s) as string;
   const topicos = await Topic.find({ assunto: { $in: s.topicos }, ativo: true }).select("_id assunto subtopicos").lean();
   const subtemas = subtemasDoTema(subtopico, topicos.map((t) => ({ assunto: t.assunto, subtopicos: t.subtopicos ?? [] })), TRILHA.map((t) => t.subtopico));
   if (!subtemas.length) return { ok: false, resumo: `${s.nome}: tema sem subtemas no edital` };
-  const oficiais = (await Question.find({ subtopico, origem: "oficial", status: "aprovada" }).sort({ createdAt: -1 }).limit(4).select("enunciado gabarito").lean())
-    .map((q) => ({ enunciado: q.enunciado.slice(0, 700), gabarito: q.gabarito }));
-  const anterior = await AulaTema.findOne({ subtopico }).lean();
+  const anterior = opcoes.refazer ? null : await AulaTema.findOne({ subtopico }).lean();
   const secoes: Record<string, unknown>[] = [];
   for (const [ordem, subtema] of subtemas.entries()) {
     const ja = anterior?.secoes.find((x) => x.subtema === subtema && x.status === "aprovada");
     if (ja) { secoes.push({ ...ja, ordem }); continue; }
-    const fontes = await fontesDoSubtema(subtopico, s.nome, subtema, topicos.map((t) => t._id));
-    if ((DISCIPLINAS_COM_FONTE_OBRIGATORIA as readonly string[]).includes(disciplina) && !fontes.length) {
-      secoes.push({ ordem, subtema, status: "em_preparo", motivos: ["sem fonte ingerida (regras 3 e 18)"] });
-      continue;
-    }
     try {
-      secoes.push({ ordem, ...(await gerarSecao({ disciplina, tema: s.nome, subtema, outros: subtemas.filter((x) => x !== subtema), fontes, oficiais })) });
+      const m = await materialDaSecao(subtopico, subtema);
+      if ("semMaterial" in m) { secoes.push({ ordem, subtema, status: "em_preparo", motivos: [`sem material: ${m.semMaterial}`] }); continue; }
+      if (!m.exemplos.length && !m.contraexemplos.length) { secoes.push({ ordem, subtema, status: "em_preparo", motivos: ["sem exemplo conferido", ...m.descartados] }); continue; }
+      const r = await redigirSecao(s.nome, subtema, m);
+      secoes.push({
+        ordem, subtema, status: r.aprovada ? "aprovada" : "em_preparo",
+        conteudo: m.formula ? `${r.explicacao}\n\n**Fórmula:** ${m.formula}` : r.explicacao,
+        exemplos: m.exemplos, contraexemplos: m.contraexemplos, pegadinhas: m.pegadinhas, resumo: r.resumo,
+        fontes: m.regras.map((x) => ({ titulo: x.titulo, trecho: x.texto, camada: x.camada })),
+        origem: origemDaSecao(m.regras),
+        palavras: contarPalavrasMarkdown([r.explicacao, ...m.exemplos, ...m.contraexemplos, ...m.pegadinhas, r.resumo].join("\n")),
+        geradaPor: r.geradaPor, auditadaPor: r.auditadaPor,
+        motivos: [...r.motivos, ...m.descartados.map((d) => `descartado pelo código: ${d}`), `tentativas: ${r.tentativas}`],
+      });
     } catch (e) {
-      // falha de modelo/infra: em preparo, tenta de novo numa próxima rodada
-      const motivo = e instanceof SemModeloDisponivel || ehFalhaDeInfra(e) ? `infraestrutura: ${String((e as Error).message).slice(0, 160)}` : `formato: ${String((e as Error).message).slice(0, 160)}`;
+      const motivo = e instanceof SemModeloDisponivel || ehFalhaDeInfra(e) ? `infraestrutura: ${String((e as Error).message).slice(0, 160)}` : `erro: ${String((e as Error).message).slice(0, 160)}`;
       secoes.push({ ordem, subtema, status: "em_preparo", motivos: [motivo] });
     }
   }
   await AulaTema.updateOne({ subtopico }, { $set: { subtopico, nome: s.nome, secoes } }, { upsert: true });
   const aprovadas = secoes.filter((x) => x.status === "aprovada").length;
-  const palavras = secoes.reduce((m, x) => m + (Number(x.palavras) || 0), 0);
-  const reprovadas = secoes.filter((x) => x.status !== "aprovada").map((x) => `${x.subtema}: ${(x.motivos as string[] | undefined)?.join(" | ").slice(0, 200)}`);
+  const palavras = secoes.reduce((t, x) => t + (Number(x.palavras) || 0), 0);
+  const reprovadas = secoes.filter((x) => x.status !== "aprovada").map((x) => `${x.subtema}: ${((x.motivos as string[] | undefined) ?? []).join(" | ").slice(0, 300)}`);
   return { ok: aprovadas > 0, resumo: `${s.nome}: ${aprovadas}/${secoes.length} seções aprovadas, ${palavras} palavras${reprovadas.length ? `; em preparo: ${reprovadas.join(" · ")}` : ""}` };
-}
-
-// etapa da noite (só a prova, uma vez): os temas de PROVA_AULA_TEMA que ainda não têm aula
-export async function etapaProvaAulaTema(): Promise<string | null> {
-  const feitos: string[] = [];
-  for (const sub of PROVA_AULA_TEMA) {
-    if (await AulaTema.exists({ subtopico: sub })) continue;
-    feitos.push((await gerarAulaTema(sub)).resumo);
-  }
-  return feitos.length ? feitos.join(" — ") : null;
 }
 
 export async function aulaDoTema(subtopico: string): Promise<AulaTemaDTO | null> {

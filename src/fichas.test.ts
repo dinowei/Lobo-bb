@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { temaNormativo, trechoNoTexto, vigencia } from "./fichas.js";
+import { emOutraLingua, temaNormativo, trechoNoTexto, vigencia } from "./fichas.js";
 
 // fechamento v1.0, item 3: a ficha de Interpretação ficava "pendente" porque regra de gramática de cursinho
 // era tratada como norma sem vigência confirmada
@@ -25,4 +25,10 @@ test("trecho literal: tolera quebra de linha e hifenização do PDF; qualquer ou
   // hífen de palavra composta no meio da linha continua hífen
   assert.equal(trechoNoTexto("pós-venda", "o pós-venda importa"), true);
   assert.equal(trechoNoTexto("pósvenda", "o pós-venda importa"), false);
+});
+
+test("ficha em português: afirmação em inglês cai no código (28/10: a de Coesão saiu em inglês e o auditor aprovou)", () => {
+  assert.equal(emOutraLingua("The bank tests the ability to substitute the word 'alavancar' with a synonym."), true);
+  assert.equal(emOutraLingua("A banca cobra a troca de 'Ainda que' por 'Mesmo que', que mantém o sentido de concessão."), false);
+  assert.equal(emOutraLingua("O verbo concorda com o núcleo do sujeito."), false);
 });

@@ -31,7 +31,7 @@ math.import(
   { override: true }
 );
 
-function calcular(expressao: string): number {
+export function calcular(expressao: string): number {
   const limpa = expressao.replace(/[×·]/g, "*").replace(/÷/g, "/").replace(/−/g, "-");
   const v = avaliar(limpa);
   if (typeof v !== "number" || !Number.isFinite(v)) throw new Error(`a expressão não resultou em um número: ${expressao}`);

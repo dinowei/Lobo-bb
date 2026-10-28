@@ -22,6 +22,7 @@ import { useApp } from "../estado";
 import { pct } from "../util";
 import { Pose } from "../componentes/Pose";
 import { BANCAS, SIGLA_CONCURSO, type IdBanca, type IdConcurso } from "../../../shared/concursos";
+import { META_NOITES_OK, textoNoitesOk } from "../../../shared/noites";
 
 // versão no ar e o selo discreto "noturno atrasado" (último noturno OK há mais de 36 h), do /api/saude
 function SeloSaude() {
@@ -448,7 +449,12 @@ function AbaJanelas() {
         <p className="atalho">Rodar à mão: npm run bb -- janela-b (fora do horário: --forcar). No Windows, agende esse comando no horário escolhido.</p>
       </div>
       <div className="secao">
-        <div className="linha-titulo"><h2>Últimas janelas</h2></div>
+        <div className="linha-titulo">
+          <h2>Últimas janelas</h2>
+          {dados?.noitesSeguidasOk !== undefined && (
+            <span className={`selo ${dados.noitesSeguidasOk >= META_NOITES_OK ? "verde" : ""}`} data-testid="noites-ok">{textoNoitesOk(dados.noitesSeguidasOk)}</span>
+          )}
+        </div>
         {!dados?.relatorios.length ? (
           <p className="sub">Nenhum relatório ainda.</p>
         ) : (
