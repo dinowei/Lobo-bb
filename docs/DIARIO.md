@@ -586,3 +586,41 @@ RETOMAR AQUI (27/10/2026): v1.1 fechada (tag `v1.1`). Noturno de 28/10, 01:00: g
   - Achado: o acervo tem regras de pontuação com texto literal (ex.: Revisão de Véspera Caixa 2024, pp. 81–82); o mapa do tema aponta para páginas erradas.
 - Deslize: editei por script duas vezes (remoção do bloco antigo de prompts em `src/prompts.ts` e uma linha de import em `src/fichas.test.ts`), contra a regra do CLAUDE.md. Conferi no diff: só o bloco/linha mudou, sem escape perdido.
 - Verificação: typecheck (servidor e site) ok; suíte 314 ok / 0 falha; ISOLAMENTO 214/214 (uma 1ª rodada teve 4 falhas por falta de memória, com o LanguageTool aberto); build do site ok; e2e trilha e janelas verdes.
+
+## 28/10/2026 (tarde): busca do chat, aula por matéria, auditor, Pontuação
+- Item 1 (chat, consertar a BUSCA; meta 85% fica). Causa de cada "não achei" da gate da manhã:
+
+  | Caso | Trecho no banco? | No top-k? | Causa |
+  |---|---|---|---|
+  | kb-servicos-essenciais-cmn3919 | sim | sim (1º) | a resposta caiu depois, na citação |
+  | vendas-lgpd-protecao-credito | sim | sim (1º) | tutor marcou "sem base" |
+  | informatica-phishing | não há norma (conceito) | — | tutor marcou "sem base" duas vezes (conceito estável) |
+  | adm-9784-principios | sim | não | detector de artigo |
+  | adm-14133-modalidades | sim ("Art.\n28.") | 5º, sem prioridade | detector exigia "nada de ponto" depois do número (todo art. ≥ 10) |
+  | ppenal-flagrante | sim ("Art. 302.") | sim, sem prioridade | detector + limite de 300 trechos (CPP tem 377) |
+  | tema-crase-masculino / insiste | não (ficha sem "masculino"; tópico com 0 trechos) | — | sem base nas fontes; tutor não explicou como conceito |
+  | 8.112, CF art. 1º, 6.404 (responderam sem fonte) | sim | sim (1º) | tutor citou [1] certo, mas a frase não tinha palavra "legal" da lista: saía sem a fonte conferida |
+
+  - Correções:
+    - busca híbrida: texto exato do artigo/norma em qualquer fonte, vetorial sem filtro de tema/concurso e o tópico inteiro (até 1.500 trechos); k = 8;
+    - detector de artigo aceita "Art. 28." e "Art.\n302.";
+    - citação tolerante a espaço, quebra de linha, hífen, aspas e travessão do PDF (nunca a sentido);
+    - citação conferida do tutor anexada;
+    - prompt: dizer a letra do gabarito.
+  - Gate de novo, de dia: Golden 23/30 (77%; antes 20/30), 0 invenções; Tema 3/5 (antes 2/5), 0 contradições. NÃO passou: chat do tema segue em ajuste.
+  - Ainda falham:
+    - kb-pld-comunicacao-lei9613, vendas-lgpd-protecao-credito, informatica-phishing, cf-art37-principios, penal-peculato, penal-concussao e ppenal-flagrante: quase todos em "afirmação sem trecho literal que a sustente" (o trecho certo chega, mas a frase do tutor parafraseia demais para ancorar);
+    - os 2 de crase: sem base.
+  - Variação: 3 que tinham passado de manhã falharam agora (PLD, art. 37, peculato).
+- Item 2 (aula):
+  - Matemática: itálico/negrito renderizados no Markdown (`*x*`, `_x_`; "2 * 3" fica como está), com e2e. Prints de Porcentagem 3/3 enviados; esteira de Matemática aguarda o OK.
+  - Português: proposta em `docs/PROPOSTA-BANCO-CONCORDANCIA.md`:
+    - o que o LanguageTool valida (sonda: 15/32 pares; só as regras de haver/existir, haver-fazer de tempo e "se" apassivador);
+    - tamanho: ~4 sessões;
+    - 3 perguntas ao dono.
+- Item 3 (auditor): `bb -- avaliar-auditor` (20 casos com erro plantado, teste).
+  - Pegou 16/20 (80%; meta 90%).
+  - 3 dos 4 que passaram foram falha de JSON do próprio auditor nas fichas (não julgou); o único erro que ele deixou passar de fato foi a frase sem sentido.
+  - Proposta abaixo do relatório do dia.
+- Item 4 (Pontuação): mapa corrigido (Revisão de Véspera Caixa 2024 pp. 81–82, `data/temas.json`) e ficha pelo caminho normal: 6 afirmações com trecho literal achado; o auditor reprovou 5 → rejeitada.
+- Item 5: regra registrada (edição só pelo editor; próximo deslize, parar e avisar antes do commit). Hoje à tarde: nenhum código editado por script.

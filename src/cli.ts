@@ -64,6 +64,7 @@ import { perguntarAoBinho } from "./chatBinho.js";
 import { noitesSeguidasOk, textoNoitesOk } from "../shared/noites.js";
 import { executarEvalChat, executarEvalChatTema, rodarGateChat } from "./evalChat.js";
 import { gerarAulaTema } from "./aulaTema.js";
+import { avaliarAuditor } from "./avaliarAuditor.js";
 import { ajustarTTLTelemetria, bancosDoCluster, medirColecoes, usoBanco } from "./usoBanco.js";
 import type { Disciplina, MotivoContestacao } from "../shared/tipos.js";
 import { executarEvalGerador } from "./evalGerador.js";
@@ -116,6 +117,7 @@ BB Estudos — comandos (npm run bb -- <comando>)
   eval-chat [--n 30] [--casos a,b]  roda o golden set do Binho em série, sem guardar respostas de avaliação
   eval-chat tema                    os 5 casos dentro do tema (ficha do tema + questões erradas), v1.1
   eval-chat gate                    golden 30 + 5 do tema; libera o chat do tema só se passar (senão "em ajuste")
+  avaliar-auditor [--n 20]          quantos erros plantados (€, inglês, regra invertida, conta…) o auditor pega; meta 90%
   aula-tema <subtópico> [refazer]   aula completa: material por código (banco de regras / mathjs), IA só redige; checagens + auditor com checklist
   eval-gerador [--n 1] [--assuntos "A;B"]  gera nos 8 tópicos de maior peso e mostra aprovação e motivos
   binho --assunto "<tópico>" --pergunta "<texto>"  o chat "Pergunte ao Binho" como o dono
@@ -657,6 +659,15 @@ async function main() {
         console.log(`\n${r.resposta}\n`);
         for (const c of r.citacoes ?? []) console.log(`  · ${c.titulo}: “${c.trecho}”`);
         return console.log(`origem: ${r.origem}${r.restantesHoje !== undefined ? ` · restam ${r.restantesHoje} hoje` : ""}`);
+      }
+
+      case "avaliar-auditor": {
+        // 28/10: quantos erros plantados o auditor atual pega (20 casos: seções de aula e fichas); meta ≥ 90%
+        return await naFila(rotulo, async () => {
+          const r = await avaliarAuditor(o.n ? Number(o.n) : 20);
+          for (const i of r.itens) console.log(`  ${i.pegou ? "pegou " : "PASSOU"} ${i.id} [${i.erro}] (${i.modelo}) ${i.resumo}`);
+          console.log(`\nAuditor: pegou ${r.pegos}/${r.casos} (${Math.round(r.taxa * 100)}%; meta 90%).`);
+        });
       }
 
       case "aula-tema": {

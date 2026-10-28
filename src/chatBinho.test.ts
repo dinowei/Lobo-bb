@@ -2,7 +2,32 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { conferirCitacoes, escolherTrechos, hashPergunta, prepararCitacoesDaResposta, trechosSustentamPergunta, validarCitacoesNaResposta } from "./chatBinho.js";
 import { RespostaBinhoZ } from "./prompts.js";
-import { artigosDaPergunta } from "./chatBinho.js";
+import { artigosDaPergunta, K_TRECHOS, normalizarCitacao, temArtigo } from "./chatBinho.js";
+
+test("busca (28/10): artigo com ponto depois do número (\"Art. 28.\", \"Art.\\n302.\") é achado; k = 8", () => {
+  assert.equal(temArtigo("Seção II\nDas Modalidades de Licitação\nArt.\n28. São modalidades de licitação:", "28"), true, "14.133");
+  assert.equal(temArtigo("deverão prender quem quer que seja encontrado em flagrante delito.\nArt. 302. Considera-se em flagrante", "302"), true, "CPP");
+  assert.equal(temArtigo("Art. 2º A Administração Pública obedecerá", "2"), true);
+  assert.equal(temArtigo("Art. 280. Outro artigo", "28"), false, "não confunde 28 com 280");
+  assert.equal(temArtigo("Art. 2.1 item", "2"), false);
+  assert.equal(K_TRECHOS, 8);
+  const r = escolherTrechos("Quais são as modalidades previstas no art. 28 da Lei 14.133/2021?", [
+    { titulo: "Lei nº 14.133/2021", texto: "Art. 3º Não se subordinam ao regime desta Lei as contratações de operações de crédito." },
+    { titulo: "Lei nº 14.133/2021", texto: "Art.\n28. São modalidades de licitação:\nI -\npregão;\nII -\nconcorrência;" },
+  ], 1);
+  assert.match(r[0].texto, /modalidades de licitação/);
+});
+
+test("citação (28/10): tolera quebra de linha, hífen de fim de linha, aspas e travessão do PDF; nunca o sentido", () => {
+  const pdf = "Art. 5º São requisitos básicos para investi-\ndura em cargo público: I - a nacionalidade brasileira;";
+  assert.ok(normalizarCitacao(pdf).includes(normalizarCitacao("requisitos básicos para investidura em cargo público: I – a nacionalidade brasileira")));
+  assert.ok(!normalizarCitacao(pdf).includes(normalizarCitacao("requisitos mínimos para investidura em cargo público")), "palavra trocada não passa");
+  const trechos = [{ indice: 1, titulo: "Lei 8.112/1990", texto: pdf }];
+  // a frase não tem palavra "legal" da lista: antes saía com [1] e sem a fonte; agora a citação do tutor fica
+  const p = prepararCitacoesDaResposta("Os requisitos começam pela nacionalidade brasileira [1].", [{ indice: 1, trecho: "São requisitos básicos para investi-\ndura em cargo público" }], trechos);
+  assert.ok(p);
+  assert.equal(p!.fontes.length, 1);
+});
 
 test("chat: artigo citado na pergunta traz o trecho dele primeiro, da norma pedida", () => {
   const fontes = [

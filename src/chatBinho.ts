@@ -9,11 +9,11 @@
 import { Types } from "mongoose";
 import { createHash } from "node:crypto";
 import { basename } from "node:path";
-import { Attempt, Aula, ChatUso, Chunk, Config, Ficha, Question, RespostaBinho, Source, Topic } from "./models.js";
+import { Attempt, Aula, ChatUso, Chunk, Config, Ficha, INDICE_VETORIAL, Question, RespostaBinho, Source, Topic } from "./models.js";
 import { SUBTOPICO_POR_ID } from "../shared/subtopicos.js";
 import { errosDoTema } from "../shared/estudoTema.js";
 import { chatJSONFuncao } from "./corrente.js";
-import { validarOuReparar } from "./llm.js";
+import { embedLote, validarOuReparar } from "./llm.js";
 import { BINHO_CHAT_SYSTEM, binhoChatUser, CONFERE_BINHO_SYSTEM, ConferenciaBinhoZ, RespostaBinhoZ } from "./prompts.js";
 import { ancorarCitacao } from "./aulas.js";
 import { seFilaLivre } from "./fila.js";
@@ -37,7 +37,14 @@ const termos = (s: string) => new Set((normalizar(s).match(/[\p{L}\p{N}]{3,}/gu)
 export const artigosDaPergunta = (pergunta: string) => [...pergunta.matchAll(/\bart(?:igo)?\.?\s*(\d{1,3})\s*[ºo°]?/gi)].map((m) => m[1]);
 const numerosDeNorma = (pergunta: string) =>
   [...pergunta.replace(/\bart(?:igo)?\.?\s*\d{1,3}\s*[ºo°]?/gi, " ").matchAll(/\b(\d{1,2}\.\d{3}|\d{2,5})(?:\/\d{2,4})?\b/g)].map((m) => m[1]);
-const temArtigo = (texto: string, n: string) => new RegExp(`\\bArt\\.?\\s*${n}\\s*[ºo°]?(?![\\d.])`, "i").test(texto);
+// 28/10: a lei escreve "Art. 28." e "Art.\n302." (ponto depois do número, a partir do art. 10); antes o detector
+// exigia "nada de ponto" e perdia todo artigo ≥ 10. Agora só não aceita outro dígito ("Art. 280") nem "2.1".
+export const RE_ARTIGO = (n: string) => new RegExp(`\\bArt\\.?\\s*${n}\\s*[ºo°]?(?!\\d|\\.\\d)`, "i");
+export const temArtigo = (texto: string, n: string) => RE_ARTIGO(n).test(texto);
+// citação conferida: o MESMO texto, tolerante só ao que o PDF muda (espaço, quebra de linha, hífen de fim de
+// linha, aspas e travessões); nunca a sentido
+export const normalizarCitacao = (s: string) =>
+  normalizar(s.replace(/(\p{L})-[ \t]*\r?\n[ \t]*(\p{L})/gu, "$1$2").replace(/[“”«»"]/g, "\"").replace(/[‘’`']/g, "'").replace(/[–—−]/g, "-"));
 
 // RAG simples: o trecho do artigo citado primeiro; depois os com mais termos da pergunta (bônus para a norma
 // citada pelo número); empate: ordem da fonte; sem termo em comum, os primeiros
@@ -62,7 +69,7 @@ export function conferirCitacoes(fontesResp: { indice: number; trecho: string }[
     const t = trechos.find((item) => item.indice === c.indice);
     if (!t) return { invalida: true as const };
     const trecho = ancorarCitacao(c.trecho, t.texto);
-    if (!normalizar(t.texto).includes(normalizar(trecho))) return { invalida: true as const };
+    if (!normalizarCitacao(t.texto).includes(normalizarCitacao(trecho))) return { invalida: true as const };
     const achou = { titulo: t.titulo, trecho };
     if (!validas.some((v) => v.trecho === achou.trecho)) validas.push(achou);
   }
@@ -127,15 +134,22 @@ export function prepararCitacoesDaResposta(
       : melhorCitado === melhor
         ? fontesDoTutor.find((f) => f.indice === melhor.fonte.indice)!.citacao
         : ancorarCitacao(frase, melhor.fonte.texto);
-    if (trecho.length < 20 || !normalizar(melhor.fonte.texto).includes(normalizar(trecho))) return null;
+    if (trecho.length < 20 || !normalizarCitacao(melhor.fonte.texto).includes(normalizarCitacao(trecho))) return null;
     if (!usadas.has(melhor.fonte.indice)) usadas.set(melhor.fonte.indice, trecho);
     const semIndices = frase.replace(/\s*\[\d+\]/g, "").trim();
     const pontuacao = semIndices.match(/[.!?]+$/)?.[0] ?? "";
     return `${semIndices.slice(0, semIndices.length - pontuacao.length).trim()} [${melhor.fonte.indice}]${pontuacao}`;
   });
   if (frases.some((f) => f === null) || usadas.size > 6) return null;
+  const final = frases.join(" ");
+  // 28/10: o tutor citou [n] com trecho conferido, mas a frase não tinha palavra "legal" da lista: a resposta saía
+  // com [1] e sem a fonte (8.112, CF art. 1º, 6.404). Fica a citação do próprio tutor, já conferida.
+  for (const f of fontesDoTutor) {
+    if (usadas.has(f.indice) || usadas.size >= 6 || !new RegExp(`\\[${f.indice}\\]`).test(final)) continue;
+    if (f.citacao.length >= 20 && normalizarCitacao(f.texto).includes(normalizarCitacao(f.citacao))) usadas.set(f.indice, f.citacao);
+  }
   return {
-    resposta: frases.join(" "),
+    resposta: final,
     fontes: [...usadas].map(([indice, trecho]) => ({ indice, trecho })),
   };
 }
@@ -161,13 +175,44 @@ export function validarCitacoesNaResposta(
   return { ok: true };
 }
 
-// Todos os trechos vigentes do tópico (a aula usa só os 12 primeiros; para a pergunta, a busca precisa da lei inteira)
-async function trechosDoTopico(topicId: Types.ObjectId) {
-  const chunks = await Chunk.find({ topicIds: topicId, revogada: false }).sort({ ordem: 1, pagina: 1 }).limit(300).select("sourceId texto").lean();
+type TrechoBusca = { id: string; titulo: string; texto: string };
+async function comTitulo(chunks: { _id: unknown; sourceId: unknown; texto: string }[]): Promise<TrechoBusca[]> {
   if (!chunks.length) return [];
   const validas = await Source.find({ _id: { $in: [...new Set(chunks.map((c) => String(c.sourceId)))] }, revogada: false }).select("titulo").lean();
   const titulos = new Map(validas.map((f) => [String(f._id), f.titulo]));
-  return chunks.flatMap((c) => (titulos.has(String(c.sourceId)) ? [{ titulo: titulos.get(String(c.sourceId))!, texto: c.texto.slice(0, 1800) }] : []));
+  return chunks.flatMap((c) => (titulos.has(String(c.sourceId)) ? [{ id: String(c._id), titulo: titulos.get(String(c.sourceId))!, texto: c.texto.slice(0, 1800) }] : []));
+}
+
+// Todos os trechos vigentes do tópico (28/10: era limit 300 e o CPP tem 377; o fim da lei nem entrava)
+async function trechosDoTopico(topicId: Types.ObjectId) {
+  return comTitulo(await Chunk.find({ topicIds: topicId, revogada: false }).sort({ ordem: 1, pagina: 1 }).limit(1500).select("_id sourceId texto").lean());
+}
+
+// Busca HÍBRIDA (decisão do dono, 28/10), sem filtro de concurso nem de tema que esconda a lei:
+//  1) texto exato: o artigo citado na pergunta ("art. 316"), em qualquer fonte; com número de norma ("14.133",
+//     "CMN 3.919"), só nas fontes dessa norma;
+//  2) vetorial: os vizinhos da pergunta no índice do Atlas (sem topicIds no filtro);
+//  3) o tópico inteiro. A escolha final (escolherTrechos) dá prioridade ao artigo e à norma citados.
+export const K_TRECHOS = 8;
+async function trechosParaPergunta(topicId: Types.ObjectId, pergunta: string): Promise<TrechoBusca[]> {
+  const artigos = artigosDaPergunta(pergunta);
+  const normas = numerosDeNorma(pergunta);
+  const exatos: TrechoBusca[] = [];
+  for (const n of artigos.slice(0, 3)) {
+    const achados = await comTitulo(await Chunk.find({ revogada: false, texto: RE_ARTIGO(n) }).limit(60).select("_id sourceId texto").lean());
+    exatos.push(...(normas.length ? achados.filter((t) => normas.some((num) => t.titulo.includes(num))) : achados.slice(0, 10)));
+  }
+  let vetoriais: TrechoBusca[] = [];
+  try {
+    const [vetor] = await embedLote([pergunta], "query");
+    vetoriais = await comTitulo(await Chunk.aggregate([
+      { $vectorSearch: { index: INDICE_VETORIAL(), path: "embedding", queryVector: vetor, numCandidates: 200, limit: K_TRECHOS, filter: { revogada: false } } },
+      { $project: { _id: 1, sourceId: 1, texto: 1 } },
+    ]));
+  } catch { /* sem embedding/índice: segue com texto exato + tópico */ }
+  const vistos = new Set<string>();
+  const unicos = [...exatos, ...(await trechosDoTopico(topicId)), ...vetoriais].filter((t) => !vistos.has(t.id) && vistos.add(t.id));
+  return escolherTrechos(pergunta, unicos, K_TRECHOS);
 }
 
 const diaEmSaoPaulo = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo" }).format(new Date());
@@ -291,7 +336,7 @@ export async function perguntarAoBinho(
     try {
       const aula = await Aula.findOne({ topicId: tid, status: "aprovada" }).select("conteudo pontosChave").lean();
       const daFicha = tema ? escolherTrechos(pergunta, tema.ficha, MAX_TRECHOS_FICHA) : [];
-      const trechos = [...escolherTrechos(pergunta, await trechosDoTopico(tid)), ...daFicha].map((f, i) => ({ indice: i + 1, titulo: f.titulo, texto: f.texto }));
+      const trechos = [...(await trechosParaPergunta(tid, pergunta)), ...daFicha].map((f, i) => ({ indice: i + 1, titulo: f.titulo, texto: f.texto }));
       const restantesHoje = Math.max(0, limite - (await usados(uid, dia)));
       const exigeTodaFrase = topic.disciplina === "conhecimentos_bancarios" || topic.disciplina === "atualidades_mercado_financeiro";
       const exigeFonte = exigeTodaFrase || /\b(?:art(?:igo)?|lei|decreto|resolucao|circular|norma|regulamento)\b/i.test(pergunta);

@@ -1,17 +1,24 @@
 // Markdown mínimo para os documentos do dono (títulos, parágrafos, listas, tabelas, citações,
-// **negrito**, `código`, [ ] caixas). Vira elementos React: nada de HTML cru na página.
+// **negrito**, *itálico* / _itálico_, `código`, [ ] caixas). Vira elementos React: nada de HTML cru na página.
 import type { ReactNode } from "react";
 
-function inline(texto: string): ReactNode[] {
+// itálico só com o asterisco/sublinhado colado no texto ("*haver*"); "2 * 3" e "a_b" ficam como estão (28/10)
+const RE_INLINE = /(\*\*[^*]+\*\*|`[^`]+`|\*(?=\S)[^*\n]+?(?<=\S)\*|(?<![\p{L}\p{N}])_(?=\S)[^_\n]+?(?<=\S)_(?![\p{L}\p{N}]))/gu;
+
+export function inline(texto: string): ReactNode[] {
   const t = texto.replace(/\[ \]/g, "☐").replace(/\[x\]/gi, "☑");
   const out: ReactNode[] = [];
-  const re = /(\*\*[^*]+\*\*|`[^`]+`)/g;
+  const re = new RegExp(RE_INLINE);
   let i = 0;
   let k = 0;
   for (let m = re.exec(t); m; m = re.exec(t)) {
     if (m.index > i) out.push(t.slice(i, m.index));
     const s = m[0];
-    out.push(s.startsWith("**") ? <b key={k++}>{s.slice(2, -2)}</b> : <code key={k++}>{s.slice(1, -1)}</code>);
+    out.push(
+      s.startsWith("**") ? <b key={k++}>{s.slice(2, -2)}</b>
+        : s.startsWith("`") ? <code key={k++}>{s.slice(1, -1)}</code>
+          : <i key={k++}>{s.slice(1, -1)}</i>
+    );
     i = m.index + s.length;
   }
   if (i < t.length) out.push(t.slice(i));

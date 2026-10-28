@@ -47,7 +47,7 @@ function servidorFalso(p: Page, e: Estado) {
       case "/api/aula-tema/crase":
         return j({
           subtopico: "crase", nome: "Crase", secoes: [
-            { ordem: 0, subtema: "crase obrigatória", status: "aprovada", conteudo: "Crase é a fusão da preposição **a** com o artigo **a** [1].", exemplos: ["Vou à escola.", "Refiro-me às alunas."], contraexemplos: ["Vou à pé (errado: pé é masculino)."], pegadinhas: ["Antes de verbo não há crase."], resumo: "Preposição + artigo feminino.", fontes: [{ titulo: "Ficha do tema · crase.pdf, p. 54", trecho: "A crase é a contração de preposição ‘a’ com artigo ‘a’.", camada: "C" }], origem: "C" },
+            { ordem: 0, subtema: "crase obrigatória", status: "aprovada", conteudo: "Crase é a fusão da preposição **a** com o artigo *a* [1]; com *haver* e _fazer_ não. Conta: 2 * 3 = 6.", exemplos: ["Vou à escola.", "Refiro-me às alunas."], contraexemplos: ["Vou à pé (errado: pé é masculino)."], pegadinhas: ["Antes de verbo não há crase."], resumo: "Preposição + artigo feminino.", fontes: [{ titulo: "Ficha do tema · crase.pdf, p. 54", trecho: "A crase é a contração de preposição ‘a’ com artigo ‘a’.", camada: "C" }], origem: "C" },
             { ordem: 1, subtema: "crase proibida", status: "em_preparo" },
           ],
         });
@@ -211,6 +211,11 @@ try {
     await p.locator("[data-testid=aula-tema]").waitFor();
     assert.match(await p.locator("[data-testid=secao-aula-0]").innerText(), /Origem: material de cursinho \(C\)[\s\S]*Contraexemplos da Lo[\s\S]*Resumo/);
     assert.match(await p.locator("[data-testid=secao-aula-1]").innerText(), /Em preparo/);
+    // 28/10: itálico renderizado, sem símbolo cru; conta com "*" separado fica como está
+    const texto = await p.locator("[data-testid=secao-aula-0] .markdown").innerText();
+    assert.doesNotMatch(texto, /\*haver\*|_fazer_/, "itálico cru na tela");
+    assert.equal(await p.locator("[data-testid=secao-aula-0] .markdown i").count(), 3);
+    assert.match(texto, /2 \* 3 = 6/);
     assert.ok(await p.locator("[data-testid=secao-aula-0] button", { hasText: "Ouvir esta seção com a Lo" }).count(), "áudio da Lo por seção");
     // v1.1 (item 5): o chat da página do tema vai com o tema e mostra o contexto usado e a fonte
     await p.locator("#pergunta-binho").fill("Por que não tem crase antes de palavra masculina?");
